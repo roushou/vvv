@@ -14,7 +14,7 @@ you have seen the diff, and every write can be undone.
 
 ## Install
 
-```console
+```sh
 cargo install vvv-rs
 ```
 
@@ -31,7 +31,7 @@ human output (`--json` prints the machine-readable result).
 
 **Find**
 
-```console
+```sh
 vvv search <name>                       # every identifier spelling the name
 vvv search --symbol <kind>              # declarations of one kind: function, struct, trait, …
 vvv search '<pattern>'                  # ast-grep structural pattern, e.g. 'fn $N($$$) { $$$ }'
@@ -39,7 +39,7 @@ vvv search '<pattern>'                  # ast-grep structural pattern, e.g. 'fn 
 
 **Understand**
 
-```console
+```sh
 vvv outline <file>                      # declarations, visibility, module path
 vvv references <name>                   # every use, judged like a rename
 vvv where <name> --from <file>          # the declaration, and the import to write there
@@ -53,7 +53,7 @@ vvv imports <file>                      # unresolved, unused or redundant import
 
 **Change**
 
-```console
+```sh
 vvv rename <name> <new>                 # the declaration and every reference
 vvv move <from> <to>                    # a file or directory, and the paths pointing at it
 vvv move --symbol <name> <from> <to>    # one declaration between files
@@ -66,14 +66,14 @@ full patch of every file, and `--select` acts on chosen rows only.
 
 **After**
 
-```console
+```sh
 vvv undo                                # reverse the newest apply
 vvv history                             # the ledger, oldest first
 ```
 
 **Interfaces**
 
-```console
+```sh
 vvv                                     # the picker, in a terminal
 vvv serve                               # JSON lines in, JSON lines out
 ```
@@ -96,7 +96,7 @@ is dropped quietly.
 
 A preview of a rename reads:
 
-```console
+```sh
 $ vvv rename Language Lang
 rename Language → Lang
 
