@@ -1,5 +1,7 @@
 # vvv
 
+<img width="1792" height="1008" alt="grok-image-8b65c39d-e4c6-4538-b559-4142447f5b0e" src="https://github.com/user-attachments/assets/a7cd9b71-0e5c-49b0-8a67-44201cf82945" />
+
 [![CI](https://github.com/roushou/vvv/actions/workflows/ci.yml/badge.svg)](https://github.com/roushou/vvv/actions/workflows/ci.yml)
 [![crates.io](https://img.shields.io/crates/v/vvv-rs.svg)](https://crates.io/crates/vvv-rs)
 [![docs.rs](https://img.shields.io/docsrs/vvv-rs)](https://docs.rs/vvv-rs)
