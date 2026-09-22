@@ -1,0 +1,20 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+assertion_line: 851
+expression: "render(|r| r.rewrite(&fx::rewrite(true)).unwrap())"
+---
+rewrite foo($$$A) → bar($$$A)
+
+src/a.rs
+@@ -1,3 +1,3 @@
+ fn f() {
+-    foo(1);
++    bar(1);
+ }
+
+src/b.rs
+@@ -1 +1 @@
+-foo(2);
++bar(2);
+--- stderr ---
+✓ #7   ± 2   2 files

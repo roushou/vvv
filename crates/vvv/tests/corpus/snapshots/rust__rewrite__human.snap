@@ -1,0 +1,40 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+rewrite Point::new($X, $Y) → Point { x: $X, y: $Y }
+
+app/src/main.rs
+@@ -4,7 +4,7 @@
+ use corpus_core::{area, Point, Shape};
+ 
+ fn main() {
+-    let p = Point::new(1, 2);
++    let p = Point { x: 1, y: 2 };
+     let s = Shape::Dot(p);
+     println!("{} {} {:?}", s.area(), area(3), origin());
+     cli::run();
+
+core/src/geometry/mod.rs
+@@ -4,5 +4,5 @@
+ pub use point::Point;
+ 
+ pub fn origin() -> Point {
+-    Point::new(0, 0)
++    Point { x: 0, y: 0 }
+ }
+
+core/src/geometry/point.rs
+@@ -11,6 +11,6 @@
+     }
+ 
+     pub fn shift(self, dx: i32) -> Self {
+-        Point::new(self.x + dx, self.y)
++        Point { x: self.x + dx, y: self.y }
+     }
+ }
+--- stderr ---
+± 3   3 files
+hint: --apply to write

@@ -1,0 +1,25 @@
+[package]
+name = "vvv-tui"
+version.workspace = true
+authors.workspace = true
+categories = ["command-line-interface", "development-tools"]
+documentation = "https://docs.rs/vvv-tui"
+edition.workspace = true
+homepage.workspace = true
+keywords = ["tui", "terminal", "ratatui", "refactoring"]
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Interactive interface for vvv: modes of panels over the engine"
+
+[dependencies]
+ratatui = "0.30.2"
+thiserror = { workspace = true }
+vvv-engine = { workspace = true }
+
+[dev-dependencies]
+insta = "1.48.0"
+
+[lints]
+workspace = true

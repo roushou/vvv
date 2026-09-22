@@ -1,0 +1,61 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "intent": {
+      "query": {
+        "pattern": "Point::new($X, $Y)"
+      },
+      "template": "Point { x: $X, y: $Y }"
+    },
+    "applied": false,
+    "files": [
+      {
+        "path": "app/src/main.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 109,
+              "end": 125
+            },
+            "replacement": "Point { x: 1, y: 2 }"
+          }
+        ],
+        "diff": "--- a/app/src/main.rs\n+++ b/app/src/main.rs\n@@ -4,7 +4,7 @@\n use corpus_core::{area, Point, Shape};\n \n fn main() {\n-    let p = Point::new(1, 2);\n+    let p = Point { x: 1, y: 2 };\n     let s = Shape::Dot(p);\n     println!(\"{} {} {:?}\", s.area(), area(3), origin());\n     cli::run();\n"
+      },
+      {
+        "path": "core/src/geometry/mod.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 81,
+              "end": 97
+            },
+            "replacement": "Point { x: 0, y: 0 }"
+          }
+        ],
+        "diff": "--- a/core/src/geometry/mod.rs\n+++ b/core/src/geometry/mod.rs\n@@ -4,5 +4,5 @@\n pub use point::Point;\n \n pub fn origin() -> Point {\n-    Point::new(0, 0)\n+    Point { x: 0, y: 0 }\n }\n"
+      },
+      {
+        "path": "core/src/geometry/point.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 260,
+              "end": 291
+            },
+            "replacement": "Point { x: self.x + dx, y: self.y }"
+          }
+        ],
+        "diff": "--- a/core/src/geometry/point.rs\n+++ b/core/src/geometry/point.rs\n@@ -11,6 +11,6 @@\n     }\n \n     pub fn shift(self, dx: i32) -> Self {\n-        Point::new(self.x + dx, self.y)\n+        Point { x: self.x + dx, y: self.y }\n     }\n }\n"
+      }
+    ]
+  }
+}
+--- stderr ---

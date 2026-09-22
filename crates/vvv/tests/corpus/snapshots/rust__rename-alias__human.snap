@@ -1,0 +1,22 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+rename Shape → Figure
+
+● enum Shape   ◆ corpus_core::geometry::shape::Shape   core/src/geometry/shape.rs:4:1
+
+✓ 10  4 files
+   1  app/src/cli.rs
+   2  app/src/main.rs
+   6  core/src/geometry/shape.rs
+   1  core/src/lib.rs
+
+? 0
+
+✗ 0
+--- stderr ---
+✓ 10  ? 0  ✗ 0   4 files   → 10 occurrences in 4 files
+hint: --apply to write · -v to list the ✓ rows

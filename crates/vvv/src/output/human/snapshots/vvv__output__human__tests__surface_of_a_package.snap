@@ -1,0 +1,11 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+expression: "render(|r| r.surface(&fx::surface()).unwrap())"
+---
+surface vvv_core
+
+● struct Plan   ◆ vvv_core::plan::Plan   src/plan/mod.rs:13:5   ← 4
+  ↗ vvv_core::Plan
+● function apply   ◆ vvv_core::plan::apply   src/plan/mod.rs:41:5   ← 0
+--- stderr ---
+● 2   ← 4 imports

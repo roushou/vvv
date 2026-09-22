@@ -1,0 +1,16 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+expression: "render(|r| r.imports(&fx::imports()).unwrap())"
+---
+imports src/plan/mod.rs
+
+∅ unresolved 1
+  src/plan/mod.rs:6:5   missing::Thing
+
+! unused 1
+  src/plan/mod.rs:4:5   std::collections::HashMap
+
+! redundant 1
+  src/plan/mod.rs:8:5   crate::plan::Plan
+--- stderr ---
+∅ unresolved 1   ! unused 1   ! redundant 1   ∅ not placed 1

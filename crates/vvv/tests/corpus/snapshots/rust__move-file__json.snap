@@ -1,0 +1,101 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "intent": {
+      "from": "core/src/util.rs",
+      "to": "core/src/helpers.rs"
+    },
+    "applied": false,
+    "from": "core/src/util.rs",
+    "to": "core/src/helpers.rs",
+    "from_address": {
+      "package": "corpus_core",
+      "path": [
+        "util"
+      ]
+    },
+    "to_address": {
+      "package": "corpus_core",
+      "path": [
+        "helpers"
+      ]
+    },
+    "respellings": [
+      {
+        "path": "core/src/geometry/shape.rs",
+        "span": {
+          "start": 22,
+          "end": 39
+        },
+        "start": {
+          "line": 1,
+          "column": 4
+        },
+        "from": "crate::util::area",
+        "to": "crate::helpers::area"
+      },
+      {
+        "path": "core/src/lib.rs",
+        "span": {
+          "start": 282,
+          "end": 286
+        },
+        "start": {
+          "line": 9,
+          "column": 8
+        },
+        "from": "util",
+        "to": "helpers"
+      }
+    ],
+    "files": [
+      {
+        "path": "core/src/geometry/shape.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 22,
+              "end": 39
+            },
+            "replacement": "crate::helpers::area"
+          }
+        ],
+        "diff": "--- a/core/src/geometry/shape.rs\n+++ b/core/src/geometry/shape.rs\n@@ -1,5 +1,5 @@\n use super::Point;\n-use crate::util::area;\n+use crate::helpers::area;\n \n pub enum Shape {\n     Dot(Point),\n"
+      },
+      {
+        "path": "core/src/lib.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 176,
+              "end": 180
+            },
+            "replacement": "helpers"
+          },
+          {
+            "span": {
+              "start": 282,
+              "end": 286
+            },
+            "replacement": "helpers"
+          }
+        ],
+        "diff": "--- a/core/src/lib.rs\n+++ b/core/src/lib.rs\n@@ -2,9 +2,9 @@\n //! re-exports in chains, a glob re-export, a re-export under another name.\n \n pub mod geometry;\n-pub mod util;\n+pub mod helpers;\n mod internal;\n \n pub use geometry::{shape::Shape, Point};\n pub use internal::Secret as Hidden;\n-pub use util::*;\n+pub use helpers::*;\n"
+      },
+      {
+        "path": "core/src/util.rs",
+        "moved_to": "core/src/helpers.rs",
+        "edits": [],
+        "diff": "--- a/core/src/util.rs\n+++ b/core/src/helpers.rs\n"
+      }
+    ]
+  }
+}
+--- stderr ---

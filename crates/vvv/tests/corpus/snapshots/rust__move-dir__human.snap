@@ -1,0 +1,41 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+move core/src/geometry → core/src/geo
+
+◆ corpus_core::geometry → corpus_core::geo
+
+→ 4   3 files
+± 4   4 files
+
+→ app/src/cli.rs:1    corpus_core::geometry::shape::Shape → corpus_core::geo::shape::Shape
+→ app/src/cli.rs:6    corpus_core::geometry::origin → corpus_core::geo::origin
+→ app/src/main.rs:3   corpus_core::geometry::origin → corpus_core::geo::origin
+→ core/src/lib.rs:8   geometry → geo
+
+± core/src/geometry/mod.rs → core/src/geo/mod.rs
+
+± core/src/geometry/point.rs → core/src/geo/point.rs
+
+± core/src/geometry/shape.rs → core/src/geo/shape.rs
+
+± core/src/lib.rs
+@@ -1,10 +1,10 @@
+ //! A small crate with every shape of import vvv follows: child modules,
+ //! re-exports in chains, a glob re-export, a re-export under another name.
+ 
+-pub mod geometry;
++pub mod geo;
+ pub mod util;
+ mod internal;
+ 
+-pub use geometry::{shape::Shape, Point};
++pub use geo::{shape::Shape, Point};
+ pub use internal::Secret as Hidden;
+ pub use util::*;
+--- stderr ---
+→ 4  ± 4   6 files
+hint: --apply to write · --diff for the full patch

@@ -1,0 +1,24 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: render(&m)
+---
+┌ rename ● trait Language → Language▏ ────────────────────────────────── ✓ 3  ? 1  ✗ 0   ┐
+│◆ vvv_core::lang::Language   src/lang/mod.rs:64                                         │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+┌ ? unverified 1  1 file  ▪ 0 ──────────────┐┌ src/other.rs:10 ──────────────────────────┐
+│▫ ∅ src/other.rs:10        Language::new() ││before  Language::new()                    │
+│                                           ││after   Language::new()                    │
+│                                           ││                                           │
+┌ report ────────────────────────────────────────────────────────────────────────────────┐
+│rename Config → Settings                                                                │
+│                                                                                        │
+│src/a.rs                                                                                │
+│                                                                                        │
+│✓ #3  2 files                                                                           │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+│▪ → src/lib.rs:26          pub use lang::{…││                                           │
+│▪ ↗ src/other.rs:13        vvv::Language::…││                                           │
+│                                           ││                                           │
+└───────────────────────────────────────────┘│                                           │
+ ✗ another declaration's 0 ──────────────────└───────────────────────────────────────────┘
+ rename j/k row  e editor  any key close

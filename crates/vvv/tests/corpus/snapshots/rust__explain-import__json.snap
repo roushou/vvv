@@ -1,0 +1,66 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "path": "app/src/main.rs",
+    "position": {
+      "line": 3,
+      "column": 23
+    },
+    "module": {
+      "package": "corpus_app",
+      "path": []
+    },
+    "import": {
+      "span": {
+        "start": 63,
+        "end": 67
+      },
+      "path": "corpus_core::area",
+      "group": {
+        "prefix": "corpus_core",
+        "item": {
+          "start": 63,
+          "end": 67
+        },
+        "list": {
+          "start": 62,
+          "end": 82
+        },
+        "items": 3,
+        "statement": {
+          "start": 45,
+          "end": 83
+        },
+        "top_level": true
+      },
+      "declares": true,
+      "start": {
+        "line": 3,
+        "column": 18
+      },
+      "address": {
+        "package": "corpus_core",
+        "path": [
+          "area"
+        ]
+      },
+      "origin": {
+        "package": "corpus_core",
+        "path": [
+          "util",
+          "area"
+        ]
+      },
+      "file": "core/src/util.rs"
+    },
+    "importers": []
+  }
+}
+--- stderr ---

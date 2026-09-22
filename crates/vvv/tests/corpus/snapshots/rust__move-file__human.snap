@@ -1,0 +1,34 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+move core/src/util.rs → core/src/helpers.rs
+
+◆ corpus_core::util → corpus_core::helpers
+
+→ 2   2 files
+± 2   2 files
+
+→ core/src/geometry/shape.rs:2   crate::util::area → crate::helpers::area
+→ core/src/lib.rs:10             util → helpers
+
+± core/src/lib.rs
+@@ -2,9 +2,9 @@
+ //! re-exports in chains, a glob re-export, a re-export under another name.
+ 
+ pub mod geometry;
+-pub mod util;
++pub mod helpers;
+ mod internal;
+ 
+ pub use geometry::{shape::Shape, Point};
+ pub use internal::Secret as Hidden;
+-pub use util::*;
++pub use helpers::*;
+
+± core/src/util.rs → core/src/helpers.rs
+--- stderr ---
+→ 2  ± 2   3 files
+hint: --apply to write · --diff for the full patch

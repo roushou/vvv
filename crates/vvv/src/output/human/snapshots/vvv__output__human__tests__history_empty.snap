@@ -1,0 +1,8 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+assertion_line: 905
+expression: render(|r| r.history(&empty).unwrap())
+---
+--- stderr ---
+∅ no history
+hint: --apply writes a plan and records it here; `vvv undo` reverses the newest

@@ -1,0 +1,19 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+move src/util.ts → src/lib/util.ts
+
+
+→ 2   2 files
+± 1   1 file
+
+→ src/geometry/shape.ts:2   ../util → ../lib/util
+→ src/index.ts:2            ./util → ./lib/util
+
+± src/util.ts → src/lib/util.ts
+--- stderr ---
+→ 2  ± 1   3 files
+hint: --apply to write · --diff for the full patch

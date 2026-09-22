@@ -1,0 +1,84 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "path": "core/src/geometry/point.rs",
+    "position": {
+      "line": 2,
+      "column": 11
+    },
+    "symbol": {
+      "kind": "struct",
+      "name": "Point",
+      "name_span": {
+        "start": 84,
+        "end": 89
+      },
+      "span": {
+        "start": 73,
+        "end": 125
+      },
+      "extent": {
+        "start": 0,
+        "end": 125
+      },
+      "visibility": {
+        "span": {
+          "start": 73,
+          "end": 76
+        },
+        "text": "pub"
+      }
+    },
+    "declared": {
+      "line": 2,
+      "column": 11
+    },
+    "line": "pub struct Point {",
+    "module": {
+      "package": "corpus_core",
+      "path": [
+        "geometry",
+        "point"
+      ]
+    },
+    "address": {
+      "package": "corpus_core",
+      "path": [
+        "geometry",
+        "point",
+        "Point"
+      ]
+    },
+    "reach": "everyone",
+    "via": [
+      {
+        "package": "corpus_core",
+        "path": [
+          "geometry",
+          "Point"
+        ]
+      },
+      {
+        "package": "corpus_core",
+        "path": [
+          "Point"
+        ]
+      }
+    ],
+    "importers": [
+      "app/src/main.rs",
+      "core/src/geometry/mod.rs",
+      "core/src/geometry/shape.rs",
+      "core/src/lib.rs",
+      "core/src/lib.rs"
+    ]
+  }
+}
+--- stderr ---

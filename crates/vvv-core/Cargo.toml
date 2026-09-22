@@ -1,0 +1,24 @@
+[package]
+name = "vvv-core"
+version.workspace = true
+authors.workspace = true
+categories = ["development-tools"]
+documentation = "https://docs.rs/vvv-core"
+edition.workspace = true
+homepage.workspace = true
+keywords = ["refactoring", "ast", "codemod", "syntax", "plugin"]
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Domain types and plugin traits for vvv"
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lints]
+workspace = true

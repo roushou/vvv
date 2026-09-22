@@ -1,0 +1,96 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "intent": {
+      "name": "area",
+      "from": "core/src/util.rs",
+      "to": "core/src/geometry/mod.rs"
+    },
+    "applied": false,
+    "from": {
+      "package": "corpus_core",
+      "path": [
+        "util",
+        "area"
+      ]
+    },
+    "to": {
+      "package": "corpus_core",
+      "path": [
+        "geometry",
+        "area"
+      ]
+    },
+    "respellings": [
+      {
+        "path": "core/src/geometry/shape.rs",
+        "span": {
+          "start": 22,
+          "end": 39
+        },
+        "start": {
+          "line": 1,
+          "column": 4
+        },
+        "from": "crate::util::area",
+        "to": "crate::geometry::area"
+      }
+    ],
+    "files": [
+      {
+        "path": "core/src/geometry/mod.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 100,
+              "end": 100
+            },
+            "replacement": "\npub fn area(side: u32) -> u32 {\n    side * side\n}\n"
+          }
+        ],
+        "diff": "--- a/core/src/geometry/mod.rs\n+++ b/core/src/geometry/mod.rs\n@@ -6,3 +6,7 @@\n pub fn origin() -> Point {\n     Point::new(0, 0)\n }\n+\n+pub fn area(side: u32) -> u32 {\n+    side * side\n+}\n"
+      },
+      {
+        "path": "core/src/geometry/shape.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 22,
+              "end": 39
+            },
+            "replacement": "crate::geometry::area"
+          }
+        ],
+        "diff": "--- a/core/src/geometry/shape.rs\n+++ b/core/src/geometry/shape.rs\n@@ -1,5 +1,5 @@\n use super::Point;\n-use crate::util::area;\n+use crate::geometry::area;\n \n pub enum Shape {\n     Dot(Point),\n"
+      },
+      {
+        "path": "core/src/util.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 31,
+              "end": 31
+            },
+            "replacement": "use crate::geometry::area;\n"
+          },
+          {
+            "span": {
+              "start": 32,
+              "end": 83
+            },
+            "replacement": ""
+          }
+        ],
+        "diff": "--- a/core/src/util.rs\n+++ b/core/src/util.rs\n@@ -1,8 +1,5 @@\n use std::collections::HashMap;\n-\n-pub fn area(side: u32) -> u32 {\n-    side * side\n-}\n+use crate::geometry::area;\n \n pub(crate) fn helper() -> u32 {\n     area(1)\n"
+      }
+    ]
+  }
+}
+--- stderr ---

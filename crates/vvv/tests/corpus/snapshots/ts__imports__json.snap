@@ -1,0 +1,17 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "unused": [],
+    "unresolved": [],
+    "redundant": [],
+    "unplaced": []
+  }
+}
+--- stderr ---

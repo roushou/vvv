@@ -1,0 +1,159 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "intent": {
+      "from": "core/src/geometry",
+      "to": "core/src/geo"
+    },
+    "applied": false,
+    "from": "core/src/geometry",
+    "to": "core/src/geo",
+    "from_address": {
+      "package": "corpus_core",
+      "path": [
+        "geometry"
+      ]
+    },
+    "to_address": {
+      "package": "corpus_core",
+      "path": [
+        "geo"
+      ]
+    },
+    "respellings": [
+      {
+        "path": "app/src/cli.rs",
+        "span": {
+          "start": 4,
+          "end": 39
+        },
+        "start": {
+          "line": 0,
+          "column": 4
+        },
+        "from": "corpus_core::geometry::shape::Shape",
+        "to": "corpus_core::geo::shape::Shape"
+      },
+      {
+        "path": "app/src/cli.rs",
+        "span": {
+          "start": 146,
+          "end": 175
+        },
+        "start": {
+          "line": 5,
+          "column": 29
+        },
+        "from": "corpus_core::geometry::origin",
+        "to": "corpus_core::geo::origin"
+      },
+      {
+        "path": "app/src/main.rs",
+        "span": {
+          "start": 14,
+          "end": 43
+        },
+        "start": {
+          "line": 2,
+          "column": 4
+        },
+        "from": "corpus_core::geometry::origin",
+        "to": "corpus_core::geo::origin"
+      },
+      {
+        "path": "core/src/lib.rs",
+        "span": {
+          "start": 205,
+          "end": 213
+        },
+        "start": {
+          "line": 7,
+          "column": 8
+        },
+        "from": "geometry",
+        "to": "geo"
+      }
+    ],
+    "files": [
+      {
+        "path": "app/src/cli.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 4,
+              "end": 39
+            },
+            "replacement": "corpus_core::geo::shape::Shape"
+          },
+          {
+            "span": {
+              "start": 146,
+              "end": 175
+            },
+            "replacement": "corpus_core::geo::origin"
+          }
+        ],
+        "diff": "--- a/app/src/cli.rs\n+++ b/app/src/cli.rs\n@@ -1,8 +1,8 @@\n-use corpus_core::geometry::shape::Shape as Figure;\n+use corpus_core::geo::shape::Shape as Figure;\n use corpus_core::Hidden;\n \n pub fn run() {\n     let hidden = Hidden;\n-    let figure = Figure::Dot(corpus_core::geometry::origin());\n+    let figure = Figure::Dot(corpus_core::geo::origin());\n     println!(\"{} {}\", hidden.reveal(), figure.area());\n }\n"
+      },
+      {
+        "path": "app/src/main.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 14,
+              "end": 43
+            },
+            "replacement": "corpus_core::geo::origin"
+          }
+        ],
+        "diff": "--- a/app/src/main.rs\n+++ b/app/src/main.rs\n@@ -1,6 +1,6 @@\n mod cli;\n \n-use corpus_core::geometry::origin;\n+use corpus_core::geo::origin;\n use corpus_core::{area, Point, Shape};\n \n fn main() {\n"
+      },
+      {
+        "path": "core/src/geometry/mod.rs",
+        "moved_to": "core/src/geo/mod.rs",
+        "edits": [],
+        "diff": "--- a/core/src/geometry/mod.rs\n+++ b/core/src/geo/mod.rs\n"
+      },
+      {
+        "path": "core/src/geometry/point.rs",
+        "moved_to": "core/src/geo/point.rs",
+        "edits": [],
+        "diff": "--- a/core/src/geometry/point.rs\n+++ b/core/src/geo/point.rs\n"
+      },
+      {
+        "path": "core/src/geometry/shape.rs",
+        "moved_to": "core/src/geo/shape.rs",
+        "edits": [],
+        "diff": "--- a/core/src/geometry/shape.rs\n+++ b/core/src/geo/shape.rs\n"
+      },
+      {
+        "path": "core/src/lib.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 158,
+              "end": 166
+            },
+            "replacement": "geo"
+          },
+          {
+            "span": {
+              "start": 205,
+              "end": 213
+            },
+            "replacement": "geo"
+          }
+        ],
+        "diff": "--- a/core/src/lib.rs\n+++ b/core/src/lib.rs\n@@ -1,10 +1,10 @@\n //! A small crate with every shape of import vvv follows: child modules,\n //! re-exports in chains, a glob re-export, a re-export under another name.\n \n-pub mod geometry;\n+pub mod geo;\n pub mod util;\n mod internal;\n \n-pub use geometry::{shape::Shape, Point};\n+pub use geo::{shape::Shape, Point};\n pub use internal::Secret as Hidden;\n pub use util::*;\n"
+      }
+    ]
+  }
+}
+--- stderr ---

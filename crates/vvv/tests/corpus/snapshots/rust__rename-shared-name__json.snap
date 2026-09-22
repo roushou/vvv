@@ -1,0 +1,413 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "intent": {
+      "name": "area",
+      "to": "size"
+    },
+    "applied": false,
+    "declarations": [
+      {
+        "id": "32ec29cb6c03",
+        "path": "core/src/geometry/shape.rs",
+        "language": "rust",
+        "span": {
+          "start": 136,
+          "end": 287
+        },
+        "start": {
+          "line": 9,
+          "column": 4
+        },
+        "end": {
+          "line": 14,
+          "column": 5
+        },
+        "kind": "function_item",
+        "text": "pub fn area(&self) -> u32 {\n        match self {\n            Shape::Dot(_) => 0,\n            Shape::Square { side, .. } => area(*side),\n        }\n    }",
+        "line": "    pub fn area(&self) -> u32 {",
+        "symbol": {
+          "kind": "method",
+          "name": "area",
+          "name_span": {
+            "start": 143,
+            "end": 147
+          },
+          "span": {
+            "start": 136,
+            "end": 287
+          },
+          "extent": {
+            "start": 136,
+            "end": 287
+          },
+          "visibility": {
+            "span": {
+              "start": 136,
+              "end": 139
+            },
+            "text": "pub"
+          }
+        },
+        "role": "declaration"
+      },
+      {
+        "id": "3a3b9573ec14",
+        "path": "core/src/util.rs",
+        "language": "rust",
+        "span": {
+          "start": 32,
+          "end": 81
+        },
+        "start": {
+          "line": 2,
+          "column": 0
+        },
+        "end": {
+          "line": 4,
+          "column": 1
+        },
+        "kind": "function_item",
+        "text": "pub fn area(side: u32) -> u32 {\n    side * side\n}",
+        "line": "pub fn area(side: u32) -> u32 {",
+        "symbol": {
+          "kind": "function",
+          "name": "area",
+          "name_span": {
+            "start": 39,
+            "end": 43
+          },
+          "span": {
+            "start": 32,
+            "end": 81
+          },
+          "extent": {
+            "start": 32,
+            "end": 81
+          },
+          "visibility": {
+            "span": {
+              "start": 32,
+              "end": 35
+            },
+            "text": "pub"
+          }
+        },
+        "role": "declaration",
+        "address": {
+          "package": "corpus_core",
+          "path": [
+            "util",
+            "area"
+          ]
+        }
+      }
+    ],
+    "occurrences": [
+      {
+        "id": "bdd6f19b0e8a",
+        "path": "core/src/util.rs",
+        "language": "rust",
+        "span": {
+          "start": 39,
+          "end": 43
+        },
+        "start": {
+          "line": 2,
+          "column": 7
+        },
+        "end": {
+          "line": 2,
+          "column": 11
+        },
+        "kind": "identifier",
+        "text": "area",
+        "line": "pub fn area(side: u32) -> u32 {",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "declaring"
+      },
+      {
+        "id": "31c933693458",
+        "path": "core/src/util.rs",
+        "language": "rust",
+        "span": {
+          "start": 119,
+          "end": 123
+        },
+        "start": {
+          "line": 7,
+          "column": 4
+        },
+        "end": {
+          "line": 7,
+          "column": 8
+        },
+        "kind": "identifier",
+        "text": "area",
+        "line": "    area(1)",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "declaring"
+      },
+      {
+        "id": "61fb97b14589",
+        "path": "core/src/geometry/shape.rs",
+        "language": "rust",
+        "span": {
+          "start": 143,
+          "end": 147
+        },
+        "start": {
+          "line": 9,
+          "column": 11
+        },
+        "end": {
+          "line": 9,
+          "column": 15
+        },
+        "kind": "identifier",
+        "text": "area",
+        "line": "    pub fn area(&self) -> u32 {",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "imported"
+      },
+      {
+        "id": "5950f4f2b7f4",
+        "path": "core/src/geometry/shape.rs",
+        "language": "rust",
+        "span": {
+          "start": 259,
+          "end": 263
+        },
+        "start": {
+          "line": 12,
+          "column": 42
+        },
+        "end": {
+          "line": 12,
+          "column": 46
+        },
+        "kind": "identifier",
+        "text": "area",
+        "line": "            Shape::Square { side, .. } => area(*side),",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "imported"
+      },
+      {
+        "id": "62d279b637b2",
+        "path": "core/src/geometry/shape.rs",
+        "language": "rust",
+        "span": {
+          "start": 35,
+          "end": 39
+        },
+        "start": {
+          "line": 1,
+          "column": 17
+        },
+        "end": {
+          "line": 1,
+          "column": 21
+        },
+        "kind": "identifier",
+        "text": "area",
+        "line": "use crate::util::area;",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "path"
+      },
+      {
+        "id": "78ad054579c8",
+        "path": "app/src/main.rs",
+        "language": "rust",
+        "span": {
+          "start": 63,
+          "end": 67
+        },
+        "start": {
+          "line": 3,
+          "column": 18
+        },
+        "end": {
+          "line": 3,
+          "column": 22
+        },
+        "kind": "identifier",
+        "text": "area",
+        "line": "use corpus_core::{area, Point, Shape};",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "re-export"
+      },
+      {
+        "id": "08e53d3593f4",
+        "path": "app/src/main.rs",
+        "language": "rust",
+        "span": {
+          "start": 183,
+          "end": 187
+        },
+        "start": {
+          "line": 8,
+          "column": 29
+        },
+        "end": {
+          "line": 8,
+          "column": 33
+        },
+        "kind": "identifier",
+        "text": "area",
+        "line": "    println!(\"{} {} {:?}\", s.area(), area(3), origin());",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "re-export"
+      },
+      {
+        "id": "effa3c2a5e8f",
+        "path": "app/src/main.rs",
+        "language": "rust",
+        "span": {
+          "start": 191,
+          "end": 195
+        },
+        "start": {
+          "line": 8,
+          "column": 37
+        },
+        "end": {
+          "line": 8,
+          "column": 41
+        },
+        "kind": "identifier",
+        "text": "area",
+        "line": "    println!(\"{} {} {:?}\", s.area(), area(3), origin());",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "re-export"
+      },
+      {
+        "id": "f5bf0262ea1e",
+        "path": "app/src/cli.rs",
+        "language": "rust",
+        "span": {
+          "start": 226,
+          "end": 230
+        },
+        "start": {
+          "line": 6,
+          "column": 46
+        },
+        "end": {
+          "line": 6,
+          "column": 50
+        },
+        "kind": "identifier",
+        "text": "area",
+        "line": "    println!(\"{} {}\", hidden.reveal(), figure.area());",
+        "role": "use",
+        "confidence": "unresolved",
+        "reason": "unresolved"
+      }
+    ],
+    "files": [
+      {
+        "path": "app/src/cli.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 226,
+              "end": 230
+            },
+            "replacement": "size"
+          }
+        ],
+        "diff": "--- a/app/src/cli.rs\n+++ b/app/src/cli.rs\n@@ -4,5 +4,5 @@\n pub fn run() {\n     let hidden = Hidden;\n     let figure = Figure::Dot(corpus_core::geometry::origin());\n-    println!(\"{} {}\", hidden.reveal(), figure.area());\n+    println!(\"{} {}\", hidden.reveal(), figure.size());\n }\n"
+      },
+      {
+        "path": "app/src/main.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 63,
+              "end": 67
+            },
+            "replacement": "size"
+          },
+          {
+            "span": {
+              "start": 183,
+              "end": 187
+            },
+            "replacement": "size"
+          },
+          {
+            "span": {
+              "start": 191,
+              "end": 195
+            },
+            "replacement": "size"
+          }
+        ],
+        "diff": "--- a/app/src/main.rs\n+++ b/app/src/main.rs\n@@ -1,11 +1,11 @@\n mod cli;\n \n use corpus_core::geometry::origin;\n-use corpus_core::{area, Point, Shape};\n+use corpus_core::{size, Point, Shape};\n \n fn main() {\n     let p = Point::new(1, 2);\n     let s = Shape::Dot(p);\n-    println!(\"{} {} {:?}\", s.area(), area(3), origin());\n+    println!(\"{} {} {:?}\", s.size(), size(3), origin());\n     cli::run();\n }\n"
+      },
+      {
+        "path": "core/src/geometry/shape.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 35,
+              "end": 39
+            },
+            "replacement": "size"
+          },
+          {
+            "span": {
+              "start": 143,
+              "end": 147
+            },
+            "replacement": "size"
+          },
+          {
+            "span": {
+              "start": 259,
+              "end": 263
+            },
+            "replacement": "size"
+          }
+        ],
+        "diff": "--- a/core/src/geometry/shape.rs\n+++ b/core/src/geometry/shape.rs\n@@ -1,5 +1,5 @@\n use super::Point;\n-use crate::util::area;\n+use crate::util::size;\n \n pub enum Shape {\n     Dot(Point),\n@@ -7,10 +7,10 @@\n }\n \n impl Shape {\n-    pub fn area(&self) -> u32 {\n+    pub fn size(&self) -> u32 {\n         match self {\n             Shape::Dot(_) => 0,\n-            Shape::Square { side, .. } => area(*side),\n+            Shape::Square { side, .. } => size(*side),\n         }\n     }\n \n"
+      },
+      {
+        "path": "core/src/util.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 39,
+              "end": 43
+            },
+            "replacement": "size"
+          },
+          {
+            "span": {
+              "start": 119,
+              "end": 123
+            },
+            "replacement": "size"
+          }
+        ],
+        "diff": "--- a/core/src/util.rs\n+++ b/core/src/util.rs\n@@ -1,11 +1,11 @@\n use std::collections::HashMap;\n \n-pub fn area(side: u32) -> u32 {\n+pub fn size(side: u32) -> u32 {\n     side * side\n }\n \n pub(crate) fn helper() -> u32 {\n-    area(1)\n+    size(1)\n }\n \n fn unused_private() -> u32 {\n"
+      }
+    ]
+  }
+}
+--- stderr ---

@@ -1,0 +1,24 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: render(&m)
+---
+┌ rewrite ──────────────────────────────────────────────────────────── ± 4  ▪ 4  3 files ┐
+│pattern   Language                                                                      │
+│template  Lang                                                                          │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+┌ ± rewrites 4 ─────────────────────────────┐┌ src/lang/registry.rs:4 ───────────────────┐
+│▪ lang/mod.rs:64         pub trait Languag…││@@ -1,6 +1,6 @@                            │
+│▪ lang/registry.rs:4     use super::{Langu…││ // line 1                                 │
+│▪ src/lib.rs:26          pub use lang::{La…││ // line 2                                 │
+│▪ src/lib.rs:41          Language::new()   ││ // line 3                                 │
+│                                           ││-use super::{Language, LanguageId};        │
+│                                           ││+use super::{Lang, LanguageId};            │
+│                                           ││ // line 5                                 │
+│                                           ││ // line 6                                 │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+└───────────────────────────────────────────┘└───────────────────────────────────────────┘
+ rewrite space toggle  a all  ⏎ apply 4 in 3 files  esc back  j/k move  e editor  ? keys

@@ -1,0 +1,18 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+assertion_line: 527
+expression: "render(|r| r.search(&fx::search()).unwrap())"
+---
+● 1  1 file
+src/lang/mod.rs
+  1 ●   64:1    trait Language  pub trait Language: Send + Sync {  +8  ◆ vvv_core::lang::Language
+
+○ 3  2 files
+src/lang/registry.rs
+  2 →    4:13   use super::{Language, LanguageId};
+
+src/lib.rs
+  3 →   26:16   pub use lang::{Language, LanguageId};
+  4     41:5    Language::new()
+--- stderr ---
+● 1  ○ 3  3 files

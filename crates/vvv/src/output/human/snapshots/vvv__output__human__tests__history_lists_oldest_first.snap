@@ -1,0 +1,9 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+assertion_line: 899
+expression: render(|r| r.history(&h).unwrap())
+---
+#1    just now  move src/a.rs → src/b.rs  3 files
+#2    just now  rename Config → Settings  5 files  ↩
+--- stderr ---
+2 entries   ↩ #2

@@ -1,0 +1,369 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "name": "Point",
+    "declarations": [
+      {
+        "id": "679da9ff7222",
+        "path": "core/src/geometry/point.rs",
+        "language": "rust",
+        "span": {
+          "start": 73,
+          "end": 125
+        },
+        "start": {
+          "line": 2,
+          "column": 0
+        },
+        "end": {
+          "line": 5,
+          "column": 1
+        },
+        "kind": "struct_item",
+        "text": "pub struct Point {\n    pub x: i32,\n    pub y: i32,\n}",
+        "line": "pub struct Point {",
+        "symbol": {
+          "kind": "struct",
+          "name": "Point",
+          "name_span": {
+            "start": 84,
+            "end": 89
+          },
+          "span": {
+            "start": 73,
+            "end": 125
+          },
+          "extent": {
+            "start": 0,
+            "end": 125
+          },
+          "visibility": {
+            "span": {
+              "start": 73,
+              "end": 76
+            },
+            "text": "pub"
+          }
+        },
+        "role": "declaration",
+        "address": {
+          "package": "corpus_core",
+          "path": [
+            "geometry",
+            "point",
+            "Point"
+          ]
+        }
+      }
+    ],
+    "occurrences": [
+      {
+        "id": "6f07460c7daa",
+        "path": "core/src/geometry/point.rs",
+        "language": "rust",
+        "span": {
+          "start": 84,
+          "end": 89
+        },
+        "start": {
+          "line": 2,
+          "column": 11
+        },
+        "end": {
+          "line": 2,
+          "column": 16
+        },
+        "kind": "type_identifier",
+        "text": "Point",
+        "line": "pub struct Point {",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "declaring"
+      },
+      {
+        "id": "7c45f8e33e34",
+        "path": "core/src/geometry/point.rs",
+        "language": "rust",
+        "span": {
+          "start": 132,
+          "end": 137
+        },
+        "start": {
+          "line": 7,
+          "column": 5
+        },
+        "end": {
+          "line": 7,
+          "column": 10
+        },
+        "kind": "type_identifier",
+        "text": "Point",
+        "line": "impl Point {",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "declaring"
+      },
+      {
+        "id": "653b8792f61e",
+        "path": "core/src/geometry/point.rs",
+        "language": "rust",
+        "span": {
+          "start": 260,
+          "end": 265
+        },
+        "start": {
+          "line": 13,
+          "column": 8
+        },
+        "end": {
+          "line": 13,
+          "column": 13
+        },
+        "kind": "identifier",
+        "text": "Point",
+        "line": "        Point::new(self.x + dx, self.y)",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "declaring"
+      },
+      {
+        "id": "7738a0a93793",
+        "path": "core/src/geometry/mod.rs",
+        "language": "rust",
+        "span": {
+          "start": 69,
+          "end": 74
+        },
+        "start": {
+          "line": 5,
+          "column": 19
+        },
+        "end": {
+          "line": 5,
+          "column": 24
+        },
+        "kind": "type_identifier",
+        "text": "Point",
+        "line": "pub fn origin() -> Point {",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "imported"
+      },
+      {
+        "id": "f952008219b5",
+        "path": "core/src/geometry/mod.rs",
+        "language": "rust",
+        "span": {
+          "start": 81,
+          "end": 86
+        },
+        "start": {
+          "line": 6,
+          "column": 4
+        },
+        "end": {
+          "line": 6,
+          "column": 9
+        },
+        "kind": "identifier",
+        "text": "Point",
+        "line": "    Point::new(0, 0)",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "imported"
+      },
+      {
+        "id": "57fbc997e1e7",
+        "path": "core/src/geometry/mod.rs",
+        "language": "rust",
+        "span": {
+          "start": 42,
+          "end": 47
+        },
+        "start": {
+          "line": 3,
+          "column": 15
+        },
+        "end": {
+          "line": 3,
+          "column": 20
+        },
+        "kind": "identifier",
+        "text": "Point",
+        "line": "pub use point::Point;",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "path"
+      },
+      {
+        "id": "fc1796e0d79e",
+        "path": "app/src/main.rs",
+        "language": "rust",
+        "span": {
+          "start": 69,
+          "end": 74
+        },
+        "start": {
+          "line": 3,
+          "column": 24
+        },
+        "end": {
+          "line": 3,
+          "column": 29
+        },
+        "kind": "identifier",
+        "text": "Point",
+        "line": "use corpus_core::{area, Point, Shape};",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "re-export"
+      },
+      {
+        "id": "e9f54510e8e4",
+        "path": "app/src/main.rs",
+        "language": "rust",
+        "span": {
+          "start": 109,
+          "end": 114
+        },
+        "start": {
+          "line": 6,
+          "column": 12
+        },
+        "end": {
+          "line": 6,
+          "column": 17
+        },
+        "kind": "identifier",
+        "text": "Point",
+        "line": "    let p = Point::new(1, 2);",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "re-export"
+      },
+      {
+        "id": "9cf65a86894c",
+        "path": "core/src/geometry/shape.rs",
+        "language": "rust",
+        "span": {
+          "start": 11,
+          "end": 16
+        },
+        "start": {
+          "line": 0,
+          "column": 11
+        },
+        "end": {
+          "line": 0,
+          "column": 16
+        },
+        "kind": "identifier",
+        "text": "Point",
+        "line": "use super::Point;",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "re-export"
+      },
+      {
+        "id": "3d7759d0f3d6",
+        "path": "core/src/geometry/shape.rs",
+        "language": "rust",
+        "span": {
+          "start": 67,
+          "end": 72
+        },
+        "start": {
+          "line": 4,
+          "column": 8
+        },
+        "end": {
+          "line": 4,
+          "column": 13
+        },
+        "kind": "type_identifier",
+        "text": "Point",
+        "line": "    Dot(Point),",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "re-export"
+      },
+      {
+        "id": "712aa3dfdb7d",
+        "path": "core/src/geometry/shape.rs",
+        "language": "rust",
+        "span": {
+          "start": 96,
+          "end": 101
+        },
+        "start": {
+          "line": 5,
+          "column": 21
+        },
+        "end": {
+          "line": 5,
+          "column": 26
+        },
+        "kind": "type_identifier",
+        "text": "Point",
+        "line": "    Square { corner: Point, side: u32 },",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "re-export"
+      },
+      {
+        "id": "22e9c20bac46",
+        "path": "core/src/geometry/shape.rs",
+        "language": "rust",
+        "span": {
+          "start": 317,
+          "end": 322
+        },
+        "start": {
+          "line": 16,
+          "column": 28
+        },
+        "end": {
+          "line": 16,
+          "column": 33
+        },
+        "kind": "type_identifier",
+        "text": "Point",
+        "line": "    pub fn anchor(&self) -> Point {",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "re-export"
+      },
+      {
+        "id": "2fe487e37790",
+        "path": "core/src/lib.rs",
+        "language": "rust",
+        "span": {
+          "start": 230,
+          "end": 235
+        },
+        "start": {
+          "line": 7,
+          "column": 33
+        },
+        "end": {
+          "line": 7,
+          "column": 38
+        },
+        "kind": "identifier",
+        "text": "Point",
+        "line": "pub use geometry::{shape::Shape, Point};",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "re-export"
+      }
+    ]
+  }
+}
+--- stderr ---

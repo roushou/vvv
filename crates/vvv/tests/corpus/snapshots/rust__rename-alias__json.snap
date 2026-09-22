@@ -1,0 +1,400 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "intent": {
+      "name": "Shape",
+      "to": "Figure"
+    },
+    "applied": false,
+    "declarations": [
+      {
+        "id": "47351d7f85b1",
+        "path": "core/src/geometry/shape.rs",
+        "language": "rust",
+        "span": {
+          "start": 42,
+          "end": 117
+        },
+        "start": {
+          "line": 3,
+          "column": 0
+        },
+        "end": {
+          "line": 6,
+          "column": 1
+        },
+        "kind": "enum_item",
+        "text": "pub enum Shape {\n    Dot(Point),\n    Square { corner: Point, side: u32 },\n}",
+        "line": "pub enum Shape {",
+        "symbol": {
+          "kind": "enum",
+          "name": "Shape",
+          "name_span": {
+            "start": 51,
+            "end": 56
+          },
+          "span": {
+            "start": 42,
+            "end": 117
+          },
+          "extent": {
+            "start": 42,
+            "end": 117
+          },
+          "visibility": {
+            "span": {
+              "start": 42,
+              "end": 45
+            },
+            "text": "pub"
+          }
+        },
+        "role": "declaration",
+        "address": {
+          "package": "corpus_core",
+          "path": [
+            "geometry",
+            "shape",
+            "Shape"
+          ]
+        }
+      }
+    ],
+    "occurrences": [
+      {
+        "id": "de6e2d579600",
+        "path": "core/src/geometry/shape.rs",
+        "language": "rust",
+        "span": {
+          "start": 51,
+          "end": 56
+        },
+        "start": {
+          "line": 3,
+          "column": 9
+        },
+        "end": {
+          "line": 3,
+          "column": 14
+        },
+        "kind": "type_identifier",
+        "text": "Shape",
+        "line": "pub enum Shape {",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "declaring"
+      },
+      {
+        "id": "30395ae3ed00",
+        "path": "core/src/geometry/shape.rs",
+        "language": "rust",
+        "span": {
+          "start": 124,
+          "end": 129
+        },
+        "start": {
+          "line": 8,
+          "column": 5
+        },
+        "end": {
+          "line": 8,
+          "column": 10
+        },
+        "kind": "type_identifier",
+        "text": "Shape",
+        "line": "impl Shape {",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "declaring"
+      },
+      {
+        "id": "49560f4e3fda",
+        "path": "core/src/geometry/shape.rs",
+        "language": "rust",
+        "span": {
+          "start": 197,
+          "end": 202
+        },
+        "start": {
+          "line": 11,
+          "column": 12
+        },
+        "end": {
+          "line": 11,
+          "column": 17
+        },
+        "kind": "identifier",
+        "text": "Shape",
+        "line": "            Shape::Dot(_) => 0,",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "declaring"
+      },
+      {
+        "id": "c7f52cdd767b",
+        "path": "core/src/geometry/shape.rs",
+        "language": "rust",
+        "span": {
+          "start": 229,
+          "end": 234
+        },
+        "start": {
+          "line": 12,
+          "column": 12
+        },
+        "end": {
+          "line": 12,
+          "column": 17
+        },
+        "kind": "identifier",
+        "text": "Shape",
+        "line": "            Shape::Square { side, .. } => area(*side),",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "declaring"
+      },
+      {
+        "id": "0b335354a183",
+        "path": "core/src/geometry/shape.rs",
+        "language": "rust",
+        "span": {
+          "start": 358,
+          "end": 363
+        },
+        "start": {
+          "line": 18,
+          "column": 12
+        },
+        "end": {
+          "line": 18,
+          "column": 17
+        },
+        "kind": "identifier",
+        "text": "Shape",
+        "line": "            Shape::Dot(p) | Shape::Square { corner: p, .. } => *p,",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "declaring"
+      },
+      {
+        "id": "bbfff430fc32",
+        "path": "core/src/geometry/shape.rs",
+        "language": "rust",
+        "span": {
+          "start": 374,
+          "end": 379
+        },
+        "start": {
+          "line": 18,
+          "column": 28
+        },
+        "end": {
+          "line": 18,
+          "column": 33
+        },
+        "kind": "identifier",
+        "text": "Shape",
+        "line": "            Shape::Dot(p) | Shape::Square { corner: p, .. } => *p,",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "declaring"
+      },
+      {
+        "id": "ef531208be26",
+        "path": "app/src/cli.rs",
+        "language": "rust",
+        "span": {
+          "start": 34,
+          "end": 39
+        },
+        "start": {
+          "line": 0,
+          "column": 34
+        },
+        "end": {
+          "line": 0,
+          "column": 39
+        },
+        "kind": "identifier",
+        "text": "Shape",
+        "line": "use corpus_core::geometry::shape::Shape as Figure;",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "path"
+      },
+      {
+        "id": "fc46fb6c7879",
+        "path": "core/src/lib.rs",
+        "language": "rust",
+        "span": {
+          "start": 223,
+          "end": 228
+        },
+        "start": {
+          "line": 7,
+          "column": 26
+        },
+        "end": {
+          "line": 7,
+          "column": 31
+        },
+        "kind": "identifier",
+        "text": "Shape",
+        "line": "pub use geometry::{shape::Shape, Point};",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "path"
+      },
+      {
+        "id": "337c6f8f2ff3",
+        "path": "app/src/main.rs",
+        "language": "rust",
+        "span": {
+          "start": 76,
+          "end": 81
+        },
+        "start": {
+          "line": 3,
+          "column": 31
+        },
+        "end": {
+          "line": 3,
+          "column": 36
+        },
+        "kind": "identifier",
+        "text": "Shape",
+        "line": "use corpus_core::{area, Point, Shape};",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "re-export"
+      },
+      {
+        "id": "580ec8267a74",
+        "path": "app/src/main.rs",
+        "language": "rust",
+        "span": {
+          "start": 139,
+          "end": 144
+        },
+        "start": {
+          "line": 7,
+          "column": 12
+        },
+        "end": {
+          "line": 7,
+          "column": 17
+        },
+        "kind": "identifier",
+        "text": "Shape",
+        "line": "    let s = Shape::Dot(p);",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "re-export"
+      }
+    ],
+    "files": [
+      {
+        "path": "app/src/cli.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 34,
+              "end": 39
+            },
+            "replacement": "Figure"
+          }
+        ],
+        "diff": "--- a/app/src/cli.rs\n+++ b/app/src/cli.rs\n@@ -1,4 +1,4 @@\n-use corpus_core::geometry::shape::Shape as Figure;\n+use corpus_core::geometry::shape::Figure as Figure;\n use corpus_core::Hidden;\n \n pub fn run() {\n"
+      },
+      {
+        "path": "app/src/main.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 76,
+              "end": 81
+            },
+            "replacement": "Figure"
+          },
+          {
+            "span": {
+              "start": 139,
+              "end": 144
+            },
+            "replacement": "Figure"
+          }
+        ],
+        "diff": "--- a/app/src/main.rs\n+++ b/app/src/main.rs\n@@ -1,11 +1,11 @@\n mod cli;\n \n use corpus_core::geometry::origin;\n-use corpus_core::{area, Point, Shape};\n+use corpus_core::{area, Point, Figure};\n \n fn main() {\n     let p = Point::new(1, 2);\n-    let s = Shape::Dot(p);\n+    let s = Figure::Dot(p);\n     println!(\"{} {} {:?}\", s.area(), area(3), origin());\n     cli::run();\n }\n"
+      },
+      {
+        "path": "core/src/geometry/shape.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 51,
+              "end": 56
+            },
+            "replacement": "Figure"
+          },
+          {
+            "span": {
+              "start": 124,
+              "end": 129
+            },
+            "replacement": "Figure"
+          },
+          {
+            "span": {
+              "start": 197,
+              "end": 202
+            },
+            "replacement": "Figure"
+          },
+          {
+            "span": {
+              "start": 229,
+              "end": 234
+            },
+            "replacement": "Figure"
+          },
+          {
+            "span": {
+              "start": 358,
+              "end": 363
+            },
+            "replacement": "Figure"
+          },
+          {
+            "span": {
+              "start": 374,
+              "end": 379
+            },
+            "replacement": "Figure"
+          }
+        ],
+        "diff": "--- a/core/src/geometry/shape.rs\n+++ b/core/src/geometry/shape.rs\n@@ -1,22 +1,22 @@\n use super::Point;\n use crate::util::area;\n \n-pub enum Shape {\n+pub enum Figure {\n     Dot(Point),\n     Square { corner: Point, side: u32 },\n }\n \n-impl Shape {\n+impl Figure {\n     pub fn area(&self) -> u32 {\n         match self {\n-            Shape::Dot(_) => 0,\n-            Shape::Square { side, .. } => area(*side),\n+            Figure::Dot(_) => 0,\n+            Figure::Square { side, .. } => area(*side),\n         }\n     }\n \n     pub fn anchor(&self) -> Point {\n         match self {\n-            Shape::Dot(p) | Shape::Square { corner: p, .. } => *p,\n+            Figure::Dot(p) | Figure::Square { corner: p, .. } => *p,\n         }\n     }\n }\n"
+      },
+      {
+        "path": "core/src/lib.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 223,
+              "end": 228
+            },
+            "replacement": "Figure"
+          }
+        ],
+        "diff": "--- a/core/src/lib.rs\n+++ b/core/src/lib.rs\n@@ -5,6 +5,6 @@\n pub mod util;\n mod internal;\n \n-pub use geometry::{shape::Shape, Point};\n+pub use geometry::{shape::Figure, Point};\n pub use internal::Secret as Hidden;\n pub use util::*;\n"
+      }
+    ]
+  }
+}
+--- stderr ---

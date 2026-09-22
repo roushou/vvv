@@ -1,0 +1,24 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: render(&m)
+---
+┌ vvv ~/dev/nx ─────────────────────────────────────────────────────── ● 1  ○ 3  3 files ┐
+│> Language▏                                                                             │
+┌ keys ──────────────────────────────────────────────────────────────────────────────────┐
+│ Marks                                                                                  │
+│           ● → ↗  declaration · import · re-export                                      │
+│           ✓ ? ✗  will · unsure · will not    ▪ ▫ ticked or not                         │
+│         ± ! ◆ ∅  structural edit · by hand · module address · nothing                  │
+│ Search                                                                                 │
+│             ↓ ⏎  results                                                               │
+│             esc  clear                                                                 │
+│             esc  quit                                                                  │
+│            bksp  erase                                                                 │
+│   ctrl+n ctrl+p  walk the results without leaving the query                            │
+│          typing  a name, an ast-grep pattern, or filters: symbol:trait name:Foo kind:im│
+│ Everywhere                                                                             │
+│       tab s-tab  next / previous panel                                                 │
+│          ctrl+c  quit                                                                  │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+└───────────────────────────────────────────┘└───────────────────────────────────────────┘
+ search j/k scroll  any key close

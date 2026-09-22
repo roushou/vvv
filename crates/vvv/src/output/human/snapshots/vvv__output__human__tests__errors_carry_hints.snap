@@ -1,0 +1,11 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+assertion_line: 915
+expression: "render(|r| { r.error(&query); r.error(&symbol); })"
+---
+--- stderr ---
+✗ a query needs at least one of: pattern, kind, symbol, name
+hint: search by pattern:  vvv search 'fn $NAME($$$) { $$$ }'
+hint: by declaration:     vvv search --symbol trait   |   vvv search --name Foo
+✗ no symbol named `Nope`
+hint: declarations are matched by exact name; `vvv search --name Nope` shows what exists

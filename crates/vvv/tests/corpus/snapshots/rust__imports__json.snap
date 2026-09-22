@@ -1,0 +1,38 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "unused": [
+      {
+        "path": "core/src/util.rs",
+        "span": {
+          "start": 4,
+          "end": 29
+        },
+        "path": "std::collections::HashMap",
+        "declares": true,
+        "start": {
+          "line": 0,
+          "column": 4
+        },
+        "address": {
+          "package": "std",
+          "path": [
+            "collections",
+            "HashMap"
+          ]
+        }
+      }
+    ],
+    "unresolved": [],
+    "redundant": [],
+    "unplaced": []
+  }
+}
+--- stderr ---

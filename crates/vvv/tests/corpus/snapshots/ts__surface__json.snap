@@ -1,0 +1,247 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "items": [
+      {
+        "path": "src/geometry/point.ts",
+        "kind": "class",
+        "name": "Point",
+        "name_span": {
+          "start": 13,
+          "end": 18
+        },
+        "span": {
+          "start": 7,
+          "end": 152
+        },
+        "extent": {
+          "start": 0,
+          "end": 152
+        },
+        "visibility": {
+          "span": {
+            "start": 0,
+            "end": 6
+          },
+          "text": "export"
+        },
+        "start": {
+          "line": 0,
+          "column": 13
+        },
+        "address": {
+          "package": "",
+          "path": [
+            "src",
+            "geometry",
+            "point.ts",
+            "Point"
+          ]
+        },
+        "reach": "everyone",
+        "importers": 0
+      },
+      {
+        "path": "src/geometry/point.ts",
+        "kind": "function",
+        "name": "origin",
+        "name_span": {
+          "start": 170,
+          "end": 176
+        },
+        "span": {
+          "start": 161,
+          "end": 215
+        },
+        "extent": {
+          "start": 154,
+          "end": 215
+        },
+        "visibility": {
+          "span": {
+            "start": 154,
+            "end": 160
+          },
+          "text": "export"
+        },
+        "start": {
+          "line": 8,
+          "column": 16
+        },
+        "address": {
+          "package": "",
+          "path": [
+            "src",
+            "geometry",
+            "point.ts",
+            "origin"
+          ]
+        },
+        "reach": "everyone",
+        "importers": 0
+      },
+      {
+        "path": "src/geometry/shape.ts",
+        "kind": "interface",
+        "name": "Shape",
+        "name_span": {
+          "start": 83,
+          "end": 88
+        },
+        "span": {
+          "start": 73,
+          "end": 125
+        },
+        "extent": {
+          "start": 66,
+          "end": 125
+        },
+        "visibility": {
+          "span": {
+            "start": 66,
+            "end": 72
+          },
+          "text": "export"
+        },
+        "start": {
+          "line": 3,
+          "column": 17
+        },
+        "address": {
+          "package": "",
+          "path": [
+            "src",
+            "geometry",
+            "shape.ts",
+            "Shape"
+          ]
+        },
+        "reach": "everyone",
+        "importers": 0
+      },
+      {
+        "path": "src/geometry/shape.ts",
+        "kind": "function",
+        "name": "shapeArea",
+        "name_span": {
+          "start": 143,
+          "end": 152
+        },
+        "span": {
+          "start": 134,
+          "end": 205
+        },
+        "extent": {
+          "start": 127,
+          "end": 205
+        },
+        "visibility": {
+          "span": {
+            "start": 127,
+            "end": 133
+          },
+          "text": "export"
+        },
+        "start": {
+          "line": 8,
+          "column": 16
+        },
+        "address": {
+          "package": "",
+          "path": [
+            "src",
+            "geometry",
+            "shape.ts",
+            "shapeArea"
+          ]
+        },
+        "reach": "everyone",
+        "importers": 0
+      },
+      {
+        "path": "src/util.ts",
+        "kind": "variable",
+        "name": "VERSION",
+        "name_span": {
+          "start": 139,
+          "end": 146
+        },
+        "span": {
+          "start": 139,
+          "end": 150
+        },
+        "extent": {
+          "start": 126,
+          "end": 151
+        },
+        "visibility": {
+          "span": {
+            "start": 126,
+            "end": 132
+          },
+          "text": "export"
+        },
+        "start": {
+          "line": 8,
+          "column": 13
+        },
+        "address": {
+          "package": "",
+          "path": [
+            "src",
+            "util.ts",
+            "VERSION"
+          ]
+        },
+        "reach": "everyone",
+        "importers": 0
+      },
+      {
+        "path": "src/util.ts",
+        "kind": "function",
+        "name": "area",
+        "name_span": {
+          "start": 16,
+          "end": 20
+        },
+        "span": {
+          "start": 7,
+          "end": 68
+        },
+        "extent": {
+          "start": 0,
+          "end": 68
+        },
+        "visibility": {
+          "span": {
+            "start": 0,
+            "end": 6
+          },
+          "text": "export"
+        },
+        "start": {
+          "line": 0,
+          "column": 16
+        },
+        "address": {
+          "package": "",
+          "path": [
+            "src",
+            "util.ts",
+            "area"
+          ]
+        },
+        "reach": "everyone",
+        "importers": 0
+      }
+    ]
+  }
+}
+--- stderr ---

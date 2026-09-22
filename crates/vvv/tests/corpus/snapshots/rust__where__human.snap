@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● struct Point   ◆ corpus_core::geometry::point::Point   core/src/geometry/point.rs:3:1
+  → use corpus_core::geometry::point::Point;
+--- stderr ---
+● 1

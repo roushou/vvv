@@ -1,0 +1,21 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+expression: "render(|r| r.deps(&fx::deps()).unwrap())"
+---
+◆ vvv_core::plan   src/plan/mod.rs
+
+→ 5
+  vvv_core
+     5  crate::edit::{ChangeSet, Edit}   → src/edit/change_set.rs, src/edit/mod.rs
+     6  crate::vfs::VfsError             → src/vfs/mod.rs
+     8  crate::Span                      → src/text/span.rs
+  serde
+     7  serde::Serialize
+  std
+     3  std::path::PathBuf
+
+← 2   2 files
+  src/lib.rs:28            Plan
+  src/workspace/mod.rs:7   Plan
+--- stderr ---
+→ 5  ← 2

@@ -1,0 +1,105 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "name": "Point",
+    "address": {
+      "package": "corpus_core",
+      "path": [
+        "geometry",
+        "point",
+        "Point"
+      ]
+    },
+    "consumers": [
+      {
+        "module": {
+          "package": "corpus_app",
+          "path": []
+        },
+        "path": "app/src/main.rs",
+        "depth": 1,
+        "through": {
+          "package": "corpus_core",
+          "path": [
+            "geometry",
+            "point"
+          ]
+        }
+      },
+      {
+        "module": {
+          "package": "corpus_core",
+          "path": [
+            "geometry"
+          ]
+        },
+        "path": "core/src/geometry/mod.rs",
+        "depth": 1,
+        "through": {
+          "package": "corpus_core",
+          "path": [
+            "geometry",
+            "point"
+          ]
+        }
+      },
+      {
+        "module": {
+          "package": "corpus_core",
+          "path": [
+            "geometry",
+            "shape"
+          ]
+        },
+        "path": "core/src/geometry/shape.rs",
+        "depth": 1,
+        "through": {
+          "package": "corpus_core",
+          "path": [
+            "geometry",
+            "point"
+          ]
+        }
+      },
+      {
+        "module": {
+          "package": "corpus_core",
+          "path": []
+        },
+        "path": "core/src/lib.rs",
+        "depth": 1,
+        "through": {
+          "package": "corpus_core",
+          "path": [
+            "geometry",
+            "point"
+          ]
+        }
+      },
+      {
+        "module": {
+          "package": "corpus_app",
+          "path": [
+            "cli"
+          ]
+        },
+        "path": "app/src/cli.rs",
+        "depth": 2,
+        "through": {
+          "package": "corpus_core",
+          "path": [
+            "geometry"
+          ]
+        }
+      }
+    ]
+  }
+}
+--- stderr ---

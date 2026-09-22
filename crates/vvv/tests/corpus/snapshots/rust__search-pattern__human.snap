@@ -1,0 +1,16 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+app/src/main.rs
+  1      7:13   let p = Point::new(1, 2);
+
+core/src/geometry/mod.rs
+  2      7:5    Point::new(0, 0)
+
+core/src/geometry/point.rs
+  3     14:9    Point::new(self.x + dx, self.y)
+--- stderr ---
+○ 3  3 files

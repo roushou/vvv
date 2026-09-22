@@ -1,0 +1,65 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "path": "src/app.ts",
+    "module": {
+      "package": "",
+      "path": [
+        "src",
+        "app.ts"
+      ]
+    },
+    "imports": [
+      {
+        "span": {
+          "start": 29,
+          "end": 36
+        },
+        "path": "./index",
+        "declares": true,
+        "start": {
+          "line": 0,
+          "column": 29
+        },
+        "address": {
+          "package": "",
+          "path": [
+            "src",
+            "index.ts"
+          ]
+        },
+        "file": "src/index.ts"
+      },
+      {
+        "span": {
+          "start": 66,
+          "end": 82
+        },
+        "path": "./geometry/shape",
+        "declares": true,
+        "start": {
+          "line": 1,
+          "column": 27
+        },
+        "address": {
+          "package": "",
+          "path": [
+            "src",
+            "geometry",
+            "shape.ts"
+          ]
+        },
+        "file": "src/geometry/shape.ts"
+      }
+    ],
+    "importers": []
+  }
+}
+--- stderr ---

@@ -1,0 +1,12 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+assertion_line: 828
+expression: "render(|r|\n{\n    r.locations(&fx::locations(true)).unwrap();\n    r.locations(&fx::locations(false)).unwrap();\n})"
+---
+● struct Plan   ◆ vvv_core::plan::Plan   src/plan/mod.rs:42:1
+  → use crate::plan::Plan;
+● struct Plan   ◆ vvv_core::plan::Plan   src/plan/mod.rs:42:1
+--- stderr ---
+● 1
+● 1
+hint: --from <file> for the import to write there

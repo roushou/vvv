@@ -1,0 +1,23 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+expression: "render(|r| r.rename(&fx::rename(2)).unwrap())"
+---
+rename Language → Lang
+
+● trait Language   ◆ vvv_core::lang::Language   src/lang/mod.rs:64:1
+● struct Language   ◆ vvv_core::other::Language   src/other.rs:3:1
+
+✓ 2  2 files
+  1  src/lang/mod.rs
+  1  src/other.rs
+
+? 1  1 file   ∅ unresolved   left out
+src/other.rs
+  4     10:5    Language::new()
+
+✗ 1  1 file   ● other decl
+src/lib.rs
+  2 →   26:16   pub use lang::{Language, LanguageId};
+--- stderr ---
+✓ 2  ? 1  ✗ 1   3 files   → 2 occurrences in 2 files
+hint: --apply to write · --select 4 for the ? rows alone · -v to list the ✓ rows

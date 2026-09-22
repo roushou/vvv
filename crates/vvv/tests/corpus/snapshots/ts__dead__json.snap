@@ -1,0 +1,92 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "items": [
+      {
+        "path": "src/util.ts",
+        "kind": "function",
+        "name": "unusedPrivate",
+        "name_span": {
+          "start": 79,
+          "end": 92
+        },
+        "span": {
+          "start": 70,
+          "end": 124
+        },
+        "extent": {
+          "start": 70,
+          "end": 124
+        },
+        "start": {
+          "line": 4,
+          "column": 9
+        },
+        "address": {
+          "package": "",
+          "path": [
+            "src",
+            "util.ts",
+            "unusedPrivate"
+          ]
+        },
+        "reach": {
+          "within": {
+            "package": "",
+            "path": [
+              "src",
+              "util.ts"
+            ]
+          }
+        },
+        "unsure": 0
+      },
+      {
+        "path": "src/util.ts",
+        "kind": "variable",
+        "name": "VERSION",
+        "name_span": {
+          "start": 139,
+          "end": 146
+        },
+        "span": {
+          "start": 139,
+          "end": 150
+        },
+        "extent": {
+          "start": 126,
+          "end": 151
+        },
+        "visibility": {
+          "span": {
+            "start": 126,
+            "end": 132
+          },
+          "text": "export"
+        },
+        "start": {
+          "line": 8,
+          "column": 13
+        },
+        "address": {
+          "package": "",
+          "path": [
+            "src",
+            "util.ts",
+            "VERSION"
+          ]
+        },
+        "reach": "everyone",
+        "unsure": 0
+      }
+    ]
+  }
+}
+--- stderr ---

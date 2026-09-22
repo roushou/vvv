@@ -1,0 +1,396 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "package": "corpus_core",
+    "items": [
+      {
+        "path": "core/src/lib.rs",
+        "kind": "module",
+        "name": "geometry",
+        "name_span": {
+          "start": 158,
+          "end": 166
+        },
+        "span": {
+          "start": 150,
+          "end": 167
+        },
+        "extent": {
+          "start": 0,
+          "end": 167
+        },
+        "visibility": {
+          "span": {
+            "start": 150,
+            "end": 153
+          },
+          "text": "pub"
+        },
+        "start": {
+          "line": 3,
+          "column": 8
+        },
+        "address": {
+          "package": "corpus_core",
+          "path": [
+            "geometry"
+          ]
+        },
+        "reach": "everyone",
+        "importers": 0
+      },
+      {
+        "path": "core/src/geometry/mod.rs",
+        "kind": "function",
+        "name": "origin",
+        "name_span": {
+          "start": 57,
+          "end": 63
+        },
+        "span": {
+          "start": 50,
+          "end": 99
+        },
+        "extent": {
+          "start": 50,
+          "end": 99
+        },
+        "visibility": {
+          "span": {
+            "start": 50,
+            "end": 53
+          },
+          "text": "pub"
+        },
+        "start": {
+          "line": 5,
+          "column": 7
+        },
+        "address": {
+          "package": "corpus_core",
+          "path": [
+            "geometry",
+            "origin"
+          ]
+        },
+        "reach": "everyone",
+        "importers": 1
+      },
+      {
+        "path": "core/src/geometry/point.rs",
+        "kind": "struct",
+        "name": "Point",
+        "name_span": {
+          "start": 84,
+          "end": 89
+        },
+        "span": {
+          "start": 73,
+          "end": 125
+        },
+        "extent": {
+          "start": 0,
+          "end": 125
+        },
+        "visibility": {
+          "span": {
+            "start": 73,
+            "end": 76
+          },
+          "text": "pub"
+        },
+        "start": {
+          "line": 2,
+          "column": 11
+        },
+        "address": {
+          "package": "corpus_core",
+          "path": [
+            "geometry",
+            "point",
+            "Point"
+          ]
+        },
+        "reach": "everyone",
+        "via": [
+          {
+            "package": "corpus_core",
+            "path": [
+              "geometry",
+              "Point"
+            ]
+          },
+          {
+            "package": "corpus_core",
+            "path": [
+              "Point"
+            ]
+          }
+        ],
+        "importers": 4
+      },
+      {
+        "path": "core/src/geometry/mod.rs",
+        "kind": "module",
+        "name": "shape",
+        "name_span": {
+          "start": 8,
+          "end": 13
+        },
+        "span": {
+          "start": 0,
+          "end": 14
+        },
+        "extent": {
+          "start": 0,
+          "end": 14
+        },
+        "visibility": {
+          "span": {
+            "start": 0,
+            "end": 3
+          },
+          "text": "pub"
+        },
+        "start": {
+          "line": 0,
+          "column": 8
+        },
+        "address": {
+          "package": "corpus_core",
+          "path": [
+            "geometry",
+            "shape"
+          ]
+        },
+        "reach": "everyone",
+        "importers": 0
+      },
+      {
+        "path": "core/src/geometry/shape.rs",
+        "kind": "enum",
+        "name": "Shape",
+        "name_span": {
+          "start": 51,
+          "end": 56
+        },
+        "span": {
+          "start": 42,
+          "end": 117
+        },
+        "extent": {
+          "start": 42,
+          "end": 117
+        },
+        "visibility": {
+          "span": {
+            "start": 42,
+            "end": 45
+          },
+          "text": "pub"
+        },
+        "start": {
+          "line": 3,
+          "column": 9
+        },
+        "address": {
+          "package": "corpus_core",
+          "path": [
+            "geometry",
+            "shape",
+            "Shape"
+          ]
+        },
+        "reach": "everyone",
+        "via": [
+          {
+            "package": "corpus_core",
+            "path": [
+              "Shape"
+            ]
+          }
+        ],
+        "importers": 3
+      },
+      {
+        "path": "core/src/internal.rs",
+        "kind": "struct",
+        "name": "Secret",
+        "name_span": {
+          "start": 11,
+          "end": 17
+        },
+        "span": {
+          "start": 0,
+          "end": 18
+        },
+        "extent": {
+          "start": 0,
+          "end": 18
+        },
+        "visibility": {
+          "span": {
+            "start": 0,
+            "end": 3
+          },
+          "text": "pub"
+        },
+        "start": {
+          "line": 0,
+          "column": 11
+        },
+        "address": {
+          "package": "corpus_core",
+          "path": [
+            "internal",
+            "Secret"
+          ]
+        },
+        "reach": "everyone",
+        "via": [
+          {
+            "package": "corpus_core",
+            "path": [
+              "Hidden"
+            ]
+          }
+        ],
+        "importers": 2
+      },
+      {
+        "path": "core/src/lib.rs",
+        "kind": "module",
+        "name": "util",
+        "name_span": {
+          "start": 176,
+          "end": 180
+        },
+        "span": {
+          "start": 168,
+          "end": 181
+        },
+        "extent": {
+          "start": 168,
+          "end": 181
+        },
+        "visibility": {
+          "span": {
+            "start": 168,
+            "end": 171
+          },
+          "text": "pub"
+        },
+        "start": {
+          "line": 4,
+          "column": 8
+        },
+        "address": {
+          "package": "corpus_core",
+          "path": [
+            "util"
+          ]
+        },
+        "reach": "everyone",
+        "importers": 0
+      },
+      {
+        "path": "core/src/util.rs",
+        "kind": "const",
+        "name": "VERSION",
+        "name_span": {
+          "start": 185,
+          "end": 192
+        },
+        "span": {
+          "start": 175,
+          "end": 202
+        },
+        "extent": {
+          "start": 175,
+          "end": 202
+        },
+        "visibility": {
+          "span": {
+            "start": 175,
+            "end": 178
+          },
+          "text": "pub"
+        },
+        "start": {
+          "line": 14,
+          "column": 10
+        },
+        "address": {
+          "package": "corpus_core",
+          "path": [
+            "util",
+            "VERSION"
+          ]
+        },
+        "reach": "everyone",
+        "via": [
+          {
+            "package": "corpus_core",
+            "path": [
+              "VERSION"
+            ]
+          }
+        ],
+        "importers": 0
+      },
+      {
+        "path": "core/src/util.rs",
+        "kind": "function",
+        "name": "area",
+        "name_span": {
+          "start": 39,
+          "end": 43
+        },
+        "span": {
+          "start": 32,
+          "end": 81
+        },
+        "extent": {
+          "start": 32,
+          "end": 81
+        },
+        "visibility": {
+          "span": {
+            "start": 32,
+            "end": 35
+          },
+          "text": "pub"
+        },
+        "start": {
+          "line": 2,
+          "column": 7
+        },
+        "address": {
+          "package": "corpus_core",
+          "path": [
+            "util",
+            "area"
+          ]
+        },
+        "reach": "everyone",
+        "via": [
+          {
+            "package": "corpus_core",
+            "path": [
+              "area"
+            ]
+          }
+        ],
+        "importers": 2
+      }
+    ]
+  }
+}
+--- stderr ---

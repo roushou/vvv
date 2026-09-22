@@ -1,0 +1,129 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "query": {
+      "pattern": "Point::new($X, $Y)"
+    },
+    "matches": [
+      {
+        "id": "c86bd92ca935",
+        "path": "app/src/main.rs",
+        "language": "rust",
+        "span": {
+          "start": 109,
+          "end": 125
+        },
+        "start": {
+          "line": 6,
+          "column": 12
+        },
+        "end": {
+          "line": 6,
+          "column": 28
+        },
+        "kind": "call_expression",
+        "text": "Point::new(1, 2)",
+        "line": "    let p = Point::new(1, 2);",
+        "captures": {
+          "X": {
+            "span": {
+              "start": 120,
+              "end": 121
+            },
+            "text": "1"
+          },
+          "Y": {
+            "span": {
+              "start": 123,
+              "end": 124
+            },
+            "text": "2"
+          }
+        },
+        "role": "use"
+      },
+      {
+        "id": "fa12dc901b83",
+        "path": "core/src/geometry/mod.rs",
+        "language": "rust",
+        "span": {
+          "start": 81,
+          "end": 97
+        },
+        "start": {
+          "line": 6,
+          "column": 4
+        },
+        "end": {
+          "line": 6,
+          "column": 20
+        },
+        "kind": "call_expression",
+        "text": "Point::new(0, 0)",
+        "line": "    Point::new(0, 0)",
+        "captures": {
+          "X": {
+            "span": {
+              "start": 92,
+              "end": 93
+            },
+            "text": "0"
+          },
+          "Y": {
+            "span": {
+              "start": 95,
+              "end": 96
+            },
+            "text": "0"
+          }
+        },
+        "role": "use"
+      },
+      {
+        "id": "5aca53203838",
+        "path": "core/src/geometry/point.rs",
+        "language": "rust",
+        "span": {
+          "start": 260,
+          "end": 291
+        },
+        "start": {
+          "line": 13,
+          "column": 8
+        },
+        "end": {
+          "line": 13,
+          "column": 39
+        },
+        "kind": "call_expression",
+        "text": "Point::new(self.x + dx, self.y)",
+        "line": "        Point::new(self.x + dx, self.y)",
+        "captures": {
+          "X": {
+            "span": {
+              "start": 271,
+              "end": 282
+            },
+            "text": "self.x + dx"
+          },
+          "Y": {
+            "span": {
+              "start": 284,
+              "end": 290
+            },
+            "text": "self.y"
+          }
+        },
+        "role": "use"
+      }
+    ]
+  }
+}
+--- stderr ---

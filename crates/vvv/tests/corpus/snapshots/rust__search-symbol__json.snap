@@ -1,0 +1,70 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "query": {
+      "symbol": "enum"
+    },
+    "matches": [
+      {
+        "id": "47351d7f85b1",
+        "path": "core/src/geometry/shape.rs",
+        "language": "rust",
+        "span": {
+          "start": 42,
+          "end": 117
+        },
+        "start": {
+          "line": 3,
+          "column": 0
+        },
+        "end": {
+          "line": 6,
+          "column": 1
+        },
+        "kind": "enum_item",
+        "text": "pub enum Shape {\n    Dot(Point),\n    Square { corner: Point, side: u32 },\n}",
+        "line": "pub enum Shape {",
+        "symbol": {
+          "kind": "enum",
+          "name": "Shape",
+          "name_span": {
+            "start": 51,
+            "end": 56
+          },
+          "span": {
+            "start": 42,
+            "end": 117
+          },
+          "extent": {
+            "start": 42,
+            "end": 117
+          },
+          "visibility": {
+            "span": {
+              "start": 42,
+              "end": 45
+            },
+            "text": "pub"
+          }
+        },
+        "role": "declaration",
+        "address": {
+          "package": "corpus_core",
+          "path": [
+            "geometry",
+            "shape",
+            "Shape"
+          ]
+        }
+      }
+    ]
+  }
+}
+--- stderr ---

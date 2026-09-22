@@ -1,0 +1,21 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+core/src/geometry/point.rs:3:12
+     3 │ pub struct Point {
+       │            ^^^^^
+
+● struct Point   pub   ◆ corpus_core::geometry::point::Point
+  reaches  everyone
+  ↗ corpus_core::geometry::Point
+  ↗ corpus_core::Point
+← 5
+  app/src/main.rs
+  core/src/geometry/mod.rs
+  core/src/geometry/shape.rs
+  core/src/lib.rs
+  core/src/lib.rs
+--- stderr ---

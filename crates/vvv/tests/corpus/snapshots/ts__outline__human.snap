@@ -1,0 +1,14 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+src/geometry/shape.ts
+
+   4  interface Shape   export
+   5    corner          ·
+   6    side            ·
+   9  shapeArea()       export
+--- stderr ---
+● 4   export 2  · 2

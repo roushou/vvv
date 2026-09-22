@@ -1,0 +1,30 @@
+[package]
+name = "vvv-engine"
+version.workspace = true
+authors.workspace = true
+categories = ["development-tools", "text-processing"]
+documentation = "https://docs.rs/vvv-engine"
+edition.workspace = true
+homepage.workspace = true
+keywords = ["refactoring", "codemod", "ast", "search", "syntax"]
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Composes vvv plugins into refactoring pipelines"
+
+[dependencies]
+blake3 = "1.8.7"
+ignore = "0.4.33"
+rayon = "1.10"
+serde = { workspace = true }
+serde_json = { workspace = true }
+similar = "3.2.0"
+thiserror = { workspace = true }
+vvv-core = { workspace = true }
+
+[dev-dependencies]
+insta = "1.48.0"
+
+[lints]
+workspace = true

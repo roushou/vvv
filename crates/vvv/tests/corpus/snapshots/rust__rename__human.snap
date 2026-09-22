@@ -1,0 +1,23 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+rename Point → Coord
+
+● struct Point   ◆ corpus_core::geometry::point::Point   core/src/geometry/point.rs:3:1
+
+✓ 13  5 files
+   2  app/src/main.rs
+   3  core/src/geometry/mod.rs
+   3  core/src/geometry/point.rs
+   4  core/src/geometry/shape.rs
+   1  core/src/lib.rs
+
+? 0
+
+✗ 0
+--- stderr ---
+✓ 13  ? 0  ✗ 0   5 files   → 13 occurrences in 5 files
+hint: --apply to write · -v to list the ✓ rows

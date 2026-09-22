@@ -1,0 +1,15 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+assertion_line: 818
+expression: "render(|r| r.outline(&fx::outline()).unwrap())"
+---
+◆ vvv_core::plan   src/plan/mod.rs
+
+  24  enum ApplyError   pub
+  26    Vfs             ·
+  41  struct Plan       pub
+  47  impl Plan
+  49    new()           pub(crate)
+  71  check()           ·
+--- stderr ---
+● 6   pub 2  pub(crate) 1  · 2

@@ -1,0 +1,17 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+◆ corpus_app   app/src/main.rs
+
+→ 2
+  corpus_core
+     3  corpus_core::geometry::origin       → core/src/geometry/mod.rs
+     4  corpus_core::{area, Point, Shape}   → core/src/geometry/point.rs, core/src/geometry/shape.rs, core/src/util.rs
+
+← 0   0 files
+  ∅
+--- stderr ---
+→ 2  ← 0

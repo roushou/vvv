@@ -1,0 +1,3 @@
+# The snapshots, fixtures and sources are written with LF; a checkout must not
+# rewrite them per platform, or a Windows run compares CRLF against LF.
+* text=auto eol=lf

@@ -1,0 +1,70 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "query": {
+      "name": "Point"
+    },
+    "matches": [
+      {
+        "id": "679da9ff7222",
+        "path": "core/src/geometry/point.rs",
+        "language": "rust",
+        "span": {
+          "start": 73,
+          "end": 125
+        },
+        "start": {
+          "line": 2,
+          "column": 0
+        },
+        "end": {
+          "line": 5,
+          "column": 1
+        },
+        "kind": "struct_item",
+        "text": "pub struct Point {\n    pub x: i32,\n    pub y: i32,\n}",
+        "line": "pub struct Point {",
+        "symbol": {
+          "kind": "struct",
+          "name": "Point",
+          "name_span": {
+            "start": 84,
+            "end": 89
+          },
+          "span": {
+            "start": 73,
+            "end": 125
+          },
+          "extent": {
+            "start": 0,
+            "end": 125
+          },
+          "visibility": {
+            "span": {
+              "start": 73,
+              "end": 76
+            },
+            "text": "pub"
+          }
+        },
+        "role": "declaration",
+        "address": {
+          "package": "corpus_core",
+          "path": [
+            "geometry",
+            "point",
+            "Point"
+          ]
+        }
+      }
+    ]
+  }
+}
+--- stderr ---

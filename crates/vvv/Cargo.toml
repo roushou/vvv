@@ -1,0 +1,43 @@
+[package]
+name = "vvv-rs"
+version.workspace = true
+authors.workspace = true
+categories = ["command-line-utilities", "development-tools"]
+documentation = "https://docs.rs/vvv-rs"
+edition.workspace = true
+homepage.workspace = true
+keywords = ["refactoring", "codemod", "cli", "ast", "search"]
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Language-aware refactoring for codebases"
+
+[package.metadata.docs.rs]
+all-features = true
+
+[[bin]]
+name = "vvv"
+path = "src/main.rs"
+
+[features]
+default = ["rust", "typescript", "tui"]
+rust = ["dep:vvv-lang", "vvv-lang/rust"]
+typescript = ["dep:vvv-lang", "vvv-lang/typescript"]
+tui = ["dep:vvv-tui"]
+
+[dependencies]
+anstyle = "1.0.14"
+anyhow = "1.0.104"
+clap = { version = "4.6.7", features = ["derive"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+vvv-engine = { workspace = true }
+vvv-lang = { workspace = true, optional = true }
+vvv-tui = { workspace = true, optional = true }
+
+[dev-dependencies]
+insta = "1.48.0"
+
+[lints]
+workspace = true

@@ -1,0 +1,10 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+expression: "render(|r| r.dead(&fx::dead()).unwrap())"
+---
+dead
+
+● function legacy   ◆ vvv_core::plan::legacy   src/plan/mod.rs:61:5
+● struct Draft   ◆ vvv_core::plan::Draft   src/plan/mod.rs:73:5   ? 2
+--- stderr ---
+● 2   ? 1 with tokens that might be uses

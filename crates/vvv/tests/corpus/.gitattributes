@@ -1,0 +1,2 @@
+# Byte offsets in the golden outputs depend on these files being exactly as committed.
+* text eol=lf

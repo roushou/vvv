@@ -1,0 +1,197 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "items": [
+      {
+        "path": "app/src/main.rs",
+        "kind": "function",
+        "name": "main",
+        "name_span": {
+          "start": 88,
+          "end": 92
+        },
+        "span": {
+          "start": 85,
+          "end": 228
+        },
+        "extent": {
+          "start": 85,
+          "end": 228
+        },
+        "start": {
+          "line": 5,
+          "column": 3
+        },
+        "address": {
+          "package": "corpus_app",
+          "path": [
+            "main"
+          ]
+        },
+        "reach": {
+          "within": {
+            "package": "corpus_app",
+            "path": []
+          }
+        },
+        "unsure": 0
+      },
+      {
+        "path": "core/src/internal.rs",
+        "kind": "module",
+        "name": "tests",
+        "name_span": {
+          "start": 117,
+          "end": 122
+        },
+        "span": {
+          "start": 113,
+          "end": 226
+        },
+        "extent": {
+          "start": 100,
+          "end": 226
+        },
+        "start": {
+          "line": 9,
+          "column": 4
+        },
+        "address": {
+          "package": "corpus_core",
+          "path": [
+            "internal",
+            "tests"
+          ]
+        },
+        "reach": {
+          "within": {
+            "package": "corpus_core",
+            "path": [
+              "internal"
+            ]
+          }
+        },
+        "unsure": 0
+      },
+      {
+        "path": "core/src/internal.rs",
+        "kind": "function",
+        "name": "reveals",
+        "name_span": {
+          "start": 163,
+          "end": 170
+        },
+        "span": {
+          "start": 160,
+          "end": 224
+        },
+        "extent": {
+          "start": 148,
+          "end": 224
+        },
+        "start": {
+          "line": 13,
+          "column": 7
+        },
+        "address": {
+          "package": "corpus_core",
+          "path": [
+            "internal",
+            "reveals"
+          ]
+        },
+        "reach": {
+          "within": {
+            "package": "corpus_core",
+            "path": [
+              "internal"
+            ]
+          }
+        },
+        "unsure": 0
+      },
+      {
+        "path": "core/src/util.rs",
+        "kind": "function",
+        "name": "unused_private",
+        "name_span": {
+          "start": 133,
+          "end": 147
+        },
+        "span": {
+          "start": 130,
+          "end": 173
+        },
+        "extent": {
+          "start": 130,
+          "end": 173
+        },
+        "start": {
+          "line": 10,
+          "column": 3
+        },
+        "address": {
+          "package": "corpus_core",
+          "path": [
+            "util",
+            "unused_private"
+          ]
+        },
+        "reach": {
+          "within": {
+            "package": "corpus_core",
+            "path": [
+              "util"
+            ]
+          }
+        },
+        "unsure": 0
+      },
+      {
+        "path": "core/src/util.rs",
+        "kind": "const",
+        "name": "VERSION",
+        "name_span": {
+          "start": 185,
+          "end": 192
+        },
+        "span": {
+          "start": 175,
+          "end": 202
+        },
+        "extent": {
+          "start": 175,
+          "end": 202
+        },
+        "visibility": {
+          "span": {
+            "start": 175,
+            "end": 178
+          },
+          "text": "pub"
+        },
+        "start": {
+          "line": 14,
+          "column": 10
+        },
+        "address": {
+          "package": "corpus_core",
+          "path": [
+            "util",
+            "VERSION"
+          ]
+        },
+        "reach": "everyone",
+        "unsure": 0
+      }
+    ]
+  }
+}
+--- stderr ---

@@ -1,0 +1,8 @@
+---
+source: crates/vvv-engine/src/report/lines.rs
+expression: rendered
+---
+a.rs → b/a.rs
+@@ -1 +1 @@
+-x
++y

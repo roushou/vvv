@@ -1,0 +1,174 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "path": "src/geometry/shape.ts",
+    "module": {
+      "package": "",
+      "path": [
+        "src",
+        "geometry",
+        "shape.ts"
+      ]
+    },
+    "items": [
+      {
+        "kind": "interface",
+        "name": "Shape",
+        "name_span": {
+          "start": 83,
+          "end": 88
+        },
+        "span": {
+          "start": 73,
+          "end": 125
+        },
+        "extent": {
+          "start": 66,
+          "end": 125
+        },
+        "visibility": {
+          "span": {
+            "start": 66,
+            "end": 72
+          },
+          "text": "export"
+        },
+        "start": {
+          "line": 3,
+          "column": 0
+        },
+        "end": {
+          "line": 6,
+          "column": 1
+        },
+        "address": {
+          "package": "",
+          "path": [
+            "src",
+            "geometry",
+            "shape.ts",
+            "Shape"
+          ]
+        },
+        "reach": "everyone"
+      },
+      {
+        "kind": "field",
+        "name": "corner",
+        "name_span": {
+          "start": 93,
+          "end": 99
+        },
+        "span": {
+          "start": 93,
+          "end": 106
+        },
+        "extent": {
+          "start": 93,
+          "end": 106
+        },
+        "start": {
+          "line": 4,
+          "column": 2
+        },
+        "end": {
+          "line": 4,
+          "column": 15
+        },
+        "reach": {
+          "within": {
+            "package": "",
+            "path": [
+              "src",
+              "geometry",
+              "shape.ts"
+            ]
+          }
+        }
+      },
+      {
+        "kind": "field",
+        "name": "side",
+        "name_span": {
+          "start": 110,
+          "end": 114
+        },
+        "span": {
+          "start": 110,
+          "end": 122
+        },
+        "extent": {
+          "start": 110,
+          "end": 122
+        },
+        "start": {
+          "line": 5,
+          "column": 2
+        },
+        "end": {
+          "line": 5,
+          "column": 14
+        },
+        "reach": {
+          "within": {
+            "package": "",
+            "path": [
+              "src",
+              "geometry",
+              "shape.ts"
+            ]
+          }
+        }
+      },
+      {
+        "kind": "function",
+        "name": "shapeArea",
+        "name_span": {
+          "start": 143,
+          "end": 152
+        },
+        "span": {
+          "start": 134,
+          "end": 205
+        },
+        "extent": {
+          "start": 127,
+          "end": 205
+        },
+        "visibility": {
+          "span": {
+            "start": 127,
+            "end": 133
+          },
+          "text": "export"
+        },
+        "start": {
+          "line": 8,
+          "column": 0
+        },
+        "end": {
+          "line": 10,
+          "column": 1
+        },
+        "address": {
+          "package": "",
+          "path": [
+            "src",
+            "geometry",
+            "shape.ts",
+            "shapeArea"
+          ]
+        },
+        "reach": "everyone"
+      }
+    ]
+  }
+}
+--- stderr ---

@@ -1,0 +1,31 @@
+[package]
+name = "vvv-lang"
+version.workspace = true
+authors.workspace = true
+categories = ["parser-implementations", "parsing", "development-tools"]
+documentation = "https://docs.rs/vvv-lang"
+edition.workspace = true
+homepage.workspace = true
+keywords = ["ast-grep", "tree-sitter", "parser", "rust", "typescript"]
+license.workspace = true
+readme.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+description = "Language support for vvv: the ast-grep adapter and one module per language"
+
+[package.metadata.docs.rs]
+all-features = true
+
+[features]
+default = []
+rust = ["ast-grep-language/tree-sitter-rust"]
+typescript = ["ast-grep-language/tree-sitter-typescript"]
+
+[dependencies]
+ast-grep-core = "0.45.3"
+ast-grep-language = { version = "0.45.3", default-features = false }
+toml = { version = "1.1", default-features = false, features = ["parse", "serde"] }
+vvv-core = { workspace = true }
+
+[lints]
+workspace = true

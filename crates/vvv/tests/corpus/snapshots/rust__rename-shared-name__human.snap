@@ -1,0 +1,24 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+rename area → size
+
+● method area   core/src/geometry/shape.rs:10:5
+● function area   ◆ corpus_core::util::area   core/src/util.rs:3:1
+
+✓ 8  3 files
+  3  app/src/main.rs
+  3  core/src/geometry/shape.rs
+  2  core/src/util.rs
+
+? 1  1 file   ∅ unresolved   in the plan
+app/src/cli.rs
+  9      7:47   println!("{} {}", hidden.reveal(), figure.area());
+
+✗ 0
+--- stderr ---
+✓ 8  ? 1  ✗ 0   4 files   → 9 occurrences in 4 files
+hint: --apply to write · --select 9 for the ? rows alone · -v to list the ✓ rows

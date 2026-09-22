@@ -1,0 +1,18 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+◆ corpus_core::geometry::shape   core/src/geometry/shape.rs
+
+   4  enum Shape   pub
+   5    Dot        ·
+   6    Square     ·
+   6      corner   ·
+   6      side     ·
+   9  impl Shape
+  10    area()     pub
+  17    anchor()   pub
+--- stderr ---
+● 8   pub 3  · 4

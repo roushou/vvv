@@ -1,0 +1,21 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● class Point   ◆ src::geometry::point.ts::Point   src/geometry/point.ts:1:8
+
+✓ 8  3 files
+   5  src/geometry/point.ts
+   2  src/geometry/shape.ts
+   1  src/index.ts
+
+? 2  1 file   ∅ unresolved
+src/app.ts
+   9      1:10   import { Point, area } from './index';
+  10      4:15   const p = new Point(1, 2);
+
+✗ 0
+--- stderr ---
+✓ 8  ? 2  ✗ 0   4 files

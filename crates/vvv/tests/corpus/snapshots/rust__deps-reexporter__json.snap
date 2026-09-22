@@ -1,0 +1,112 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "path": "core/src/geometry/point.rs",
+    "module": {
+      "package": "corpus_core",
+      "path": [
+        "geometry",
+        "point"
+      ]
+    },
+    "imports": [],
+    "importers": [
+      {
+        "path": "app/src/main.rs",
+        "span": {
+          "start": 69,
+          "end": 74
+        },
+        "path": "corpus_core::Point",
+        "group": {
+          "prefix": "corpus_core",
+          "item": {
+            "start": 69,
+            "end": 74
+          },
+          "list": {
+            "start": 62,
+            "end": 82
+          },
+          "items": 3,
+          "statement": {
+            "start": 45,
+            "end": 83
+          },
+          "top_level": true
+        },
+        "declares": true,
+        "start": {
+          "line": 3,
+          "column": 24
+        }
+      },
+      {
+        "path": "core/src/geometry/mod.rs",
+        "span": {
+          "start": 35,
+          "end": 47
+        },
+        "path": "point::Point",
+        "declares": true,
+        "reexport": true,
+        "start": {
+          "line": 3,
+          "column": 8
+        }
+      },
+      {
+        "path": "core/src/geometry/shape.rs",
+        "span": {
+          "start": 4,
+          "end": 16
+        },
+        "path": "super::Point",
+        "declares": true,
+        "start": {
+          "line": 0,
+          "column": 4
+        }
+      },
+      {
+        "path": "core/src/lib.rs",
+        "span": {
+          "start": 230,
+          "end": 235
+        },
+        "path": "geometry::Point",
+        "group": {
+          "prefix": "geometry",
+          "item": {
+            "start": 230,
+            "end": 235
+          },
+          "list": {
+            "start": 215,
+            "end": 236
+          },
+          "items": 2,
+          "statement": {
+            "start": 197,
+            "end": 237
+          },
+          "top_level": true
+        },
+        "declares": true,
+        "reexport": true,
+        "start": {
+          "line": 7,
+          "column": 33
+        }
+      }
+    ]
+  }
+}
+--- stderr ---

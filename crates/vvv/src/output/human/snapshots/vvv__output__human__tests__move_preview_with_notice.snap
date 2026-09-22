@@ -1,0 +1,30 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+assertion_line: 797
+expression: "render(|r| r.move_file(&fx::move_file()).unwrap())"
+---
+move src/util/parse.rs → src/net/parse.rs
+
+◆ cli::util::parse → cli::net::parse
+
+→ 2   2 files
+± 2   2 files
+! 2
+
+→ src/lib.rs:1    crate::util::parse::X → crate::net::parse::X
+→ src/main.rs:7   crate::util::parse::{Config, X} → crate::net::parse::{Config, X}
+! src/net.rs:3    crate::util::parse::Config → crate::net::parse::Config   grouped import, by hand
+! src/lib.rs:2    net   used from cli, another package; `pub` is your call
+
+± src/util/mod.rs
+@@ -1,2 +1 @@
+-mod parse;
+ mod s;
+
+± src/util/parse.rs → src/net/parse.rs
+@@ -1 +1 @@
+-use super::s;
++use crate::util::s;
+--- stderr ---
+→ 2  ± 2  ! 2   4 files
+hint: --apply to write · --diff for the full patch

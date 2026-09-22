@@ -1,0 +1,39 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+move area from core/src/util.rs → core/src/geometry/mod.rs
+
+◆ corpus_core::util::area → corpus_core::geometry::area
+
+→ 1   1 file
+± 2   2 files
+
+→ core/src/geometry/shape.rs:2   crate::util::area → crate::geometry::area
+
+± core/src/geometry/mod.rs
+@@ -6,3 +6,7 @@
+ pub fn origin() -> Point {
+     Point::new(0, 0)
+ }
++
++pub fn area(side: u32) -> u32 {
++    side * side
++}
+
+± core/src/util.rs
+@@ -1,8 +1,5 @@
+ use std::collections::HashMap;
+-
+-pub fn area(side: u32) -> u32 {
+-    side * side
+-}
++use crate::geometry::area;
+ 
+ pub(crate) fn helper() -> u32 {
+     area(1)
+--- stderr ---
+→ 1  ± 2   3 files
+hint: --apply to write · --diff for the full patch

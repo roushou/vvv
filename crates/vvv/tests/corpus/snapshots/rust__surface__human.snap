@@ -1,0 +1,25 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+surface corpus_core
+
+● module geometry   ◆ corpus_core::geometry   core/src/lib.rs:4:9   ← 0
+● function origin   ◆ corpus_core::geometry::origin   core/src/geometry/mod.rs:6:8   ← 1
+● struct Point   ◆ corpus_core::geometry::point::Point   core/src/geometry/point.rs:3:12   ← 4
+  ↗ corpus_core::geometry::Point
+  ↗ corpus_core::Point
+● module shape   ◆ corpus_core::geometry::shape   core/src/geometry/mod.rs:1:9   ← 0
+● enum Shape   ◆ corpus_core::geometry::shape::Shape   core/src/geometry/shape.rs:4:10   ← 3
+  ↗ corpus_core::Shape
+● struct Secret   ◆ corpus_core::internal::Secret   core/src/internal.rs:1:12   ← 2
+  ↗ corpus_core::Hidden
+● module util   ◆ corpus_core::util   core/src/lib.rs:5:9   ← 0
+● const VERSION   ◆ corpus_core::util::VERSION   core/src/util.rs:15:11   ← 0
+  ↗ corpus_core::VERSION
+● function area   ◆ corpus_core::util::area   core/src/util.rs:3:8   ← 2
+  ↗ corpus_core::area
+--- stderr ---
+● 9   ← 12 imports

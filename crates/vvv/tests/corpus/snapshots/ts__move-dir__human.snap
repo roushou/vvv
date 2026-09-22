@@ -1,0 +1,22 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+move src/geometry → src/shapes
+
+
+→ 3   2 files
+± 2   2 files
+
+→ src/app.ts:2     ./geometry/shape → ./shapes/shape
+→ src/index.ts:1   ./geometry/point → ./shapes/point
+→ src/index.ts:3   ./geometry/shape → ./shapes/shape
+
+± src/geometry/point.ts → src/shapes/point.ts
+
+± src/geometry/shape.ts → src/shapes/shape.ts
+--- stderr ---
+→ 3  ± 2   4 files
+hint: --apply to write · --diff for the full patch

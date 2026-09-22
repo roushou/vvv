@@ -1,0 +1,97 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "intent": {
+      "from": "src/util.ts",
+      "to": "src/lib/util.ts"
+    },
+    "applied": false,
+    "from": "src/util.ts",
+    "to": "src/lib/util.ts",
+    "from_address": {
+      "package": "",
+      "path": [
+        "src",
+        "util.ts"
+      ]
+    },
+    "to_address": {
+      "package": "",
+      "path": [
+        "src",
+        "lib",
+        "util.ts"
+      ]
+    },
+    "respellings": [
+      {
+        "path": "src/geometry/shape.ts",
+        "span": {
+          "start": 55,
+          "end": 62
+        },
+        "start": {
+          "line": 1,
+          "column": 22
+        },
+        "from": "../util",
+        "to": "../lib/util"
+      },
+      {
+        "path": "src/index.ts",
+        "span": {
+          "start": 65,
+          "end": 71
+        },
+        "start": {
+          "line": 1,
+          "column": 15
+        },
+        "from": "./util",
+        "to": "./lib/util"
+      }
+    ],
+    "files": [
+      {
+        "path": "src/geometry/shape.ts",
+        "edits": [
+          {
+            "span": {
+              "start": 55,
+              "end": 62
+            },
+            "replacement": "../lib/util"
+          }
+        ],
+        "diff": "--- a/src/geometry/shape.ts\n+++ b/src/geometry/shape.ts\n@@ -1,5 +1,5 @@\n import { Point } from './point';\n-import { area } from '../util';\n+import { area } from '../lib/util';\n \n export interface Shape {\n   corner: Point;\n"
+      },
+      {
+        "path": "src/index.ts",
+        "edits": [
+          {
+            "span": {
+              "start": 65,
+              "end": 71
+            },
+            "replacement": "./lib/util"
+          }
+        ],
+        "diff": "--- a/src/index.ts\n+++ b/src/index.ts\n@@ -1,3 +1,3 @@\n export { Point, origin } from './geometry/point';\n-export * from './util';\n+export * from './lib/util';\n export type { Shape } from './geometry/shape';\n"
+      },
+      {
+        "path": "src/util.ts",
+        "moved_to": "src/lib/util.ts",
+        "edits": [],
+        "diff": "--- a/src/util.ts\n+++ b/src/lib/util.ts\n"
+      }
+    ]
+  }
+}
+--- stderr ---

@@ -1,0 +1,9 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+impact area   ◆ src::util.ts::area
+--- stderr ---
+∅ no module imports it

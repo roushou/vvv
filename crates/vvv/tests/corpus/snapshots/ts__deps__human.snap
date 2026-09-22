@@ -1,0 +1,16 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+src/app.ts
+
+→ 2
+     1  ./index            → src/index.ts
+     2  ./geometry/shape   → src/geometry/shape.ts
+
+← 0   0 files
+  ∅
+--- stderr ---
+→ 2  ← 0

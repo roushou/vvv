@@ -1,0 +1,12 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+assertion_line: 888
+expression: "render(|r| r.undo(&fx::undo()).unwrap())"
+---
+↩ #2  move src/a.rs → src/b.rs
+
+  src/b.rs → src/a.rs
+  src/a.rs
+  src/lib.rs
+--- stderr ---
+↩ #2   2 files

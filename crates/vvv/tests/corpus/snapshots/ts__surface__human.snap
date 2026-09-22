@@ -1,0 +1,16 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+surface every package
+
+● class Point   ◆ src::geometry::point.ts::Point   src/geometry/point.ts:1:14   ← 0
+● function origin   ◆ src::geometry::point.ts::origin   src/geometry/point.ts:9:17   ← 0
+● interface Shape   ◆ src::geometry::shape.ts::Shape   src/geometry/shape.ts:4:18   ← 0
+● function shapeArea   ◆ src::geometry::shape.ts::shapeArea   src/geometry/shape.ts:9:17   ← 0
+● variable VERSION   ◆ src::util.ts::VERSION   src/util.ts:9:14   ← 0
+● function area   ◆ src::util.ts::area   src/util.ts:1:17   ← 0
+--- stderr ---
+● 6   ← 0 imports

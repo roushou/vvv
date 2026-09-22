@@ -1,0 +1,12 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+imports every file
+
+! unused 1
+  core/src/util.rs:1:5   std::collections::HashMap
+--- stderr ---
+! unused 1

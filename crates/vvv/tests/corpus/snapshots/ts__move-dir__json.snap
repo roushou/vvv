@@ -1,0 +1,122 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "intent": {
+      "from": "src/geometry",
+      "to": "src/shapes"
+    },
+    "applied": false,
+    "from": "src/geometry",
+    "to": "src/shapes",
+    "from_address": {
+      "package": "",
+      "path": [
+        "src",
+        "geometry"
+      ]
+    },
+    "to_address": {
+      "package": "",
+      "path": [
+        "src",
+        "shapes"
+      ]
+    },
+    "respellings": [
+      {
+        "path": "src/app.ts",
+        "span": {
+          "start": 66,
+          "end": 82
+        },
+        "start": {
+          "line": 1,
+          "column": 27
+        },
+        "from": "./geometry/shape",
+        "to": "./shapes/shape"
+      },
+      {
+        "path": "src/index.ts",
+        "span": {
+          "start": 31,
+          "end": 47
+        },
+        "start": {
+          "line": 0,
+          "column": 31
+        },
+        "from": "./geometry/point",
+        "to": "./shapes/point"
+      },
+      {
+        "path": "src/index.ts",
+        "span": {
+          "start": 102,
+          "end": 118
+        },
+        "start": {
+          "line": 2,
+          "column": 28
+        },
+        "from": "./geometry/shape",
+        "to": "./shapes/shape"
+      }
+    ],
+    "files": [
+      {
+        "path": "src/app.ts",
+        "edits": [
+          {
+            "span": {
+              "start": 66,
+              "end": 82
+            },
+            "replacement": "./shapes/shape"
+          }
+        ],
+        "diff": "--- a/src/app.ts\n+++ b/src/app.ts\n@@ -1,5 +1,5 @@\n import { Point, area } from './index';\n-import { shapeArea } from './geometry/shape';\n+import { shapeArea } from './shapes/shape';\n \n const p = new Point(1, 2);\n console.log(shapeArea({ corner: p, side: 3 }), area(2), p.shift(1));\n"
+      },
+      {
+        "path": "src/geometry/point.ts",
+        "moved_to": "src/shapes/point.ts",
+        "edits": [],
+        "diff": "--- a/src/geometry/point.ts\n+++ b/src/shapes/point.ts\n"
+      },
+      {
+        "path": "src/geometry/shape.ts",
+        "moved_to": "src/shapes/shape.ts",
+        "edits": [],
+        "diff": "--- a/src/geometry/shape.ts\n+++ b/src/shapes/shape.ts\n"
+      },
+      {
+        "path": "src/index.ts",
+        "edits": [
+          {
+            "span": {
+              "start": 31,
+              "end": 47
+            },
+            "replacement": "./shapes/point"
+          },
+          {
+            "span": {
+              "start": 102,
+              "end": 118
+            },
+            "replacement": "./shapes/shape"
+          }
+        ],
+        "diff": "--- a/src/index.ts\n+++ b/src/index.ts\n@@ -1,3 +1,3 @@\n-export { Point, origin } from './geometry/point';\n+export { Point, origin } from './shapes/point';\n export * from './util';\n-export type { Shape } from './geometry/shape';\n+export type { Shape } from './shapes/shape';\n"
+      }
+    ]
+  }
+}
+--- stderr ---

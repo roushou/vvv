@@ -1,0 +1,7 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+assertion_line: 537
+expression: render(|r| r.search(&empty).unwrap())
+---
+--- stderr ---
+∅ no matches
