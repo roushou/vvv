@@ -6,7 +6,6 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Widget;
-use vvv_engine::protocol::display;
 use vvv_engine::{CaptureValue, Match};
 
 use super::{Panel, Screen};
@@ -306,12 +305,11 @@ impl<'a> RewriteView<'a> {
         if let Some(m) = current
             && let Some(file) = rw.changes.iter().find(|f| f.path == m.path)
         {
-            let open = file.diff.opening(m.start.line + 1);
             rows.extend(
-                display::diff(&file.diff.hunks()[open..])
-                    .iter()
+                file.diff
+                    .lines_from(m.start.line + 1)
                     .skip(rw.detail_scroll)
-                    .map(|line| t.line(line)),
+                    .map(|line| t.line(&line)),
             );
         }
         Pane::new(t, title, focused)

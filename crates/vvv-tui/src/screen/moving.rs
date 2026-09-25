@@ -8,7 +8,6 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::Widget;
 use vvv_engine::NoticeKind;
 use vvv_engine::protocol::FileChange;
-use vvv_engine::protocol::display;
 
 use super::{Panel, Screen};
 use crate::action::Action;
@@ -348,9 +347,9 @@ impl<'a> MoveView<'a> {
 
     /// A file's hunks, coloured by line kind.
     fn hunks(&self, file: &FileChange) -> Vec<Line<'static>> {
-        display::diff(file.diff.hunks())
-            .iter()
-            .map(|line| self.painter.line(line))
+        file.diff
+            .lines()
+            .map(|line| self.painter.line(&line))
             .collect()
     }
 

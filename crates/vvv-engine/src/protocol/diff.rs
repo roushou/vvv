@@ -13,6 +13,8 @@ use std::path::Path;
 use serde::{Deserialize, Serialize};
 use similar::{ChangeTag, TextDiff};
 
+use super::display::{Line, Role};
+
 /// How many context lines `similar` keeps around a change.
 const CONTEXT: usize = 3;
 
@@ -50,6 +52,17 @@ pub enum DiffKind {
     Added,
     /// Removed by the change.
     Removed,
+}
+
+impl DiffKind {
+    /// The unified-diff marker a line of this kind is prefixed with.
+    pub fn marker(self) -> char {
+        match self {
+            Self::Context => ' ',
+            Self::Added => '+',
+            Self::Removed => '-',
+        }
+    }
 }
 
 /// One line of a hunk: its kind and its text, without the `+`/`-`/space
@@ -149,6 +162,28 @@ impl Diff {
             open = i;
         }
         open
+    }
+
+    /// The whole diff as display lines: each hunk's header, then its lines
+    /// with their `+`/`-`/space marker.
+    pub fn lines(&self) -> impl Iterator<Item = Line> + '_ {
+        self.lines_from(0)
+    }
+
+    /// The display lines from the hunk opening at or before 1-based `line`.
+    pub fn lines_from(&self, line: u32) -> impl Iterator<Item = Line> + '_ {
+        self.hunks[self.opening(line)..].iter().flat_map(|hunk| {
+            std::iter::once(Line::of(Role::Hunk, hunk.header.clone())).chain(hunk.lines.iter().map(
+                |line| {
+                    let role = match line.kind {
+                        DiffKind::Context => Role::Plain,
+                        DiffKind::Added => Role::Added,
+                        DiffKind::Removed => Role::Removed,
+                    };
+                    Line::of(role, format!("{}{}", line.kind.marker(), line.text))
+                },
+            ))
+        })
     }
 }
 

@@ -1,4 +1,4 @@
-//! The pure line builders: answer data to [`display::Line`]s, no colours.
+//! The pure line builders: answer data to [`crate::protocol::display::Line`]s, no colours.
 //!
 //! Each shape is a type that turns protocol data into the runs a row is made
 //! of. Styling happens later, when an interface maps a [`Role`] to a colour;
@@ -9,7 +9,7 @@ use std::path::Path;
 
 use super::Row;
 use crate::Role as MatchRole;
-use crate::protocol::display::{self, Line, Role};
+use crate::protocol::display::{Line, Role};
 use crate::protocol::vocabulary::{Ago, Files, IntentLine, Mark, Plural};
 use crate::protocol::{
     Dep, FileChange, HistoryEntry, ImportSite, Importer, Notice, NoticeKind, OutlineItem, Placed,
@@ -1036,7 +1036,7 @@ impl<'a> Diff<'a> {
         };
         head = head.and(Role::Path, header);
         let mut lines = vec![head];
-        lines.extend(display::diff(file.diff.hunks()));
+        lines.extend(file.diff.lines());
         lines
     }
 }

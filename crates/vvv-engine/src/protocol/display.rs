@@ -3,8 +3,8 @@
 //! composition of a row — what is written, in what order, which part is the
 //! hit — lives once, in the protocol.
 
+use super::Match;
 use super::vocabulary::Mark;
-use super::{DiffKind, Hunk, Match};
 
 /// The semantic role of a run of text. A backend names the colour; the data
 /// never carries one.
@@ -145,26 +145,6 @@ impl Line {
     pub fn is_empty(&self) -> bool {
         self.pieces.iter().all(|p| p.text.is_empty())
     }
-}
-
-/// A diff's display lines: each hunk's header, then its lines with their
-/// `+`/`-`/space marker.
-pub fn diff(hunks: &[Hunk]) -> Vec<Line> {
-    hunks
-        .iter()
-        .flat_map(|hunk| {
-            std::iter::once(Line::of(Role::Hunk, hunk.header.clone())).chain(hunk.lines.iter().map(
-                |line| {
-                    let (role, marker) = match line.kind {
-                        DiffKind::Context => (Role::Plain, ' '),
-                        DiffKind::Added => (Role::Added, '+'),
-                        DiffKind::Removed => (Role::Removed, '-'),
-                    };
-                    Line::of(role, format!("{marker}{}", line.text))
-                },
-            ))
-        })
-        .collect()
 }
 
 #[cfg(test)]

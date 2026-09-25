@@ -390,12 +390,11 @@ impl<'a> RenameView<'a> {
             (!file.diff.hunks().is_empty()).then_some((file, o.m.start.line + 1))
         });
         if let Some((file, line)) = diff {
-            let open = file.diff.opening(line);
             rows.extend(
-                display::diff(&file.diff.hunks()[open..])
-                    .iter()
+                file.diff
+                    .lines_from(line)
                     .skip(r.detail_scroll)
-                    .map(|line| t.line(line)),
+                    .map(|line| t.line(&line)),
             );
         } else if let (Some(preview), Some(o)) = (&r.preview, current)
             && preview.path == o.m.path
