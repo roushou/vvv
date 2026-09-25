@@ -190,8 +190,18 @@ pub fn rename(declarations: usize) -> Rename {
             ),
         ],
         files: vec![
-            change("src/lang/mod.rs", None, "a", "b"),
-            change("src/lib.rs", None, "a", "b"),
+            change(
+                "src/lang/mod.rs",
+                None,
+                "pub trait Language: Send + Sync {\n",
+                "pub trait Lang: Send + Sync {\n",
+            ),
+            change(
+                "src/lib.rs",
+                None,
+                "pub use lang::{Language, LanguageId};\n",
+                "pub use lang::{Lang, LanguageId};\n",
+            ),
         ],
     }
 }

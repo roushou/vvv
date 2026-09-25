@@ -233,6 +233,18 @@ mod tests {
     }
 
     #[test]
+    fn rename_diff_prints_the_patch() {
+        let mut r = HumanReporter::new(Vec::new(), Vec::new(), Palette::plain()).diff(true);
+        r.report(&Answer::Rename(fx::rename(1))).unwrap();
+        let (out, err) = r.into_parts();
+        insta::assert_snapshot!(format!(
+            "{}--- stderr ---\n{}",
+            String::from_utf8(out).unwrap(),
+            String::from_utf8(err).unwrap()
+        ));
+    }
+
+    #[test]
     fn rename_ambiguous() {
         insta::assert_snapshot!(render(|r| r
             .report(&Answer::Rename(fx::rename(2)))

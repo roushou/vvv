@@ -645,6 +645,11 @@ impl Document {
             occurrences: result.occurrences.clone(),
             files: Some(result.files.clone()),
         });
+        // The plan's patch, when asked for: a rename's rows are the verdicts,
+        // so unlike a rewrite its diff is not the default view.
+        if options.diff {
+            report.block_body(Block::Changes(result.files.clone()));
+        }
         let strip = Self::verdict_counts(&result.occurrences);
         let edits = Self::edits_in(&result.files);
         let plan = Line::of(
