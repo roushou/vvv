@@ -91,6 +91,8 @@ pub enum When {
     QueryEmpty,
     /// The search query holds something.
     QueryNotEmpty,
+    /// A declaration is entered as the search's subject.
+    Anchored,
 }
 
 /// A named set of bindings.

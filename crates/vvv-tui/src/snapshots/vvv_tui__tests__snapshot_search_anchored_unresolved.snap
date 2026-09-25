@@ -1,0 +1,24 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: render(&m)
+---
+┌ vvv ~/dev/nx ──────────────────────────────── ● trait Language  ✓ 3  ? 1  ✗ 0  3 files ┐
+│> Language                                                                              │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+┌ ●  trait Language ────────────────────────┐┌ src/lib.rs ───────────────────────────────┐
+│? unverified 1  1 file                     ││→ ● trait Language   lang/mod.rs:64        │
+│∅ src/lib.rs:41          Language::new()   ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+└───────────────────────────────────────────┘└───────────────────────────────────────────┘
+ search r rename  m/M move file/symbol  w rewrite  o declaration  R relation  s kind  L la

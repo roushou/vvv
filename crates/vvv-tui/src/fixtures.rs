@@ -6,8 +6,9 @@ use vvv_engine::RelPath;
 
 use vvv_engine::protocol::{Diff, FileChange, Move, Rename, Search};
 use vvv_engine::{
-    Address, Edit, Intent, LanguageId, Match, MatchId, MoveIntent, Notice, NoticeKind, Occurrence,
-    Position, Query, Reason, RenameIntent, Respelling, Role, Selection, Span, Symbol, SymbolKind,
+    Address, Consumer, Deps, Edit, Explanation, Impact, Intent, LanguageId, Match, MatchId,
+    MoveIntent, Notice, NoticeKind, Occurrence, Position, Query, Reason, References, RenameIntent,
+    Respelling, Role, Selection, Span, Symbol, SymbolKind,
 };
 
 pub fn m(path: &str, line: u32, col: u32, text: &str, source_line: &str) -> Match {
@@ -94,6 +95,81 @@ pub fn search() -> Search {
             ),
             m("src/lib.rs", 40, 4, "Language", "    Language::new()"),
         ],
+        skipped: vec![],
+    }
+}
+
+pub fn references() -> References {
+    let matches = search().matches;
+    let declaration = matches[0].clone();
+    let occurrence = |m: Match, reason: Reason| Occurrence::judged(m, reason);
+    References {
+        name: "Language".into(),
+        declarations: vec![declaration.clone()],
+        occurrences: vec![
+            occurrence(declaration, Reason::Declaring),
+            occurrence(matches[1].clone(), Reason::Imported),
+            occurrence(matches[2].clone(), Reason::Imported),
+            occurrence(matches[3].clone(), Reason::Unresolved),
+        ],
+    }
+}
+
+pub fn impact() -> Impact {
+    let address = |path: &[&str]| Address::new("vvv_core", path.iter().copied());
+    Impact {
+        name: "Language".into(),
+        address: Address::new("vvv_core", ["lang", "Language"]),
+        consumers: vec![
+            Consumer {
+                module: address(&["lang", "registry"]),
+                path: "src/lang/registry.rs".into(),
+                depth: 1,
+                through: Address::new("vvv_core", ["lang"]),
+            },
+            Consumer {
+                module: address(&["lib"]),
+                path: "src/lib.rs".into(),
+                depth: 1,
+                through: Address::new("vvv_core", ["lang"]),
+            },
+            Consumer {
+                module: Address::new("cli", ["main"]),
+                path: "src/main.rs".into(),
+                depth: 2,
+                through: Address::new("vvv_core", ["lib"]),
+            },
+        ],
+    }
+}
+
+pub fn explanation() -> Explanation {
+    Explanation {
+        path: "src/lang/mod.rs".into(),
+        position: Position::new(63, 10),
+        symbol: Some(Symbol::plain(
+            SymbolKind::Trait,
+            "Language",
+            Span::new(10, 18),
+            Span::new(0, 200),
+        )),
+        declared: Some(Position::new(63, 10)),
+        line: Some("pub trait Language: Send + Sync {".into()),
+        module: Some(Address::new("vvv_core", ["lang"])),
+        address: Some(Address::new("vvv_core", ["lang", "Language"])),
+        reach: None,
+        via: vec![],
+        import: None,
+        importers: vec!["src/lib.rs".into()],
+    }
+}
+
+pub fn deps() -> Deps {
+    Deps {
+        path: "src/lang/mod.rs".into(),
+        module: Some(Address::new("vvv_core", ["lang"])),
+        imports: vec![],
+        importers: vec![],
         skipped: vec![],
     }
 }

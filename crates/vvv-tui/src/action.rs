@@ -6,7 +6,9 @@ use vvv_engine::RelPath;
 use vvv_engine::HistoryEntry;
 use vvv_engine::protocol::FileChange;
 use vvv_engine::report::Document;
-use vvv_engine::{Highlight, Intent, Match, Notice, Occurrence, Query, Respelling, Skipped};
+use vvv_engine::{
+    Answer, Highlight, Intent, Match, Notice, Occurrence, Query, Request, Respelling, Skipped,
+};
 
 use super::model::MenuTarget;
 
@@ -57,6 +59,8 @@ pub enum Action {
     View,
     /// Open `$EDITOR` at the cursor's line.
     Edit,
+    /// Move the cursor from a use to the declaration it names.
+    Jump,
 }
 
 /// Work for the engine, run off the UI thread — except `Edit`, which the
@@ -66,6 +70,13 @@ pub enum Effect {
     Search {
         generation: u64,
         query: Query,
+    },
+    /// Ask the engine a read-only question: the search's subject answered
+    /// with its references, impact, definition or deps. A mutation is
+    /// planned through `Plan`/`Commit`, never here.
+    Query {
+        generation: u64,
+        request: Request,
     },
     Preview {
         path: RelPath,
@@ -102,6 +113,10 @@ pub enum Event {
         matches: Vec<Match>,
         /// Languages whose grammar could not run the query.
         skipped: Vec<Skipped>,
+    },
+    Answered {
+        generation: u64,
+        answer: Box<Answer>,
     },
     Previewed {
         path: RelPath,

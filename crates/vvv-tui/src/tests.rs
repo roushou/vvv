@@ -5,12 +5,12 @@ use ratatui::Terminal;
 use ratatui::backend::TestBackend;
 use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 use ratatui::widgets::Widget;
-use vvv_engine::{Intent, Selection};
+use vvv_engine::{Answer, Intent, Request, Selection, SymbolKind};
 
 use super::action::{Action, Effect, Event, Planned};
 use super::model::{
-    Level, MenuTarget, Mode, Model, MovePanel, Overlay, RenamePanel, ReportView, RewritePanel,
-    SearchPanel,
+    Level, MenuTarget, Mode, Model, MovePanel, Overlay, Relation, RenamePanel, ReportView,
+    RewritePanel, SearchPanel,
 };
 use super::query::Filter;
 use crate::fixtures as fx;
@@ -917,6 +917,220 @@ fn snapshot_search_use_row_with_context() {
     );
     let refs: Vec<&str> = lines.iter().map(String::as_str).collect();
     m.on_event(preview("src/lib.rs", &refs));
+    insta::assert_snapshot!(render(&m));
+}
+
+/// `searched()`, then `Enter` on the declaration and the engine's answer:
+/// the hub narrows to the declaration's judged references.
+fn anchored() -> Model {
+    let mut m = searched();
+    m.update(Action::Enter); // query → results
+    let effects = m.update(Action::Enter); // results → enter the scope
+    let generation = match effects.last() {
+        Some(Effect::Query { generation, .. }) => *generation,
+        other => panic!("expected a read request, got {other:?}"),
+    };
+    m.on_event(Event::Answered {
+        generation,
+        answer: Box::new(Answer::References(fx::references())),
+    });
+    m
+}
+
+#[test]
+fn enter_anchors_the_declaration_under_the_cursor() {
+    let mut m = searched();
+    m.update(Action::Enter);
+    let effects = m.update(Action::Enter);
+    let Some(Effect::Query {
+        generation,
+        request: Request::References(query),
+    }) = effects.last()
+    else {
+        panic!("expected a references request: {effects:?}");
+    };
+    assert_eq!(query.name, "Language");
+    assert_eq!(query.symbol, Some(SymbolKind::Trait));
+    assert!(query.declared_in.is_some(), "the file disambiguates");
+    assert!(
+        !m.search.results.is_anchored(),
+        "the display waits for the answer, so it never blanks"
+    );
+    m.on_event(Event::Answered {
+        generation: *generation,
+        answer: Box::new(Answer::References(fx::references())),
+    });
+    assert!(m.search.results.is_anchored());
+}
+
+#[test]
+fn esc_leaves_the_scope_and_keeps_the_search() {
+    let mut m = anchored();
+    assert_eq!(m.search.results.len(), 4);
+    m.update(Action::Back);
+    assert!(!m.search.results.is_anchored());
+    assert_eq!(m.search.results.matches.len(), 4, "the search survives");
+}
+
+#[test]
+fn anchored_rename_targets_the_subject_from_any_row() {
+    let mut m = anchored();
+    m.update(Action::Move(2)); // onto a use, not the declaration
+    let effects = m.update(Action::Rename);
+    let Mode::Rename(r) = &m.mode else {
+        panic!("expected rename mode");
+    };
+    assert_eq!(r.target.name, "Language");
+    assert_eq!(r.target.symbol, Some(SymbolKind::Trait));
+    assert!(matches!(effects.last(), Some(Effect::Plan { .. })));
+}
+
+#[test]
+fn snapshot_search_anchored() {
+    let m = anchored();
+    insta::assert_snapshot!(render(&m));
+}
+
+#[test]
+fn snapshot_search_anchored_detailed() {
+    let mut m = anchored();
+    m.view = ReportView::Detailed;
+    insta::assert_snapshot!(render(&m));
+}
+
+#[test]
+fn the_relation_menu_narrows_references_and_switches_to_impact() {
+    let mut m = anchored();
+    // The verdict filter is local: the references are already in hand.
+    m.update(Action::OpenMenu(MenuTarget::Relation));
+    assert!(matches!(m.overlay, Some(Overlay::Menu(_))));
+    m.update(Action::Move(2)); // references → ? unverified
+    m.update(Action::MenuChoose);
+    assert_eq!(m.search.results.relation, Relation::Unresolved);
+    assert_eq!(m.search.results.len(), 1);
+
+    // Impact asks the engine, and the view switches only when it answers.
+    m.update(Action::OpenMenu(MenuTarget::Relation));
+    m.update(Action::Move(2)); // ? unverified → impact
+    let effects = m.update(Action::MenuChoose);
+    let Some(Effect::Query {
+        generation,
+        request: Request::Impact(_),
+    }) = effects.last()
+    else {
+        panic!("expected an impact request: {effects:?}");
+    };
+    assert_eq!(
+        m.search.results.relation,
+        Relation::Unresolved,
+        "the references view stays until the impact answers"
+    );
+    m.on_event(Event::Answered {
+        generation: *generation,
+        answer: Box::new(Answer::Impact(fx::impact())),
+    });
+    assert_eq!(m.search.results.relation, Relation::Impact);
+    assert_eq!(m.search.results.len(), 3);
+    assert!(m.search.results.current_consumer().is_some());
+}
+
+#[test]
+fn snapshot_search_anchored_unresolved() {
+    let mut m = anchored();
+    m.search.results.set_relation(Relation::Unresolved);
+    insta::assert_snapshot!(render(&m));
+}
+
+#[test]
+fn the_relation_menu_asks_for_definition_and_deps() {
+    let mut m = anchored();
+
+    // Definition is index 5; the view waits for the explain answer.
+    m.update(Action::OpenMenu(MenuTarget::Relation));
+    m.update(Action::Move(5));
+    let effects = m.update(Action::MenuChoose);
+    let Some(Effect::Query {
+        generation,
+        request: Request::Explain(_),
+    }) = effects.last()
+    else {
+        panic!("expected an explain request: {effects:?}");
+    };
+    assert_eq!(m.search.results.relation, Relation::References);
+    m.on_event(Event::Answered {
+        generation: *generation,
+        answer: Box::new(Answer::Explain(fx::explanation())),
+    });
+    assert_eq!(m.search.results.relation, Relation::Definition);
+
+    // Deps is index 6, one below the selected definition.
+    m.update(Action::OpenMenu(MenuTarget::Relation));
+    m.update(Action::Move(1));
+    let effects = m.update(Action::MenuChoose);
+    let Some(Effect::Query {
+        generation,
+        request: Request::Deps(_),
+    }) = effects.last()
+    else {
+        panic!("expected a deps request: {effects:?}");
+    };
+    m.on_event(Event::Answered {
+        generation: *generation,
+        answer: Box::new(Answer::Deps(fx::deps())),
+    });
+    assert_eq!(m.search.results.relation, Relation::Deps);
+}
+
+#[test]
+fn o_jumps_from_a_use_to_its_declaration() {
+    let mut m = searched();
+    m.update(Action::Enter); // into the results
+    m.update(Action::Move(3)); // onto a use
+    m.update(Action::Jump);
+    assert_eq!(m.search.results.cursor.index, 0, "the declaration row");
+}
+
+#[test]
+fn snapshot_search_definition() {
+    let mut m = anchored();
+    m.search.results.show_definition(fx::explanation());
+    insta::assert_snapshot!(render(&m));
+}
+
+#[test]
+fn snapshot_search_deps() {
+    let mut m = anchored();
+    m.search.results.show_deps(fx::deps());
+    insta::assert_snapshot!(render(&m));
+}
+
+#[test]
+fn rewrite_stays_query_scoped_under_a_relation_filter() {
+    let mut m = anchored();
+    m.search.results.set_relation(Relation::Unresolved); // one row shown
+    m.update(Action::Rewrite);
+    let Mode::Rewrite(rw) = &m.mode else {
+        panic!("expected rewrite mode");
+    };
+    assert_eq!(
+        rw.matches.len(),
+        fx::search().matches.len(),
+        "the query's matches, not the filtered rows"
+    );
+    assert_eq!(rw.ticks.len(), rw.matches.len());
+}
+
+#[test]
+fn snapshot_search_impact() {
+    let mut m = anchored();
+    m.search.results.set_relation(Relation::Impact);
+    m.on_event(Event::Answered {
+        generation: m.generation,
+        answer: Box::new(Answer::Impact(fx::impact())),
+    });
+    let lines = numbered(5, &[(1, "use super::{Language, LanguageId};")]);
+    let refs: Vec<&str> = lines.iter().map(String::as_str).collect();
+    m.on_event(preview("src/lang/registry.rs", &refs));
     insta::assert_snapshot!(render(&m));
 }
 

@@ -287,14 +287,17 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
 `Overlay::Report` draws it and walks its source rows (`j`/`k`, `e`).
 
 - `error.rs` — the crate's public `Error`: terminal I/O, the engine, the editor.
-- `model.rs` — all state as data: the `Search` hub (query, results, context), the
+- `model.rs` — all state as data: the `Search` hub (query, results, context; a
+  declaration under the cursor can be entered as its `subject`, and the hub then shows
+  one read-only relation about it — references, impact, definition, deps), the
   current `Mode` (`Rename`, `Move`, `Rewrite`, `History`, each with its input, its
   rows, its panel cursors and a focus enum implementing `Panels`), an optional
   `Overlay` (menu, confirm, help), status.
 - `action.rs` — `Action` (what the user did, generic across modes: `Input`, `Enter`,
-  `Toggle`, `FocusNth`…), `Effect` (what to ask the engine: `Search`, `Plan`,
-  `Commit`, `Preview`, `History`, `Undo`; `Edit` for the loop itself), `Event` (what
-  came back; `Planned` carries what a mode shows about its intent). Plain enums.
+  `Toggle`, `FocusNth`…), `Effect` (what to ask the engine: `Search`, `Query` for a
+  read-only request, `Plan`, `Commit`, `Preview`, `History`, `Undo`; `Edit` for the
+  loop itself), `Event` (what came back; `Planned` carries what a mode shows about its
+  intent). Plain enums.
 - `keymap/` — the key vocabulary, pure. `keys.rs`: `Key` (a `Code` and
   `Modifiers`) and its constructors. `mod.rs`: `Trigger` is what a
   `Keybinding` listens for (`Key`, `Text`, `Any`), `Dispatch` is what it does

@@ -499,6 +499,16 @@ newest apply. `v`
 switches the rows between the compact list and the full report the CLI prints —
 search results, a rename's verdict rows, a move's paths and notices.
 
+`⏎` on a declaration — or on a use that resolves to exactly one — _enters its scope_:
+the rows become that declaration's judged references, grouped by verdict (`✓ safe`,
+`? unverified`, `✗ another declaration's`), each with the reason's glyph. A name
+search becomes the symbol's impact and context. `r`, `m` and `M` then act on the
+entered declaration from any row, `o` jumps the cursor from a use to the declaration
+it names, and `esc` leaves the scope, then the query. `R` opens the relation menu:
+all references, one verdict, `impact` (the modules importing it, depth by depth),
+`definition` (its address, reach and importers) or `deps` (the declaring file's
+imports and who imports it). Each answer is written by the engine, not guessed.
+
 **Rename** shows the new name in the title — the field starts empty with a `new name`
 placeholder, and the plan is re-made as you type — and a panel per verdict: `? unverified`
 (largest, where judgment is needed), `✓ safe`, `✗ another declaration's`.

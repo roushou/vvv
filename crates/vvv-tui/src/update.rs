@@ -4,14 +4,17 @@
 //! testable with plain assertions.
 
 use ratatui::crossterm::event::KeyEvent;
-use vvv_engine::{Confidence, Intent, RenameIntent, Selection, SymbolKind};
+use vvv_engine::{
+    Answer, Confidence, DepsQuery, ExplainQuery, ImpactQuery, Intent, RenameIntent, Request,
+    Selection, SymbolKind,
+};
 
 use super::action::{Action, Effect, Event, Planned};
 use super::keymap::{Dispatch, Key};
 use super::model::{
     Confirm, Confirmed, FilePreview, HistoryMode, HistoryPanel, Menu, MenuTarget, Mode, Model,
-    MoveMode, MovePanel, MovePlan, Overlay, Panels, RenameMode, RenamePanel, RewriteMode,
-    RewritePanel, SearchPanel,
+    MoveMode, MovePanel, MovePlan, Overlay, Panels, Relation, RenameMode, RenamePanel,
+    RenameTarget, RewriteMode, RewritePanel, SearchPanel,
 };
 use super::query::Filter;
 use vvv_engine::protocol::vocabulary::IntentLine;
@@ -107,6 +110,7 @@ impl Model {
                 Vec::new()
             }
             Action::Edit => self.edit(),
+            Action::Jump => self.goto_declaration(),
         }
     }
 
@@ -131,6 +135,20 @@ impl Model {
                         "{} skipped: the pattern does not parse there",
                         names.join(", ")
                     ));
+                }
+                self.preview_effect()
+            }
+            Event::Answered { generation, answer } => {
+                if generation != self.generation {
+                    return Vec::new();
+                }
+                self.status.busy = false;
+                match *answer {
+                    Answer::References(references) => self.search.results.entered(references),
+                    Answer::Impact(impact) => self.search.results.show_impact(impact),
+                    Answer::Explain(definition) => self.search.results.show_definition(definition),
+                    Answer::Deps(deps) => self.search.results.show_deps(deps),
+                    _ => return Vec::new(),
                 }
                 self.preview_effect()
             }
@@ -378,7 +396,7 @@ impl Model {
         }
         match &mut self.mode {
             Mode::Search => {
-                let len = self.search.results.matches.len();
+                let len = self.search.results.len();
                 self.search.results.cursor.move_by(by, len);
                 self.search.preview_scroll = None;
             }
@@ -485,7 +503,7 @@ impl Model {
     fn preview_effect(&self) -> Vec<Effect> {
         let (path, shown) = match &self.mode {
             Mode::Search => (
-                self.search.results.current().map(|m| m.path.clone()),
+                self.search.results.current_site().map(|(path, _)| path),
                 self.search.preview.as_ref().map(|p| p.path.clone()),
             ),
             Mode::Rename(r) => (
@@ -672,10 +690,14 @@ impl Model {
             };
         }
         match &mut self.mode {
-            Mode::Search => {
-                self.search.focus = SearchPanel::Results;
-                Vec::new()
-            }
+            Mode::Search => match self.search.focus {
+                SearchPanel::Query => {
+                    self.search.focus = SearchPanel::Results;
+                    Vec::new()
+                }
+                SearchPanel::Results => self.enter_subject(),
+                SearchPanel::Context => Vec::new(),
+            },
             Mode::Rename(r) => {
                 if r.busy || r.occurrences.is_empty() {
                     return Vec::new();
@@ -738,21 +760,126 @@ impl Model {
             self.status.clear();
             return self.preview_effect();
         }
+        if self.search.results.is_anchored() {
+            self.search.results.leave();
+            self.status.clear();
+            return self.preview_effect();
+        }
+        self.search.focus = SearchPanel::Query;
         Vec::new()
     }
 
     // ------------------------------------------------------------ modes
 
-    fn enter_rename(&mut self) -> Vec<Effect> {
-        let Some(target) = self.search.results.rename_target() else {
-            return self.fail("put the cursor on an identifier or a declaration to rename");
+    /// Enter the declaration under the cursor as the search's subject. The
+    /// screen keeps showing the search until the answer arrives, so the
+    /// rows never blank mid-request.
+    fn enter_subject(&mut self) -> Vec<Effect> {
+        let Some(m) = self.search.results.current().cloned() else {
+            return self.fail("put the cursor on a declaration to enter its scope");
         };
-        let language = self
-            .search
-            .results
-            .query
-            .as_ref()
-            .and_then(|q| q.language().cloned());
+        let Some(query) = self.search.results.subject_at(&m) else {
+            return self.fail("put the cursor on a declaration to enter its scope");
+        };
+        self.status.busy = true;
+        let generation = self.next_generation();
+        vec![Effect::Query {
+            generation,
+            request: Request::References(query),
+        }]
+    }
+
+    /// Show another relation for the entered declaration. A verdict filter
+    /// is local; a fetch switches the view only when its answer arrives.
+    fn choose_relation(&mut self, relation: Relation) -> Vec<Effect> {
+        match relation {
+            Relation::Impact | Relation::Definition | Relation::Deps => self.ask_relation(relation),
+            _ => {
+                self.search.results.set_relation(relation);
+                self.preview_effect()
+            }
+        }
+    }
+
+    /// Fetch a relation about the subject unless it is cached, so a switch
+    /// back and forth costs nothing.
+    fn ask_relation(&mut self, relation: Relation) -> Vec<Effect> {
+        let Some(subject) = self.search.results.subject.clone() else {
+            return Vec::new();
+        };
+        let Some(declaration) = self.search.results.subject_declaration().cloned() else {
+            return Vec::new();
+        };
+        let cached = match relation {
+            Relation::Impact => self.search.results.impact.is_some(),
+            Relation::Definition => self.search.results.definition.is_some(),
+            Relation::Deps => self.search.results.deps.is_some(),
+            _ => true,
+        };
+        if cached {
+            self.search.results.set_relation(relation);
+            return self.preview_effect();
+        }
+        let request = match relation {
+            Relation::Impact => Request::Impact(ImpactQuery {
+                name: subject.name.clone(),
+                declared_in: subject.declared_in.clone(),
+            }),
+            Relation::Definition => Request::Explain(ExplainQuery {
+                path: declaration.path.clone(),
+                position: declaration.start,
+            }),
+            Relation::Deps => Request::Deps(DepsQuery {
+                path: declaration.path.clone(),
+            }),
+            _ => return Vec::new(),
+        };
+        self.status.busy = true;
+        let generation = self.next_generation();
+        vec![Effect::Query {
+            generation,
+            request,
+        }]
+    }
+
+    /// The declaration the cursor's row names: the row itself when the
+    /// cursor is on one, else the row that resolves to it. Not on screen:
+    /// enter the declaration's scope instead.
+    fn goto_declaration(&mut self) -> Vec<Effect> {
+        if let Some(row) = self.search.results.declaration_row() {
+            self.search.results.cursor.index = row;
+            self.search.preview_scroll = None;
+            return self.preview_effect();
+        }
+        if !self.search.results.is_anchored() && self.search.results.current().is_some() {
+            return self.enter_subject();
+        }
+        Vec::new()
+    }
+
+    fn enter_rename(&mut self) -> Vec<Effect> {
+        let (target, language) = match &self.search.results.subject {
+            Some(s) => (
+                RenameTarget {
+                    name: s.name.clone(),
+                    symbol: s.symbol,
+                    declared_in: s.declared_in.clone(),
+                },
+                s.language.clone(),
+            ),
+            None => {
+                let Some(target) = self.search.results.rename_target() else {
+                    return self.fail("put the cursor on an identifier or a declaration to rename");
+                };
+                let language = self
+                    .search
+                    .results
+                    .query
+                    .as_ref()
+                    .and_then(|q| q.language().cloned());
+                (target, language)
+            }
+        };
         // Judge with the name unchanged: verdicts do not depend on the new one.
         let mut intent = RenameIntent::new(&target.name, &target.name);
         intent.symbol = target.symbol;
@@ -769,18 +896,37 @@ impl Model {
     }
 
     fn enter_move(&mut self, symbol: bool) -> Vec<Effect> {
-        let Some(m) = self.search.results.current() else {
-            return self.fail("put the cursor on a match in the file to move");
-        };
-        let name = if symbol {
-            match m.symbol.as_ref().filter(|s| s.kind != SymbolKind::Impl) {
-                Some(s) => Some(s.name.clone()),
-                None => return self.fail("put the cursor on a declaration to move it"),
+        let (from, name) = match &self.search.results.subject {
+            Some(s) => {
+                let Some(from) = s.declared_in.clone() else {
+                    return self.fail("the declaration has no file to move");
+                };
+                let name = if symbol {
+                    match s.symbol.filter(|k| *k != SymbolKind::Impl) {
+                        Some(_) => Some(s.name.clone()),
+                        None => return self.fail("put the cursor on a declaration to move it"),
+                    }
+                } else {
+                    None
+                };
+                (from, name)
             }
-        } else {
-            None
+            None => {
+                let Some(m) = self.search.results.current() else {
+                    return self.fail("put the cursor on a match in the file to move");
+                };
+                let name = if symbol {
+                    match m.symbol.as_ref().filter(|s| s.kind != SymbolKind::Impl) {
+                        Some(s) => Some(s.name.clone()),
+                        None => return self.fail("put the cursor on a declaration to move it"),
+                    }
+                } else {
+                    None
+                };
+                (m.path.clone(), name)
+            }
         };
-        self.mode = Mode::Move(Box::new(MoveMode::new(m.path.clone(), name)));
+        self.mode = Mode::Move(Box::new(MoveMode::new(from, name)));
         let effects = self.plan_move(false);
         self.arriving = !effects.is_empty();
         effects
@@ -790,27 +936,33 @@ impl Model {
         let Some(query) = self.search.results.query.clone() else {
             return self.fail("search for the pattern to rewrite first");
         };
-        if self.search.results.matches.is_empty() {
+        // Rewrite is query-scoped: its ticks must be a subset of what the
+        // query searches for, not the (possibly wider) anchored occurrences.
+        let matches = self.search.results.matches.clone();
+        if matches.is_empty() {
             return self.fail("nothing matched; a rewrite acts on the matches");
         }
-        let matches = self.search.results.matches.clone();
         self.mode = Mode::Rewrite(Box::new(RewriteMode::new(query, matches)));
         self.preview_effect()
     }
 
     fn open_menu(&mut self, target: MenuTarget) -> Vec<Effect> {
-        let (filter, values) = match target {
-            MenuTarget::Symbol => (
-                Filter::Symbol,
-                SymbolKind::ALL
+        let menu = match target {
+            MenuTarget::Symbol => {
+                let values = SymbolKind::ALL
                     .iter()
                     .map(|k| k.as_str().to_owned())
-                    .collect(),
-            ),
-            MenuTarget::Language => (Filter::Lang, self.languages.clone()),
+                    .collect();
+                let current = self.search.query.filter(Filter::Symbol).map(str::to_owned);
+                Menu::new(target, values, current.as_deref())
+            }
+            MenuTarget::Language => {
+                let current = self.search.query.filter(Filter::Lang).map(str::to_owned);
+                Menu::new(target, self.languages.clone(), current.as_deref())
+            }
+            MenuTarget::Relation => Menu::relations(self.search.results.relation),
         };
-        let current = self.search.query.filter(filter).map(str::to_owned);
-        self.overlay = Some(Overlay::Menu(Menu::new(target, values, current.as_deref())));
+        self.overlay = Some(Overlay::Menu(menu));
         Vec::new()
     }
 
@@ -818,14 +970,28 @@ impl Model {
         let Some(Overlay::Menu(menu)) = &self.overlay else {
             return Vec::new();
         };
-        let filter = match menu.target {
-            MenuTarget::Symbol => Filter::Symbol,
-            MenuTarget::Language => Filter::Lang,
-        };
+        let target = menu.target;
         let value = menu.current().value.clone();
-        self.search.query.set_filter(filter, value.as_deref());
         self.overlay = None;
-        self.search()
+        match target {
+            MenuTarget::Symbol => {
+                self.search
+                    .query
+                    .set_filter(Filter::Symbol, value.as_deref());
+                self.search()
+            }
+            MenuTarget::Language => {
+                self.search.query.set_filter(Filter::Lang, value.as_deref());
+                self.search()
+            }
+            MenuTarget::Relation => {
+                let relation = value
+                    .as_deref()
+                    .and_then(Relation::from_key)
+                    .unwrap_or_default();
+                self.choose_relation(relation)
+            }
+        }
     }
 
     fn undo_requested(&mut self) -> Vec<Effect> {
@@ -857,11 +1023,7 @@ impl Model {
             };
         }
         let site = match &self.mode {
-            Mode::Search => self
-                .search
-                .results
-                .current()
-                .map(|m| (m.path.clone(), m.start.line)),
+            Mode::Search => self.search.results.current_site(),
             Mode::Rename(r) => r.current().map(|o| (o.m.path.clone(), o.m.start.line)),
             Mode::Move(mv) => mv.current().map(|row| (row.path().into(), row.line())),
             Mode::Rewrite(rw) => rw.current().map(|m| (m.path.clone(), m.start.line)),

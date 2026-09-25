@@ -21,4 +21,4 @@ expression: render(&m)
 │                                           ││                                           │
 │                                           ││                                           │
 └───────────────────────────────────────────┘└───────────────────────────────────────────┘
- search r rename  m/M move file/symbol  w rewrite  s kind  L lang  h history  → context  /
+ search r rename  m/M move file/symbol  w rewrite  o declaration  s kind  L lang  h histor

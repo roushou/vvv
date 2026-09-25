@@ -157,6 +157,21 @@ impl Runner {
                     skipped: search.skipped,
                 }
             }
+            Effect::Query {
+                generation,
+                request,
+            } => {
+                if !request.is_read_only() {
+                    return Err(Failure::Unsupported(
+                        "the hub asks read-only questions; a mutation is planned",
+                    ));
+                }
+                let answer = self.engine.run(request)?;
+                Event::Answered {
+                    generation,
+                    answer: Box::new(answer),
+                }
+            }
             Effect::Preview { path } => {
                 let file = self.engine.run(FileQuery { path: path.clone() })?;
                 Event::Previewed {

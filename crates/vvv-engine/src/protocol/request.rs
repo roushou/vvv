@@ -65,6 +65,33 @@ pub enum Request {
     Undo,
 }
 
+impl Request {
+    /// Whether running this request can write. The picker's hub asks only
+    /// these; a mutation goes through an `Intent` and `Apply`.
+    pub fn is_read_only(&self) -> bool {
+        match self {
+            Self::Search(_)
+            | Self::Outline(_)
+            | Self::References(_)
+            | Self::Where(_)
+            | Self::Deps(_)
+            | Self::Explain(_)
+            | Self::Surface(_)
+            | Self::Impact(_)
+            | Self::Dead(_)
+            | Self::Imports(_)
+            | Self::File(_)
+            | Self::History => true,
+            Self::Rewrite { .. }
+            | Self::Rename { .. }
+            | Self::Move { .. }
+            | Self::MoveSymbol { .. }
+            | Self::Batch { .. }
+            | Self::Undo => false,
+        }
+    }
+}
+
 /// The answer to a [`Request`]: the result type of the command asked. On
 /// the wire it is that type's shape alone — a client knows what it asked —
 /// so it serialises without a tag and is read back by the command's type.
@@ -135,4 +162,31 @@ pub struct Reply<T> {
     pub id: Option<serde_json::Value>,
     #[serde(flatten)]
     pub response: Response<T>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_read_only_guard_separates_queries_from_mutations() {
+        assert!(Request::History.is_read_only());
+        assert!(Request::Search(Query::pattern("Engine")).is_read_only());
+        assert!(Request::References(ReferencesQuery::new("Engine")).is_read_only());
+        assert!(!Request::Undo.is_read_only(), "undo writes, however small");
+        assert!(
+            !Request::Rename {
+                intent: RenameIntent::new("A", "B"),
+                apply: false,
+            }
+            .is_read_only()
+        );
+        assert!(
+            !Request::Batch {
+                intent: BatchIntent { intents: vec![] },
+                apply: false,
+            }
+            .is_read_only()
+        );
+    }
 }

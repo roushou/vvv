@@ -6,15 +6,16 @@ use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Widget;
 use vvv_engine::Role;
+use vvv_engine::{Answer, Confidence, Impact, Occurrence};
 
 use super::{Panel, Screen};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
-use crate::model::{MenuTarget, Model, PanelKind, SearchPanel};
+use crate::model::{MenuTarget, Model, PanelKind, Relation, SearchPanel};
 use crate::render::Pane;
 use crate::render::{Header, Painter, Region};
 use vvv_engine::protocol::vocabulary::{Files, Mark};
-use vvv_engine::report::{Document, Options};
+use vvv_engine::report::{Document, Options, View};
 
 use Action as A;
 use Dispatch::Run;
@@ -158,6 +159,30 @@ const RESULTS: Layer<Action> = Layer {
             },
         },
         Keybinding {
+            triggers: &[Trigger::Key(Key::char('o'))],
+            dispatch: Run(A::Jump),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "o",
+                    word: "declaration",
+                }),
+                help: "jump to the declaration the row names",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('R'))],
+            dispatch: Run(A::OpenMenu(MenuTarget::Relation)),
+            when: When::Anchored,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "R",
+                    word: "relation",
+                }),
+                help: "what to show about the entered declaration",
+            },
+        },
+        Keybinding {
             triggers: &[Trigger::Key(Key::char('s'))],
             dispatch: Run(A::OpenMenu(MenuTarget::Symbol)),
             when: When::Always,
@@ -203,11 +228,7 @@ const RESULTS: Layer<Action> = Layer {
             },
         },
         Keybinding {
-            triggers: &[
-                Trigger::Key(Key::right()),
-                Trigger::Key(Key::enter()),
-                Trigger::Key(Key::char('l')),
-            ],
+            triggers: &[Trigger::Key(Key::right()), Trigger::Key(Key::char('l'))],
             dispatch: Run(A::FocusNth(3)),
             when: When::Always,
             legend: Legend {
@@ -219,11 +240,19 @@ const RESULTS: Layer<Action> = Layer {
             },
         },
         Keybinding {
-            triggers: &[
-                Trigger::Key(Key::esc()),
-                Trigger::Key(Key::char('/')),
-                Trigger::Key(Key::char('i')),
-            ],
+            triggers: &[Trigger::Key(Key::enter())],
+            dispatch: Run(A::Enter),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "⏎",
+                    word: "scope",
+                }),
+                help: "enter the declaration's scope: its judged references",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('/')), Trigger::Key(Key::char('i'))],
             dispatch: Run(A::FocusNth(1)),
             when: When::Always,
             legend: Legend {
@@ -232,6 +261,15 @@ const RESULTS: Layer<Action> = Layer {
                     word: "query",
                 }),
                 help: "the query",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::esc())],
+            dispatch: Run(A::Back),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "leave the declaration's scope, then the query",
             },
         },
         Keybinding {
@@ -365,20 +403,67 @@ impl<'a> SearchView<'a> {
         let (m, t) = (self.model, self.painter);
         let s = &m.search;
         let focused = s.focus == SearchPanel::Query;
-        let declarations = s.results.declarations().count();
-        let uses = s.results.matches.len() - declarations;
-        let files = Files::among(s.results.matches.iter().map(|x| x.path.as_path()));
         let mut right = Vec::new();
-        if declarations > 0 {
+        if let Some(subject) = &s.results.subject {
+            // Entered a declaration: the right names it and counts the
+            // verdicts, the way `references` groups them.
+            let kind = subject.symbol.map_or(String::new(), |k| format!("{k} "));
             right.push(t.glyph(Mark::Declaration));
-            right.push(Span::raw(format!("{declarations}  ")));
-        }
-        if uses > 0 {
-            right.push(Span::styled("○ ", t.dim));
-            right.push(Span::raw(format!("{uses}  ")));
-        }
-        if files.count() > 0 {
-            right.push(Span::styled(files.to_string(), t.dim));
+            right.push(Span::styled(
+                format!("{kind}{}  ", subject.name),
+                t.declaration,
+            ));
+            match s.results.relation {
+                relation if relation.is_impact() => match &s.results.impact {
+                    Some(i) => {
+                        right.push(t.glyph(Mark::ImportedBy));
+                        right.push(Span::raw(format!("{}  ", i.consumers.len())));
+                        let files = Files::among(i.consumers.iter().map(|c| c.path.as_path()));
+                        right.push(Span::styled(files.to_string(), t.dim));
+                    }
+                    None => right.push(Span::styled("…", t.dim)),
+                },
+                Relation::Definition => right.push(Span::styled("definition", t.dim)),
+                Relation::Deps => right.push(Span::styled("imports", t.dim)),
+                _ => match &s.results.references {
+                    Some(r) => {
+                        for (confidence, mark) in [
+                            (Confidence::Resolved, Mark::Safe),
+                            (Confidence::Unresolved, Mark::Unverified),
+                            (Confidence::Other, Mark::Other),
+                        ] {
+                            let n = r
+                                .occurrences
+                                .iter()
+                                .filter(|o| o.confidence == confidence)
+                                .count();
+                            right.push(t.glyph(mark));
+                            right.push(Span::raw(format!("{n}  ")));
+                        }
+                        right.push(Span::styled(
+                            Files::among(r.occurrences.iter().map(|o| o.m.path.as_path()))
+                                .to_string(),
+                            t.dim,
+                        ));
+                    }
+                    None => right.push(Span::styled("…", t.dim)),
+                },
+            }
+        } else {
+            let declarations = s.results.declarations().count();
+            let uses = s.results.matches.len() - declarations;
+            let files = Files::among(s.results.matches.iter().map(|x| x.path.as_path()));
+            if declarations > 0 {
+                right.push(t.glyph(Mark::Declaration));
+                right.push(Span::raw(format!("{declarations}  ")));
+            }
+            if uses > 0 {
+                right.push(Span::styled("○ ", t.dim));
+                right.push(Span::raw(format!("{uses}  ")));
+            }
+            if files.count() > 0 {
+                right.push(Span::styled(files.to_string(), t.dim));
+            }
         }
         let placeholder = if s.query.is_empty() && !focused {
             Span::styled("type to search", t.dim)
@@ -405,10 +490,99 @@ impl<'a> SearchView<'a> {
     fn results(&self, area: Rect, buf: &mut Buffer) {
         let (m, t) = (self.model, self.painter);
         let s = &m.search;
-        // The report's rows, laid out by the view the picker has chosen.
-        let document = Document::search(&s.results.matches, &[]);
         let width = area.width.saturating_sub(2) as usize;
-        let presentation = m.view.view().present(&document, Options::default(), width);
+        let view = m.view.view();
+
+        // The rows: the search's hits, or, once a declaration is entered,
+        // one read-only answer about it.
+        let (rows, selectable): (Vec<Line>, Vec<usize>) = if s.results.is_anchored() {
+            match s.results.relation {
+                Relation::Impact => s
+                    .results
+                    .impact
+                    .as_ref()
+                    .map_or_else(|| (Vec::new(), Vec::new()), |i| Self::impact_rows(t, i)),
+                Relation::Definition => s.results.definition.as_ref().map_or_else(
+                    || (Vec::new(), Vec::new()),
+                    |e| Self::present(t, &*view, &Answer::Explain(e.clone()), width),
+                ),
+                Relation::Deps => s.results.deps.as_ref().map_or_else(
+                    || (Vec::new(), Vec::new()),
+                    |d| Self::present(t, &*view, &Answer::Deps(d.clone()), width),
+                ),
+                _ => match &s.results.references {
+                    Some(r) => {
+                        let confidence = s.results.relation.confidence();
+                        let shown: Vec<&Occurrence> = r
+                            .occurrences
+                            .iter()
+                            .filter(|o| confidence.is_none_or(|c| o.confidence == c))
+                            .collect();
+                        let mut rows: Vec<Line> = Vec::new();
+                        let mut selectable: Vec<usize> = Vec::new();
+                        let mut group: Option<Confidence> = None;
+                        for (i, o) in shown.iter().enumerate() {
+                            if group != Some(o.confidence) {
+                                group = Some(o.confidence);
+                                rows.push(Self::verdict_head(t, &r.occurrences, o.confidence));
+                            }
+                            selectable.push(rows.len());
+                            rows.push(t.line(&view.relation(o, i + 1, width).line));
+                        }
+                        (rows, selectable)
+                    }
+                    None => (Vec::new(), Vec::new()),
+                },
+            }
+        } else {
+            // The report's rows, laid out by the view the picker has chosen.
+            let document = Document::search(&s.results.matches, &[]);
+            let presentation = view.present(&document, Options::default(), width);
+            let rows: Vec<Line> = presentation.body.iter().map(|r| t.line(&r.line)).collect();
+            let selectable: Vec<usize> = presentation
+                .body
+                .iter()
+                .enumerate()
+                .filter(|(_, r)| r.source.is_some())
+                .map(|(i, _)| i)
+                .collect();
+            (rows, selectable)
+        };
+        let empty = if s.query.is_empty() {
+            ""
+        } else if m.status.busy {
+            "…"
+        } else {
+            "∅ no matches"
+        };
+        let title = match &s.results.subject {
+            Some(subject) => {
+                let kind = subject.symbol.map_or(String::new(), |k| format!("{k} "));
+                Line::from(vec![
+                    t.glyph(Mark::Declaration),
+                    Span::styled(format!(" {kind}{}", subject.name), t.title),
+                ])
+            }
+            None => Line::from(Span::styled("results", t.title)),
+        };
+        Pane::new(t, title, s.focus == SearchPanel::Results)
+            .rows(rows)
+            .cursor(selectable.get(s.results.cursor.index).copied())
+            .emphasized(true)
+            .empty(empty)
+            .render(area, buf);
+    }
+
+    /// A report answer as rows: what `Document`/`View` compose, with the
+    /// rows that name a source selectable.
+    fn present(
+        t: Painter,
+        view: &dyn View,
+        answer: &Answer,
+        width: usize,
+    ) -> (Vec<Line<'static>>, Vec<usize>) {
+        let document = Document::of(answer, Options::default());
+        let presentation = view.present(&document, Options::default(), width);
         let rows: Vec<Line> = presentation.body.iter().map(|r| t.line(&r.line)).collect();
         let selectable: Vec<usize> = presentation
             .body
@@ -417,23 +591,61 @@ impl<'a> SearchView<'a> {
             .filter(|(_, r)| r.source.is_some())
             .map(|(i, _)| i)
             .collect();
-        let empty = if s.query.is_empty() {
-            ""
-        } else if m.status.busy {
-            "…"
-        } else {
-            "∅ no matches"
-        };
-        Pane::new(
-            t,
-            Line::from(Span::styled("results", t.title)),
-            s.focus == SearchPanel::Results,
-        )
-        .rows(rows)
-        .cursor(selectable.get(s.results.cursor.index).copied())
-        .emphasized(true)
-        .empty(empty)
-        .render(area, buf);
+        (rows, selectable)
+    }
+
+    /// One verdict's heading in the anchored list: `✓ safe 12  3 files`.
+    fn verdict_head(
+        t: Painter,
+        occurrences: &[Occurrence],
+        confidence: Confidence,
+    ) -> Line<'static> {
+        let mark = Mark::from(confidence);
+        let group: Vec<&Occurrence> = occurrences
+            .iter()
+            .filter(|o| o.confidence == confidence)
+            .collect();
+        Line::from(vec![
+            t.glyph(mark),
+            Span::styled(format!("{} {}", mark.word(), group.len()), t.title),
+            Span::styled(
+                format!(
+                    "  {}",
+                    Files::among(group.iter().map(|o| o.m.path.as_path()))
+                ),
+                t.dim,
+            ),
+        ])
+    }
+
+    /// The impact view: a heading per depth, then a row per consumer module,
+    /// each a selectable site in the consumer's file.
+    fn impact_rows(t: Painter, impact: &Impact) -> (Vec<Line<'static>>, Vec<usize>) {
+        let mut rows: Vec<Line<'static>> = Vec::new();
+        let mut selectable: Vec<usize> = Vec::new();
+        let mut depth: Option<u32> = None;
+        for consumer in &impact.consumers {
+            if depth != Some(consumer.depth) {
+                depth = Some(consumer.depth);
+                let count = impact
+                    .consumers
+                    .iter()
+                    .filter(|c| c.depth == consumer.depth)
+                    .count();
+                rows.push(Line::from(vec![
+                    t.glyph(Mark::ImportedBy),
+                    Span::styled(format!("imported by {count}"), t.title),
+                    Span::styled(format!("   depth {}", consumer.depth), t.dim),
+                ]));
+            }
+            selectable.push(rows.len());
+            let mut spans = vec![Span::raw("  "), Span::styled(consumer.path.short(), t.path)];
+            if consumer.depth > 1 {
+                spans.push(Span::styled(format!("   via {}", consumer.through), t.dim));
+            }
+            rows.push(Line::from(spans));
+        }
+        (rows, selectable)
     }
 
     /// What the cursor row is, then the file around it.
@@ -442,19 +654,32 @@ impl<'a> SearchView<'a> {
         let s = &m.search;
         let focused = s.focus == SearchPanel::Context;
         let current = s.results.current();
-        let title = current.map_or_else(
+        let consumer = s.results.current_consumer();
+        let site = s.results.current_site();
+        let title = site.as_ref().map_or_else(
             || Line::from(Span::styled("context", t.dim)),
-            |c| Line::from(Span::styled(c.path.short(), t.path)),
+            |(path, _)| Line::from(Span::styled(path.short(), t.path)),
         );
         let mut rows: Vec<Line> = Vec::new();
-        if let Some(c) = current {
+        if let Some(consumer) = consumer {
+            rows.push(Line::from(vec![
+                t.glyph(Mark::ImportedBy),
+                Span::styled(format!(" depth {}  ", consumer.depth), t.declaration),
+                Span::styled(consumer.module.to_string(), t.address),
+            ]));
+        } else if let Some(c) = current {
             match (&c.symbol, c.role) {
                 // The results row already says what it is; the source below
                 // is the detail. Only a use needs a card, to name what it
                 // resolves to.
                 (Some(_), Role::Declaration) => {}
                 _ => {
-                    if let Some(d) = s.results.declaration_of(c)
+                    let declaration = if s.results.is_anchored() {
+                        s.results.anchored_declarations().first()
+                    } else {
+                        s.results.declaration_of(c)
+                    };
+                    if let Some(d) = declaration
                         && let Some(sym) = &d.symbol
                     {
                         let mut spans = vec![
@@ -470,30 +695,36 @@ impl<'a> SearchView<'a> {
                     }
                 }
             }
-            if !rows.is_empty() {
-                rows.push(Line::default());
-            }
+        }
+        if !rows.is_empty() {
+            rows.push(Line::default());
         }
         let head = rows.len();
         let panel = Pane::new(t, title, focused).empty("");
         // The source fills whatever the card leaves.
         let inner_height = area.height.saturating_sub(2) as usize;
         let inner_width = area.width.saturating_sub(2) as usize;
-        if let (Some(c), Some(preview)) = (current, &s.preview)
-            && preview.path == c.path
+        if let (Some((path, _)), Some(preview)) = (site.as_ref(), &s.preview)
+            && preview.path == *path
         {
             let height = inner_height.saturating_sub(head);
             let first = s
                 .preview_scroll
                 .unwrap_or_else(|| m.preview_anchor())
                 .min(preview.line_count().saturating_sub(1));
+            let highlight = current
+                .filter(|c| c.path == *path)
+                .map(|c| (c.span.start, c.span.end));
+            let span_lines = current
+                .filter(|c| c.path == *path)
+                .map(|c| (c.start.line as usize, c.end.line as usize));
             rows.extend(t.source_window(
                 preview,
                 first,
                 height,
                 inner_width,
-                Some((c.span.start, c.span.end)),
-                Some((c.start.line as usize, c.end.line as usize)),
+                highlight,
+                span_lines,
             ));
         }
         panel.rows(rows).render(area, buf);

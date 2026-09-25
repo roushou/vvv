@@ -55,6 +55,12 @@ pub trait View {
         width: usize,
     ) -> Row;
 
+    /// Lay one relation row out: an occurrence of the declaration a search
+    /// was narrowed to, with no tick — the hub reads, it does not commit.
+    fn relation(&self, occurrence: &Occurrence, ordinal: usize, width: usize) -> Row {
+        self.occurrence(occurrence, ordinal, false, width)
+    }
+
     /// Lay one re-spelling out as the picker's list row.
     fn respelling(&self, respelling: &Respelling, width: usize) -> Row;
 
