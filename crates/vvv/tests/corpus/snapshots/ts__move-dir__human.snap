@@ -6,7 +6,6 @@ exit 0
 --- stdout ---
 move src/geometry → src/shapes
 
-
 → 3   2 files
 ± 2   2 files
 

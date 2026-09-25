@@ -19,7 +19,6 @@ read any screen at a glance:
 | `✓` `?` `✗` | will be changed / can't tell / belongs to another |
 | `!`         | needs your hand                                   |
 | `±`         | a structural edit — a `mod` line, a visibility    |
-| `◆`         | a module address (`crate::a::b`)                  |
 | `∅`         | nothing                                           |
 | `+N`        | the match continues for N more lines              |
 
@@ -46,14 +45,13 @@ You can describe what you're looking for in three ways, and they stack.
 ### By name
 
 A plain word finds every identifier spelling it, wherever it appears. The declaration
-comes first, with its address; then every other use, grouped by file, imports marked
-`→`:
+comes first; then every other use, grouped by file, imports marked `→`:
 
 ```console
 $ vvv search Config
 ● 1  1 file
 src/util/parse.rs
-  1 ●    5:12   struct Config  pub struct Config;  ◆ app::util::parse::Config
+  1 ●    5:12   pub struct Config;
 
 ○ 2  1 file
 src/net/client.rs
@@ -102,15 +100,15 @@ Search says _where_; these say _what_. They read the same declarations and impor
 rename uses, so what they print is what a rename would act on.
 
 ```console
-vvv outline src/plan/mod.rs             # what the file declares, with visibility and address
+vvv outline src/plan/mod.rs             # what the file declares, with visibility
 vvv references Plan                     # every token spelling Plan, judged like a rename would
 vvv where Plan --from src/lib.rs        # where Plan is declared and the `use` to write in lib.rs
 vvv deps src/plan/mod.rs                # what the file imports, and who imports it
 vvv explain src/plan/mod.rs:49:12       # what is at that position: declaration, module, reach
 ```
 
-Each opens with the module once — `◆ vvv_core::plan   src/plan/mod.rs` — and never
-repeats it per row.
+Each opens with the file path once — `src/plan/mod.rs` — and never repeats it per
+row.
 
 `outline` is a tree: nesting by containment, functions and methods as `name()`, fields
 and variants bare, the modifier as written after the name (`·` when there is none,
@@ -118,7 +116,7 @@ which is what private looks like):
 
 ```console
 $ vvv outline src/plan/mod.rs
-◆ vvv_core::plan   src/plan/mod.rs
+src/plan/mod.rs
 
   24  enum ApplyError   pub
   26    Vfs             ·
@@ -162,7 +160,7 @@ crates/vvv-core/src/semantics.rs:40:12
     39 │ pub fn reach_kind(&self, modifier: Option<&str>) -> ReachKind {
        │        ^^^^^^^^^^
 
-● method reach_kind   pub   ◆ vvv_core::semantics
+● method reach_kind   pub
   reaches  everyone
 ← 5
   crates/vvv-core/src/answer/mod.rs
@@ -174,9 +172,8 @@ spells, then `↗` the declaration a re-export chain leads to and its file:
 
 ```console
 crates/vvv-engine/src/change.rs:12:20
-→ vvv_core::ChangeSet   ◆ vvv_core::ChangeSet
+→ vvv_core::ChangeSet
   ↗ vvv_core::edit::change_set::ChangeSet   crates/vvv-core/src/edit/change_set.rs
-◆ vvv_engine::change
 ```
 
 `where` prints one `●` line per declaration and, with `--from`, the import to write
@@ -212,7 +209,7 @@ an `↗` line per address a re-export chain offers it at:
 $ vvv surface vvv_core
 surface vvv_core
 
-● struct Span   ◆ vvv_core::text::span::Span   crates/vvv-core/src/text/span.rs:9:12   ← 26
+● struct Span   crates/vvv-core/src/text/span.rs:9:12   ← 26
   ↗ vvv_core::text::Span
   ↗ vvv_core::Span
 ```
@@ -224,14 +221,14 @@ that carried it there:
 
 ```console
 $ vvv impact Plan
-impact Plan   ◆ vvv_core::plan::Plan
+impact Plan
 
 ← 2   depth 1
-  ◆ vvv_core::workspace   src/workspace/mod.rs
-  ◆ vvv_core::lib   src/lib.rs
+  src/workspace/mod.rs
+  src/lib.rs
 
 ← 1   depth 2
-  ◆ vvv_core::engine   src/engine.rs   via vvv_core::workspace
+  src/engine.rs   via vvv_core::workspace
 ```
 
 `dead` asks, for every addressable declaration, the question `references` asks: is
@@ -321,7 +318,7 @@ preview is three sections:
 $ vvv rename Reach Scope
 rename Reach → Scope
 
-● enum Reach   ◆ vvv_core::semantics::Reach   crates/vvv-core/src/semantics.rs:105:1
+● enum Reach   crates/vvv-core/src/semantics.rs:105:1
 
 ✓ 29  4 files
   15  crates/vvv/src/output/fixtures.rs
@@ -387,8 +384,6 @@ The preview separates what is mechanical from what you should read:
 $ vvv move crates/vvv-core/src/semantics.rs crates/vvv-core/src/resolve/semantics.rs
 move crates/vvv-core/src/semantics.rs → crates/vvv-core/src/resolve/semantics.rs
 
-◆ vvv_core::semantics → vvv_core::resolve::semantics
-
 → 5   5 files
 ± 3   3 files
 
@@ -411,7 +406,7 @@ move crates/vvv-core/src/semantics.rs → crates/vvv-core/src/resolve/semantics.
 ± crates/vvv-core/src/semantics.rs → crates/vvv-core/src/resolve/semantics.rs
 ```
 
-`◆` is the module address before and after. Every path re-spelled in place is one `→`
+Every path re-spelled in place is one `→`
 row (the changed segment is bold in a terminal); anything else — a `mod` line moving, a
 visibility widened, the file itself — is a `±` hunk, because that is what you want to
 read. An import vvv understood but could not rewrite is a `!` row with the replacement
@@ -493,9 +488,9 @@ after the editor returns or it writes something itself.
 
 **Search** is the hub: the query in the title, the rows below (`●` declarations first,
 `→` imports dimmed, the file and line shortened to `dir/file.rs:line`), and a context
-panel on the right that says what the row is — `● struct Engine  pub  ◆ vvv_engine`
-and its uses for a declaration, the declaration a use resolves to — then the source
-around it. Filter words (`symbol:trait`, `name:Foo`, `kind:impl_item`, `lang:rust`)
+panel on the right that names the declaration a use resolves to —
+`→ ● struct Engine   engine.rs:64` — or, for a declaration, is just the source
+around it, since the row already says what it is. Filter words (`symbol:trait`, `name:Foo`, `kind:impl_item`, `lang:rust`)
 go anywhere in the query; `s` and `L` pick them from a list. The results list is
 where you act: `↓` or `⏎` from the query (from the context, `esc` or `←`), then the
 letters — `r` renames what is under the cursor, `m` moves its file, `M` moves the

@@ -1,11 +1,8 @@
 ---
 source: crates/vvv/src/output/human/mod.rs
-assertion_line: 797
-expression: "render(|r| r.move_file(&fx::move_file()).unwrap())"
+expression: "render(|r| { r.report(&Answer::Move(fx::move_file())).unwrap(); })"
 ---
 move src/util/parse.rs → src/net/parse.rs
-
-◆ cli::util::parse → cli::net::parse
 
 → 2   2 files
 ± 2   2 files

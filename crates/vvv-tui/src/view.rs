@@ -8,7 +8,7 @@ use vvv_engine::protocol::vocabulary::Mark;
 use vvv_engine::report::{Block, Detailed, Options, Row, View};
 use vvv_engine::{Notice, NoticeKind, Occurrence, Respelling};
 
-/// Hits as one row each: glyph, `short:line`, kind and name, address.
+/// Hits as one row each: glyph, `short:line`, kind and name.
 #[derive(Debug, Default)]
 pub struct Compact;
 
@@ -99,8 +99,8 @@ impl View for Compact {
 }
 
 impl Compact {
-    /// `● short:line   kind name   ◆ address` for a declaration; the glyph,
-    /// the site and the source hit for anything else.
+    /// `● short:line   kind name` for a declaration; the glyph, the site
+    /// and the source hit for anything else.
     fn hit(m: &Match, width: usize) -> Row {
         let site_width = 22;
         let mut line = match m.role {
@@ -113,26 +113,20 @@ impl Compact {
             .and(Role::Path, format!("{site:<site_width$}"))
             .and(Role::Plain, " ");
         let budget = width.saturating_sub(2 + site_width + 1);
-        match (&m.symbol, &m.address) {
-            (Some(symbol), address) if m.role == MatchRole::Declaration => {
-                let name = format!("{} {}", symbol.kind, symbol.name);
-                line = line.and(Role::Declaration, name.clone());
-                if let Some(address) = address {
-                    let rest = budget.saturating_sub(name.chars().count() + 3);
-                    let text = format!("◆ {address}");
-                    if text.chars().count() <= rest {
-                        line = line.and(Role::Plain, "   ").and(Role::Address, text);
-                    }
-                }
-            }
-            _ => {
-                let rest = if m.role == MatchRole::Import {
-                    Role::Import
-                } else {
-                    Role::Plain
-                };
-                line = line.and_line(Line::hit(m, rest).fit(budget));
-            }
+        if m.role == MatchRole::Declaration
+            && let Some(symbol) = &m.symbol
+        {
+            line = line.and(
+                Role::Declaration,
+                format!("{} {}", symbol.kind, symbol.name),
+            );
+        } else {
+            let rest = if m.role == MatchRole::Import {
+                Role::Import
+            } else {
+                Role::Plain
+            };
+            line = line.and_line(Line::hit(m, rest).fit(budget));
         }
         Row::at(line, m.path.clone(), m.start.line)
     }

@@ -4,7 +4,7 @@ expression: "corpus.run(args, false)"
 ---
 exit 0
 --- stdout ---
-◆ corpus_core::geometry::shape   core/src/geometry/shape.rs
+core/src/geometry/shape.rs
 
    4  enum Shape   pub
    5    Dot        ·

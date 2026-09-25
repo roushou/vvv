@@ -4,7 +4,7 @@ expression: "corpus.run(args, false)"
 ---
 exit 0
 --- stdout ---
-● function area   ◆ src::util.ts::area   src/util.ts:1:8
+● function area   src/util.ts:1:8
   → import { area } from './util.ts/area';
 --- stderr ---
 ● 1

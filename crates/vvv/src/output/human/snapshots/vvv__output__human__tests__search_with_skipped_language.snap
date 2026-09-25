@@ -1,11 +1,10 @@
 ---
 source: crates/vvv/src/output/human/mod.rs
-assertion_line: 542
-expression: "render(|r| r.search(&fx::search_with_skipped()).unwrap())"
+expression: "render(|r| { r.report(&Answer::Search(fx::search_with_skipped())).unwrap(); })"
 ---
 ● 1  1 file
 src/lang/mod.rs
-  1 ●   64:1    trait Language  pub trait Language: Send + Sync {  +8  ◆ vvv_core::lang::Language
+  1 ●   64:1    pub trait Language: Send + Sync {  +8
 
 ○ 3  2 files
 src/lang/registry.rs

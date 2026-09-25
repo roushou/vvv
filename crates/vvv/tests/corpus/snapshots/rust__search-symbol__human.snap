@@ -5,6 +5,6 @@ expression: "corpus.run(args, false)"
 exit 0
 --- stdout ---
 core/src/geometry/shape.rs
-  1 ●    4:1    enum Shape  pub enum Shape {  +3  ◆ corpus_core::geometry::shape::Shape
+  1 ●    4:1    pub enum Shape {  +3
 --- stderr ---
 ● 1  1 file

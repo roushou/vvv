@@ -1,8 +1,8 @@
 ---
 source: crates/vvv/src/output/human/mod.rs
-expression: "render(|r| r.deps(&fx::deps()).unwrap())"
+expression: "render(|r| r.report(&Answer::Deps(fx::deps())).unwrap())"
 ---
-◆ vvv_core::plan   src/plan/mod.rs
+src/plan/mod.rs
 
 → 5
   vvv_core

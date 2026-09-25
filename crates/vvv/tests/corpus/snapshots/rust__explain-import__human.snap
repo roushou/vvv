@@ -5,7 +5,6 @@ expression: "corpus.run(args, false)"
 exit 0
 --- stdout ---
 app/src/main.rs:4:24
-→ corpus_core::area   ◆ corpus_core::area
+→ corpus_core::area
   ↗ corpus_core::util::area   core/src/util.rs
-◆ corpus_app
 --- stderr ---

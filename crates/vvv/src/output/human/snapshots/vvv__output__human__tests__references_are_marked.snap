@@ -1,8 +1,8 @@
 ---
 source: crates/vvv/src/output/human/mod.rs
-expression: "render(|r| r.references(&fx::references()).unwrap())"
+expression: "render(|r| { r.report(&Answer::References(fx::references())).unwrap(); })"
 ---
-● trait Language   ◆ vvv_core::lang::Language   src/lang/mod.rs:64:1
+● trait Language   src/lang/mod.rs:64:1
 
 ✓ 3  3 files
   1  src/lang/mod.rs

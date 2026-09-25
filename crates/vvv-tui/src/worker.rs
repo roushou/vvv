@@ -129,14 +129,12 @@ impl Runner {
             Answer::Move(mv) => Planned::Move {
                 files: mv.files,
                 intent,
-                addresses: mv.from_address.zip(mv.to_address),
                 respellings: mv.respellings,
                 notices: mv.notices,
             },
             Answer::MoveSymbol(mv) => Planned::Move {
                 files: mv.files,
                 intent,
-                addresses: Some((mv.from, mv.to)),
                 respellings: mv.respellings,
                 notices: mv.notices,
             },

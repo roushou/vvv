@@ -6,9 +6,7 @@ use vvv_engine::RelPath;
 use vvv_engine::HistoryEntry;
 use vvv_engine::protocol::FileChange;
 use vvv_engine::report::Document;
-use vvv_engine::{
-    Address, Highlight, Intent, Match, Notice, Occurrence, Query, Respelling, Skipped,
-};
+use vvv_engine::{Highlight, Intent, Match, Notice, Occurrence, Query, Respelling, Skipped};
 
 use super::model::MenuTarget;
 
@@ -145,7 +143,6 @@ pub enum Planned {
     },
     Move {
         intent: Intent,
-        addresses: Option<(Address, Address)>,
         respellings: Vec<Respelling>,
         notices: Vec<Notice>,
         files: Vec<FileChange>,

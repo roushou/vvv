@@ -6,7 +6,7 @@ exit 0
 --- stdout ---
 rename Point → Coord
 
-● class Point   ◆ src::geometry::point.ts::Point   src/geometry/point.ts:1:8
+● class Point   src/geometry/point.ts:1:8
 
 ✓ 8  3 files
    5  src/geometry/point.ts

@@ -15,7 +15,7 @@ use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When
 use crate::model::{Mode, Model, MoveMode, MovePanel, MoveRow, PanelKind};
 use crate::render::Pane;
 use crate::render::{Fit, Header, Painter, Region};
-use vvv_engine::protocol::vocabulary::{Mark, Plural};
+use vvv_engine::protocol::vocabulary::Mark;
 
 use Action as A;
 use Dispatch::Run;
@@ -228,24 +228,9 @@ impl<'a> MoveView<'a> {
     fn header(&self) -> Header<'a> {
         let (mv, t) = (self.mode, self.painter);
         let focused = mv.focus == MovePanel::To;
-        let mut right = Vec::new();
-        if let Some(plan) = &mv.plan {
-            for (mark, n) in [
-                (Mark::Import, plan.respellings.len()),
-                (Mark::Structure, plan.structural.len()),
-                (Mark::ByHand, plan.notices.len()),
-            ] {
-                right.push(t.glyph(mark));
-                right.push(Span::raw(format!("{n}  ")));
-            }
-            right.push(Span::styled(
-                Plural(plan.files.len(), "file").to_string(),
-                t.dim,
-            ));
-        }
         let what = match &mv.symbol {
-            Some(name) => format!("{name}  {}", mv.from.display()),
-            None => mv.from.display().to_string(),
+            Some(name) => format!("{name}  {}", mv.from.short()),
+            None => mv.from.short(),
         };
         let mut header = Header::new(
             t,
@@ -258,23 +243,17 @@ impl<'a> MoveView<'a> {
                 t.caret(focused),
                 Span::raw(" "),
             ]),
-        )
-        .right(Line::from(right));
+        );
         let mut line = Vec::new();
         match (&mv.plan, &mv.error) {
-            (Some(plan), _) => match &plan.addresses {
-                Some((from, to)) if !from.package().as_str().is_empty() => {
-                    line.push(Span::styled(format!("◆ {from}"), t.address));
-                    line.push(Span::styled(" → ", t.import));
-                    line.push(Span::styled(to.to_string(), t.address));
-                }
-                _ => line.push(Span::styled("◆", t.dim)),
-            },
+            (Some(_), _) => {}
             (None, Some(error)) => line.push(Span::styled(format!("✗ {error}"), t.error)),
             (None, None) if mv.busy => line.push(Span::styled("…", t.dim)),
             (None, None) => line.push(Span::styled("type a destination", t.dim)),
         }
-        header = header.line(Line::from(line));
+        if !line.is_empty() {
+            header = header.line(Line::from(line));
+        }
         header
     }
 
@@ -359,7 +338,7 @@ impl<'a> MoveView<'a> {
         let current = mv.current();
         let title = current.as_ref().map_or_else(
             || Line::from(Span::styled("detail", t.dim)),
-            |row| Line::from(Span::styled(row.path().display().to_string(), t.path)),
+            |row| Line::from(Span::styled(row.path().short(), t.path)),
         );
         let inner_height = area.height.saturating_sub(2) as usize;
         let inner_width = area.width.saturating_sub(2) as usize;
@@ -407,7 +386,7 @@ impl<'a> MoveView<'a> {
                         t.glyph(Mark::Structure),
                         Span::styled(file.path.short(), t.dim),
                         Span::styled(" → ", t.import),
-                        Span::styled(to.display().to_string(), t.path),
+                        Span::styled(to.short(), t.path),
                     ]));
                     rows.push(Line::default());
                 }

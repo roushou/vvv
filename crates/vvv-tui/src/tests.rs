@@ -172,7 +172,6 @@ fn moving() -> Model {
         generation,
         planned: Planned::Move {
             intent: Intent::Move(mv.intent),
-            addresses: mv.from_address.zip(mv.to_address),
             respellings: mv.respellings,
             notices: mv.notices,
             files: mv.files,

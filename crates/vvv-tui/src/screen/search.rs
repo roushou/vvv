@@ -5,7 +5,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Widget;
-use vvv_engine::{Match, Role};
+use vvv_engine::Role;
 
 use super::{Panel, Screen};
 use crate::action::Action;
@@ -444,38 +444,15 @@ impl<'a> SearchView<'a> {
         let current = s.results.current();
         let title = current.map_or_else(
             || Line::from(Span::styled("context", t.dim)),
-            |c| Line::from(Span::styled(c.path.display().to_string(), t.path)),
+            |c| Line::from(Span::styled(c.path.short(), t.path)),
         );
         let mut rows: Vec<Line> = Vec::new();
         if let Some(c) = current {
             match (&c.symbol, c.role) {
-                (Some(sym), Role::Declaration) => {
-                    let mut spans = vec![
-                        t.glyph(Mark::Declaration),
-                        Span::styled(format!("{} {}", sym.kind, sym.name), t.declaration),
-                    ];
-                    if let Some(modifier) = sym.modifier() {
-                        spans.push(Span::styled(format!("   {modifier}"), t.symbol));
-                    }
-                    if let Some(address) = &c.address {
-                        spans.push(Span::styled(format!("   ◆ {address}"), t.address));
-                    }
-                    rows.push(Line::from(spans));
-                    let uses: Vec<&Match> = s
-                        .results
-                        .matches
-                        .iter()
-                        .filter(|x| x.role != Role::Declaration && x.text == sym.name)
-                        .collect();
-                    if !uses.is_empty() {
-                        let files = Files::among(uses.iter().map(|x| x.path.as_path()));
-                        rows.push(Line::from(vec![
-                            Span::styled("○ ", t.dim),
-                            Span::raw(format!("{} uses", uses.len())),
-                            Span::styled(format!("   {files}"), t.dim),
-                        ]));
-                    }
-                }
+                // The results row already says what it is; the source below
+                // is the detail. Only a use needs a card, to name what it
+                // resolves to.
+                (Some(_), Role::Declaration) => {}
                 _ => {
                     if let Some(d) = s.results.declaration_of(c)
                         && let Some(sym) = &d.symbol
@@ -485,15 +462,10 @@ impl<'a> SearchView<'a> {
                             t.glyph(Mark::Declaration),
                             Span::styled(format!("{} {}", sym.kind, sym.name), t.declaration),
                         ];
-                        match &d.address {
-                            Some(address) => {
-                                spans.push(Span::styled(format!("   ◆ {address}"), t.address));
-                            }
-                            None => spans.push(Span::styled(
-                                format!("   {}:{}", d.path.short(), d.start.line + 1),
-                                t.dim,
-                            )),
-                        }
+                        spans.push(Span::styled(
+                            format!("   {}:{}", d.path.short(), d.start.line + 1),
+                            t.dim,
+                        ));
                         rows.push(Line::from(spans));
                     }
                 }

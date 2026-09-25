@@ -4,6 +4,6 @@ expression: "corpus.run(args, false)"
 ---
 exit 0
 --- stdout ---
-impact area   ◆ src::util.ts::area
+impact area
 --- stderr ---
 ∅ no module imports it

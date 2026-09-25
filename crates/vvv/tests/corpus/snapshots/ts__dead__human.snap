@@ -6,7 +6,7 @@ exit 0
 --- stdout ---
 dead
 
-● function unusedPrivate   ◆ src::util.ts::unusedPrivate   src/util.ts:5:10
-● variable VERSION   ◆ src::util.ts::VERSION   src/util.ts:9:14
+● function unusedPrivate   src/util.ts:5:10
+● variable VERSION   src/util.ts:9:14
 --- stderr ---
 ● 2   ? 0 with tokens that might be uses

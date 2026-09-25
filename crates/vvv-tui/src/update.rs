@@ -290,19 +290,12 @@ impl Model {
                 Mode::Move(mv),
                 Planned::Move {
                     intent,
-                    addresses,
                     respellings,
                     notices,
                     files,
                 },
             ) => {
-                mv.plan = Some(MovePlan::new(
-                    intent,
-                    files,
-                    respellings,
-                    notices,
-                    addresses,
-                ));
+                mv.plan = Some(MovePlan::new(intent, files, respellings, notices));
                 mv.error = None;
                 mv.busy = false;
                 for panel in [

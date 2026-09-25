@@ -4,7 +4,7 @@ expression: "corpus.run(args, false)"
 ---
 exit 0
 --- stdout ---
-◆ corpus_core::geometry::point   core/src/geometry/point.rs
+core/src/geometry/point.rs
 
 → 0
   ∅

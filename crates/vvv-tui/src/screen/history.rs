@@ -168,15 +168,15 @@ fn files<'a>(h: &'a HistoryMode, t: Painter) -> Pane<'a> {
     if let Some(entry) = h.current() {
         for (from, to) in &entry.moves {
             out.push(Line::from(vec![
-                Span::styled(from.display().to_string(), t.dim),
+                Span::styled(from.short(), t.dim),
                 Span::styled(" → ", t.import),
-                Span::styled(to.display().to_string(), t.path),
+                Span::styled(to.short(), t.path),
             ]));
         }
         for path in &entry.paths {
             out.push(Line::from(vec![
                 t.glyph(Mark::Structure),
-                Span::styled(path.display().to_string(), t.path),
+                Span::styled(path.short(), t.path),
             ]));
         }
     }

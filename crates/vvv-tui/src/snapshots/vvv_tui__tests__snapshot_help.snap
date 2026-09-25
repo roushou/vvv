@@ -8,7 +8,7 @@ expression: render(&m)
 │ Marks                                                                                  │
 │           ● → ↗  declaration · import · re-export                                      │
 │           ✓ ? ✗  will · unsure · will not    ▪ ▫ ticked or not                         │
-│         ± ! ◆ ∅  structural edit · by hand · module address · nothing                  │
+│           ± ! ∅  structural edit · by hand · nothing                                   │
 │ Search                                                                                 │
 │             ↓ ⏎  results                                                               │
 │             esc  clear                                                                 │

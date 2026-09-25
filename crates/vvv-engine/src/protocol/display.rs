@@ -30,7 +30,7 @@ pub enum Role {
     Declaration,
     /// An import, or the text around one.
     Import,
-    /// `◆ address`.
+    /// A fully-qualified address — a re-export alias.
     Address,
     /// `✗` and an error.
     Error,

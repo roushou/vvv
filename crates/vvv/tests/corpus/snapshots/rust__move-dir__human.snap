@@ -6,8 +6,6 @@ exit 0
 --- stdout ---
 move core/src/geometry → core/src/geo
 
-◆ corpus_core::geometry → corpus_core::geo
-
 → 4   3 files
 ± 4   4 files
 

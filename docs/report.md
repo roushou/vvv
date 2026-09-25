@@ -124,10 +124,9 @@ each block into rows through the builder for it (`Sections`, `Verdicts`,
 in `protocol::{display, vocabulary}`: they are the row vocabulary the views
 share.
 
-A composition still builds a few `Line`s by hand — a module header, an address
-pair, declaration `●` rows, the `deps` counts, `impact`'s title — and pushes
-them into `body`. Those are the lines every view agrees on, so they need no
-block.
+A composition still builds a few `Line`s by hand — a file header, declaration
+`●` rows, the `deps` counts, `impact`'s title — and pushes them into `body`.
+Those are the lines every view agrees on, so they need no block.
 
 ### A row and its source
 

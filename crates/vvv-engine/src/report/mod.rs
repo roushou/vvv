@@ -20,7 +20,7 @@ use crate::protocol::{
     Impact, ImportSite, Importer, ImportsReport, Intent, Locations, Move, MoveIntent, MoveSymbol,
     Outline, OutlineItem, References, Rename, Rewrite, Site, Skipped, Surface, Undo, Unreferenced,
 };
-use crate::{Address, Confidence, FileChange, HistoryEntry, Match, Notice, Occurrence, Respelling};
+use crate::{Confidence, FileChange, HistoryEntry, Match, Notice, Occurrence, Respelling};
 
 use lines as l;
 
@@ -125,16 +125,9 @@ impl Document {
         self.block_note(Block::Note(Note::Warning(line)));
     }
 
-    /// `◆ module   path`, or the path alone when the language has no addresses.
-    fn module_header(&mut self, module: Option<&Address>, path: &std::path::Path) {
-        match module.filter(|m| !m.package().as_str().is_empty()) {
-            Some(module) => self.body([Line::mark(Mark::Address)
-                .and(Role::Plain, " ")
-                .and(Role::Address, module.to_string())
-                .and(Role::Plain, "   ")
-                .and(Role::Path, path.display().to_string())]),
-            None => self.body([Line::of(Role::Path, path.display().to_string())]),
-        }
+    /// `path`: the file the command opened.
+    fn file_header(&mut self, path: &std::path::Path) {
+        self.body([Line::of(Role::Path, path.display().to_string())]);
     }
 
     /// The body of a move preview: counts, the `→` rows, the `!` rows, and a
@@ -226,20 +219,6 @@ impl Document {
                 self.hint("--apply to write");
             }
         }
-    }
-
-    /// `◆ old → new`, skipped for a nameless package.
-    fn addresses(&mut self, from: &Address, to: &Address) {
-        if from.package().as_str().is_empty() {
-            return;
-        }
-        self.body([Line::mark(Mark::Address)
-            .and(Role::Plain, " ")
-            .and(Role::Address, from.to_string())
-            .and(Role::Plain, " ")
-            .and_line(Line::mark(Mark::Import))
-            .and(Role::Plain, " ")
-            .and(Role::Address, to.to_string())]);
     }
 
     /// The `●` lines a rename or references answer opens with.
@@ -338,7 +317,7 @@ impl Document {
 
     fn outline(result: &Outline) -> Self {
         let mut report = Self::new();
-        report.module_header(result.module.as_ref(), &result.path);
+        report.file_header(&result.path);
         if result.items.is_empty() {
             report.block_note(Block::Summary(
                 Line::mark(Mark::Nothing).and(Role::Plain, " no declarations"),
@@ -415,7 +394,7 @@ impl Document {
 
     fn deps(result: &Deps) -> Self {
         let mut report = Self::new();
-        report.module_header(result.module.as_ref(), &result.path);
+        report.file_header(&result.path);
         report.block_body(Block::Blank);
         let outgoing = l::DepGroups::statements(&result.imports);
         report.body([Line::mark(Mark::Import)
@@ -503,9 +482,7 @@ impl Document {
 
     fn impact(result: &Impact) -> Self {
         let mut report = Self::new();
-        report.body([Line::of(Role::Title, format!("impact {}", result.name))
-            .and(Role::Plain, "   ")
-            .and(Role::Address, format!("◆ {}", result.address))]);
+        report.body([Line::of(Role::Title, format!("impact {}", result.name))]);
         if result.consumers.is_empty() {
             report.block_note(Block::Summary(
                 Line::mark(Mark::Nothing).and(Role::Plain, " no module imports it"),
@@ -691,10 +668,6 @@ impl Document {
             &result.from,
             &result.to,
         ))));
-        if let (Some(from), Some(to)) = (&result.from_address, &result.to_address) {
-            report.addresses(from, to);
-        }
-        report.block_body(Block::Blank);
         let structural = report.moved(&result.files, &result.respellings, &result.notices);
         report.moved_summary(
             result.applied,
@@ -713,8 +686,6 @@ impl Document {
     fn move_symbol(result: &MoveSymbol, options: Options) -> Self {
         let mut report = Self::new();
         report.title(IntentLine(&Intent::MoveSymbol(result.intent.clone())));
-        report.addresses(&result.from, &result.to);
-        report.block_body(Block::Blank);
         let structural = report.moved(&result.files, &result.respellings, &result.notices);
         report.moved_summary(
             result.applied,

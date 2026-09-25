@@ -172,7 +172,6 @@ impl Theme {
             Mark::Nothing | Mark::ByName | Mark::Unticked => self.dim,
             Mark::ByHand => self.warning,
             Mark::Structure | Mark::Rewrite => self.hunk,
-            Mark::Address => self.address,
             Mark::Ticked => self.tick,
             Mark::Undo => self.key,
         }

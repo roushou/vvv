@@ -12,8 +12,8 @@ use vvv_engine::HistoryEntry;
 use vvv_engine::protocol::FileChange;
 use vvv_engine::report::{Detailed, Document, Options, View};
 use vvv_engine::{
-    Address, Confidence, Highlight, Intent, Match, MatchId, Notice, Occurrence, Query, Respelling,
-    Role, SymbolKind,
+    Confidence, Highlight, Intent, Match, MatchId, Notice, Occurrence, Query, Respelling, Role,
+    SymbolKind,
 };
 
 use super::action::Action;
@@ -632,7 +632,6 @@ pub struct MovePlan {
     pub files: Vec<FileChange>,
     pub respellings: Vec<Respelling>,
     pub notices: Vec<Notice>,
-    pub addresses: Option<(Address, Address)>,
     /// Indices into `files` of the structural changes: moved, or holding an
     /// edit no respelling accounts for.
     pub structural: Vec<usize>,
@@ -644,7 +643,6 @@ impl MovePlan {
         files: Vec<FileChange>,
         respellings: Vec<Respelling>,
         notices: Vec<Notice>,
-        addresses: Option<(Address, Address)>,
     ) -> Self {
         let structural = files
             .iter()
@@ -665,7 +663,6 @@ impl MovePlan {
             files,
             respellings,
             notices,
-            addresses,
             structural,
         }
     }
@@ -730,7 +727,7 @@ pub enum MoveRow<'a> {
 }
 
 impl MoveRow<'_> {
-    pub fn path(&self) -> &Path {
+    pub fn path(&self) -> &RelPath {
         match self {
             Self::Respelling(r) => &r.path,
             Self::Structural(f) => &f.path,
@@ -751,7 +748,7 @@ impl MoveMode {
     pub fn new(from: RelPath, symbol: Option<String>) -> Self {
         let to = match &symbol {
             Some(_) => String::new(),
-            None => from.display().to_string(),
+            None => from.short(),
         };
         Self {
             from,

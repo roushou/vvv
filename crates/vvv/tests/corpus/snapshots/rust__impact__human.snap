@@ -4,15 +4,15 @@ expression: "corpus.run(args, false)"
 ---
 exit 0
 --- stdout ---
-impact Point   ◆ corpus_core::geometry::point::Point
+impact Point
 
 ← 4   depth 1
-  ◆ corpus_app   app/src/main.rs
-  ◆ corpus_core::geometry   core/src/geometry/mod.rs
-  ◆ corpus_core::geometry::shape   core/src/geometry/shape.rs
-  ◆ corpus_core   core/src/lib.rs
+  app/src/main.rs
+  core/src/geometry/mod.rs
+  core/src/geometry/shape.rs
+  core/src/lib.rs
 
 ← 1   depth 2
-  ◆ corpus_app::cli   app/src/cli.rs   via corpus_core::geometry
+  app/src/cli.rs   via corpus_core::geometry
 --- stderr ---
 ← 5   5 files

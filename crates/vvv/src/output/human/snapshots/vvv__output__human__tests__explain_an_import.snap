@@ -1,9 +1,8 @@
 ---
 source: crates/vvv/src/output/human/mod.rs
-expression: "render(|r| r.explain(&fx::explanation_of_an_import()).unwrap())"
+expression: "render(|r|\nr.report(&Answer::Explain(fx::explanation_of_an_import())).unwrap())"
 ---
 src/plan/mod.rs:8:13
-→ crate::Span   ◆ vvv_core::Span
+→ crate::Span
   ↗ vvv_core::text::span::Span   src/text/span.rs
-◆ vvv_core::plan
 --- stderr ---

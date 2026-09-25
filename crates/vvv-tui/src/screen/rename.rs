@@ -14,7 +14,6 @@ use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When
 use crate::model::{Mode, Model, PanelKind, RenameMode, RenamePanel};
 use crate::render::Pane;
 use crate::render::{Header, Painter, Region};
-use vvv_engine::protocol::display;
 use vvv_engine::protocol::vocabulary::{Files, Mark};
 
 use Action as A;
@@ -245,23 +244,6 @@ impl<'a> RenameView<'a> {
     fn header(&self) -> Header<'a> {
         let (r, t) = (self.mode, self.painter);
         let focused = r.focus == RenamePanel::Name;
-        let right = t.line(
-            &display::Line::counts(&[
-                (
-                    Mark::from(Confidence::Resolved),
-                    r.rows(Confidence::Resolved).len(),
-                ),
-                (
-                    Mark::from(Confidence::Unresolved),
-                    r.rows(Confidence::Unresolved).len(),
-                ),
-                (
-                    Mark::from(Confidence::Other),
-                    r.rows(Confidence::Other).len(),
-                ),
-            ])
-            .and(display::Role::Plain, "  "),
-        );
         let kind = r.target.symbol.map(|k| format!("{k} ")).unwrap_or_default();
         let mut header = Header::new(
             t,
@@ -279,16 +261,12 @@ impl<'a> RenameView<'a> {
                 t.caret(focused),
                 Span::raw(" "),
             ]),
-        )
-        .right(right);
+        );
         let mut line = Vec::new();
         match r.declarations.first() {
             Some(d) => {
-                if let Some(address) = &d.address {
-                    line.push(Span::styled(format!("◆ {address}   "), t.address));
-                }
                 line.push(Span::styled(
-                    format!("{}:{}", d.path.display(), d.start.line + 1),
+                    format!("{}:{}", d.path.short(), d.start.line + 1),
                     t.path,
                 ));
                 if r.declarations.len() > 1 {
@@ -366,7 +344,7 @@ impl<'a> RenameView<'a> {
             || Line::from(Span::styled("detail", t.dim)),
             |o| {
                 Line::from(Span::styled(
-                    format!("{}:{}", o.m.path.display(), o.m.start.line + 1),
+                    format!("{}:{}", o.m.path.short(), o.m.start.line + 1),
                     t.path,
                 ))
             },

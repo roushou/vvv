@@ -1,13 +1,12 @@
 ---
 source: crates/vvv/src/output/human/mod.rs
-assertion_line: 841
-expression: "render(|r| r.explain(&fx::explanation()).unwrap())"
+expression: "render(|r| { r.report(&Answer::Explain(fx::explanation())).unwrap(); })"
 ---
 src/plan/mod.rs:49:12
     49 │ pub(crate) fn new(change_set: ChangeSet) -> Self {
        │                ^^^
 
-● method new   pub(crate)   ◆ vvv_core::plan
+● method new   pub(crate)
   reaches  package vvv_core
 ← 2
   src/lib.rs

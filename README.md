@@ -100,7 +100,7 @@ A preview of a rename reads:
 $ vvv rename Language Lang
 rename Language → Lang
 
-● trait Language   ◆ vvv_core::lang::Language   src/lang/mod.rs:64:1
+● trait Language   src/lang/mod.rs:64:1
 
 ✓ 3  3 files
   1  src/lang/mod.rs
@@ -126,14 +126,13 @@ Every command draws from one set of marks:
 
 | mark        | meaning                                              |
 | ----------- | ---------------------------------------------------- |
-| `●`         | a declaration; its module address follows as `◆`     |
+| `●`         | a declaration                                        |
 | `○`         | a use, not a declaration                             |
 | `→` `←`     | an import / imported by                              |
 | `↗`         | a re-export                                          |
 | `✓` `?` `✗` | refers to the declaration / can't tell / another one |
 | `±`         | a structural edit: a `mod` line, a visibility        |
 | `!`         | left to you, with the reason                         |
-| `◆`         | a module address (`crate::a::b`)                     |
 | `∅`         | nothing                                              |
 | `+N`        | the match continues for N more lines                 |
 

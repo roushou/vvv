@@ -5,6 +5,6 @@ expression: "corpus.run(args, false)"
 exit 0
 --- stdout ---
 src/geometry/point.ts
-  1 ●    1:8    class Point  export class Point {  +6  ◆ src::geometry::point.ts::Point
+  1 ●    1:8    export class Point {  +6
 --- stderr ---
 ● 1  1 file

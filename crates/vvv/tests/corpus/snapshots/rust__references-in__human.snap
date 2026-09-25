@@ -4,7 +4,7 @@ expression: "corpus.run(args, false)"
 ---
 exit 0
 --- stdout ---
-● function area   ◆ corpus_core::util::area   core/src/util.rs:3:1
+● function area   core/src/util.rs:3:1
 
 ✓ 8  3 files
   3  app/src/main.rs

@@ -4,7 +4,7 @@ expression: "corpus.run(args, false)"
 ---
 exit 0
 --- stdout ---
-● struct Point   ◆ corpus_core::geometry::point::Point   core/src/geometry/point.rs:3:1
+● struct Point   core/src/geometry/point.rs:3:1
 
 ✓ 13  5 files
    2  app/src/main.rs

@@ -8,7 +8,7 @@ core/src/geometry/point.rs:3:12
      3 │ pub struct Point {
        │            ^^^^^
 
-● struct Point   pub   ◆ corpus_core::geometry::point::Point
+● struct Point   pub
   reaches  everyone
   ↗ corpus_core::geometry::Point
   ↗ corpus_core::Point

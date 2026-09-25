@@ -1,11 +1,8 @@
 ---
 source: crates/vvv/src/output/human/mod.rs
-assertion_line: 792
-expression: "render(|r| r.move_symbol(&fx::move_symbol()).unwrap())"
+expression: "render(|r| { r.report(&Answer::MoveSymbol(fx::move_symbol())).unwrap(); })"
 ---
 move Config from src/util.rs → src/config.rs
-
-◆ cli::util::Config → cli::config::Config
 
 → 1   1 file
 ± 2   2 files

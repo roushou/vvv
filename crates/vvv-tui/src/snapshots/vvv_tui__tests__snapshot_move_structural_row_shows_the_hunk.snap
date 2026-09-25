@@ -2,13 +2,13 @@
 source: crates/vvv-tui/src/tests.rs
 expression: render(&m)
 ---
-┌ move src/lang/mod.rs → src/lang/mod.rs ──────────────────────── → 2  ± 2  ! 2  4 files ┐
-│◆ cli::util::parse → cli::net::parse                                                    │
+┌ move lang/mod.rs → lang/mod.rs ────────────────────────────────────────────────────────┐
 └────────────────────────────────────────────────────────────────────────────────────────┘
-┌ → paths rewritten 2 ──────────────────────┐┌ src/util/mod.rs ──────────────────────────┐
+┌ → paths rewritten 2 ──────────────────────┐┌ util/mod.rs ──────────────────────────────┐
 │→ src/lib.rs:1           X                 ││@@ -1,2 +1 @@                              │
 │→ src/main.rs:7          {Config, X}       ││-mod parse;                                │
 │                                           ││ mod s;                                    │
+│                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │

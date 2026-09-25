@@ -17,7 +17,7 @@ use crate::protocol::{
 };
 use crate::{Confidence, Match, Occurrence, Reach, ReachKind, Reason, Span, Symbol, SymbolKind};
 
-/// A declaration as `● kind name   ◆ address   path:line`.
+/// A declaration as `● kind name   path:line`.
 pub struct Declaration<'a> {
     m: &'a Match,
 }
@@ -35,9 +35,6 @@ impl<'a> Declaration<'a> {
                 .and(Role::Plain, " ")
                 .and(Role::Declaration, format!("{} {}", s.kind, s.name));
         }
-        if let Some(address) = &m.address {
-            line = line.and(Role::Address, format!("   ◆ {address}"));
-        }
         line.and(Role::Plain, "   ")
             .and(Role::Path, m.path.display().to_string())
             .and(Role::Plain, ":")
@@ -45,7 +42,7 @@ impl<'a> Declaration<'a> {
     }
 }
 
-/// `● kind name   ◆ address   path:line` for a declaration the graph placed.
+/// `● kind name   path:line` for a declaration the graph placed.
 pub struct PlacedLine<'a> {
     placed: &'a Placed,
 }
@@ -63,7 +60,6 @@ impl<'a> PlacedLine<'a> {
                 Role::Declaration,
                 format!("{} {}", d.symbol.kind, d.symbol.name),
             )
-            .and(Role::Address, format!("   ◆ {}", d.address))
             .and(Role::Plain, "   ")
             .and(Role::Path, d.path.display().to_string())
             .and(Role::Plain, ":")
@@ -83,11 +79,7 @@ impl<'a> SiteLine<'a> {
 
     pub fn lines(&self) -> Vec<Line> {
         let s = self.site;
-        let mut declaration = s.declaration.clone();
-        if declaration.address.is_none() {
-            declaration.address = s.address.clone();
-        }
-        let mut lines = vec![Declaration::new(&declaration).line()];
+        let mut lines = vec![Declaration::new(&s.declaration).line()];
         if let Some(import) = &s.import {
             lines.push(
                 Line::of(Role::Plain, "  ")
@@ -211,11 +203,10 @@ impl Verdict {
     }
 }
 
-/// One numbered match: `N ● line:col  kind name  source  +N  ◆ address`.
+/// One numbered match: `N ● line:col  source  +N`.
 pub(crate) struct MatchRow<'a> {
     ordinal: usize,
     width: usize,
-    name_width: usize,
     m: &'a Match,
 }
 
@@ -226,14 +217,13 @@ impl MatchRow<'_> {
         MatchRow {
             ordinal,
             width: ordinal.to_string().len(),
-            name_width: 0,
             m,
         }
         .line()
     }
 
-    /// The glyph is the role (`●` declaration, `→` import, blank use); `kind
-    /// name` is padded to the section's widest so names line up.
+    /// The glyph is the role (`●` declaration, `→` import, blank use); the
+    /// source line follows, with the hit marked.
     fn line(&self) -> Line {
         let m = self.m;
         let mut line = Line::of(Role::Plain, "  ")
@@ -254,19 +244,6 @@ impl MatchRow<'_> {
                 format!("{:>4}:{:<3}", m.start.line + 1, m.start.column + 1),
             )
             .and(Role::Plain, "  ");
-        if self.name_width > 0 {
-            let name = m
-                .symbol
-                .as_ref()
-                .map(|s| format!("{} {}", s.kind, s.name))
-                .unwrap_or_default();
-            line = line
-                .and(
-                    Role::Declaration,
-                    format!("{name:<w$}", w = self.name_width),
-                )
-                .and(Role::Plain, "  ");
-        }
         let rest = if m.role == MatchRole::Import {
             Role::Import
         } else {
@@ -275,9 +252,6 @@ impl MatchRow<'_> {
         line = line.and_line(Line::hit(m, rest));
         if m.line_count() > 1 {
             line = line.and(Role::Dim, format!("  +{}", m.line_count() - 1));
-        }
-        if let Some(address) = &m.address {
-            line = line.and(Role::Address, format!("  ◆ {address}"));
         }
         line
     }
@@ -346,12 +320,6 @@ impl<'a> Sections<'a> {
     }
 
     fn rows(out: &mut Vec<Row>, matches: &[Match], first: usize, width: usize) {
-        let name_width = matches
-            .iter()
-            .filter_map(|m| m.symbol.as_ref())
-            .map(|s| s.kind.to_string().len() + 1 + s.name.len())
-            .max()
-            .unwrap_or(0);
         let mut current: Option<&Path> = None;
         for (i, m) in matches.iter().enumerate() {
             if current != Some(m.path.as_path()) {
@@ -365,7 +333,6 @@ impl<'a> Sections<'a> {
                 MatchRow {
                     ordinal: first + i,
                     width,
-                    name_width,
                     m,
                 }
                 .line(),
@@ -526,7 +493,6 @@ impl<'a> Verdicts<'a> {
                 MatchRow {
                     ordinal: i + 1,
                     width,
-                    name_width: 0,
                     m: &o.m,
                 }
                 .line(),

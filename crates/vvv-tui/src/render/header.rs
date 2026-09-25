@@ -39,7 +39,7 @@ impl<'a> Header<'a> {
 
     /// Rows the header takes: its lines plus the border.
     pub fn height(&self) -> u16 {
-        self.lines.len().max(1) as u16 + 2
+        self.lines.len() as u16 + 2
     }
 
     /// Split `area` into the header's rows and the rest.

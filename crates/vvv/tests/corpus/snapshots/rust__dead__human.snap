@@ -6,10 +6,10 @@ exit 0
 --- stdout ---
 dead
 
-● function main   ◆ corpus_app::main   app/src/main.rs:6:4
-● module tests   ◆ corpus_core::internal::tests   core/src/internal.rs:10:5
-● function reveals   ◆ corpus_core::internal::reveals   core/src/internal.rs:14:8
-● function unused_private   ◆ corpus_core::util::unused_private   core/src/util.rs:11:4
-● const VERSION   ◆ corpus_core::util::VERSION   core/src/util.rs:15:11
+● function main   app/src/main.rs:6:4
+● module tests   core/src/internal.rs:10:5
+● function reveals   core/src/internal.rs:14:8
+● function unused_private   core/src/util.rs:11:4
+● const VERSION   core/src/util.rs:15:11
 --- stderr ---
 ● 5   ? 0 with tokens that might be uses

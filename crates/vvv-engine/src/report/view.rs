@@ -148,8 +148,6 @@ impl View for Detailed {
                         ));
                     }
                     let mut line = Line::of(Role::Plain, "  ")
-                        .and(Role::Address, format!("◆ {}", consumer.module))
-                        .and(Role::Plain, "   ")
                         .and(Role::Path, consumer.path.display().to_string());
                     if consumer.depth > 1 {
                         line = line.and(Role::Dim, format!("   via {}", consumer.through));
@@ -215,15 +213,11 @@ impl View for Detailed {
                 ))];
                 // On an import: what it spells, and where that really comes from.
                 if let Some(dep) = &result.import {
-                    let mut line = Line::mark(Mark::Import)
-                        .and(Role::Plain, " ")
-                        .and(Role::Strong, dep.import.path.to_string());
-                    if let Some(address) = &dep.address {
-                        line = line
-                            .and(Role::Plain, "   ")
-                            .and(Role::Address, format!("◆ {address}"));
-                    }
-                    rows.push(Row::new(line));
+                    rows.push(Row::new(
+                        Line::mark(Mark::Import)
+                            .and(Role::Plain, " ")
+                            .and(Role::Strong, dep.import.path.to_string()),
+                    ));
                     let file = dep
                         .file
                         .as_ref()
@@ -254,13 +248,6 @@ impl View for Detailed {
                                 .and(Role::Dim, "not inside a declaration"),
                         ));
                     }
-                    if let Some(module) = &result.module {
-                        rows.push(Row::new(
-                            Line::mark(Mark::Address)
-                                .and(Role::Plain, " ")
-                                .and(Role::Address, module.to_string()),
-                        ));
-                    }
                     return rows;
                 };
                 if let (Some(declared), Some(line)) = (&result.declared, &result.line) {
@@ -283,11 +270,6 @@ impl View for Detailed {
                 );
                 if let Some(modifier) = symbol.modifier() {
                     line = line.and(Role::Plain, "   ").and(Role::Symbol, modifier);
-                }
-                if let Some(address) = result.address.as_ref().or(result.module.as_ref()) {
-                    line = line
-                        .and(Role::Plain, "   ")
-                        .and(Role::Address, format!("◆ {address}"));
                 }
                 rows.push(Row::new(line));
                 if let Some(reach) = &result.reach {

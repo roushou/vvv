@@ -6,8 +6,6 @@ exit 0
 --- stdout ---
 move core/src/util.rs → core/src/helpers.rs
 
-◆ corpus_core::util → corpus_core::helpers
-
 → 2   2 files
 ± 2   2 files
 

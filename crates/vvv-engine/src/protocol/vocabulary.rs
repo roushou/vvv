@@ -49,8 +49,6 @@ pub enum Mark {
     Structure,
     /// `±` — a match with its replacement.
     Rewrite,
-    /// `◆` — a module address.
-    Address,
     /// `▪` — a row ticked for the commit (the picker's).
     Ticked,
     /// `▫` — a row left out (the picker's).
@@ -73,7 +71,6 @@ impl Mark {
             Self::Nothing | Self::ByName => '∅',
             Self::ByHand => '!',
             Self::Structure | Self::Rewrite => '±',
-            Self::Address => '◆',
             Self::Ticked => '▪',
             Self::Unticked => '▫',
             Self::Undo => '↩',
@@ -100,7 +97,6 @@ impl Mark {
             Self::ByHand => "by hand",
             Self::Structure => "structure",
             Self::Rewrite => "rewrites",
-            Self::Address => "address",
             Self::Ticked => "ticked",
             Self::Unticked => "unticked",
             Self::Undo => "undo",
@@ -127,7 +123,6 @@ impl Mark {
             Self::ByHand => "vvv stops short here; the change is yours to write",
             Self::Structure => "a mod line, a modifier or a file moved",
             Self::Rewrite => "a match and what it becomes",
-            Self::Address => "the module path that reaches it",
             Self::Ticked => "in the commit",
             Self::Unticked => "left out of the commit",
             Self::Undo => "what undo reverses",

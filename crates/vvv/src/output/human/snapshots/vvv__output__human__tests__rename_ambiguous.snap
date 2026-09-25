@@ -1,11 +1,11 @@
 ---
 source: crates/vvv/src/output/human/mod.rs
-expression: "render(|r| r.rename(&fx::rename(2)).unwrap())"
+expression: "render(|r| r.report(&Answer::Rename(fx::rename(2))).unwrap())"
 ---
 rename Language → Lang
 
-● trait Language   ◆ vvv_core::lang::Language   src/lang/mod.rs:64:1
-● struct Language   ◆ vvv_core::other::Language   src/other.rs:3:1
+● trait Language   src/lang/mod.rs:64:1
+● struct Language   src/other.rs:3:1
 
 ✓ 2  2 files
   1  src/lang/mod.rs

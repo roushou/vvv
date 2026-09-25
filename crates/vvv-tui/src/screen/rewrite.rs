@@ -276,7 +276,7 @@ impl<'a> RewriteView<'a> {
             || Line::from(Span::styled("detail", t.dim)),
             |m| {
                 Line::from(Span::styled(
-                    format!("{}:{}", m.path.display(), m.start.line + 1),
+                    format!("{}:{}", m.path.short(), m.start.line + 1),
                     t.path,
                 ))
             },

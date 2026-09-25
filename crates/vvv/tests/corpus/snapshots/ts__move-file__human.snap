@@ -6,7 +6,6 @@ exit 0
 --- stdout ---
 move src/util.ts → src/lib/util.ts
 
-
 → 2   2 files
 ± 1   1 file
 

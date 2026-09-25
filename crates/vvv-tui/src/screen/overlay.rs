@@ -397,10 +397,7 @@ impl<'a> HelpBox<'a> {
     const MARKS: &'static [(&'static str, &'static str)] = &[
         ("● → ↗", "declaration · import · re-export"),
         ("✓ ? ✗", "will · unsure · will not    ▪ ▫ ticked or not"),
-        (
-            "± ! ◆ ∅",
-            "structural edit · by hand · module address · nothing",
-        ),
+        ("± ! ∅", "structural edit · by hand · nothing"),
     ];
 
     /// (key, what) rows; an empty key starts a section. The marks first,

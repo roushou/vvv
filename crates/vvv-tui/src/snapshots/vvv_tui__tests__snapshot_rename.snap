@@ -2,8 +2,8 @@
 source: crates/vvv-tui/src/tests.rs
 expression: render(&m)
 ---
-┌ rename ● trait Language → Lang ─────────────────────────────────────── ✓ 3  ? 1  ✗ 0   ┐
-│◆ vvv_core::lang::Language   src/lang/mod.rs:64                                         │
+┌ rename ● trait Language → Lang ────────────────────────────────────────────────────────┐
+│lang/mod.rs:64                                                                          │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ┌ ? unverified 1  1 file  ▪ 0 ──────────────┐┌ src/other.rs:13 ──────────────────────────┐
 │▫ ∅ src/other.rs:10        Language::new() ││↗ re-export   reached through a re-export v│

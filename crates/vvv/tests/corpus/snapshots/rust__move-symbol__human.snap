@@ -6,8 +6,6 @@ exit 0
 --- stdout ---
 move area from core/src/util.rs → core/src/geometry/mod.rs
 
-◆ corpus_core::util::area → corpus_core::geometry::area
-
 → 1   1 file
 ± 2   2 files
 

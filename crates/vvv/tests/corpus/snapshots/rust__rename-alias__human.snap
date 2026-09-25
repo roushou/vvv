@@ -6,7 +6,7 @@ exit 0
 --- stdout ---
 rename Shape → Figure
 
-● enum Shape   ◆ corpus_core::geometry::shape::Shape   core/src/geometry/shape.rs:4:1
+● enum Shape   core/src/geometry/shape.rs:4:1
 
 ✓ 10  4 files
    1  app/src/cli.rs

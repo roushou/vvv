@@ -1,9 +1,8 @@
 ---
 source: crates/vvv/src/output/human/mod.rs
-assertion_line: 818
-expression: "render(|r| r.outline(&fx::outline()).unwrap())"
+expression: "render(|r| r.report(&Answer::Outline(fx::outline())).unwrap())"
 ---
-◆ vvv_core::plan   src/plan/mod.rs
+src/plan/mod.rs
 
   24  enum ApplyError   pub
   26    Vfs             ·

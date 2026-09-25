@@ -2,8 +2,7 @@
 source: crates/vvv-tui/src/tests.rs
 expression: render(&m)
 ---
-┌ move src/lang/mod.rs → src/lang/mod.rs ──────────────────────── → 2  ± 2  ! 2  4 files ┐
-│◆ cli::util::parse → cli::net::parse                                                    │
+┌ move lang/mod.rs → lang/mod.rs ────────────────────────────────────────────────────────┐
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ┌ → paths rewritten 2 ──────────────────────┐┌ src/lib.rs ───────────────────────────────┐
 │→ src/lib.rs:1   crate::util::parse::X → cr││  crate::util::parse::X                    │
@@ -12,8 +11,9 @@ expression: render(&m)
 │                                           ││    1 │ use crate::util::parse::X;         │
 │                                           ││    2 │ // line 2                          │
 │                                           ││    3 │ // line 3                          │
-└───────────────────────────────────────────┘│    4 │ // line 4                          │
-┌ ± structure 2 ────────────────────────────┐│    5 │ // line 5                          │
+│                                           ││    4 │ // line 4                          │
+└───────────────────────────────────────────┘│    5 │ // line 5                          │
+┌ ± structure 2 ────────────────────────────┐│                                           │
 │± util/mod.rs  - mod parse;                ││                                           │
 │± util/parse.rs → net/parse.rs             ││                                           │
 │                                           ││                                           │

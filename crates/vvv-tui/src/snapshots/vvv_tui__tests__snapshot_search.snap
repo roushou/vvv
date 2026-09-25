@@ -5,14 +5,11 @@ expression: render(&m)
 ┌ vvv ~/dev/nx ─────────────────────────────────────────────────────── ● 1  ○ 3  3 files ┐
 │> Language                                                                              │
 └────────────────────────────────────────────────────────────────────────────────────────┘
-┌ results ──────────────────────────────────┐┌ src/lang/mod.rs ──────────────────────────┐
-│● lang/mod.rs:64         trait Language    ││● trait Language   ◆ vvv_core::lang::Langua│
-│→ lang/registry.rs:4     use super::{Langu…││○ 3 uses   2 files                         │
-│→ src/lib.rs:26          pub use lang::{La…││                                           │
-│  src/lib.rs:41          Language::new()   ││   59 │ // line 59                         │
-│                                           ││   60 │ // line 60                         │
-│                                           ││   61 │ // line 61                         │
-│                                           ││   62 │ // line 62                         │
+┌ results ──────────────────────────────────┐┌ lang/mod.rs ──────────────────────────────┐
+│● lang/mod.rs:64         trait Language    ││   59 │ // line 59                         │
+│→ lang/registry.rs:4     use super::{Langu…││   60 │ // line 60                         │
+│→ src/lib.rs:26          pub use lang::{La…││   61 │ // line 61                         │
+│  src/lib.rs:41          Language::new()   ││   62 │ // line 62                         │
 │                                           ││   63 │ // line 63                         │
 │                                           ││   64 │ pub trait Language: Send + Sync {  │
 │                                           ││   65 │ // line 65                         │
@@ -20,5 +17,8 @@ expression: render(&m)
 │                                           ││   67 │ // line 67                         │
 │                                           ││   68 │ // line 68                         │
 │                                           ││   69 │ // line 69                         │
+│                                           ││   70 │ // line 70                         │
+│                                           ││                                           │
+│                                           ││                                           │
 └───────────────────────────────────────────┘└───────────────────────────────────────────┘
  search r rename  m/M move file/symbol  w rewrite  s kind  L lang  h history  → context  /

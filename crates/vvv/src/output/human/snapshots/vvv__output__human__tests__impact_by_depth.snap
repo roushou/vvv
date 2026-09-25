@@ -1,14 +1,14 @@
 ---
 source: crates/vvv/src/output/human/mod.rs
-expression: "render(|r| r.impact(&fx::impact()).unwrap())"
+expression: "render(|r| r.report(&Answer::Impact(fx::impact())).unwrap())"
 ---
-impact Plan   ◆ vvv_core::plan::Plan
+impact Plan
 
 ← 2   depth 1
-  ◆ vvv_core::workspace   src/workspace/mod.rs
-  ◆ vvv_core::lib   src/lib.rs
+  src/workspace/mod.rs
+  src/lib.rs
 
 ← 1   depth 2
-  ◆ vvv_core::engine   src/engine.rs   via vvv_core::workspace
+  src/engine.rs   via vvv_core::workspace
 --- stderr ---
 ← 3   3 files

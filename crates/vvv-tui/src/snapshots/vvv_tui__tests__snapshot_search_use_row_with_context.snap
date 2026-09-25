@@ -6,7 +6,7 @@ expression: render(&m)
 │> Language                                                                              │
 └────────────────────────────────────────────────────────────────────────────────────────┘
 ┌ results ──────────────────────────────────┐┌ src/lib.rs ───────────────────────────────┐
-│● lang/mod.rs:64         trait Language    ││→ ● trait Language   ◆ vvv_core::lang::Lang│
+│● lang/mod.rs:64         trait Language    ││→ ● trait Language   lang/mod.rs:64        │
 │→ lang/registry.rs:4     use super::{Langu…││                                           │
 │→ src/lib.rs:26          pub use lang::{La…││   21 │ // line 21                         │
 │  src/lib.rs:41          Language::new()   ││   22 │ // line 22                         │

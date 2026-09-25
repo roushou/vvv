@@ -4,7 +4,7 @@ expression: "corpus.run(args, false)"
 ---
 exit 0
 --- stdout ---
-◆ corpus_app   app/src/main.rs
+app/src/main.rs
 
 → 2
   corpus_core
