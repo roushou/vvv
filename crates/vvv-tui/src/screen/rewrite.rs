@@ -6,7 +6,7 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Widget;
-use vvv_engine::protocol::display;
+use vvv_engine::report::Hunk;
 use vvv_engine::{CaptureValue, Match};
 
 use super::{Panel, Screen};
@@ -308,12 +308,11 @@ impl<'a> RewriteView<'a> {
         if let Some(m) = current
             && let Some(file) = rw.changes.iter().find(|f| f.path == m.path)
         {
-            let lines = display::diff(file);
-            let first = hunk_for(&lines, m.start.line as usize + 1);
+            let hunk = Hunk::new(file, m.start.line + 1);
             rows.extend(
-                lines
+                hunk.lines()
                     .iter()
-                    .skip(first + rw.detail_scroll)
+                    .skip(rw.detail_scroll)
                     .map(|line| t.line(line)),
             );
         }
@@ -322,26 +321,4 @@ impl<'a> RewriteView<'a> {
             .empty("")
             .render(area, buf);
     }
-}
-
-/// The index of the diff hunk holding the 1-based `line`: the last `@@`
-/// header that starts at or before it, else the first line.
-fn hunk_for(lines: &[display::Line], line: usize) -> usize {
-    let mut start = 0;
-    for (i, l) in lines.iter().enumerate() {
-        let Some(at) = hunk_start(l) else {
-            continue;
-        };
-        if at > line {
-            break;
-        }
-        start = i;
-    }
-    start
-}
-
-/// The old-file line a `@@ -a,b +c,d @@` header starts at.
-fn hunk_start(line: &display::Line) -> Option<usize> {
-    let text: String = line.pieces().iter().map(|p| p.text.as_str()).collect();
-    text.strip_prefix("@@ -")?.split_once(',')?.0.parse().ok()
 }

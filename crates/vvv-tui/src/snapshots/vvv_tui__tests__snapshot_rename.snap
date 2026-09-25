@@ -2,23 +2,23 @@
 source: crates/vvv-tui/src/tests.rs
 expression: render(&m)
 ---
-┌ rename ● trait Language → LanguageX ────────────────────────────────── ✓ 3  ? 1  ✗ 0   ┐
+┌ rename ● trait Language → Lang ─────────────────────────────────────── ✓ 3  ? 1  ✗ 0   ┐
 │◆ vvv_core::lang::Language   src/lang/mod.rs:64                                         │
 └────────────────────────────────────────────────────────────────────────────────────────┘
-┌ ? unverified 1  1 file  ▪ 0 ──────────────┐┌ src/other.rs:10 ──────────────────────────┐
-│▫ ∅ src/other.rs:10        Language::new() ││before  Language::new()                    │
-│                                           ││after   LanguageX::new()                   │
+┌ ? unverified 1  1 file  ▪ 0 ──────────────┐┌ src/other.rs:13 ──────────────────────────┐
+│▫ ∅ src/other.rs:10        Language::new() ││↗ re-export   reached through a re-export v│
 │                                           ││                                           │
-│                                           ││∅ unresolved   a bare name nothing imports,│
+│                                           ││@@ -10,6 +10,6 @@                          │
+│                                           ││ // line 10                                │
+│                                           ││ // line 11                                │
+│                                           ││ // line 12                                │
+│                                           ││-    vvv::Language::default()              │
+└───────────────────────────────────────────┘│+    vvv::Lang::default()                  │
+┌ ✓ safe 3  3 files  ▪ 3 ───────────────────┐│ // line 14                                │
+│▪ ● lang/mod.rs:64         pub trait Langu…││ // line 15                                │
+│▪ → src/lib.rs:26          pub use lang::{…││                                           │
+│▪ ↗ src/other.rs:13        vvv::Language::…││                                           │
 │                                           ││                                           │
-│                                           ││    6 │ // line 6                          │
-│                                           ││    7 │ // line 7                          │
-└───────────────────────────────────────────┘│    8 │ // line 8                          │
-┌ ✓ safe 3  3 files  ▪ 3 ───────────────────┐│    9 │ // line 9                          │
-│▪ ● lang/mod.rs:64         pub trait Langu…││   10 │     Language::new()                │
-│▪ → src/lib.rs:26          pub use lang::{…││   11 │ // line 11                         │
-│▪ ↗ src/other.rs:13        vvv::Language::…││   12 │ // line 12                         │
-│                                           ││   13 │     vvv::Language::default()       │
-└───────────────────────────────────────────┘│   14 │ // line 14                         │
+└───────────────────────────────────────────┘│                                           │
  ✗ another declaration's 0 ──────────────────└───────────────────────────────────────────┘
  rename space toggle  a all here  ⏎ apply 3 in 3 files  esc back  j/k move  e editor  ? ke

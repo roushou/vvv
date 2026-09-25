@@ -1041,6 +1041,42 @@ impl<'a> Diff<'a> {
     }
 }
 
+/// One file's diff, opened at the hunk holding a source line: what a detail
+/// pane draws after scrolling to the change it is about.
+pub struct Hunk {
+    lines: Vec<Line>,
+    /// Index of the `@@` header to open at.
+    open: usize,
+}
+
+impl Hunk {
+    /// `file`'s diff, opened at the hunk whose old-file range holds 1-based
+    /// `line`; the first hunk when the line falls before every `@@`.
+    pub fn new(file: &FileChange, line: u32) -> Self {
+        let lines = display::diff(file);
+        let mut open = 0;
+        for (i, l) in lines.iter().enumerate() {
+            match Hunk::starts(l) {
+                Some(at) if at <= line => open = i,
+                Some(_) => break,
+                None => {}
+            }
+        }
+        Self { lines, open }
+    }
+
+    /// Every line from that hunk on, the `@@` header first.
+    pub fn lines(&self) -> &[Line] {
+        &self.lines[self.open..]
+    }
+
+    /// The old-file line a `@@ -a,b +c,d @@` header starts at.
+    fn starts(line: &Line) -> Option<u32> {
+        let text: String = line.pieces().iter().map(|p| p.text.as_str()).collect();
+        text.strip_prefix("@@ -")?.split_once(',')?.0.parse().ok()
+    }
+}
+
 #[cfg(test)]
 mod snapshots {
     use std::path::Path;
@@ -1050,6 +1086,36 @@ mod snapshots {
     use vvv_core::RelPath;
 
     use super::*;
+
+    fn text(line: &Line) -> String {
+        line.pieces().iter().map(|p| p.text.as_str()).collect()
+    }
+
+    #[test]
+    fn hunk_opens_at_the_hunk_holding_a_line() {
+        let before: String = (1..=12).map(|k| format!("line {k}\n")).collect();
+        let after = before
+            .replace("line 2\n", "line 2 changed\n")
+            .replace("line 10\n", "line 10 changed\n");
+        let file = FileChange {
+            path: RelPath::from("a.rs"),
+            moved_to: None,
+            edits: vec![],
+            diff: UnifiedDiff::between(Path::new("a.rs"), Path::new("a.rs"), &before, &after),
+        };
+        let first = Hunk::new(&file, 2);
+        let last = Hunk::new(&file, 10);
+        assert!(
+            text(first.lines().first().unwrap()).starts_with("@@ -1,"),
+            "{}",
+            text(first.lines().first().unwrap())
+        );
+        assert!(
+            text(last.lines().first().unwrap()).starts_with("@@ -7,"),
+            "{}",
+            text(last.lines().first().unwrap())
+        );
+    }
 
     #[test]
     fn diff_drops_file_headers_and_shows_moves() {

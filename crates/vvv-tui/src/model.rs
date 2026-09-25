@@ -414,10 +414,13 @@ pub struct RenameTarget {
 pub struct RenameMode {
     pub target: RenameTarget,
     pub language: Option<vvv_engine::LanguageId>,
-    /// The new name, edited live; `after` texts follow it.
+    /// The new name, edited live; the plan is re-made as it grows.
     pub name: String,
     pub declarations: Vec<Match>,
     pub occurrences: Vec<Occurrence>,
+    /// The last plan's files, each holding its diff: the preview the detail
+    /// pane draws.
+    pub changes: Vec<FileChange>,
     pub ticks: BTreeSet<MatchId>,
     pub focus: RenamePanel,
     /// Cursors of the `?`, `✓` and `✗` panels, in that order.
@@ -426,6 +429,9 @@ pub struct RenameMode {
     pub last_list: RenamePanel,
     pub detail_scroll: usize,
     pub preview: Option<FilePreview>,
+    /// The verdicts are in and the ticks seeded; later plans only refresh
+    /// `changes`, so typing does not undo the user's ticks.
+    pub judged: bool,
     /// Waiting for the judge, or for the commit.
     pub busy: bool,
     pub error: Option<String>,
@@ -473,17 +479,19 @@ impl RenamePanel {
 impl RenameMode {
     pub fn new(target: RenameTarget, language: Option<vvv_engine::LanguageId>) -> Self {
         Self {
-            name: target.name.clone(),
+            name: String::new(),
             target,
             language,
             declarations: Vec::new(),
             occurrences: Vec::new(),
+            changes: Vec::new(),
             ticks: BTreeSet::new(),
             focus: RenamePanel::Name,
             cursors: [Cursor::default(); 3],
             last_list: RenamePanel::Unsure,
             detail_scroll: 0,
             preview: None,
+            judged: false,
             busy: true,
             error: None,
         }
@@ -559,19 +567,13 @@ impl RenameMode {
         }
     }
 
-    /// The occurrence's line with the new name in place of the old.
-    pub fn after(&self, o: &Occurrence) -> String {
-        let line: Vec<char> = o.m.line.chars().collect();
-        let start = (o.m.start.column as usize).min(line.len());
-        let end = if o.m.end.line == o.m.start.line {
-            (o.m.end.column as usize).clamp(start, line.len())
-        } else {
-            line.len()
-        };
-        let mut out: String = line[..start].iter().collect();
-        out.push_str(&self.name);
-        out.extend(&line[end..]);
-        out
+    /// The plan's change for the occurrence's file when the plan edits this
+    /// very site: the diff the detail pane draws. A file with only other
+    /// sites changed is not this row's preview.
+    pub fn file(&self, o: &Occurrence) -> Option<&FileChange> {
+        self.changes
+            .iter()
+            .find(|f| f.path == o.m.path && f.edits.iter().any(|e| e.span == o.m.span))
     }
 
     /// Files the commit touches, from the ticks.

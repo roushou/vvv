@@ -1,6 +1,6 @@
 //! Rename: the new name in the title, a panel per verdict with a checkbox
-//! per site, and a detail panel with before → after, the reason, and the
-//! source around the row.
+//! per site, and a detail panel with the reason and the plan's diff for the
+//! row's file, or the source around it when the plan does not touch it.
 
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
@@ -16,6 +16,7 @@ use crate::render::Pane;
 use crate::render::{Header, Painter, Region};
 use vvv_engine::protocol::display;
 use vvv_engine::protocol::vocabulary::{Files, Mark};
+use vvv_engine::report::Hunk;
 
 use Action as A;
 use Dispatch::Run;
@@ -271,7 +272,11 @@ impl<'a> RenameView<'a> {
                 t.glyph(Mark::Declaration),
                 Span::styled(format!("{kind}{}", r.target.name), t.declaration),
                 Span::styled(" → ", t.import),
-                Span::styled(r.name.clone(), t.title),
+                if r.name.is_empty() {
+                    Span::styled("new name", t.dim)
+                } else {
+                    Span::styled(r.name.clone(), t.title)
+                },
                 t.caret(focused),
                 Span::raw(" "),
             ]),
@@ -369,17 +374,6 @@ impl<'a> RenameView<'a> {
         );
         let mut rows: Vec<Line> = Vec::new();
         if let Some(o) = current {
-            let before = o.m.line.trim_start().to_owned();
-            let after = r.after(o).trim_start().to_owned();
-            rows.push(Line::from(vec![
-                Span::styled("before  ", t.dim),
-                Span::raw(before),
-            ]));
-            rows.push(Line::from(vec![
-                Span::styled("after   ", t.dim),
-                Span::styled(after, t.added),
-            ]));
-            rows.push(Line::default());
             let mark = Mark::from(o.reason);
             rows.push(Line::from(vec![
                 t.glyph(mark),
@@ -388,13 +382,25 @@ impl<'a> RenameView<'a> {
             ]));
             rows.push(Line::default());
         }
-        let head = rows.len();
         let inner_height = area.height.saturating_sub(2) as usize;
         let inner_width = area.width.saturating_sub(2) as usize;
-        if let (Some(o), Some(preview)) = (current, &r.preview)
+        // The plan's diff for the row's file, scrolled to its hunk; the
+        // source itself when the plan does not edit this site.
+        let diff = current.and_then(|o| {
+            let hunk = Hunk::new(r.file(o)?, o.m.start.line + 1);
+            (!hunk.lines().is_empty()).then_some(hunk)
+        });
+        if let Some(hunk) = diff {
+            rows.extend(
+                hunk.lines()
+                    .iter()
+                    .skip(r.detail_scroll)
+                    .map(|line| t.line(line)),
+            );
+        } else if let (Some(o), Some(preview)) = (current, &r.preview)
             && preview.path == o.m.path
         {
-            let height = inner_height.saturating_sub(head);
+            let height = inner_height.saturating_sub(rows.len());
             let anchor = (o.m.start.line as usize).saturating_sub(height / 2);
             let first = (anchor + r.detail_scroll).min(preview.line_count().saturating_sub(1));
             rows.extend(t.source_window(

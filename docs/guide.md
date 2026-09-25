@@ -504,13 +504,14 @@ newest apply. `v`
 switches the rows between the compact list and the full report the CLI prints —
 search results, a rename's verdict rows, a move's paths and notices.
 
-**Rename** shows the new name in the title — type to change it and every `after` text
-follows — and a panel per verdict: `? unverified` (largest, where judgment is needed),
-`✓ safe`, `✗ another declaration's`.
+**Rename** shows the new name in the title — the field starts empty with a `new name`
+placeholder, and the plan is re-made as you type — and a panel per verdict: `? unverified`
+(largest, where judgment is needed), `✓ safe`, `✗ another declaration's`.
 Each row is a site with a checkbox (`▪` ticked, `▫` not), the reason glyph, the place
 and the line; `space` flips one, `a` flips every row of the focused panel. The
-checkboxes start where the CLI's default would act. The detail panel shows the line
-before and after, the reason unfolded, and the source around it. `⏎` writes exactly the
+checkboxes start where the CLI's default would act. The detail panel shows the reason
+unfolded and the plan's diff for the row's file — the same hunks the CLI prints — or
+the source around the site when the plan leaves it alone. `⏎` writes exactly the
 ticked rows.
 
 **Move** takes the destination in the title and plans it as you type: the panels below

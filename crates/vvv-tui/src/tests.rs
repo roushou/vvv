@@ -98,29 +98,68 @@ fn searched() -> Model {
 fn renaming() -> Model {
     let mut m = searched();
     let effects = m.update(Action::Rename);
-    let generation = generation_of(&effects);
-    let rename = fx::rename(1);
-    // The engine's default plan edits the `✓` sites: one edit per span.
-    let files: Vec<vvv_engine::protocol::FileChange> = rename
-        .occurrences
-        .iter()
-        .filter(|o| o.confidence == vvv_engine::Confidence::Resolved)
-        .map(|o| vvv_engine::protocol::FileChange {
-            path: o.m.path.clone(),
-            moved_to: None,
-            edits: vec![vvv_engine::Edit::replace(o.m.span, "Lang")],
-            diff: vvv_engine::protocol::UnifiedDiff::between(&o.m.path, &o.m.path, "a", "b"),
-        })
-        .collect();
     m.on_event(Event::Planned {
-        generation,
-        planned: Planned::Rename {
-            declarations: rename.declarations,
-            occurrences: rename.occurrences,
-            files,
-        },
+        generation: generation_of(&effects),
+        planned: rename_plan(),
     });
     m
+}
+
+/// The plan a `Language → Lang` rename answers with: the judged occurrences
+/// and one real diff per file the default selection edits.
+fn rename_plan() -> Planned {
+    let rename = fx::rename(1);
+    Planned::Rename {
+        declarations: rename.declarations,
+        occurrences: rename.occurrences,
+        files: rename_files(),
+    }
+}
+
+/// The rename's files: real diffs of the lines the `✓` sites sit on.
+fn rename_files() -> Vec<vvv_engine::protocol::FileChange> {
+    let sources: [(&str, &[ChangedLine]); 3] = [
+        (
+            "src/lang/mod.rs",
+            &[(
+                64,
+                "pub trait Language: Send + Sync {",
+                "pub trait Lang: Send + Sync {",
+            )],
+        ),
+        (
+            "src/lib.rs",
+            &[(
+                26,
+                "pub use lang::{Language, LanguageId};",
+                "pub use lang::{Lang, LanguageId};",
+            )],
+        ),
+        (
+            "src/other.rs",
+            &[(
+                13,
+                "    vvv::Language::default()",
+                "    vvv::Lang::default()",
+            )],
+        ),
+    ];
+    sources
+        .iter()
+        .map(|(path, changes)| {
+            let path = *path;
+            let edits = fx::rename(1)
+                .occurrences
+                .iter()
+                .filter(|o| {
+                    o.m.path == std::path::Path::new(path)
+                        && o.confidence == vvv_engine::Confidence::Resolved
+                })
+                .map(|o| vvv_engine::Edit::replace(o.m.span, "Lang"))
+                .collect();
+            rewrite_file(path, changes, edits)
+        })
+        .collect()
 }
 
 /// `searched()`, then `m` on the row and a destination that plans.
@@ -584,11 +623,14 @@ fn rename_judges_with_the_name_unchanged_and_starts_where_judgment_is_needed() {
 #[test]
 fn rename_ticks_feed_the_commit_and_the_name_follows_typing() {
     let mut m = renaming();
-    typed(&mut m, "X"); // "Language" → "LanguageX"
+    let effects = typed(&mut m, "LangX");
+    m.on_event(Event::Planned {
+        generation: generation_of(&effects),
+        planned: rename_plan(),
+    });
     let Mode::Rename(r) = &m.mode else { panic!() };
-    assert_eq!(r.name, "LanguageX");
+    assert_eq!(r.name, "LangX");
     let unsure = r.current().unwrap();
-    assert!(r.after(unsure).contains("LanguageX"));
     assert!(!r.is_ticked(unsure), "unsure rows start unticked here");
 
     m.update(Action::FocusNth(2));
@@ -619,7 +661,7 @@ fn rename_ticks_feed_the_commit_and_the_name_follows_typing() {
                 intent: Intent::Rename(i),
             },
         ] => {
-            assert_eq!(i.to, "LanguageX");
+            assert_eq!(i.to, "LangX");
             assert_eq!(i.selection, Selection::Ids(ticks));
         }
         other => panic!("{other:?}"),
@@ -887,35 +929,48 @@ fn snapshot_empty_search() {
 #[test]
 fn snapshot_rename() {
     let mut m = renaming();
-    typed(&mut m, "X");
-    let lines = numbered(
-        20,
-        &[
-            (10, "    Language::new()"),
-            (13, "    vvv::Language::default()"),
-        ],
-    );
-    let refs: Vec<&str> = lines.iter().map(String::as_str).collect();
-    m.on_event(preview("src/other.rs", &refs));
-    m.update(Action::FocusNth(2));
+    let effects = typed(&mut m, "Lang");
+    m.on_event(Event::Planned {
+        generation: generation_of(&effects),
+        planned: rename_plan(),
+    });
+    // The `✓` re-export in src/other.rs: the detail draws the plan's hunk.
+    m.update(Action::FocusNth(3));
+    m.update(Action::Move(2));
     insta::assert_snapshot!(render(&m));
+}
+
+#[test]
+fn the_rename_detail_shows_the_hunk_holding_the_current_site() {
+    let mut m = renaming();
+    let effects = typed(&mut m, "Lang");
+    m.on_event(Event::Planned {
+        generation: generation_of(&effects),
+        planned: rename_plan(),
+    });
+    m.update(Action::FocusNth(3));
+    m.update(Action::Move(2));
+    let lines = render(&m);
+    assert!(lines.contains("src/other.rs:13"), "{lines}");
+    assert!(lines.contains("vvv::Lang::default()"), "{lines}");
+    assert!(
+        lines.contains("@@ "),
+        "the file's hunks, not a before/after pair: {lines}"
+    );
+    assert!(!lines.contains("before"), "{lines}");
 }
 
 #[test]
 fn snapshot_rename_detailed() {
     let mut m = renaming();
     m.view = ReportView::Detailed;
-    typed(&mut m, "X");
-    let lines = numbered(
-        20,
-        &[
-            (10, "    Language::new()"),
-            (13, "    vvv::Language::default()"),
-        ],
-    );
-    let refs: Vec<&str> = lines.iter().map(String::as_str).collect();
-    m.on_event(preview("src/other.rs", &refs));
-    m.update(Action::FocusNth(2));
+    let effects = typed(&mut m, "Lang");
+    m.on_event(Event::Planned {
+        generation: generation_of(&effects),
+        planned: rename_plan(),
+    });
+    m.update(Action::FocusNth(3));
+    m.update(Action::Move(2));
     insta::assert_snapshot!(render(&m));
 }
 

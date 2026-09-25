@@ -255,29 +255,36 @@ impl Model {
                     ..
                 },
             ) => {
-                // The engine's default: what its plan with no selection edits.
-                r.ticks = occurrences
-                    .iter()
-                    .filter(|o| {
-                        files.iter().any(|f| {
-                            f.path == o.m.path && f.edits.iter().any(|e| e.span == o.m.span)
-                        })
-                    })
-                    .map(|o| o.m.id.clone())
-                    .collect();
                 r.declarations = declarations;
                 r.occurrences = occurrences;
+                r.changes = files;
                 r.busy = false;
                 r.error = None;
-                for cursor in &mut r.cursors {
-                    cursor.index = 0;
+                // The first plan seeds the ticks from the engine's default:
+                // what its plan with no selection edits. Later plans (typing
+                // the new name) only refresh the diff, so the ticks stand.
+                if !r.judged {
+                    r.ticks = r
+                        .occurrences
+                        .iter()
+                        .filter(|o| {
+                            r.changes.iter().any(|f| {
+                                f.path == o.m.path && f.edits.iter().any(|e| e.span == o.m.span)
+                            })
+                        })
+                        .map(|o| o.m.id.clone())
+                        .collect();
+                    r.judged = true;
+                    for cursor in &mut r.cursors {
+                        cursor.index = 0;
+                    }
+                    // Start where judgment is needed; `✓` when there is nothing to judge.
+                    r.last_list = if r.rows(Confidence::Unresolved).is_empty() {
+                        RenamePanel::Sure
+                    } else {
+                        RenamePanel::Unsure
+                    };
                 }
-                // Start where judgment is needed; `✓` when there is nothing to judge.
-                r.last_list = if r.rows(Confidence::Unresolved).is_empty() {
-                    RenamePanel::Sure
-                } else {
-                    RenamePanel::Unsure
-                };
                 self.preview_effect()
             }
             (
@@ -568,7 +575,7 @@ impl Model {
             }
             Mode::Rename(r) => {
                 edit(&mut r.name, c);
-                Vec::new()
+                self.plan_rename(true)
             }
             Mode::Move(mv) => {
                 edit(&mut mv.to, c);
@@ -602,6 +609,29 @@ impl Model {
                 Vec::new()
             }
         }
+    }
+
+    fn plan_rename(&mut self, debounce: bool) -> Vec<Effect> {
+        let generation = self.next_generation();
+        let Mode::Rename(r) = &mut self.mode else {
+            return Vec::new();
+        };
+        if r.name.trim().is_empty() {
+            r.changes.clear();
+            r.error = None;
+            r.busy = false;
+            return Vec::new();
+        }
+        let mut intent = RenameIntent::new(&r.target.name, r.name.trim());
+        intent.symbol = r.target.symbol;
+        intent.language = r.language.clone();
+        intent.declared_in = r.target.declared_in.clone();
+        r.busy = true;
+        vec![Effect::Plan {
+            generation,
+            intent: Intent::Rename(intent),
+            debounce,
+        }]
     }
 
     fn plan_move(&mut self, debounce: bool) -> Vec<Effect> {
