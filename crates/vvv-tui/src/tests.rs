@@ -763,7 +763,7 @@ fn rewrite_expands_the_template_live_and_commits_the_ticks() {
 
     let mut m = rewriting();
     let Mode::Rewrite(rw) = &m.mode else { panic!() };
-    assert_eq!(rw.replacements.len(), 4);
+    assert_eq!(rw.changes.len(), 3, "the plan's files, each with its diff");
 
     m.update(Action::FocusNth(2));
     m.update(Action::Toggle);

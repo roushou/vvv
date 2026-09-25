@@ -3,7 +3,7 @@
 //! knows about terminals; see `update.rs` for how it changes and `render/`
 //! for how it looks.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::path::Path;
 
 use vvv_engine::RelPath;
@@ -816,9 +816,6 @@ pub struct RewriteMode {
     pub query: Query,
     pub template: String,
     pub matches: Vec<Match>,
-    /// Replacement per match from the last plan; empty until a template
-    /// expands.
-    pub replacements: BTreeMap<MatchId, String>,
     /// The last plan's files, each holding its diff: the preview the detail
     /// pane draws.
     pub changes: Vec<FileChange>,
@@ -848,7 +845,6 @@ impl RewriteMode {
             query,
             template: String::new(),
             matches,
-            replacements: BTreeMap::new(),
             changes: Vec::new(),
             ticks,
             focus: RewritePanel::Template,

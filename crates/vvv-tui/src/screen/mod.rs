@@ -114,24 +114,24 @@ impl Screen {
     /// The help's sections for a focus: the panel, the screen, the kind
     /// default and the globals, grouped by name.
     pub fn sections(&self, focus: usize) -> Vec<(&'static str, Vec<Row<'static, Action>>)> {
-        let mut sections: Vec<(&'static str, Vec<Row<'static, Action>>)> = Vec::new();
+        let mut sections = Sections::default();
         if let Some(panel) = self.panel(focus) {
-            push(&mut sections, panel.layer);
-            push(&mut sections, self.layer);
+            sections.add(panel.layer);
+            sections.add(self.layer);
             if let Some(kind) = panel.kind
                 && let Some(layer) = defaults::default_for(kind)
             {
-                push(&mut sections, *layer);
+                sections.add(*layer);
             }
-            push(&mut sections, defaults::NAVIGATE);
+            sections.add(defaults::NAVIGATE);
             if panel.kind != Some(PanelKind::Input) {
-                push(&mut sections, defaults::DIGITS);
+                sections.add(defaults::DIGITS);
             }
         } else {
-            push(&mut sections, self.layer);
+            sections.add(self.layer);
         }
-        push(&mut sections, defaults::GLOBAL);
-        sections
+        sections.add(defaults::GLOBAL);
+        sections.into_vec()
     }
 
     /// The status bar's rows for a focus, most specific first.
@@ -157,14 +157,25 @@ impl Screen {
     }
 }
 
-fn push(sections: &mut Vec<(&'static str, Vec<Row<'static, Action>>)>, layer: Layer<Action>) {
-    let rows = layer.rows();
-    if rows.is_empty() {
-        return;
+/// The help's sections while they are built: layers grouped by name, in the
+/// order they are first added.
+#[derive(Default)]
+struct Sections(Vec<(&'static str, Vec<Row<'static, Action>>)>);
+
+impl Sections {
+    fn add(&mut self, layer: Layer<Action>) {
+        let rows = layer.rows();
+        if rows.is_empty() {
+            return;
+        }
+        match self.0.iter_mut().find(|(name, _)| *name == layer.name) {
+            Some((_, all)) => all.extend(rows),
+            None => self.0.push((layer.name, rows)),
+        }
     }
-    match sections.iter_mut().find(|(name, _)| *name == layer.name) {
-        Some((_, all)) => all.extend(rows),
-        None => sections.push((layer.name, rows)),
+
+    fn into_vec(self) -> Vec<(&'static str, Vec<Row<'static, Action>>)> {
+        self.0
     }
 }
 

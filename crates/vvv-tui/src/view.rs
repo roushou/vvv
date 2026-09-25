@@ -96,14 +96,7 @@ impl View for Compact {
         Row::at(line, notice.path.clone(), notice.start.line)
     }
 
-    fn rewrite(
-        &self,
-        m: &Match,
-        _after: Option<&str>,
-        _ordinal: usize,
-        ticked: bool,
-        width: usize,
-    ) -> Row {
+    fn rewrite(&self, m: &Match, _ordinal: usize, ticked: bool, width: usize) -> Row {
         let site_width = 22;
         let mut line = Line::mark(Mark::ticked(ticked)).and(Role::Plain, " ");
         let site = format!("{}:{}", crate::model::short(&m.path), m.start.line + 1);

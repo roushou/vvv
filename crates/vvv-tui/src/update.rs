@@ -189,7 +189,6 @@ impl Model {
                     }
                     Mode::Rewrite(rw) => {
                         rw.busy = false;
-                        rw.replacements.clear();
                         rw.changes.clear();
                         rw.error = Some(message);
                     }
@@ -324,20 +323,6 @@ impl Model {
                 self.preview_effect()
             }
             (Mode::Rewrite(rw), Planned::Rewrite { files }) => {
-                let replacements = rw
-                    .matches
-                    .iter()
-                    .filter_map(|m| {
-                        let edit = files
-                            .iter()
-                            .find(|f| f.path == m.path)?
-                            .edits
-                            .iter()
-                            .find(|e| e.span == m.span)?;
-                        Some((m.id.clone(), edit.replacement.clone()))
-                    })
-                    .collect();
-                rw.replacements = replacements;
                 rw.changes = files;
                 rw.error = None;
                 rw.busy = false;
@@ -672,7 +657,6 @@ impl Model {
                 }]
             }
             None => {
-                rw.replacements.clear();
                 rw.changes.clear();
                 rw.error = None;
                 rw.busy = false;
@@ -732,7 +716,7 @@ impl Model {
                 _ => Vec::new(),
             },
             Mode::Rewrite(rw) => {
-                if rw.busy || rw.replacements.is_empty() {
+                if rw.busy || rw.changes.is_empty() {
                     return self.fail("type a template first");
                 }
                 if rw.ticks.is_empty() {

@@ -61,16 +61,8 @@ pub trait View {
     /// Lay one notice out as the picker's list row.
     fn notice(&self, notice: &Notice, width: usize) -> Row;
 
-    /// Lay one rewrite match out as the picker's list row: the preview when
-    /// `after` is known, the source hit otherwise.
-    fn rewrite(
-        &self,
-        m: &Match,
-        after: Option<&str>,
-        ordinal: usize,
-        ticked: bool,
-        width: usize,
-    ) -> Row;
+    /// Lay one rewrite match out as the picker's list row.
+    fn rewrite(&self, m: &Match, ordinal: usize, ticked: bool, width: usize) -> Row;
 }
 
 /// The terminal's view: a block per line, notes prefixed, as a command prints.
@@ -497,14 +489,7 @@ impl View for Detailed {
         )
     }
 
-    fn rewrite(
-        &self,
-        m: &Match,
-        _after: Option<&str>,
-        ordinal: usize,
-        _ticked: bool,
-        _width: usize,
-    ) -> Row {
+    fn rewrite(&self, m: &Match, ordinal: usize, _ticked: bool, _width: usize) -> Row {
         Row::at(
             lines::MatchRow::numbered(m, ordinal),
             m.path.clone(),

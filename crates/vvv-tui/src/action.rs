@@ -151,7 +151,7 @@ pub enum Planned {
         files: Vec<FileChange>,
     },
     Rewrite {
-        /// One edit per match; its replacement is the `after` text.
+        /// The plan's files, each with its edits and diff.
         files: Vec<FileChange>,
     },
 }

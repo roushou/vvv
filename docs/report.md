@@ -187,7 +187,7 @@ pub trait View {
     /// Lay one notice out as the picker's list row.
     fn notice(&self, notice: &Notice, width: usize) -> Row;
     /// Lay one rewrite match out as the picker's list row.
-    fn rewrite(&self, m: &Match, after: Option<&str>, ordinal: usize, ticked: bool, width: usize) -> Row;
+    fn rewrite(&self, m: &Match, ordinal: usize, ticked: bool, width: usize) -> Row;
 }
 ```
 
@@ -254,9 +254,9 @@ variant; its detail pane carries the hunk or the diff.
 
 - `v` switches `Compact`/`Detailed`; the model holds the choice.
 - Rewrite's matches panel is the hit per row; its detail pane draws the current
-  match's file diff from the plan's `Block::Changes`, scrolled to the hunk
-  holding the match, so a multi-line rewrite and a file with several hunks need
-  no special case.
+  match's file diff from the plan's files, scrolled to the hunk holding the
+  match, so a multi-line rewrite and a file with several hunks need no special
+  case.
 - After an apply the worker composes the `Document` and sends it as
   `Event::Applied`; `Overlay::Report` draws it and walks its source rows —
   `j`/`k` move the cursor over the rows that carry a `Source`, `e` opens one.

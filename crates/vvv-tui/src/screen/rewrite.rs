@@ -238,13 +238,11 @@ impl<'a> RewriteView<'a> {
     /// The row the picker's view lays out: the compact view shows the template
     /// preview, the detailed one the terminal's numbered match.
     fn row(&self, m: &Match, ordinal: usize, width: usize) -> Line<'static> {
-        let row = self.model.view.view().rewrite(
-            m,
-            self.mode.replacements.get(&m.id).map(String::as_str),
-            ordinal,
-            self.mode.is_ticked(m),
-            width,
-        );
+        let row = self
+            .model
+            .view
+            .view()
+            .rewrite(m, ordinal, self.mode.is_ticked(m), width);
         self.painter.line(&row.line)
     }
 
