@@ -145,6 +145,27 @@ impl Line {
     pub fn is_empty(&self) -> bool {
         self.pieces.iter().all(|p| p.text.is_empty())
     }
+
+    /// Cut the line to `budget` columns, `…` where it is cut.
+    pub fn fit(self, budget: usize) -> Self {
+        let total: usize = self.pieces.iter().map(|p| p.text.chars().count()).sum();
+        if total <= budget {
+            return self;
+        }
+        let last = self.pieces.len().saturating_sub(1);
+        let mut remaining = budget.saturating_sub(1);
+        let mut out = Self::new();
+        for (i, piece) in self.pieces.into_iter().enumerate() {
+            let take = piece.text.chars().count().min(remaining);
+            let mut text: String = piece.text.chars().take(take).collect();
+            remaining = remaining.saturating_sub(take);
+            if i == last {
+                text.push('…');
+            }
+            out = out.and(piece.role, text);
+        }
+        out
+    }
 }
 
 #[cfg(test)]

@@ -80,7 +80,7 @@ impl Screen {
             return Some(dispatch);
         }
         if let Some(kind) = panel.kind
-            && let Some(dispatch) = defaults::default_for(kind).and_then(|l| l.resolve(key, &holds))
+            && let Some(dispatch) = kind.layer().and_then(|l| l.resolve(key, &holds))
         {
             return Some(dispatch);
         }
@@ -119,7 +119,7 @@ impl Screen {
             sections.add(panel.layer);
             sections.add(self.layer);
             if let Some(kind) = panel.kind
-                && let Some(layer) = defaults::default_for(kind)
+                && let Some(layer) = kind.layer()
             {
                 sections.add(*layer);
             }
@@ -141,7 +141,7 @@ impl Screen {
             rows.extend(panel.layer.rows());
             rows.extend(self.layer.rows());
             if let Some(kind) = panel.kind
-                && let Some(layer) = defaults::default_for(kind)
+                && let Some(layer) = kind.layer()
             {
                 rows.extend(layer.rows());
             }
@@ -244,7 +244,7 @@ mod tests {
                 let Some(bar) = row.legend.bar else {
                     continue;
                 };
-                let spelled: Vec<&str> = row.spelled.split_whitespace().collect();
+                let spelled: Vec<&str> = row.labels.split_whitespace().collect();
                 let parts: Vec<&str> = if spelled.contains(&bar.keys) {
                     vec![bar.keys]
                 } else {
@@ -258,7 +258,7 @@ mod tests {
                         spelled.contains(&part) || part == "tab",
                         "{:?} names {part:?}, which {:?} does not spell",
                         bar.keys,
-                        row.spelled
+                        row.labels
                     );
                 }
             }

@@ -415,7 +415,7 @@ impl<'a> HelpBox<'a> {
         for (title, section) in self.screen.sections(self.focus) {
             rows.push((String::new(), title.to_owned()));
             for row in section {
-                rows.push((row.spelled.clone(), row.legend.help.to_owned()));
+                rows.push((row.labels.clone(), row.legend.help.to_owned()));
             }
         }
         rows

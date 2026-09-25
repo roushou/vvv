@@ -27,25 +27,30 @@ impl Command for Request {
             Self::Dead(q) => Answer::Dead(q.run(cx)?),
             Self::Imports(q) => Answer::Imports(q.run(cx)?),
             Self::File(q) => Answer::File(q.run(cx)?),
-            Self::Rewrite { intent, apply } => mutate(Intent::Rewrite(intent), apply, cx)?,
-            Self::Rename { intent, apply } => mutate(Intent::Rename(intent), apply, cx)?,
-            Self::Move { intent, apply } => mutate(Intent::Move(intent), apply, cx)?,
-            Self::MoveSymbol { intent, apply } => mutate(Intent::MoveSymbol(intent), apply, cx)?,
-            Self::Batch { intent, apply } => mutate(Intent::Batch(intent), apply, cx)?,
+            Self::Rewrite { intent, apply } => Self::mutate(Intent::Rewrite(intent), apply, cx)?,
+            Self::Rename { intent, apply } => Self::mutate(Intent::Rename(intent), apply, cx)?,
+            Self::Move { intent, apply } => Self::mutate(Intent::Move(intent), apply, cx)?,
+            Self::MoveSymbol { intent, apply } => {
+                Self::mutate(Intent::MoveSymbol(intent), apply, cx)?
+            }
+            Self::Batch { intent, apply } => Self::mutate(Intent::Batch(intent), apply, cx)?,
             Self::History => Answer::History(HistoryQuery.run(cx)?),
             Self::Undo => Answer::Undo(UndoLast.run(cx)?),
         })
     }
 }
 
-/// Plan a mutating intent and, when asked, write it: the one place `--apply`,
-/// `serve`'s `apply` and a batch step agree on what applying means.
-fn mutate(intent: Intent, apply: bool, cx: &mut Context<'_>) -> Result<Answer, EngineError> {
-    let planned = intent.run(cx)?;
-    if apply {
-        Apply(planned).run(cx)
-    } else {
-        Ok(planned.into_inner())
+impl Request {
+    /// Plan a mutating intent and, when asked, write it: the one place
+    /// `--apply`, `serve`'s `apply` and a batch step agree on what applying
+    /// means.
+    fn mutate(intent: Intent, apply: bool, cx: &mut Context<'_>) -> Result<Answer, EngineError> {
+        let planned = intent.run(cx)?;
+        if apply {
+            Apply(planned).run(cx)
+        } else {
+            Ok(planned.into_inner())
+        }
     }
 }
 

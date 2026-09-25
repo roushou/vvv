@@ -17,7 +17,7 @@ use vvv_engine::{
 };
 
 use super::action::Action;
-use super::keymap::{Dispatch, When};
+use super::keymap::{Dispatch, Layer, When};
 use super::query::QueryBar;
 use super::screen::{Screen, history, moving, overlay, rename, rewrite, search};
 
@@ -294,6 +294,17 @@ pub enum PanelKind {
     Text,
 }
 
+impl PanelKind {
+    /// The keys a panel of this kind shares; `None` for an input.
+    pub fn layer(self) -> Option<&'static Layer<Action>> {
+        match self {
+            Self::Input => None,
+            Self::List => Some(&super::screen::defaults::LIST),
+            Self::Text => Some(&super::screen::defaults::TEXT),
+        }
+    }
+}
+
 /// Focus order within a mode: `tab` walks it, `1`–`5` jump into it.
 pub trait Panels: Copy + PartialEq + Sized + 'static {
     const ALL: &'static [Self];
@@ -311,6 +322,11 @@ pub trait Panels: Copy + PartialEq + Sized + 'static {
     fn prev(self) -> Self {
         let i = Self::ALL.iter().position(|p| *p == self).unwrap_or(0);
         Self::ALL[(i + Self::ALL.len() - 1) % Self::ALL.len()]
+    }
+
+    /// The panel `by` steps away, wrapping: how the arrow keys move focus.
+    fn step(self, by: i32) -> Self {
+        if by > 0 { self.next() } else { self.prev() }
     }
 
     fn nth(n: u8) -> Option<Self> {
@@ -658,7 +674,7 @@ impl MovePlan {
     pub fn structural_label(&self, i: usize) -> String {
         let file = &self.files[i];
         if let Some(to) = &file.moved_to {
-            return format!("{} → {}", short(&file.path), short(to));
+            return format!("{} → {}", file.path.short(), to.short());
         }
         let change = file
             .diff
@@ -671,7 +687,7 @@ impl MovePlan {
             })
             .map(|l| format!("{} {}", &l[..1], l[1..].trim()))
             .unwrap_or_default();
-        format!("{}  {change}", short(&file.path))
+        format!("{}  {change}", file.path.short())
     }
 }
 
@@ -1080,15 +1096,4 @@ impl FilePreview {
     pub fn text(&self) -> &str {
         &self.text
     }
-}
-
-/// A path's last two components: enough to tell rows apart, short enough
-/// for a row. The full path is in the detail panel.
-pub fn short(path: &Path) -> String {
-    let parts: Vec<String> = path
-        .components()
-        .map(|c| c.as_os_str().to_string_lossy().into_owned())
-        .collect();
-    let n = parts.len();
-    parts[n.saturating_sub(2)..].join("/")
 }

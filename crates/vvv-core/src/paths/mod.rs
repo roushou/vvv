@@ -123,7 +123,7 @@ pub struct RelPath(String);
 impl RelPath {
     /// Whatever the host spells a path with, a workspace path is `/`.
     pub fn new(path: &Path) -> Self {
-        Self(spell(path.display().to_string()))
+        Self(Self::separators(path.display().to_string()))
     }
 
     pub fn as_str(&self) -> &str {
@@ -134,14 +134,26 @@ impl RelPath {
     pub fn as_path(&self) -> &Path {
         Path::new(&self.0)
     }
-}
 
-/// `/` on every platform; on Unix this is the text unchanged.
-fn spell(text: String) -> String {
-    if std::path::MAIN_SEPARATOR == '/' {
-        text
-    } else {
-        text.replace(std::path::MAIN_SEPARATOR, "/")
+    /// The last two components: enough to tell rows apart, short enough for
+    /// one. The full path is in the detail.
+    pub fn short(&self) -> String {
+        let parts: Vec<String> = self
+            .as_path()
+            .components()
+            .map(|c| c.as_os_str().to_string_lossy().into_owned())
+            .collect();
+        let n = parts.len();
+        parts[n.saturating_sub(2)..].join("/")
+    }
+
+    /// `/` on every platform; on Unix this is the text unchanged.
+    fn separators(text: String) -> String {
+        if std::path::MAIN_SEPARATOR == '/' {
+            text
+        } else {
+            text.replace(std::path::MAIN_SEPARATOR, "/")
+        }
     }
 }
 
@@ -220,13 +232,13 @@ impl From<&RelPath> for RelPath {
 
 impl From<&str> for RelPath {
     fn from(path: &str) -> Self {
-        Self(spell(path.to_owned()))
+        Self(RelPath::separators(path.to_owned()))
     }
 }
 
 impl From<String> for RelPath {
     fn from(path: String) -> Self {
-        Self(spell(path))
+        Self(RelPath::separators(path))
     }
 }
 

@@ -3,7 +3,6 @@
 
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
-use crate::model::PanelKind;
 
 use Action as A;
 use Dispatch::Run;
@@ -272,12 +271,3 @@ pub static TEXT: Layer<Action> = Layer {
         },
     ],
 };
-
-/// The default layer for a panel kind, or `None` for an input.
-pub fn default_for(kind: PanelKind) -> Option<&'static Layer<Action>> {
-    match kind {
-        PanelKind::Input => None,
-        PanelKind::List => Some(&LIST),
-        PanelKind::Text => Some(&TEXT),
-    }
-}

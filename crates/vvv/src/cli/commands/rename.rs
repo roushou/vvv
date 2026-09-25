@@ -1,7 +1,7 @@
 use clap::Args;
 use vvv_engine::{LanguageId, RenameIntent, Request, SymbolKind};
 
-use crate::context::Context;
+use crate::{cli::select::Select, context::Context};
 
 /// Rename a declaration and every identifier spelling its name. Previews by default
 #[derive(Debug, Args)]
@@ -40,7 +40,7 @@ impl RenameCmd {
         intent.symbol = self.symbol;
         intent.language = self.lang.map(LanguageId::from);
         intent.declared_in = self.declared_in.clone().map(Into::into);
-        intent.selection = crate::cli::select::parse(&self.select)?;
+        intent.selection = Select::new(&self.select).selection()?;
 
         ctx.run(Request::Rename {
             intent,

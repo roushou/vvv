@@ -1,13 +1,11 @@
 //! The keymap vocabulary: [`Key`] is a press, [`Trigger`] is what a
 //! [`Keybinding`] listens for, [`Dispatch`] is what it does, and a
-//! [`Layer`] is a named set of bindings. Pure — no terminal library and no
-//! action type; the concrete layers live with the views and in
-//! [`crate::screen::defaults`].
+//! [`Layer`] is a named set of bindings. No action type; `Key::from_event`
+//! is the one place a terminal event enters, and the concrete layers live
+//! with the views and in [`crate::screen::defaults`].
 
-mod input;
 mod keys;
 
-pub use input::key as from_event;
 pub use keys::Key;
 
 /// What a binding listens for.
@@ -31,9 +29,9 @@ impl Trigger {
     }
 
     /// How the trigger is written in the help and the status bar.
-    pub fn spell(self) -> String {
+    pub fn label(self) -> String {
         match self {
-            Self::Key(key) => key.spell(),
+            Self::Key(key) => key.label(),
             Self::Text => "typing".to_owned(),
             Self::Any => "any key".to_owned(),
         }
@@ -77,9 +75,9 @@ pub struct Keybinding<A> {
 }
 
 impl<A: Copy> Keybinding<A> {
-    /// Every key of the row spelled, for the help.
-    pub fn spelled(&self) -> String {
-        let mut keys: Vec<String> = self.triggers.iter().map(|t| t.spell()).collect();
+    /// Every key of the row as a label, for the help.
+    pub fn labels(&self) -> String {
+        let mut keys: Vec<String> = self.triggers.iter().map(|t| t.label()).collect();
         keys.dedup();
         keys.join(" ")
     }
@@ -106,7 +104,7 @@ pub struct Layer<A: 'static> {
 /// legend read as one row.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Row<'a, A> {
-    pub spelled: String,
+    pub labels: String,
     pub legend: Legend,
     pub binding: &'a Keybinding<A>,
 }
@@ -129,14 +127,14 @@ impl<A: Copy> Layer<A> {
         for binding in self.bindings {
             match rows.last_mut() {
                 Some(row) if row.legend == binding.legend => {
-                    let spelled = binding.spelled();
-                    if !row.spelled.is_empty() && !spelled.is_empty() {
-                        row.spelled.push(' ');
+                    let labels = binding.labels();
+                    if !row.labels.is_empty() && !labels.is_empty() {
+                        row.labels.push(' ');
                     }
-                    row.spelled.push_str(&spelled);
+                    row.labels.push_str(&labels);
                 }
                 _ => rows.push(Row {
-                    spelled: binding.spelled(),
+                    labels: binding.labels(),
                     legend: binding.legend,
                     binding,
                 }),

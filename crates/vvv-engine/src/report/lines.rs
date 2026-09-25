@@ -685,7 +685,7 @@ impl<'a> DepGroups<'a> {
         // One very long statement should not push every arrow off-screen.
         let width = statements
             .iter()
-            .map(|(_, e)| Self::spell(e).len())
+            .map(|(_, e)| Self::one_line(e).len())
             .filter(|w| *w <= 60)
             .max()
             .unwrap_or(0);
@@ -711,10 +711,10 @@ impl<'a> DepGroups<'a> {
                     )
                     .and(Role::Plain, "  ");
                 if files.is_empty() {
-                    line = line.and(Role::Plain, Self::spell(entries));
+                    line = line.and(Role::Plain, Self::one_line(entries));
                 } else {
                     line = line
-                        .and(Role::Dim, format!("{:<width$}", Self::spell(entries)))
+                        .and(Role::Dim, format!("{:<width$}", Self::one_line(entries)))
                         .and(Role::Plain, "   ")
                         .and_line(Line::mark(Mark::Import))
                         .and(Role::Plain, " ")
@@ -750,7 +750,7 @@ impl<'a> DepGroups<'a> {
 
     /// The entries of one statement as one path: the shared group prefix with
     /// the tails braced, or the single path.
-    fn spell(entries: &[&Dep]) -> String {
+    fn one_line(entries: &[&Dep]) -> String {
         let [only] = entries else {
             let Some(prefix) = entries
                 .iter()

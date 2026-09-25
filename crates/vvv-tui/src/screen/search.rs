@@ -10,7 +10,7 @@ use vvv_engine::{Match, Role};
 use super::{Panel, Screen};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
-use crate::model::{MenuTarget, Model, PanelKind, SearchPanel, short};
+use crate::model::{MenuTarget, Model, PanelKind, SearchPanel};
 use crate::render::Pane;
 use crate::render::{Header, Painter, Region};
 use vvv_engine::protocol::vocabulary::{Files, Mark};
@@ -490,7 +490,7 @@ impl<'a> SearchView<'a> {
                                 spans.push(Span::styled(format!("   ◆ {address}"), t.address));
                             }
                             None => spans.push(Span::styled(
-                                format!("   {}:{}", short(&d.path), d.start.line + 1),
+                                format!("   {}:{}", d.path.short(), d.start.line + 1),
                                 t.dim,
                             )),
                         }

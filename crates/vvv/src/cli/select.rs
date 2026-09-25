@@ -29,43 +29,54 @@ impl std::fmt::Display for BadSelect {
 
 impl std::error::Error for BadSelect {}
 
-/// Parse the comma-split values of `--select`. Empty input selects all.
-pub fn parse(values: &[String]) -> anyhow::Result<Selection> {
-    if values.is_empty() {
-        return Ok(Selection::All);
-    }
-    let mut ordinals: BTreeSet<usize> = BTreeSet::new();
-    let mut ids: BTreeSet<MatchId> = BTreeSet::new();
-    for value in values {
-        let value = value.trim();
-        if value.is_empty() {
-            continue;
-        }
-        match range(value) {
-            Some((from, to)) if from <= to => ordinals.extend(from..=to),
-            Some(_) => return Err(BadSelect::Value(value.to_owned()).into()),
-            None => {
-                ids.insert(MatchId::from(value.to_owned()));
-            }
-        }
-    }
-    match (ordinals.is_empty(), ids.is_empty()) {
-        (false, false) => Err(BadSelect::Mixed.into()),
-        (false, true) => Ok(Selection::ordinals(ordinals)),
-        (true, false) => Ok(Selection::ids(ids)),
-        (true, true) => Ok(Selection::All),
-    }
+/// The `--select` argument's values, read into a [`Selection`].
+pub struct Select<'a> {
+    values: &'a [String],
 }
 
-/// `3` as `(3, 3)`, `3-7` as `(3, 7)`; `None` when not all digits.
-fn range(value: &str) -> Option<(usize, usize)> {
-    let (from, to) = value.split_once('-').unwrap_or((value, value));
-    let digits = |s: &str| {
-        (!s.is_empty() && s.bytes().all(|b| b.is_ascii_digit()))
-            .then(|| s.parse().ok())
-            .flatten()
-    };
-    Some((digits(from)?, digits(to)?))
+impl<'a> Select<'a> {
+    pub fn new(values: &'a [String]) -> Self {
+        Self { values }
+    }
+
+    /// Parse the comma-split values. Empty input selects all.
+    pub fn selection(self) -> anyhow::Result<Selection> {
+        if self.values.is_empty() {
+            return Ok(Selection::All);
+        }
+        let mut ordinals: BTreeSet<usize> = BTreeSet::new();
+        let mut ids: BTreeSet<MatchId> = BTreeSet::new();
+        for value in self.values {
+            let value = value.trim();
+            if value.is_empty() {
+                continue;
+            }
+            match Self::range(value) {
+                Some((from, to)) if from <= to => ordinals.extend(from..=to),
+                Some(_) => return Err(BadSelect::Value(value.to_owned()).into()),
+                None => {
+                    ids.insert(MatchId::from(value.to_owned()));
+                }
+            }
+        }
+        match (ordinals.is_empty(), ids.is_empty()) {
+            (false, false) => Err(BadSelect::Mixed.into()),
+            (false, true) => Ok(Selection::ordinals(ordinals)),
+            (true, false) => Ok(Selection::ids(ids)),
+            (true, true) => Ok(Selection::All),
+        }
+    }
+
+    /// `3` as `(3, 3)`, `3-7` as `(3, 7)`; `None` when not all digits.
+    fn range(value: &str) -> Option<(usize, usize)> {
+        let (from, to) = value.split_once('-').unwrap_or((value, value));
+        let digits = |s: &str| {
+            (!s.is_empty() && s.bytes().all(|b| b.is_ascii_digit()))
+                .then(|| s.parse().ok())
+                .flatten()
+        };
+        Some((digits(from)?, digits(to)?))
+    }
 }
 
 #[cfg(test)]
@@ -76,10 +87,14 @@ mod tests {
         values.iter().map(|s| (*s).to_owned()).collect()
     }
 
+    fn selection(values: &[&str]) -> anyhow::Result<Selection> {
+        Select::new(&strings(values)).selection()
+    }
+
     #[test]
     fn numbers_and_ranges_are_rows() {
         assert_eq!(
-            parse(&strings(&["3", "27-29", "5"])).unwrap(),
+            selection(&["3", "27-29", "5"]).unwrap(),
             Selection::ordinals([3, 5, 27, 28, 29])
         );
     }
@@ -87,7 +102,7 @@ mod tests {
     #[test]
     fn anything_else_is_an_id() {
         assert_eq!(
-            parse(&strings(&["ae22071f2d2e", "0e1692fd1b56"])).unwrap(),
+            selection(&["ae22071f2d2e", "0e1692fd1b56"]).unwrap(),
             Selection::ids([
                 MatchId::from("ae22071f2d2e".to_owned()),
                 MatchId::from("0e1692fd1b56".to_owned())
@@ -97,8 +112,8 @@ mod tests {
 
     #[test]
     fn mixing_and_backward_ranges_are_refused() {
-        assert!(parse(&strings(&["3", "abc"])).is_err());
-        assert!(parse(&strings(&["7-3"])).is_err());
-        assert_eq!(parse(&[]).unwrap(), Selection::All);
+        assert!(selection(&["3", "abc"]).is_err());
+        assert!(selection(&["7-3"]).is_err());
+        assert_eq!(selection(&[]).unwrap(), Selection::All);
     }
 }

@@ -1,6 +1,6 @@
 use vvv_engine::{LanguageId, Query, Request, RewriteIntent};
 
-use crate::context::Context;
+use crate::{cli::select::Select, context::Context};
 
 /// Replace matches of a pattern with a template. Previews by default
 #[derive(Debug, clap::Args)]
@@ -36,7 +36,7 @@ impl RewriteCmd {
             .kind(self.kind)
             .language(self.lang.map(LanguageId::from))
             .build()?;
-        let selection = crate::cli::select::parse(&self.select)?;
+        let selection = Select::new(&self.select).selection()?;
         let intent = RewriteIntent::new(query, self.template.as_str()).selecting(selection);
 
         ctx.run(Request::Rewrite {

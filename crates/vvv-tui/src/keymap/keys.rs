@@ -1,5 +1,7 @@
-//! Terminal-independent key values: what a binding matches and a person
-//! presses. Nothing here knows about a terminal library.
+//! The keymap's key values: what a binding matches and a person presses.
+//! [`Key::from_event`] is the one place a terminal event becomes a `Key`.
+
+use ratatui::crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 /// Modifiers held with a key. Shift is folded into the character itself
 /// (`Char('M')`), so it is not tracked.
@@ -50,6 +52,39 @@ pub struct Key {
 impl Key {
     pub const fn new(code: Code, modifiers: Modifiers) -> Self {
         Self { code, modifiers }
+    }
+
+    /// The keymap's key for a terminal event, or `None` for a key the picker
+    /// does not bind (function keys and the like).
+    pub fn from_event(event: KeyEvent) -> Option<Self> {
+        let code = match event.code {
+            KeyCode::Char(c) => Code::Char(c),
+            KeyCode::Enter => Code::Enter,
+            KeyCode::Esc => Code::Esc,
+            KeyCode::Tab => Code::Tab,
+            KeyCode::BackTab => Code::BackTab,
+            KeyCode::Backspace => Code::Backspace,
+            KeyCode::Delete => Code::Delete,
+            KeyCode::Up => Code::Up,
+            KeyCode::Down => Code::Down,
+            KeyCode::Left => Code::Left,
+            KeyCode::Right => Code::Right,
+            KeyCode::Home => Code::Home,
+            KeyCode::End => Code::End,
+            KeyCode::PageUp => Code::PageUp,
+            KeyCode::PageDown => Code::PageDown,
+            _ => return None,
+        };
+        // Shift is folded into the character itself, so only ctrl and alt are
+        // tracked; a shifted `M` is `Char('M')` with no modifier.
+        let mut modifiers = Modifiers::NONE;
+        if event.modifiers.contains(KeyModifiers::CONTROL) {
+            modifiers = modifiers.union(Modifiers::CTRL);
+        }
+        if event.modifiers.contains(KeyModifiers::ALT) {
+            modifiers = modifiers.union(Modifiers::ALT);
+        }
+        Some(Self::new(code, modifiers))
     }
 
     pub const fn char(c: char) -> Self {
@@ -126,7 +161,7 @@ impl Key {
     }
 
     /// How the key is written in the help and the status bar.
-    pub fn spell(&self) -> String {
+    pub fn label(&self) -> String {
         if let Code::Char(c) = self.code {
             if self.modifiers.contains(Modifiers::CTRL) {
                 return format!("ctrl+{c}");

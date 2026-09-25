@@ -7,7 +7,7 @@ use ratatui::crossterm::event::KeyEvent;
 use vvv_engine::{Confidence, Intent, RenameIntent, Selection, SymbolKind};
 
 use super::action::{Action, Effect, Event, Planned};
-use super::keymap::{self, Dispatch};
+use super::keymap::{Dispatch, Key};
 use super::model::{
     Confirm, Confirmed, FilePreview, HistoryMode, HistoryPanel, Menu, MenuTarget, Mode, Model,
     MoveMode, MovePanel, MovePlan, Overlay, Panels, RenameMode, RenamePanel, RewriteMode,
@@ -20,7 +20,7 @@ impl Model {
     /// Map a key to an action for the current view and focus. `None` =
     /// ignored.
     pub fn action_for(&self, event: KeyEvent) -> Option<Action> {
-        let key = keymap::from_event(event)?;
+        let key = Key::from_event(event)?;
         match self
             .screen()
             .resolve(self.focus(), key, |when| self.holds(when))?
@@ -336,11 +336,11 @@ impl Model {
 
     fn focus_by(&mut self, by: i32) -> Vec<Effect> {
         match &mut self.mode {
-            Mode::Search => self.search.focus = step(self.search.focus, by),
-            Mode::Rename(r) => r.focus = step(r.focus, by),
-            Mode::Move(mv) => mv.focus = step(mv.focus, by),
-            Mode::Rewrite(rw) => rw.focus = step(rw.focus, by),
-            Mode::History(h) => h.focus = step(h.focus, by),
+            Mode::Search => self.search.focus = self.search.focus.step(by),
+            Mode::Rename(r) => r.focus = r.focus.step(by),
+            Mode::Move(mv) => mv.focus = mv.focus.step(by),
+            Mode::Rewrite(rw) => rw.focus = rw.focus.step(by),
+            Mode::History(h) => h.focus = h.focus.step(by),
         }
         self.preview_effect()
     }
@@ -884,8 +884,4 @@ impl Model {
         self.status.error(message);
         Vec::new()
     }
-}
-
-fn step<P: Panels>(panel: P, by: i32) -> P {
-    if by > 0 { panel.next() } else { panel.prev() }
 }

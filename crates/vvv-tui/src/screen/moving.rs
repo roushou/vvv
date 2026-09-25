@@ -12,7 +12,7 @@ use vvv_engine::protocol::FileChange;
 use super::{Panel, Screen};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
-use crate::model::{Mode, Model, MoveMode, MovePanel, MoveRow, PanelKind, short};
+use crate::model::{Mode, Model, MoveMode, MovePanel, MoveRow, PanelKind};
 use crate::render::Pane;
 use crate::render::{Fit, Header, Painter, Region};
 use vvv_engine::protocol::vocabulary::{Mark, Plural};
@@ -405,7 +405,7 @@ impl<'a> MoveView<'a> {
                 if let Some(to) = &file.moved_to {
                     rows.push(Line::from(vec![
                         t.glyph(Mark::Structure),
-                        Span::styled(short(&file.path), t.dim),
+                        Span::styled(file.path.short(), t.dim),
                         Span::styled(" → ", t.import),
                         Span::styled(to.display().to_string(), t.path),
                     ]));
