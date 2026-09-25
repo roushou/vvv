@@ -6,7 +6,7 @@ use vvv_core::RelPath;
 use serde::{Deserialize, Serialize};
 use vvv_core::{Address, Edit, Query};
 
-use super::diff::UnifiedDiff;
+use super::diff::Diff;
 use super::{
     BatchIntent, Intent, Match, MoveIntent, MoveSymbolIntent, Notice, Occurrence, RenameIntent,
     Respelling, RewriteIntent, Skipped,
@@ -160,7 +160,7 @@ pub struct FileChange {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub moved_to: Option<RelPath>,
     pub edits: Vec<Edit>,
-    pub diff: UnifiedDiff,
+    pub diff: Diff,
 }
 
 impl FileChange {
@@ -174,7 +174,7 @@ impl FileChange {
                 moved_to: file.moved_to.clone(),
                 edits: plan
                     .map_or_else(Vec::new, |p| p.change_set().edits_for(&file.path).to_vec()),
-                diff: UnifiedDiff::between(
+                diff: Diff::between(
                     &file.path,
                     file.moved_to.as_deref().unwrap_or(&file.path),
                     &file.before,

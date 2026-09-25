@@ -5,7 +5,7 @@ use std::collections::BTreeMap;
 use vvv_engine::RelPath;
 
 use vvv_engine::protocol::{
-    FileChange, History, HistoryEntry, Move, Rename, Rewrite, Search, Undo, UnifiedDiff,
+    Diff, FileChange, History, HistoryEntry, Move, Rename, Rewrite, Search, Undo,
 };
 use vvv_engine::{
     Address, Consumer, Dead, Dep, Deps, Explanation, Exposed, Impact, ImportRef, ImportSite,
@@ -103,7 +103,7 @@ pub fn change(path: &str, moved_to: Option<&str>, before: &str, after: &str) -> 
     let p = RelPath::from(path);
     let to = moved_to.map(RelPath::from);
     FileChange {
-        diff: UnifiedDiff::between(&p, to.as_deref().unwrap_or(&p), before, after),
+        diff: Diff::between(&p, to.as_deref().unwrap_or(&p), before, after),
         path: p,
         moved_to: to,
         edits: vec![Edit::replace(Span::new(0, 1), "x")],

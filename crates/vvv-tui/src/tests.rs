@@ -275,7 +275,7 @@ fn rewrite_file(
     };
     let path = vvv_engine::RelPath::from(path);
     vvv_engine::protocol::FileChange {
-        diff: vvv_engine::protocol::UnifiedDiff::between(&path, &path, &text(0), &text(1)),
+        diff: vvv_engine::protocol::Diff::between(&path, &path, &text(0), &text(1)),
         path,
         moved_to: None,
         edits,

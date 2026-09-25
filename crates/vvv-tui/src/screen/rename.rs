@@ -16,7 +16,6 @@ use crate::render::Pane;
 use crate::render::{Header, Painter, Region};
 use vvv_engine::protocol::display;
 use vvv_engine::protocol::vocabulary::{Files, Mark};
-use vvv_engine::report::Hunk;
 
 use Action as A;
 use Dispatch::Run;
@@ -387,17 +386,18 @@ impl<'a> RenameView<'a> {
         // The plan's diff for the row's file, scrolled to its hunk; the
         // source itself when the plan does not edit this site.
         let diff = current.and_then(|o| {
-            let hunk = Hunk::new(r.file(o)?, o.m.start.line + 1);
-            (!hunk.lines().is_empty()).then_some(hunk)
+            let file = r.file(o)?;
+            (!file.diff.hunks().is_empty()).then_some((file, o.m.start.line + 1))
         });
-        if let Some(hunk) = diff {
+        if let Some((file, line)) = diff {
+            let open = file.diff.opening(line);
             rows.extend(
-                hunk.lines()
+                display::diff(&file.diff.hunks()[open..])
                     .iter()
                     .skip(r.detail_scroll)
                     .map(|line| t.line(line)),
             );
-        } else if let (Some(o), Some(preview)) = (current, &r.preview)
+        } else if let (Some(preview), Some(o)) = (&r.preview, current)
             && preview.path == o.m.path
         {
             let height = inner_height.saturating_sub(rows.len());

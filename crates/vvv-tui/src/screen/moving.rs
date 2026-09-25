@@ -346,9 +346,9 @@ impl<'a> MoveView<'a> {
             .render(area, buf);
     }
 
-    /// A file's hunks, coloured by line kind, `---`/`+++` dropped.
+    /// A file's hunks, coloured by line kind.
     fn hunks(&self, file: &FileChange) -> Vec<Line<'static>> {
-        display::diff(file)
+        display::diff(file.diff.hunks())
             .iter()
             .map(|line| self.painter.line(line))
             .collect()

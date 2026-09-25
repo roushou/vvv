@@ -8,7 +8,6 @@
 pub(crate) mod lines;
 mod view;
 
-pub use lines::Hunk;
 pub use view::{Detailed, Presentation, View};
 
 use vvv_core::RelPath;

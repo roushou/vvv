@@ -28,7 +28,7 @@ pub use answer::{
     ImportsReport, Locations, Outline, OutlineItem, Placed, References, Site, Surface,
     Unreferenced,
 };
-pub use diff::UnifiedDiff;
+pub use diff::{Diff, DiffKind, DiffLine, Hunk, LineRange};
 pub use failure::{ErrorCode, Failure};
 pub use intent::{
     BatchIntent, Intent, MoveIntent, MoveSymbolIntent, RenameIntent, RewriteIntent, RewriteOf,

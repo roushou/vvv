@@ -4,7 +4,7 @@
 //! hit — lives once, in the protocol.
 
 use super::vocabulary::Mark;
-use super::{FileChange, Match};
+use super::{DiffKind, Hunk, Match};
 
 /// The semantic role of a run of text. A backend names the colour; the data
 /// never carries one.
@@ -147,21 +147,22 @@ impl Line {
     }
 }
 
-/// A file's unified diff lines: the `---`/`+++` headers dropped, each line's
-/// role by its first byte (`@` hunk, `+` added, `-` removed, else plain).
-pub fn diff(file: &FileChange) -> Vec<Line> {
-    file.diff
-        .as_str()
-        .lines()
-        .filter(|l| !l.starts_with("--- ") && !l.starts_with("+++ "))
-        .map(|l| {
-            let role = match l.as_bytes().first() {
-                Some(b'@') => Role::Hunk,
-                Some(b'+') => Role::Added,
-                Some(b'-') => Role::Removed,
-                _ => Role::Plain,
-            };
-            Line::of(role, l)
+/// A diff's display lines: each hunk's header, then its lines with their
+/// `+`/`-`/space marker.
+pub fn diff(hunks: &[Hunk]) -> Vec<Line> {
+    hunks
+        .iter()
+        .flat_map(|hunk| {
+            std::iter::once(Line::of(Role::Hunk, hunk.header.clone())).chain(hunk.lines.iter().map(
+                |line| {
+                    let (role, marker) = match line.kind {
+                        DiffKind::Context => (Role::Plain, ' '),
+                        DiffKind::Added => (Role::Added, '+'),
+                        DiffKind::Removed => (Role::Removed, '-'),
+                    };
+                    Line::of(role, format!("{marker}{}", line.text))
+                },
+            ))
         })
         .collect()
 }
