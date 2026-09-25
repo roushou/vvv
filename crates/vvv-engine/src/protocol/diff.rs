@@ -43,6 +43,18 @@ impl LineRange {
     }
 }
 
+/// The unified-diff spelling of a range: `start`, `start,len`, and the line
+/// before an empty one.
+impl fmt::Display for LineRange {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self.len {
+            0 => write!(f, "{},0", self.start.saturating_sub(1)),
+            1 => write!(f, "{}", self.start),
+            n => write!(f, "{},{n}", self.start),
+        }
+    }
+}
+
 /// What a diff line does to the file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DiffKind {
@@ -73,15 +85,20 @@ pub struct DiffLine {
     pub text: String,
 }
 
-/// One `@@` block: the lines it covers in each file, the header it renders
-/// as, and the lines themselves.
+/// One `@@` block: the lines it covers in each file, and the lines
+/// themselves.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Hunk {
     pub old: LineRange,
     pub new: LineRange,
-    /// The `@@ -a,b +c,d @@` header, exactly as `similar` renders it.
-    pub header: String,
     pub lines: Vec<DiffLine>,
+}
+
+impl Hunk {
+    /// The `@@ -a,b +c,d @@` header.
+    pub fn header(&self) -> String {
+        format!("@@ -{} +{} @@", self.old, self.new)
+    }
 }
 
 /// One file's change: the unified diff text (the wire) and its hunks (the
@@ -125,7 +142,6 @@ impl Diff {
                 Hunk {
                     old: LineRange::of(ops, |op| op.old_range()),
                     new: LineRange::of(ops, |op| op.new_range()),
-                    header: hunk.header().to_string(),
                     lines,
                 }
             })
@@ -173,7 +189,7 @@ impl Diff {
     /// The display lines from the hunk opening at or before 1-based `line`.
     pub fn lines_from(&self, line: u32) -> impl Iterator<Item = Line> + '_ {
         self.hunks[self.opening(line)..].iter().flat_map(|hunk| {
-            std::iter::once(Line::of(Role::Hunk, hunk.header.clone())).chain(hunk.lines.iter().map(
+            std::iter::once(Line::of(Role::Hunk, hunk.header())).chain(hunk.lines.iter().map(
                 |line| {
                     let role = match line.kind {
                         DiffKind::Context => Role::Plain,
@@ -260,7 +276,7 @@ mod tests {
     fn a_single_line_hunk_has_no_count_in_its_header() {
         let diff = Diff::of(Path::new("a.rs"), "a\n", "b\n");
         let hunk = &diff.hunks()[0];
-        assert_eq!(hunk.header, "@@ -1 +1 @@");
+        assert_eq!(hunk.header(), "@@ -1 +1 @@");
         assert_eq!((hunk.old.start, hunk.old.len), (1, 1));
     }
 }
