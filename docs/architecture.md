@@ -148,8 +148,10 @@ reach) and every import statement and qualified path resolved (`Edge`: the `Impo
 and the address the layout gave it, or the address another import's binding leads to
 when the path's head is a name the file imports). A candidate builds it once per
 (file stamp, project build) and keeps it, so a session that asks ten whole-tree
-questions resolves each file once; the project's build generation is what makes a
-manifest change invalidate every fragment at once. A file's **`Scope`** — what it
+questions resolves each file once. The retained `Arc<Project>` identifies the build:
+equal projects reuse it, even across refreshes that ask no project questions;
+a changed project gets a new identity and invalidates every fragment and scope.
+A file's **`Scope`** — what it
 sees: bound names, opened modules, resolved and unresolved paths — is read off the
 fragment and kept beside it, so `references` judges tokens per name through a lookup;
 only a token in the middle of a path costs a resolution of its prefix. `aliases_of`

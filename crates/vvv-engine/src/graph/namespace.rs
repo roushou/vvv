@@ -22,23 +22,12 @@ use crate::{EngineError, Reach};
 pub struct Namespace {
     language: Arc<dyn Language>,
     project: Arc<Project>,
-    /// Which build of the project this is: what a fragment was resolved
-    /// against, so a rebuilt project invalidates it.
-    generation: u64,
 }
 
 impl Namespace {
     /// `language` must have a layout; the graph checks before building one.
-    pub(crate) fn new(language: Arc<dyn Language>, project: Arc<Project>, generation: u64) -> Self {
-        Self {
-            language,
-            project,
-            generation,
-        }
-    }
-
-    pub fn generation(&self) -> u64 {
-        self.generation
+    pub(crate) fn new(language: Arc<dyn Language>, project: Arc<Project>) -> Self {
+        Self { language, project }
     }
 
     pub fn id(&self) -> LanguageId {

@@ -51,15 +51,15 @@ pub struct Graph {
     entries: Vec<Entry>,
     /// The workspace as a language's layout sees it, built from the last
     /// walk the first time that language asks; a search never pays for it.
-    /// With it, which build this is: a project equal to the previous build
-    /// keeps its number, so fragments resolved against it stay valid.
-    projects: HashMap<LanguageId, (Arc<Project>, u64)>,
+    /// A project equal to the previous build keeps its allocation, so
+    /// fragments resolved against it stay valid.
+    projects: HashMap<LanguageId, Arc<Project>>,
     /// A second opinion for tokens syntax cannot place, when the host has
     /// one; asked after the scope, never instead of it.
     oracle: Option<Arc<dyn Oracle>>,
     /// The last build of each language's project, to tell a refresh that
     /// changed nothing about the project from one that did.
-    previous: HashMap<LanguageId, (Arc<Project>, u64)>,
+    previous: HashMap<LanguageId, Arc<Project>>,
 }
 
 struct Entry {
@@ -158,7 +158,7 @@ impl Graph {
             })
             .collect::<Result<_, EngineError>>()?;
         self.entries = now;
-        self.previous = std::mem::take(&mut self.projects);
+        self.previous.extend(std::mem::take(&mut self.projects));
         self.walked = walked;
         self.walked_at = Some(Instant::now());
         Ok(())
@@ -212,8 +212,7 @@ impl Graph {
     /// The workspace as `language`'s layout sees it: the walk's files plus
     /// the packages the layout's manifests declare. Built on first use after
     /// a refresh; `None` when the language has no layout.
-    /// The project and the number of its build.
-    fn project_build(&mut self, language: &LanguageId) -> Option<(Arc<Project>, u64)> {
+    fn project_build(&mut self, language: &LanguageId) -> Option<Arc<Project>> {
         if let Some(built) = self.projects.get(language) {
             return Some(built.clone());
         }
@@ -242,12 +241,11 @@ impl Graph {
             .collect();
         let packages = Packages::new(packages);
         let project = Project { packages, files };
-        // The same project as last time keeps its number: every fragment
+        // The same project as last time keeps its allocation: every fragment
         // resolved against it is still right.
         let built = match self.previous.remove(language) {
-            Some((last, generation)) if *last == project => (last, generation),
-            Some((_, generation)) => (Arc::new(project), generation + 1),
-            None => (Arc::new(project), 1),
+            Some(last) if *last == project => last,
+            _ => Arc::new(project),
         };
         self.projects.insert(language.clone(), built.clone());
         Some(built)
@@ -283,8 +281,8 @@ impl Graph {
     pub fn namespace(&mut self, language: &LanguageId) -> Option<Namespace> {
         let language = self.languages.get(language)?;
         language.layout()?;
-        let (project, generation) = self.project_build(&language.id())?;
-        Some(Namespace::new(language, project, generation))
+        let project = self.project_build(&language.id())?;
+        Some(Namespace::new(language, project))
     }
 
     /// The namespace of the language claiming `path`, or why there is none:

@@ -5,15 +5,16 @@ mod common;
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 use common::Fake;
 use vvv_core::Address;
 use vvv_engine::report::{Detailed, Document, Options, View};
 use vvv_engine::{
-    Answer, Apply, DepsQuery, Engine, EngineError, FileQuery, History, HistoryError, Intent,
-    Languages, MemoryVfs, MoveIntent, ReferencesQuery, RenameIntent, Retention, Vfs, WhereQuery,
-    Workspace,
+    Answer, Apply, Confidence, DepsQuery, Engine, EngineError, FileQuery, History, HistoryError,
+    Intent, Languages, MemoryVfs, MoveIntent, ReferencesQuery, RenameIntent, Retention, Vfs,
+    WhereQuery, Workspace,
 };
 
 struct Fixture {
@@ -118,7 +119,6 @@ fn applying_a_query_result_is_rejected_before_writes() {
 }
 
 #[test]
-#[ignore = "known bug: projectless refreshes reset generations and reuse stale fragment edges"]
 fn namespace_edges_follow_project_changes_after_read_only_queries() {
     let fixture = Fixture::new(&[
         ("package", "audit"),
@@ -163,6 +163,80 @@ fn namespace_edges_follow_project_changes_after_read_only_queries() {
 }
 
 #[test]
+fn unchanged_projects_reuse_fragments_across_projectless_queries() {
+    let resolves = Arc::new(AtomicUsize::new(0));
+    let vfs = Arc::new(
+        MemoryVfs::new()
+            .with_file("/ws/package", "audit")
+            .with_file("/ws/lib.p", "use a.p/foo")
+            .with_file("/ws/a.p", "def foo"),
+    );
+    let engine = Engine::new(
+        Workspace::new("/ws", vfs),
+        Languages::new()
+            .with(common::Counting::new(Default::default()).resolving(resolves.clone())),
+    )
+    .with_retention(Retention::session());
+    engine
+        .run(DepsQuery {
+            path: "lib.p".into(),
+        })
+        .unwrap();
+    let first = resolves.load(Ordering::SeqCst);
+    assert!(first > 0);
+    for _ in 0..3 {
+        engine.run(FileQuery { path: "a.p".into() }).unwrap();
+    }
+    engine
+        .run(DepsQuery {
+            path: "lib.p".into(),
+        })
+        .unwrap();
+    assert_eq!(resolves.load(Ordering::SeqCst), first);
+}
+
+#[test]
+fn namespace_scopes_follow_project_changes_after_read_only_queries() {
+    let fixture = Fixture::new(&[
+        ("package", "audit"),
+        ("lib.p", "use a.p/foo\nfoo"),
+        ("a.p", "def foo"),
+    ])
+    .retaining(Retention::session());
+    let before = fixture.engine.run(ReferencesQuery::new("foo")).unwrap();
+    assert!(
+        before
+            .occurrences
+            .iter()
+            .filter(|o| o.m.path == Path::new("lib.p"))
+            .all(|o| o.confidence == Confidence::Resolved)
+    );
+    for _ in 0..2 {
+        fixture
+            .engine
+            .run(FileQuery { path: "a.p".into() })
+            .unwrap();
+    }
+    fixture
+        .vfs
+        .write(Path::new("/ws/package"), "changed")
+        .unwrap();
+    let after = fixture.engine.run(ReferencesQuery::new("foo")).unwrap();
+    let consumers: Vec<_> = after
+        .occurrences
+        .iter()
+        .filter(|o| o.m.path == Path::new("lib.p"))
+        .collect();
+    assert!(!consumers.is_empty());
+    assert!(
+        consumers
+            .iter()
+            .all(|o| o.confidence == Confidence::Resolved),
+        "{consumers:?}"
+    );
+}
+
+#[test]
 #[ignore = "known bug: apply does not recheck move destination occupancy"]
 fn apply_preserves_a_destination_created_after_planning() {
     let fixture = Fixture::new(&[("manifest.p", ""), ("a.p", "def foo\nfoo")]);
@@ -184,7 +258,7 @@ fn apply_preserves_a_destination_created_after_planning() {
 }
 
 #[test]
-#[ignore = "known bug: where report rows discard the declaration source site"]
+#[ignore = "known bug: step 7 — where report rows discard the declaration source site"]
 fn declaration_report_rows_retain_their_source_site() {
     let fixture = Fixture::new(&[("a.p", "def foo\nfoo")]);
     let answer = Answer::Where(

@@ -7,7 +7,7 @@ use std::sync::{Arc, OnceLock, RwLock};
 use super::{Fragment, Namespace, Scope};
 use crate::{Match, SourceFile};
 
-use vvv_core::{Facts, ImportRef, Language, LanguageId, Query, SearchError};
+use vvv_core::{Facts, ImportRef, Language, LanguageId, Project, Query, SearchError};
 
 use crate::EngineError;
 
@@ -29,7 +29,7 @@ pub struct Candidate {
 /// Something derived from the file against one build of its language's
 /// project, kept until the project moves on.
 struct PerBuild<T> {
-    slot: RwLock<Option<(u64, Arc<T>)>>,
+    slot: RwLock<Option<(Arc<Project>, Arc<T>)>>,
 }
 
 impl<T> PerBuild<T> {
@@ -39,11 +39,11 @@ impl<T> PerBuild<T> {
         }
     }
 
-    /// The value for `generation`, building it when what is held is for
+    /// The value for `project`, building it when what is held is for
     /// another build or nothing is held yet.
     fn get_or_build(
         &self,
-        generation: u64,
+        project: &Arc<Project>,
         build: impl FnOnce() -> Result<T, EngineError>,
     ) -> Result<Arc<T>, EngineError> {
         if let Some((_, value)) = self
@@ -51,7 +51,7 @@ impl<T> PerBuild<T> {
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .as_ref()
-            .filter(|(built, _)| *built == generation)
+            .filter(|(built, _)| Arc::ptr_eq(built, project))
         {
             return Ok(value.clone());
         }
@@ -59,7 +59,8 @@ impl<T> PerBuild<T> {
         *self
             .slot
             .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some((generation, value.clone()));
+            .unwrap_or_else(std::sync::PoisonError::into_inner) =
+            Some((project.clone(), value.clone()));
         Ok(value)
     }
 }
@@ -79,13 +80,13 @@ impl Candidate {
     /// build and shared by every clone.
     pub fn fragment(&self, ns: &Namespace) -> Result<Arc<Fragment>, EngineError> {
         self.fragment
-            .get_or_build(ns.generation(), || Fragment::build(self, ns))
+            .get_or_build(ns.project(), || Fragment::build(self, ns))
     }
 
     /// What the file can see — its imports as names and addresses — read
     /// off the fragment once per project build and shared by every clone.
     pub fn scope(&self, ns: &Namespace) -> Result<Arc<Scope>, EngineError> {
-        self.scope.get_or_build(ns.generation(), || {
+        self.scope.get_or_build(ns.project(), || {
             let fragment = self.fragment(ns)?;
             Ok(Scope::of(ns, self.path(), &fragment))
         })
