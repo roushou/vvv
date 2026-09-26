@@ -141,6 +141,32 @@ impl Candidate {
         Ok(self.locate(raw))
     }
 
+    /// Retained or client-supplied matches must still describe this snapshot
+    /// before their coordinates or captures can authorize edits.
+    pub(crate) fn validate_matches(
+        &self,
+        query: &Query,
+        matches: &[Match],
+    ) -> Result<(), EngineError> {
+        if query.language().is_some_and(|id| *id != self.language()) {
+            return Err(crate::ApplyError::Stale {
+                path: self.path().into(),
+            }
+            .into());
+        }
+        let current = self.find(query)?;
+        if matches
+            .iter()
+            .any(|held| !current.iter().any(|fresh| held.same_source_match(fresh)))
+        {
+            return Err(crate::ApplyError::Stale {
+                path: self.path().into(),
+            }
+            .into());
+        }
+        Ok(())
+    }
+
     /// Every identifier token spelling `name`, located.
     pub fn references(&self, name: &str) -> Result<Vec<Match>, EngineError> {
         let facts = self.facts()?;

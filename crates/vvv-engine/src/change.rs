@@ -157,3 +157,95 @@ impl WitnessedChangeSet {
         (self.change_set, self.fingerprints)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{MemoryVfs, SourceFile, Workspace};
+    use std::sync::Arc;
+    use vvv_core::Span;
+
+    #[test]
+    fn changes_reject_edits_from_different_snapshots_of_one_file() {
+        let before = SourceFile::new("a.p", "old");
+        let after = SourceFile::new("a.p", "new");
+        let mut change = Change::new();
+        change
+            .edit(before.witness(), Edit::replace(Span::new(0, 3), "kept"))
+            .unwrap();
+        assert!(matches!(
+            change.edit(after.witness(), Edit::insert(0, "wrong")),
+            Err(ApplyError::Stale { .. })
+        ));
+        assert!(matches!(
+            change.edits(after.witness(), [Edit::insert(0, "wrong")]),
+            Err(ApplyError::Stale { .. })
+        ));
+        assert!(matches!(
+            change.move_file(after.witness(), "b.p"),
+            Err(ApplyError::Stale { .. })
+        ));
+        let mut other = Change::new();
+        let unrelated = SourceFile::new("0.p", "other");
+        other
+            .edit(unrelated.witness(), Edit::insert(0, "wrong"))
+            .unwrap();
+        other
+            .edit(after.witness(), Edit::insert(0, "wrong"))
+            .unwrap();
+        assert!(matches!(change.merge(other), Err(ApplyError::Stale { .. })));
+        let (cs, fingerprints) = change.bind().unwrap().change_set.into_parts();
+        assert_eq!(cs.apply_to(Path::new("a.p"), "old"), "kept");
+        assert_eq!(cs.paths().collect::<Vec<_>>(), [Path::new("a.p")]);
+        assert_eq!(fingerprints.len(), 1);
+    }
+
+    #[test]
+    fn changes_preserve_provenance_when_edits_are_taken() {
+        let before = SourceFile::new("a.p", "old");
+        let after = SourceFile::new("a.p", "new");
+        let mut change = Change::new();
+        change
+            .edit(before.witness(), Edit::replace(Span::new(0, 3), "kept"))
+            .unwrap();
+        let edits = change.take_edits(Path::new("a.p"));
+        assert!(matches!(
+            change.edits(after.witness(), edits.clone()),
+            Err(ApplyError::Stale { .. })
+        ));
+        change.edits(before.witness(), edits).unwrap();
+        let plan = crate::plan::Plan::new(change.bind().unwrap().change_set);
+        let ws = Workspace::new(
+            "/ws",
+            Arc::new(MemoryVfs::new().with_file("/ws/a.p", "new")),
+        );
+        assert!(matches!(plan.preview(&ws), Err(ApplyError::Stale { .. })));
+    }
+
+    #[test]
+    fn binding_drops_sources_with_no_remaining_edits_or_moves() {
+        let removed = SourceFile::new("a.p", "old");
+        let active = SourceFile::new("b.p", "foo");
+        let mut change = Change::new();
+        change
+            .edit(removed.witness(), Edit::delete(Span::new(0, 3)))
+            .unwrap();
+        change.take_edits(Path::new("a.p"));
+        change
+            .edit(active.witness(), Edit::replace(Span::new(0, 3), "bar"))
+            .unwrap();
+        let plan = crate::plan::Plan::new(change.bind().unwrap().change_set);
+        let ws = Workspace::new(
+            "/ws",
+            Arc::new(
+                MemoryVfs::new()
+                    .with_file("/ws/a.p", "changed")
+                    .with_file("/ws/b.p", "foo"),
+            ),
+        );
+        let preview = plan.preview(&ws).unwrap();
+        assert_eq!(preview.files.len(), 1);
+        assert_eq!(preview.files[0].path, Path::new("b.p"));
+        assert_eq!(preview.files[0].after, "bar");
+    }
+}

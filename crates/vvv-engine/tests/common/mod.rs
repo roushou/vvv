@@ -2,7 +2,8 @@
 //!
 //! Its "syntax" is deliberately tiny:
 //! - a pattern query matches the pattern as a whole word, together with an
-//!   argument attached by a colon (`foo:1`), captured as `$NEXT`;
+//!   argument attached by a colon (`foo:1`), captured as `$NEXT`, or a
+//!   bracketed sequence (`foo:[one, two]`) captured as `$$$NEXT`;
 //! - a symbolic query (`--name`, `--symbol`) matches `def <name>` lines, each
 //!   a `Function` declaration;
 //! - references are whole words;
@@ -97,6 +98,28 @@ impl Language for Fake {
             .map(|(start, text)| {
                 let end = start + text.len();
                 let rest = &source[end..];
+                // `foo:[one, two]` exposes a sequence capture whose expansion
+                // must preserve the punctuation from the matched snapshot.
+                if let Some(items) = rest.strip_prefix(":[")
+                    && let Some(close) = items.find(']')
+                {
+                    let items_start = end + 2;
+                    let captures = Self::words(&items[..close])
+                        .into_iter()
+                        .map(|(offset, word)| Capture {
+                            span: Span::new(
+                                items_start + offset,
+                                items_start + offset + word.len(),
+                            ),
+                            text: word.to_owned(),
+                        })
+                        .collect();
+                    let finish = items_start + close + 1;
+                    return RawMatch {
+                        captures: [("NEXT".to_owned(), CaptureValue::Multiple(captures))].into(),
+                        ..RawMatch::plain(Span::new(start, finish), "word", &source[start..finish])
+                    };
+                }
                 let next_len = match rest.strip_prefix(':') {
                     Some(arg) => arg.chars().take_while(|c| c.is_alphanumeric()).count(),
                     None => 0,

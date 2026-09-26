@@ -4,7 +4,8 @@ use crate::{Selection, Template};
 use vvv_core::Query;
 
 /// The rewrite `intent` makes of `matches` already found: a caller that
-/// keeps the matches (the picker, showing before and after) searches once.
+/// keeps the matches supplies its selection; selected matches are revalidated
+/// against the source before their coordinates and captures are used.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RewriteOf {
     pub intent: RewriteIntent,

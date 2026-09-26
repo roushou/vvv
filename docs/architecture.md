@@ -386,6 +386,10 @@ it never substitutes a fresh read for the source used to compute an edit. Previe
 apply compare the current contents with the observed snapshots before writing.
 Relocation side edits use the snapshots handed to the surgery.
 
+Rewrite expands captures from the candidate that supplied the matches. `RewriteOf`
+revalidates selected retained matches and captures against a candidate before using
+them; a resolved address added for reporting is not part of this source comparison.
+
 Files only consulted during resolution are not witnessed by the plan. A manifest,
 an unedited declaration, or another resolution input can change without making the
 plan stale. Provenance protects the coordinates and contents of edited and moved

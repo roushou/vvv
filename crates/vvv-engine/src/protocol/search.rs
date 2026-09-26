@@ -200,6 +200,23 @@ impl Match {
         }
     }
 
+    /// Compare source-derived search data, excluding the resolved address
+    /// that the graph may attach after searching.
+    pub(crate) fn same_source_match(&self, other: &Self) -> bool {
+        self.id == other.id
+            && self.path == other.path
+            && self.language == other.language
+            && self.span == other.span
+            && self.start == other.start
+            && self.end == other.end
+            && self.kind == other.kind
+            && self.text == other.text
+            && self.line == other.line
+            && self.captures == other.captures
+            && self.symbol == other.symbol
+            && self.role == other.role
+    }
+
     pub fn capture(&self, name: &str) -> Option<&CaptureValue> {
         self.captures.get(name)
     }

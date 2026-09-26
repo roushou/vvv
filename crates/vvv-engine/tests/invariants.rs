@@ -45,7 +45,6 @@ impl Fixture {
 }
 
 #[test]
-#[ignore = "known bug: plans fingerprint current text while retaining cached source coordinates"]
 fn apply_refuses_a_plan_whose_source_changed() {
     let fixture = Fixture::new(&[("a.p", "def foo\nfoo")])
         .retaining(Retention::session().trusting(Duration::from_secs(3600)));
@@ -279,4 +278,216 @@ fn declaration_report_rows_retain_their_source_site() {
         .map(|source| (source.path.to_path_buf(), source.line))
         .collect();
     assert_eq!(sites, [(PathBuf::from("a.p"), 0)]);
+}
+
+#[test]
+fn rewrite_refuses_coordinates_from_a_changed_source() {
+    let fixture = Fixture::new(&[("a.p", "foo:1")])
+        .retaining(Retention::session().trusting(Duration::from_secs(3600)));
+    fixture.engine.run(vvv_core::Query::pattern("foo")).unwrap();
+    fixture.vfs.write(Path::new("/ws/a.p"), "xyz:9").unwrap();
+    let result = fixture.engine.run(vvv_engine::RewriteIntent::new(
+        vvv_core::Query::pattern("foo"),
+        "bar$NEXT",
+    ));
+    assert!(matches!(
+        result,
+        Err(EngineError::Apply(vvv_engine::ApplyError::Stale { .. }))
+    ));
+    assert_eq!(fixture.read("a.p"), "xyz:9");
+    assert!(!fixture.vfs.exists(Path::new("/ws/.vvv/history.json")));
+}
+
+#[test]
+fn rewrite_of_refuses_matches_that_no_longer_describe_the_source() {
+    let fixture = Fixture::new(&[("a.p", "foo:1")]);
+    let query = vvv_core::Query::pattern("foo");
+    let matches = fixture.engine.run(query.clone()).unwrap().matches;
+    fixture.vfs.write(Path::new("/ws/a.p"), "foo:2").unwrap();
+    let result = fixture.engine.run(vvv_engine::RewriteOf {
+        intent: vvv_engine::RewriteIntent::new(query, "bar$NEXT"),
+        matches,
+    });
+    assert!(matches!(
+        result,
+        Err(EngineError::Apply(vvv_engine::ApplyError::Stale { .. }))
+    ));
+    assert_eq!(fixture.read("a.p"), "foo:2");
+    assert!(!fixture.vfs.exists(Path::new("/ws/.vvv/history.json")));
+}
+
+#[test]
+fn rewrite_of_accepts_unchanged_matches_after_unrelated_source_edits() {
+    let fixture = Fixture::new(&[("a.p", "foo:1\nbefore")]);
+    let query = vvv_core::Query::pattern("foo");
+    let matches = fixture.engine.run(query.clone()).unwrap().matches;
+    fixture
+        .vfs
+        .write(Path::new("/ws/a.p"), "foo:1\nafter")
+        .unwrap();
+    let planned = fixture
+        .engine
+        .run(vvv_engine::RewriteOf {
+            intent: vvv_engine::RewriteIntent::new(query, "bar$NEXT"),
+            matches,
+        })
+        .unwrap();
+    fixture.engine.run(Apply(planned)).unwrap();
+    assert_eq!(fixture.read("a.p"), "bar1\nafter");
+}
+
+#[test]
+fn rewrite_of_checks_captures_even_when_the_match_id_is_unchanged() {
+    let fixture = Fixture::new(&[("a.p", "foo:1")]);
+    let query = vvv_core::Query::pattern("foo");
+    let mut matches = fixture.engine.run(query.clone()).unwrap().matches;
+    let vvv_core::CaptureValue::Single(capture) = matches[0].captures.get_mut("NEXT").unwrap()
+    else {
+        panic!("the fake supplies a single capture");
+    };
+    capture.text = "forged".into();
+    let result = fixture.engine.run(vvv_engine::RewriteOf {
+        intent: vvv_engine::RewriteIntent::new(query, "bar$NEXT"),
+        matches,
+    });
+    assert!(matches!(
+        result,
+        Err(EngineError::Apply(vvv_engine::ApplyError::Stale { .. }))
+    ));
+    assert_eq!(fixture.read("a.p"), "foo:1");
+}
+
+/// Simulates an external write immediately after the engine obtains a snapshot.
+struct ChangingRead {
+    inner: Arc<MemoryVfs>,
+    path: PathBuf,
+    replacement: String,
+    pending: std::sync::atomic::AtomicBool,
+}
+
+impl ChangingRead {
+    fn new(inner: Arc<MemoryVfs>, path: PathBuf, replacement: &str) -> Self {
+        Self {
+            inner,
+            path,
+            replacement: replacement.into(),
+            pending: true.into(),
+        }
+    }
+}
+
+impl Vfs for ChangingRead {
+    fn read(&self, path: &Path) -> Result<String, vvv_engine::VfsError> {
+        let text = self.inner.read(path)?;
+        if path == self.path && self.pending.swap(false, Ordering::SeqCst) {
+            self.inner.write(path, &self.replacement)?;
+        }
+        Ok(text)
+    }
+    fn stamp(&self, path: &Path) -> Result<vvv_engine::Stamp, vvv_engine::VfsError> {
+        self.inner.stamp(path)
+    }
+    fn write(&self, path: &Path, contents: &str) -> Result<(), vvv_engine::VfsError> {
+        self.inner.write(path, contents)
+    }
+    fn exists(&self, path: &Path) -> bool {
+        self.inner.exists(path)
+    }
+    fn rename(&self, from: &Path, to: &Path) -> Result<(), vvv_engine::VfsError> {
+        self.inner.rename(from, to)
+    }
+    fn walk(&self, root: &Path) -> Result<Vec<PathBuf>, vvv_engine::VfsError> {
+        self.inner.walk(root)
+    }
+}
+
+#[test]
+fn rewrite_sequence_captures_use_the_matched_source() {
+    let inner = Arc::new(MemoryVfs::new().with_file("/ws/a.p", "foo:[one, two]"));
+    let vfs = Arc::new(ChangingRead::new(
+        inner.clone(),
+        PathBuf::from("/ws/a.p"),
+        "x",
+    ));
+    let engine = Engine::new(
+        Workspace::new("/ws", vfs),
+        Languages::new().with(Fake::default()),
+    );
+    let result = engine.run(vvv_engine::RewriteIntent::new(
+        vvv_core::Query::pattern("foo"),
+        "bar($$$NEXT)",
+    ));
+    assert!(matches!(
+        result,
+        Err(EngineError::Apply(vvv_engine::ApplyError::Stale { .. }))
+    ));
+    assert_eq!(inner.read(Path::new("/ws/a.p")).unwrap(), "x");
+    assert!(!inner.exists(Path::new("/ws/.vvv/history.json")));
+}
+
+#[test]
+fn rewrite_sequence_captures_preserve_matched_punctuation() {
+    let fixture = Fixture::new(&[("a.p", "foo:[one,  two]")]);
+    let planned = fixture
+        .engine
+        .run(vvv_engine::RewriteIntent::new(
+            vvv_core::Query::pattern("foo"),
+            "bar($$$NEXT)",
+        ))
+        .unwrap();
+    assert_eq!(planned.preview()[0].after, "bar(one,  two)");
+    fixture.engine.run(Apply(planned)).unwrap();
+    assert_eq!(fixture.read("a.p"), "bar(one,  two)");
+}
+
+#[test]
+fn moves_refuse_changed_sources_even_without_text_edits() {
+    let fixture = Fixture::new(&[("manifest.p", ""), ("a.p", "def local")])
+        .retaining(Retention::session().trusting(Duration::from_secs(3600)));
+    fixture.engine.run(ReferencesQuery::new("local")).unwrap();
+    fixture
+        .vfs
+        .write(Path::new("/ws/a.p"), "def changed")
+        .unwrap();
+    let result = fixture.engine.run(MoveIntent::new("a.p", "b.p"));
+    assert!(
+        matches!(result, Err(EngineError::Apply(vvv_engine::ApplyError::Stale { path })) if path == Path::new("a.p"))
+    );
+    assert_eq!(fixture.read("a.p"), "def changed");
+    assert_eq!(fixture.read("manifest.p"), "");
+    assert!(!fixture.vfs.exists(Path::new("/ws/b.p")));
+    assert!(!fixture.vfs.exists(Path::new("/ws/.vvv/history.json")));
+}
+
+#[test]
+fn rewrite_of_respects_the_query_language() {
+    let fixture = Fixture::new(&[("a.p", "foo:1")]);
+    let query = vvv_core::Query::pattern("foo");
+    let matches = fixture.engine.run(query.clone()).unwrap().matches;
+    let result = fixture.engine.run(vvv_engine::RewriteOf {
+        intent: vvv_engine::RewriteIntent::new(query.in_language("other"), "bar"),
+        matches,
+    });
+    assert!(matches!(
+        result,
+        Err(EngineError::Apply(vvv_engine::ApplyError::Stale { .. }))
+    ));
+    assert_eq!(fixture.read("a.p"), "foo:1");
+}
+
+#[test]
+fn rewrite_of_accepts_reported_declaration_addresses() {
+    let fixture = Fixture::new(&[("a.p", "def foo")]);
+    let query = vvv_core::Query::named("foo");
+    let matches = fixture.engine.run(query.clone()).unwrap().matches;
+    assert!(matches[0].address.is_some());
+    let planned = fixture
+        .engine
+        .run(vvv_engine::RewriteOf {
+            intent: vvv_engine::RewriteIntent::new(query, "def bar"),
+            matches,
+        })
+        .unwrap();
+    fixture.engine.run(Apply(planned)).unwrap();
+    assert_eq!(fixture.read("a.p"), "def bar");
 }
