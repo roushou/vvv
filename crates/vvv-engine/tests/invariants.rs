@@ -69,7 +69,6 @@ fn apply_refuses_a_plan_whose_source_changed() {
 }
 
 #[test]
-#[ignore = "known bug: apply writes files before discovering corrupt history"]
 fn failed_apply_preserves_files_when_history_is_unreadable() {
     let fixture = Fixture::new(&[("a.p", "def foo\nfoo"), ("b.p", "use a.p/foo\nfoo")]);
     fixture
@@ -546,4 +545,71 @@ fn a_batch_restores_earlier_steps_when_a_move_destination_becomes_occupied() {
     assert_eq!(fixture.read("b.p"), "precious new file");
     assert_eq!(fixture.read("manifest.p"), "");
     assert!(!fixture.vfs.exists(Path::new("/ws/.vvv/history.json")));
+}
+
+struct DiskHistoryFixture {
+    root: PathBuf,
+    engine: Engine,
+}
+
+impl DiskHistoryFixture {
+    fn new() -> Self {
+        static NEXT: AtomicUsize = AtomicUsize::new(0);
+        let root = std::env::temp_dir().join(format!(
+            "vvv-history-{}-{}",
+            std::process::id(),
+            NEXT.fetch_add(1, Ordering::Relaxed)
+        ));
+        std::fs::create_dir_all(root.join(".vvv")).unwrap();
+        std::fs::write(root.join("a.p"), "def foo\nfoo").unwrap();
+        let engine = Engine::new(
+            Workspace::disk(&root).unwrap(),
+            Languages::new().with(Fake::default()),
+        );
+        Self { root, engine }
+    }
+
+    fn apply(&self) -> Result<vvv_engine::Rename, EngineError> {
+        let planned = self.engine.run(RenameIntent::new("foo", "bar")).unwrap();
+        self.engine.run(Apply(planned))
+    }
+
+    fn source(&self) -> String {
+        std::fs::read_to_string(self.root.join("a.p")).unwrap()
+    }
+}
+
+impl Drop for DiskHistoryFixture {
+    fn drop(&mut self) {
+        std::fs::remove_dir_all(&self.root).unwrap();
+    }
+}
+
+#[test]
+fn apply_preserves_files_when_history_cannot_be_read() {
+    let fixture = DiskHistoryFixture::new();
+    std::fs::create_dir(fixture.root.join(".vvv/history.json")).unwrap();
+    assert!(matches!(
+        fixture.apply(),
+        Err(EngineError::History(HistoryError::Vfs(_)))
+    ));
+    assert_eq!(fixture.source(), "def foo\nfoo");
+    assert!(fixture.root.join(".vvv/history.json").is_dir());
+}
+
+#[test]
+fn apply_preserves_files_when_history_is_not_utf8() {
+    let fixture = DiskHistoryFixture::new();
+    std::fs::write(fixture.root.join(".vvv/history.json"), [0xff]).unwrap();
+    assert!(matches!(
+        fixture.apply(),
+        Err(EngineError::History(HistoryError::Vfs(
+            vvv_engine::VfsError::InvalidUtf8 { .. }
+        )))
+    ));
+    assert_eq!(fixture.source(), "def foo\nfoo");
+    assert_eq!(
+        std::fs::read(fixture.root.join(".vvv/history.json")).unwrap(),
+        [0xff]
+    );
 }

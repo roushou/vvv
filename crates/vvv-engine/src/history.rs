@@ -76,13 +76,23 @@ impl<'a> History<'a> {
         self.workspace.absolute(Self::path())
     }
 
+    fn snapshot(&self) -> Result<HistorySnapshot, HistoryError> {
+        let original = match self.workspace.vfs().read(&self.file()) {
+            Ok(text) => Some(text),
+            Err(VfsError::NotFound(_)) => None,
+            Err(error) => return Err(error.into()),
+        };
+        let entries = original
+            .as_deref()
+            .map(serde_json::from_str)
+            .transpose()
+            .map_err(|e| HistoryError::Corrupt(e.to_string()))?
+            .unwrap_or_default();
+        Ok(HistorySnapshot { original, entries })
+    }
+
     pub fn entries(&self) -> Result<Vec<Record>, HistoryError> {
-        let vfs = self.workspace.vfs();
-        let file = self.file();
-        if !vfs.exists(&file) {
-            return Ok(Vec::new());
-        }
-        serde_json::from_str(&vfs.read(&file)?).map_err(|e| HistoryError::Corrupt(e.to_string()))
+        Ok(self.snapshot()?.entries)
     }
 
     fn save(&self, entries: &[Record]) -> Result<(), HistoryError> {
@@ -91,10 +101,16 @@ impl<'a> History<'a> {
         Ok(self.workspace.vfs().write(&self.file(), &text)?)
     }
 
-    pub fn push(&self, intent: Intent, receipt: Receipt) -> Result<Record, HistoryError> {
-        let mut entries = self.entries()?;
+    fn push(
+        &self,
+        snapshot: HistorySnapshot,
+        id: u64,
+        intent: Intent,
+        receipt: Receipt,
+    ) -> Result<Record, HistoryError> {
+        let mut entries = snapshot.entries;
         let entry = Record {
-            id: entries.last().map_or(1, |e| e.id + 1),
+            id,
             at: SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .map_or(0, |d| d.as_secs()),
@@ -122,6 +138,24 @@ impl<'a> History<'a> {
     }
 }
 
+/// Validated history retained for one mutation, including its exact before-state.
+struct HistorySnapshot {
+    #[expect(dead_code, reason = "Retained for ledger compensation in step 3c")]
+    original: Option<String>,
+    entries: Vec<Record>,
+}
+
+impl HistorySnapshot {
+    fn next_id(&self) -> Result<u64, HistoryError> {
+        self.entries.last().map_or(Ok(1), |entry| {
+            entry
+                .id
+                .checked_add(1)
+                .ok_or_else(|| HistoryError::Corrupt("history entry id is exhausted".to_owned()))
+        })
+    }
+}
+
 /// Write what was planned and record it as one history entry — one undo.
 /// A batch's steps go in order, each checked against the state the previous
 /// one left; if a step fails, the ones before it are rolled back. Answers
@@ -133,6 +167,9 @@ impl<T: Mutation> Command for Apply<T> {
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
         let workspace = cx.workspace;
+        let history = History::new(workspace);
+        let snapshot = history.snapshot()?;
+        let id = snapshot.next_id()?;
         // Whatever happens below, the tree is no longer what the graph saw.
         cx.graph.touched();
         let (mut result, plans) = self.0.into_parts();
@@ -153,8 +190,7 @@ impl<T: Mutation> Command for Apply<T> {
                 }
             }
         }
-        let record =
-            History::new(cx.workspace).push(result.intent(), receipt.unwrap_or_default())?;
+        let record = history.push(snapshot, id, result.intent(), receipt.unwrap_or_default())?;
         result.applied(record.id);
         Ok(result)
     }
@@ -192,5 +228,24 @@ impl Command for HistoryQuery {
         Ok(HistoryResult {
             entries: records.iter().map(Record::entry).collect(),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn history_ids_never_wrap() {
+        let snapshot = HistorySnapshot {
+            original: None,
+            entries: vec![Record {
+                id: u64::MAX,
+                at: 0,
+                intent: Intent::Rewrite(crate::RewriteIntent::new(crate::Query::pattern("a"), "b")),
+                receipt: Receipt::default(),
+            }],
+        };
+        assert!(matches!(snapshot.next_id(), Err(HistoryError::Corrupt(_))));
     }
 }

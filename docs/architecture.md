@@ -188,6 +188,10 @@ The engine's supporting modules:
 | IR (`Role`/`Piece`/`Line`, `hit`, `diff`, `counts`) each interface renders in its own colours — |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | and `vocabulary` — how the answers are read (below). Documented in [protocol.md](protocol.md)   |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 
+`Apply` validates and retains the history ledger before attempting any file write,
+and computes its next id with checked arithmetic. An unreadable ledger prevents
+apply without changing files.
+
 `history.rs` is the undo stack: `.vvv/history.json`, newest last, capped at 20 because a
 receipt carries full pre-apply file contents. Each record stores the `Intent` that was
 applied — data, never a sentence — and its receipt; the receipt never leaves the engine,
