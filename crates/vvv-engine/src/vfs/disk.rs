@@ -1,6 +1,6 @@
 use std::path::{Path, PathBuf};
 
-use super::{Stamp, Vfs, VfsError};
+use super::{EntryKind, ParentCreation, Stamp, Vfs, VfsError};
 
 /// Real file system. Walks respect `.gitignore` and skip hidden entries.
 #[derive(Debug, Default, Clone)]
@@ -49,6 +49,54 @@ impl Vfs for DiskVfs {
 
     fn exists(&self, path: &Path) -> bool {
         path.exists()
+    }
+
+    fn entry_kind(&self, path: &Path) -> Result<Option<EntryKind>, VfsError> {
+        match std::fs::symlink_metadata(path) {
+            Ok(meta) => Ok(Some(if meta.is_file() {
+                EntryKind::File
+            } else if meta.is_dir() {
+                EntryKind::Directory
+            } else {
+                EntryKind::Other
+            })),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(None),
+            Err(error) => Err(Self::io(path, error)),
+        }
+    }
+
+    fn prepare_parent(&self, path: &Path) -> ParentCreation {
+        let mut created = Vec::new();
+        let parents: Vec<_> = path
+            .parent()
+            .into_iter()
+            .flat_map(Path::ancestors)
+            .filter(|parent| !parent.as_os_str().is_empty())
+            .collect();
+        for parent in parents.into_iter().rev() {
+            match std::fs::create_dir(parent) {
+                Ok(()) => created.push(parent.to_path_buf()),
+                Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
+                    match std::fs::metadata(parent) {
+                        Ok(meta) if meta.is_dir() => {}
+                        Ok(_) => return ParentCreation::new(created, Err(Self::io(parent, error))),
+                        Err(error) => {
+                            return ParentCreation::new(created, Err(Self::io(parent, error)));
+                        }
+                    }
+                }
+                Err(error) => return ParentCreation::new(created, Err(Self::io(parent, error))),
+            }
+        }
+        ParentCreation::new(created, Ok(()))
+    }
+
+    fn remove_file(&self, path: &Path) -> Result<(), VfsError> {
+        std::fs::remove_file(path).map_err(|error| Self::io(path, error))
+    }
+
+    fn remove_empty_dir(&self, path: &Path) -> Result<(), VfsError> {
+        std::fs::remove_dir(path).map_err(|error| Self::io(path, error))
     }
 
     fn rename(&self, from: &Path, to: &Path) -> Result<(), VfsError> {

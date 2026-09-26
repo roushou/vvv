@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 
-use super::{Stamp, Vfs, VfsError};
+use super::{EntryKind, ParentCreation, Stamp, Vfs, VfsError};
 
 /// Writes on top of a file system that is never touched: what a plan looks
 /// like once applied, without applying it. A second plan can be made against
@@ -87,6 +87,36 @@ impl Vfs for Overlay {
     fn exists(&self, path: &Path) -> bool {
         self.layer.read().expect("overlay lock").contains_key(path)
             || (!self.is_removed(path) && self.base.exists(path))
+    }
+
+    fn entry_kind(&self, path: &Path) -> Result<Option<EntryKind>, VfsError> {
+        if self.layer.read().expect("overlay lock").contains_key(path) {
+            return Ok(Some(EntryKind::File));
+        }
+        if self.is_removed(path) {
+            return Ok(None);
+        }
+        self.base.entry_kind(path)
+    }
+
+    fn prepare_parent(&self, _path: &Path) -> ParentCreation {
+        ParentCreation::new(Vec::new(), Ok(()))
+    }
+
+    fn remove_file(&self, path: &Path) -> Result<(), VfsError> {
+        if !self.exists(path) {
+            return Err(VfsError::NotFound(path.to_path_buf()));
+        }
+        self.layer.write().expect("overlay lock").remove(path);
+        self.removed
+            .write()
+            .expect("overlay lock")
+            .insert(path.to_path_buf());
+        Ok(())
+    }
+
+    fn remove_empty_dir(&self, path: &Path) -> Result<(), VfsError> {
+        Err(VfsError::NotFound(path.to_path_buf()))
     }
 
     fn rename(&self, from: &Path, to: &Path) -> Result<(), VfsError> {

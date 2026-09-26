@@ -39,6 +39,21 @@ impl Vfs for Counting {
     fn exists(&self, path: &Path) -> bool {
         self.inner.exists(path)
     }
+    fn entry_kind(
+        &self,
+        path: &Path,
+    ) -> Result<Option<vvv_engine::EntryKind>, vvv_engine::VfsError> {
+        self.inner.entry_kind(path)
+    }
+    fn prepare_parent(&self, path: &Path) -> vvv_engine::ParentCreation {
+        self.inner.prepare_parent(path)
+    }
+    fn remove_file(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
+        self.inner.remove_file(path)
+    }
+    fn remove_empty_dir(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
+        self.inner.remove_empty_dir(path)
+    }
     fn rename(&self, from: &Path, to: &Path) -> Result<(), VfsError> {
         self.inner.rename(from, to)
     }

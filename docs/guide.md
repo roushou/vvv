@@ -269,12 +269,18 @@ keep results across runs. Without `--select`, a command acts on all of its match
 None of `rewrite`, `rename` or `move` writes anything on its own. Each one works out a
 plan, prints it, and stops; the last line on standard error is the plan's size and the
 flag to go on with (`± 2   2 files` / `hint: --apply to write`). When you add
-`--apply`, the plan is written all at once — and if any of the files changed between
+`--apply`, the plan is checked and written — and if any of the files changed between
 the preview and the apply, vvv stops and tells you instead of writing over the changes.
 The same check rejects a plan whose edited or moved source changed after the engine
 read it, including a cached source in a session. Files consulted only to resolve
 references are outside this check.
 What you get back is a receipt naming the history entry: `✓ #3   ± 2   2 files`.
+
+A file-write failure triggers restoration, including the file whose write failed
+partway through. If restoration cannot finish or be verified, `recovery_failed`
+names the remaining effects and any paths whose state is unknown. Recovery is
+in memory: interruption or a crash has no automatic recovery. History-save
+compensation is still pending; a failure saving the ledger is not yet rolled back.
 
 Each apply is saved to `.vvv/history.json` (worth adding `.vvv/` to `.gitignore`).
 

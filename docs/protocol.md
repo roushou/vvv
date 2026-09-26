@@ -462,3 +462,30 @@ happened in words and `hint` (when present) what to try, and neither is for pars
 | `stale`            | a file changed since the plan (or the apply to undo) was made                     |
 | `no_history`       | nothing to undo, or a history file that cannot be read                            |
 | `io`               | reading or writing the tree failed                                                |
+| `recovery_failed`  | recovery could not restore or verify all attempted effects                        |
+
+A failed file mutation whose recovery cannot restore or verify every attempted
+effect returns `recovery_failed` with an additional `recovery` object. Other errors
+omit this field. The envelope schema remains 1; this is an additive field.
+
+`recovery` contains:
+
+- `cause`: the initiating `Failure` (`code`, `message`, and optional `hint`).
+- `failures`: failed recovery operations, each with `operation`, project-relative
+  `path`, `code`, and `message`. Operations are `restore_file`, `restore_move`,
+  `remove_file`, and `remove_directory`.
+- `remaining`: confirmed differences from the before-state, each with `path`,
+  `expected`, and `observed`.
+- `unverified`: paths whose final state could not be read, each with `path`,
+  `expected`, `code`, and `message`. An unverified path is never claimed restored.
+
+A state is `{ "kind": "absent" }`, `{ "kind": "file", "fingerprint": "…" }`,
+`{ "kind": "directory" }`, or `{ "kind": "other" }` (for example, a symlink).
+File fingerprints are full hexadecimal BLAKE3 content hashes, not file contents.
+The lists are in deterministic recovery or path order. Recovery attempts continue
+for independent effects after a failure. If the final before-states are all verified,
+the initiating error is returned instead, even if a restoration operation returned
+an error after completing its effect.
+
+These are in-memory recovery results, not crash-recovery records. History-save
+compensation and coupled undo are not yet implemented.

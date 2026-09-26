@@ -398,6 +398,21 @@ impl Vfs for ChangingRead {
     fn exists(&self, path: &Path) -> bool {
         self.inner.exists(path)
     }
+    fn entry_kind(
+        &self,
+        path: &Path,
+    ) -> Result<Option<vvv_engine::EntryKind>, vvv_engine::VfsError> {
+        self.inner.entry_kind(path)
+    }
+    fn prepare_parent(&self, path: &Path) -> vvv_engine::ParentCreation {
+        self.inner.prepare_parent(path)
+    }
+    fn remove_file(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
+        self.inner.remove_file(path)
+    }
+    fn remove_empty_dir(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
+        self.inner.remove_empty_dir(path)
+    }
     fn rename(&self, from: &Path, to: &Path) -> Result<(), vvv_engine::VfsError> {
         self.inner.rename(from, to)
     }
@@ -612,4 +627,448 @@ fn apply_preserves_files_when_history_is_not_utf8() {
         std::fs::read(fixture.root.join(".vvv/history.json")).unwrap(),
         [0xff]
     );
+}
+
+#[test]
+fn apply_restores_a_file_after_a_partial_write_failure() {
+    let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo")]);
+    let planned = fixture.engine.run(RenameIntent::new("foo", "bar")).unwrap();
+    fixture.arm(
+        common::FaultOperation::Write,
+        "a.p",
+        0,
+        common::FaultAction::Partial("cut".into()),
+    );
+    let error = fixture.engine.run(Apply(planned)).unwrap_err();
+    assert!(matches!(error, EngineError::Apply(_)), "{error}");
+    assert_eq!(fixture.read("a.p"), "def foo\nfoo");
+    assert!(!fixture.vfs.exists(Path::new("/ws/.vvv/history.json")));
+}
+
+#[test]
+fn apply_restores_every_file_including_the_partially_failed_write() {
+    let fixture = common::FaultFixture::new(&[("a.p", "foo"), ("b.p", "foo")]);
+    let planned = fixture
+        .engine
+        .run(vvv_engine::RewriteIntent::new(
+            vvv_engine::Query::pattern("foo"),
+            "bar",
+        ))
+        .unwrap();
+    fixture.arm(
+        common::FaultOperation::Write,
+        "b.p",
+        0,
+        common::FaultAction::Partial("cut".into()),
+    );
+    assert!(matches!(
+        fixture.engine.run(Apply(planned)),
+        Err(EngineError::Apply(_))
+    ));
+    assert_eq!(fixture.read("a.p"), "foo");
+    assert_eq!(fixture.read("b.p"), "foo");
+}
+
+#[test]
+fn apply_restores_a_write_that_completed_before_returning_an_error() {
+    let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo")]);
+    let planned = fixture.engine.run(RenameIntent::new("foo", "bar")).unwrap();
+    fixture.arm(
+        common::FaultOperation::Write,
+        "a.p",
+        0,
+        common::FaultAction::After,
+    );
+    assert!(matches!(
+        fixture.engine.run(Apply(planned)),
+        Err(EngineError::Apply(_))
+    ));
+    assert_eq!(fixture.read("a.p"), "def foo\nfoo");
+}
+
+#[test]
+fn recovery_does_not_rewrite_a_file_whose_failed_write_changed_nothing() {
+    let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo")]);
+    let planned = fixture.engine.run(RenameIntent::new("foo", "bar")).unwrap();
+    fixture.vfs.clear_trace();
+    fixture.arm(
+        common::FaultOperation::Write,
+        "a.p",
+        0,
+        common::FaultAction::Before,
+    );
+    assert!(matches!(
+        fixture.engine.run(Apply(planned)),
+        Err(EngineError::Apply(_))
+    ));
+    assert_eq!(fixture.read("a.p"), "def foo\nfoo");
+    assert_eq!(
+        fixture
+            .vfs
+            .trace()
+            .iter()
+            .filter(|(operation, _)| *operation == common::FaultOperation::Write)
+            .count(),
+        1
+    );
+}
+
+#[test]
+fn apply_restores_a_moved_file_after_its_write_fails() {
+    let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo"), ("manifest.p", "")]);
+    let planned = fixture
+        .engine
+        .run(MoveIntent::new("a.p", "dir/b.p"))
+        .unwrap();
+    fixture.arm(
+        common::FaultOperation::Write,
+        "dir/b.p",
+        0,
+        common::FaultAction::Partial("cut".into()),
+    );
+    assert!(matches!(
+        fixture.engine.run(Apply(planned)),
+        Err(EngineError::Apply(_))
+    ));
+    assert_eq!(fixture.read("a.p"), "def foo\nfoo");
+    assert!(!fixture.vfs.exists(Path::new("/ws/dir/b.p")));
+}
+
+#[test]
+fn apply_restores_a_move_that_completed_before_returning_an_error() {
+    let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo"), ("manifest.p", "")]);
+    let planned = fixture.engine.run(MoveIntent::new("a.p", "b.p")).unwrap();
+    fixture.arm(
+        common::FaultOperation::Rename,
+        "a.p",
+        0,
+        common::FaultAction::After,
+    );
+    assert!(matches!(
+        fixture.engine.run(Apply(planned)),
+        Err(EngineError::Apply(_))
+    ));
+    assert_eq!(fixture.read("a.p"), "def foo\nfoo");
+    assert!(!fixture.vfs.exists(Path::new("/ws/b.p")));
+}
+
+#[test]
+fn recovery_removes_a_destination_left_by_an_incomplete_move() {
+    let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo"), ("manifest.p", "")]);
+    let planned = fixture.engine.run(MoveIntent::new("a.p", "b.p")).unwrap();
+    fixture.arm(
+        common::FaultOperation::Rename,
+        "a.p",
+        0,
+        common::FaultAction::Partial(String::new()),
+    );
+    assert!(matches!(
+        fixture.engine.run(Apply(planned)),
+        Err(EngineError::Apply(_))
+    ));
+    assert_eq!(fixture.read("a.p"), "def foo\nfoo");
+    assert!(!fixture.vfs.exists(Path::new("/ws/b.p")));
+}
+
+#[test]
+fn recovery_reports_a_destination_it_cannot_remove() {
+    let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo"), ("manifest.p", "")]);
+    let planned = fixture.engine.run(MoveIntent::new("a.p", "b.p")).unwrap();
+    fixture.arm(
+        common::FaultOperation::Rename,
+        "a.p",
+        0,
+        common::FaultAction::Partial(String::new()),
+    );
+    fixture.arm(
+        common::FaultOperation::RemoveFile,
+        "b.p",
+        0,
+        common::FaultAction::Before,
+    );
+    let error = fixture.engine.run(Apply(planned)).unwrap_err();
+    let EngineError::Recovery(recovery) = error else {
+        panic!("expected recovery error: {error}")
+    };
+    assert_eq!(
+        recovery.details.failures[0].operation,
+        vvv_engine::RecoveryOperation::RemoveFile
+    );
+    assert_eq!(recovery.details.failures[0].path, Path::new("b.p"));
+    assert_eq!(recovery.details.remaining.len(), 1);
+    assert_eq!(recovery.details.remaining[0].path, Path::new("b.p"));
+    assert_eq!(
+        recovery.details.remaining[0].expected,
+        vvv_engine::RecoveryState::Absent
+    );
+    assert_eq!(fixture.read("a.p"), "def foo\nfoo");
+    assert_eq!(fixture.read("b.p"), "def foo\nfoo");
+}
+
+#[test]
+fn recovery_continues_and_reports_every_unrestored_effect() {
+    let fixture = common::FaultFixture::new(&[("a.p", "foo"), ("b.p", "foo"), ("c.p", "foo")]);
+    let planned = fixture
+        .engine
+        .run(vvv_engine::RewriteIntent::new(
+            vvv_engine::Query::pattern("foo"),
+            "bar",
+        ))
+        .unwrap();
+    fixture.arm(
+        common::FaultOperation::Write,
+        "c.p",
+        0,
+        common::FaultAction::Partial("cut".into()),
+    );
+    fixture.arm(
+        common::FaultOperation::Write,
+        "c.p",
+        0,
+        common::FaultAction::Before,
+    );
+    fixture.arm(
+        common::FaultOperation::Write,
+        "b.p",
+        1,
+        common::FaultAction::Before,
+    );
+    let error = fixture.engine.run(Apply(planned)).unwrap_err();
+    assert_eq!(error.code(), vvv_engine::ErrorCode::RecoveryFailed);
+    let failure = vvv_engine::Failure::from(&error);
+    let EngineError::Recovery(recovery) = error else {
+        panic!("expected recovery error: {error}")
+    };
+    assert_eq!(recovery.details.failures.len(), 2);
+    assert_eq!(
+        recovery
+            .details
+            .remaining
+            .iter()
+            .map(|effect| effect.path.as_ref())
+            .collect::<Vec<&Path>>(),
+        [Path::new("b.p"), Path::new("c.p")]
+    );
+    assert!(recovery.details.unverified.is_empty());
+    assert_eq!(
+        fixture.read("a.p"),
+        "foo",
+        "independent restoration continues"
+    );
+    assert_eq!(fixture.read("b.p"), "bar");
+    assert_eq!(fixture.read("c.p"), "cut");
+    let json = serde_json::to_value(&failure).unwrap();
+    assert_eq!(json["code"], "recovery_failed");
+    assert_eq!(json["recovery"]["cause"]["code"], "io");
+    assert_eq!(json["recovery"]["remaining"][0]["path"], "b.p");
+    assert_eq!(
+        serde_json::from_value::<vvv_engine::Failure>(json).unwrap(),
+        failure
+    );
+    assert!(failure.message.contains("b.p") && failure.message.contains("c.p"));
+}
+
+#[test]
+fn recovery_identifies_paths_it_cannot_verify() {
+    let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo")]);
+    let planned = fixture.engine.run(RenameIntent::new("foo", "bar")).unwrap();
+    fixture.arm(
+        common::FaultOperation::Write,
+        "a.p",
+        0,
+        common::FaultAction::Partial("cut".into()),
+    );
+    fixture.arm(
+        common::FaultOperation::Inspect,
+        "a.p",
+        1,
+        common::FaultAction::Always,
+    );
+    let error = fixture.engine.run(Apply(planned)).unwrap_err();
+    let EngineError::Recovery(recovery) = error else {
+        panic!("expected recovery error: {error}")
+    };
+    assert!(recovery.details.remaining.is_empty());
+    assert_eq!(recovery.details.unverified.len(), 1);
+    assert_eq!(recovery.details.unverified[0].path, Path::new("a.p"));
+    assert_eq!(fixture.read("a.p"), "def foo\nfoo");
+}
+
+#[test]
+fn recovery_verifies_restoration_even_when_the_restore_write_returns_an_error() {
+    let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo")]);
+    let planned = fixture.engine.run(RenameIntent::new("foo", "bar")).unwrap();
+    fixture.arm(
+        common::FaultOperation::Write,
+        "a.p",
+        0,
+        common::FaultAction::Partial("cut".into()),
+    );
+    fixture.arm(
+        common::FaultOperation::Write,
+        "a.p",
+        0,
+        common::FaultAction::After,
+    );
+    let error = fixture.engine.run(Apply(planned)).unwrap_err();
+    assert!(matches!(error, EngineError::Apply(_)), "{error}");
+    assert_eq!(fixture.read("a.p"), "def foo\nfoo");
+}
+
+#[test]
+fn recovery_reports_both_paths_of_a_move_it_cannot_reverse() {
+    let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo"), ("manifest.p", "")]);
+    let planned = fixture.engine.run(MoveIntent::new("a.p", "b.p")).unwrap();
+    fixture.arm(
+        common::FaultOperation::Write,
+        "b.p",
+        0,
+        common::FaultAction::Partial("cut".into()),
+    );
+    fixture.arm(
+        common::FaultOperation::Rename,
+        "b.p",
+        0,
+        common::FaultAction::Before,
+    );
+    let error = fixture.engine.run(Apply(planned)).unwrap_err();
+    let EngineError::Recovery(recovery) = error else {
+        panic!("expected recovery error: {error}")
+    };
+    assert_eq!(
+        recovery
+            .details
+            .remaining
+            .iter()
+            .map(|effect| effect.path.as_ref())
+            .collect::<Vec<&Path>>(),
+        [Path::new("a.p"), Path::new("b.p")]
+    );
+    assert_eq!(
+        recovery.details.remaining[0].observed,
+        vvv_engine::RecoveryState::Absent
+    );
+    assert!(!fixture.vfs.exists(Path::new("/ws/a.p")));
+    assert_eq!(fixture.read("b.p"), "def foo\nfoo");
+}
+
+#[test]
+fn history_validation_precedes_every_mutation_attempt() {
+    let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo")]);
+    let planned = fixture.engine.run(RenameIntent::new("foo", "bar")).unwrap();
+    fixture.vfs.clear_trace();
+    fixture.arm(
+        common::FaultOperation::Read,
+        ".vvv/history.json",
+        0,
+        common::FaultAction::Always,
+    );
+    assert!(matches!(
+        fixture.engine.run(Apply(planned)),
+        Err(EngineError::History(_))
+    ));
+    assert!(
+        fixture
+            .vfs
+            .trace()
+            .iter()
+            .all(|(operation, _)| *operation == common::FaultOperation::Read)
+    );
+    assert!(
+        fixture
+            .vfs
+            .trace()
+            .iter()
+            .any(|(_, path)| path == Path::new("/ws/.vvv/history.json"))
+    );
+    assert_eq!(fixture.read("a.p"), "def foo\nfoo");
+}
+
+impl DiskHistoryFixture {
+    fn fault_engine(&self) -> (Arc<common::FaultVfs>, Engine) {
+        std::fs::write(self.root.join("manifest.p"), "").unwrap();
+        let vfs = Arc::new(common::FaultVfs::over(Arc::new(vvv_engine::DiskVfs::new())));
+        let engine = Engine::new(
+            Workspace::new(&self.root, vfs.clone()),
+            Languages::new().with(Fake::default()),
+        );
+        (vfs, engine)
+    }
+}
+
+#[test]
+fn failed_mutations_remove_owned_empty_parent_directories() {
+    let fixture = DiskHistoryFixture::new();
+    let (vfs, engine) = fixture.fault_engine();
+    let planned = engine
+        .run(MoveIntent::new("a.p", "nested/deep/b.p"))
+        .unwrap();
+    vfs.arm(
+        common::FaultOperation::PrepareParent,
+        &fixture.root.join("nested/deep/b.p"),
+        0,
+        common::FaultAction::After,
+    );
+    assert!(matches!(
+        engine.run(Apply(planned)),
+        Err(EngineError::Apply(_))
+    ));
+    assert_eq!(fixture.source(), "def foo\nfoo");
+    assert!(!fixture.root.join("nested").exists());
+}
+
+#[test]
+fn recovery_reports_an_owned_directory_it_cannot_remove() {
+    let fixture = DiskHistoryFixture::new();
+    let (vfs, engine) = fixture.fault_engine();
+    let planned = engine.run(MoveIntent::new("a.p", "nested/b.p")).unwrap();
+    vfs.arm(
+        common::FaultOperation::PrepareParent,
+        &fixture.root.join("nested/b.p"),
+        0,
+        common::FaultAction::After,
+    );
+    vfs.arm(
+        common::FaultOperation::RemoveDirectory,
+        &fixture.root.join("nested"),
+        0,
+        common::FaultAction::Before,
+    );
+    let error = engine.run(Apply(planned)).unwrap_err();
+    let EngineError::Recovery(recovery) = error else {
+        panic!("expected recovery error: {error}")
+    };
+    assert_eq!(recovery.details.remaining.len(), 1);
+    assert_eq!(recovery.details.remaining[0].path, Path::new("nested"));
+    assert_eq!(
+        recovery.details.remaining[0].expected,
+        vvv_engine::RecoveryState::Absent
+    );
+    assert_eq!(
+        recovery.details.remaining[0].observed,
+        vvv_engine::RecoveryState::Directory
+    );
+    assert_eq!(fixture.source(), "def foo\nfoo");
+}
+
+#[test]
+fn recovery_restores_disk_files_and_cleans_move_parent_directories() {
+    let fixture = DiskHistoryFixture::new();
+    let (vfs, engine) = fixture.fault_engine();
+    let planned = engine
+        .run(MoveIntent::new("a.p", "nested/deep/b.p"))
+        .unwrap();
+    vfs.arm(
+        common::FaultOperation::Write,
+        &fixture.root.join("nested/deep/b.p"),
+        0,
+        common::FaultAction::Partial("cut".into()),
+    );
+    assert!(matches!(
+        engine.run(Apply(planned)),
+        Err(EngineError::Apply(_))
+    ));
+    assert_eq!(fixture.source(), "def foo\nfoo");
+    assert!(!fixture.root.join("nested").exists());
+    assert!(!fixture.root.join(".vvv/history.json").exists());
 }

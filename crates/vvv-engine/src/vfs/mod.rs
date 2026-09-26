@@ -29,6 +29,26 @@ pub enum VfsError {
     },
 }
 
+/// Parent directories created before a file mutation, including partial failure.
+#[derive(Debug)]
+pub struct ParentCreation {
+    pub created: Vec<PathBuf>,
+    pub result: Result<(), VfsError>,
+}
+
+impl ParentCreation {
+    pub fn new(created: Vec<PathBuf>, result: Result<(), VfsError>) -> Self {
+        Self { created, result }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EntryKind {
+    File,
+    Directory,
+    Other,
+}
+
 /// A cheap witness of a file's state: modification time and size on disk, a
 /// version counter in memory. Two equal stamps mean the contents could not
 /// have changed, which is what lets a warm corpus skip the read. Like `make`
@@ -54,6 +74,13 @@ pub trait Vfs: Send + Sync {
     /// Write a whole file, creating parent directories as needed.
     fn write(&self, path: &Path, contents: &str) -> Result<(), VfsError>;
     fn exists(&self, path: &Path) -> bool;
+    /// Inspect a directory entry without following its final symlink.
+    fn entry_kind(&self, path: &Path) -> Result<Option<EntryKind>, VfsError>;
+    /// Create missing parents and retain every directory created, even on error.
+    fn prepare_parent(&self, path: &Path) -> ParentCreation;
+    fn remove_file(&self, path: &Path) -> Result<(), VfsError>;
+    /// Remove only an empty directory.
+    fn remove_empty_dir(&self, path: &Path) -> Result<(), VfsError>;
     /// Move a file, creating parent directories of `to` as needed.
     fn rename(&self, from: &Path, to: &Path) -> Result<(), VfsError>;
     /// Every regular file under `root`, in a deterministic order.

@@ -501,3 +501,222 @@ impl Language for Counting {
         self.inner.surgery()
     }
 }
+
+/// A scripted I/O boundary. Rules are armed after planning and match by path
+/// and operation, so failures do not depend on timing or filesystem permissions.
+pub struct FaultVfs {
+    pub base: std::sync::Arc<dyn vvv_engine::Vfs>,
+    rules: std::sync::Mutex<Vec<FaultRule>>,
+    trace: std::sync::Mutex<Vec<(FaultOperation, PathBuf)>>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FaultOperation {
+    Read,
+    Write,
+    Rename,
+    Inspect,
+    PrepareParent,
+    RemoveFile,
+    RemoveDirectory,
+}
+
+#[derive(Debug, Clone)]
+pub enum FaultAction {
+    Before,
+    Partial(String),
+    After,
+    Always,
+}
+
+impl FaultAction {
+    fn error(&self, path: &Path) -> vvv_engine::VfsError {
+        vvv_engine::VfsError::Io {
+            path: path.to_path_buf(),
+            source: std::io::Error::other(format!("injected {self:?} failure")),
+        }
+    }
+}
+
+struct FaultRule {
+    operation: FaultOperation,
+    path: PathBuf,
+    skip: usize,
+    action: FaultAction,
+}
+
+impl FaultVfs {
+    pub fn over(base: std::sync::Arc<dyn vvv_engine::Vfs>) -> Self {
+        Self {
+            base,
+            rules: Default::default(),
+            trace: Default::default(),
+        }
+    }
+
+    pub fn arm(&self, operation: FaultOperation, path: &Path, skip: usize, action: FaultAction) {
+        self.rules.lock().unwrap().push(FaultRule {
+            operation,
+            path: path.to_path_buf(),
+            skip,
+            action,
+        });
+    }
+
+    pub fn trace(&self) -> Vec<(FaultOperation, PathBuf)> {
+        self.trace.lock().unwrap().clone()
+    }
+
+    pub fn clear_trace(&self) {
+        self.trace.lock().unwrap().clear();
+    }
+
+    fn action(&self, operation: FaultOperation, path: &Path) -> Option<FaultAction> {
+        self.trace
+            .lock()
+            .unwrap()
+            .push((operation, path.to_path_buf()));
+        let mut rules = self.rules.lock().unwrap();
+        let index = rules
+            .iter()
+            .position(|rule| rule.operation == operation && rule.path == path)?;
+        let rule = &mut rules[index];
+        if rule.skip > 0 {
+            rule.skip -= 1;
+            return None;
+        }
+        if matches!(rule.action, FaultAction::Always) {
+            return Some(rule.action.clone());
+        }
+        Some(rules.remove(index).action)
+    }
+}
+
+impl vvv_engine::Vfs for FaultVfs {
+    fn read(&self, path: &Path) -> Result<String, vvv_engine::VfsError> {
+        if let Some(action) = self.action(FaultOperation::Read, path) {
+            return Err(action.error(path));
+        }
+        self.base.read(path)
+    }
+
+    fn stamp(&self, path: &Path) -> Result<vvv_engine::Stamp, vvv_engine::VfsError> {
+        self.base.stamp(path)
+    }
+
+    fn write(&self, path: &Path, contents: &str) -> Result<(), vvv_engine::VfsError> {
+        match self.action(FaultOperation::Write, path) {
+            Some(action @ (FaultAction::Before | FaultAction::Always)) => Err(action.error(path)),
+            Some(action @ FaultAction::After) => {
+                self.base.write(path, contents)?;
+                Err(action.error(path))
+            }
+            Some(action @ FaultAction::Partial(_)) => {
+                if let FaultAction::Partial(text) = &action {
+                    self.base.write(path, text)?;
+                }
+                Err(action.error(path))
+            }
+            None => self.base.write(path, contents),
+        }
+    }
+
+    fn exists(&self, path: &Path) -> bool {
+        self.base.exists(path)
+    }
+
+    fn entry_kind(
+        &self,
+        path: &Path,
+    ) -> Result<Option<vvv_engine::EntryKind>, vvv_engine::VfsError> {
+        if let Some(action) = self.action(FaultOperation::Inspect, path) {
+            return Err(action.error(path));
+        }
+        self.base.entry_kind(path)
+    }
+
+    fn prepare_parent(&self, path: &Path) -> vvv_engine::ParentCreation {
+        match self.action(FaultOperation::PrepareParent, path) {
+            Some(
+                action @ (FaultAction::Before | FaultAction::Always | FaultAction::Partial(_)),
+            ) => vvv_engine::ParentCreation::new(Vec::new(), Err(action.error(path))),
+            Some(action @ FaultAction::After) => {
+                let mut outcome = self.base.prepare_parent(path);
+                outcome.result = Err(action.error(path));
+                outcome
+            }
+            None => self.base.prepare_parent(path),
+        }
+    }
+
+    fn remove_file(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
+        match self.action(FaultOperation::RemoveFile, path) {
+            Some(action @ FaultAction::After) => {
+                self.base.remove_file(path)?;
+                Err(action.error(path))
+            }
+            Some(action) => Err(action.error(path)),
+            None => self.base.remove_file(path),
+        }
+    }
+
+    fn remove_empty_dir(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
+        match self.action(FaultOperation::RemoveDirectory, path) {
+            Some(action @ FaultAction::After) => {
+                self.base.remove_empty_dir(path)?;
+                Err(action.error(path))
+            }
+            Some(action) => Err(action.error(path)),
+            None => self.base.remove_empty_dir(path),
+        }
+    }
+
+    fn rename(&self, from: &Path, to: &Path) -> Result<(), vvv_engine::VfsError> {
+        match self.action(FaultOperation::Rename, from) {
+            Some(action @ (FaultAction::Before | FaultAction::Always)) => Err(action.error(from)),
+            Some(action @ FaultAction::After) => {
+                self.base.rename(from, to)?;
+                Err(action.error(from))
+            }
+            Some(action @ FaultAction::Partial(_)) => {
+                self.base.write(to, &self.base.read(from)?)?;
+                Err(action.error(from))
+            }
+            None => self.base.rename(from, to),
+        }
+    }
+
+    fn walk(&self, root: &Path) -> Result<Vec<PathBuf>, vvv_engine::VfsError> {
+        self.base.walk(root)
+    }
+}
+
+pub struct FaultFixture {
+    pub vfs: std::sync::Arc<FaultVfs>,
+    pub engine: vvv_engine::Engine,
+}
+
+impl FaultFixture {
+    pub fn new(files: &[(&str, &str)]) -> Self {
+        let base = files
+            .iter()
+            .fold(vvv_engine::MemoryVfs::new(), |vfs, (path, text)| {
+                vfs.with_file(Path::new("/ws").join(path), *text)
+            });
+        let vfs = std::sync::Arc::new(FaultVfs::over(std::sync::Arc::new(base)));
+        let engine = vvv_engine::Engine::new(
+            vvv_engine::Workspace::new("/ws", vfs.clone()),
+            vvv_engine::Languages::new().with(Fake::default()),
+        );
+        Self { vfs, engine }
+    }
+
+    pub fn read(&self, path: &str) -> String {
+        self.vfs.base.read(&Path::new("/ws").join(path)).unwrap()
+    }
+
+    pub fn arm(&self, operation: FaultOperation, path: &str, skip: usize, action: FaultAction) {
+        self.vfs
+            .arm(operation, &Path::new("/ws").join(path), skip, action);
+    }
+}

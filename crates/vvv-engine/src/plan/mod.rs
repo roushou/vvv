@@ -31,10 +31,9 @@ pub enum ApplyError {
     DestinationExists { path: RelPath },
     #[error("{} changed since it was written; refusing to undo", path.display())]
     Modified { path: RelPath },
-    #[error("writing {} failed; {restored} file(s) restored: {source}", path.display())]
+    #[error("writing {} failed: {source}", path.display())]
     Write {
         path: RelPath,
-        restored: usize,
         #[source]
         source: VfsError,
     },
@@ -74,34 +73,32 @@ impl Plan {
         })
     }
 
-    pub fn apply(self, workspace: &Workspace) -> Result<Receipt, ApplyError> {
-        let staged = self.stage(workspace)?;
-        let vfs = workspace.vfs();
+    pub fn apply(self, workspace: &Workspace) -> Result<Receipt, crate::EngineError> {
+        let mut transaction = Transaction::new(workspace);
+        match transaction.apply(self) {
+            Ok(()) => Ok(transaction.receipt()),
+            Err(error) => Err(transaction.recover(error.into())),
+        }
+    }
+
+    fn apply_in(self, transaction: &mut Transaction<'_>) -> Result<Receipt, ApplyError> {
+        let staged = self.stage(transaction.workspace)?;
         let mut receipt = Receipt::default();
         for file in &staged {
-            let result = match &file.moved_to {
-                Some(to) => vfs
-                    .rename(&workspace.absolute(&file.path), &workspace.absolute(to))
-                    .and_then(|()| {
-                        receipt
-                            .moves
-                            .push((file.path.to_path_buf(), to.to_path_buf()));
-                        vfs.write(&workspace.absolute(to), &file.after)
-                    }),
-                None => vfs.write(&workspace.absolute(&file.path), &file.after),
-            };
-            if let Err(source) = result {
-                let restored = receipt.rollback(workspace).unwrap_or(0);
-                return Err(ApplyError::Write {
-                    path: file.path.clone(),
-                    restored,
-                    source,
-                });
-            }
+            // Retain the original before either the move or the write is attempted.
             receipt
                 .originals
                 .insert(file.path.to_path_buf(), file.before.clone());
-            let final_path = file.moved_to.clone().unwrap_or_else(|| file.path.clone());
+            let final_path = if let Some(to) = &file.moved_to {
+                transaction.move_file(&file.path, to, &file.before)?;
+                receipt
+                    .moves
+                    .push((file.path.to_path_buf(), to.to_path_buf()));
+                to
+            } else {
+                &file.path
+            };
+            transaction.write(final_path, &file.before, &file.after)?;
             receipt
                 .written
                 .insert(final_path.to_path_buf(), Fingerprint::of(&file.after));
@@ -220,6 +217,251 @@ impl Receipt {
             }
         }
         Ok(self.rollback(workspace)?)
+    }
+}
+
+/// In-memory recovery state for every attempted effect across a set of plans.
+/// It is deliberately not a durable journal and does not recover from a crash.
+pub(crate) struct Transaction<'a> {
+    workspace: &'a Workspace,
+    effects: Vec<Effect>,
+    originals: BTreeMap<RelPath, Original>,
+    receipts: Vec<Receipt>,
+}
+
+impl<'a> Transaction<'a> {
+    pub(crate) fn new(workspace: &'a Workspace) -> Self {
+        Self {
+            workspace,
+            effects: Vec::new(),
+            originals: BTreeMap::new(),
+            receipts: Vec::new(),
+        }
+    }
+
+    pub(crate) fn apply(&mut self, plan: Plan) -> Result<(), ApplyError> {
+        let receipt = plan.apply_in(self)?;
+        self.receipts.push(receipt);
+        Ok(())
+    }
+
+    pub(crate) fn receipt(&self) -> Receipt {
+        self.receipts
+            .iter()
+            .cloned()
+            .fold(Receipt::default(), Receipt::then)
+    }
+
+    fn prepare_parent(&mut self, path: &RelPath) -> Result<(), VfsError> {
+        let parents = self
+            .workspace
+            .vfs()
+            .prepare_parent(&self.workspace.absolute(path));
+        for absolute in parents.created {
+            let path: RelPath = self.workspace.relative(&absolute).into();
+            self.originals
+                .entry(path.clone())
+                .or_insert(Original::Absent);
+            self.effects.push(Effect::Directory(path));
+        }
+        parents.result
+    }
+
+    fn write(&mut self, path: &RelPath, before: &str, after: &str) -> Result<(), ApplyError> {
+        self.prepare_parent(path)?;
+        self.originals
+            .entry(path.clone())
+            .or_insert_with(|| Original::File(before.to_owned()));
+        self.effects.push(Effect::Write {
+            path: path.clone(),
+            before: before.to_owned(),
+        });
+        self.workspace
+            .vfs()
+            .write(&self.workspace.absolute(path), after)
+            .map_err(|source| ApplyError::Write {
+                path: path.clone(),
+                source,
+            })
+    }
+
+    fn move_file(&mut self, from: &RelPath, to: &RelPath, before: &str) -> Result<(), ApplyError> {
+        self.prepare_parent(to)?;
+        self.originals
+            .entry(from.clone())
+            .or_insert_with(|| Original::File(before.to_owned()));
+        self.originals.entry(to.clone()).or_insert(Original::Absent);
+        self.effects.push(Effect::Move {
+            from: from.clone(),
+            to: to.clone(),
+            before: before.to_owned(),
+        });
+        Ok(self
+            .workspace
+            .vfs()
+            .rename(&self.workspace.absolute(from), &self.workspace.absolute(to))?)
+    }
+
+    pub(crate) fn recover(mut self, cause: crate::EngineError) -> crate::EngineError {
+        let mut failures = Vec::new();
+        for effect in self.effects.iter().rev() {
+            if let Err(issue) = effect.restore(self.workspace) {
+                failures.push(issue);
+            }
+        }
+        let mut remaining = Vec::new();
+        let mut unverified = Vec::new();
+        for (path, expected) in std::mem::take(&mut self.originals) {
+            match Original::observe(self.workspace, &path) {
+                Ok(observed) if observed != expected => remaining.push(crate::RecoveryEffect {
+                    path,
+                    expected: expected.state(),
+                    observed: observed.state(),
+                }),
+                Ok(_) => {}
+                Err(error) => unverified.push(crate::RecoveryUnverified {
+                    expected: expected.state(),
+                    path,
+                    code: crate::ErrorCode::Io,
+                    message: error.to_string(),
+                }),
+            }
+        }
+        if remaining.is_empty() && unverified.is_empty() {
+            return cause;
+        }
+        crate::RecoveryError {
+            details: crate::Recovery {
+                cause: Box::new(crate::Failure::from(&cause)),
+                failures,
+                remaining,
+                unverified,
+            },
+            cause: Box::new(cause),
+        }
+        .into()
+    }
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum Original {
+    Absent,
+    File(String),
+    Directory,
+    Other,
+}
+
+impl Original {
+    fn observe(workspace: &Workspace, path: &RelPath) -> Result<Self, VfsError> {
+        let absolute = workspace.absolute(path);
+        match workspace.vfs().entry_kind(&absolute)? {
+            None => Ok(Self::Absent),
+            Some(crate::EntryKind::File) => Ok(Self::File(workspace.vfs().read(&absolute)?)),
+            Some(crate::EntryKind::Directory) => Ok(Self::Directory),
+            Some(crate::EntryKind::Other) => Ok(Self::Other),
+        }
+    }
+
+    fn state(&self) -> crate::RecoveryState {
+        match self {
+            Self::Absent => crate::RecoveryState::Absent,
+            Self::File(text) => crate::RecoveryState::File {
+                fingerprint: Fingerprint::of(text).as_str().to_owned(),
+            },
+            Self::Directory => crate::RecoveryState::Directory,
+            Self::Other => crate::RecoveryState::Other,
+        }
+    }
+}
+
+enum Effect {
+    Write {
+        path: RelPath,
+        before: String,
+    },
+    Move {
+        from: RelPath,
+        to: RelPath,
+        before: String,
+    },
+    Directory(RelPath),
+}
+
+impl Effect {
+    fn path(&self) -> &RelPath {
+        match self {
+            Self::Write { path, .. } | Self::Directory(path) => path,
+            Self::Move { from, .. } => from,
+        }
+    }
+
+    fn operation(&self) -> crate::RecoveryOperation {
+        match self {
+            Self::Write { .. } => crate::RecoveryOperation::RestoreFile,
+            Self::Move { .. } => crate::RecoveryOperation::RestoreMove,
+            Self::Directory(_) => crate::RecoveryOperation::RemoveDirectory,
+        }
+    }
+
+    fn restore(&self, workspace: &Workspace) -> Result<(), crate::RecoveryIssue> {
+        let vfs = workspace.vfs();
+        let mut operation = self.operation();
+        let mut failed_path = self.path();
+        let result = (|| -> Result<(), VfsError> {
+            match self {
+                Self::Write { path, before } => {
+                    if Original::observe(workspace, path)? == Original::File(before.clone()) {
+                        return Ok(());
+                    }
+                    vfs.write(&workspace.absolute(path), before)
+                }
+                Self::Move { from, to, before } => match Original::observe(workspace, from)? {
+                    Original::Absent => {
+                        if Original::observe(workspace, to)? != Original::Absent {
+                            vfs.rename(&workspace.absolute(to), &workspace.absolute(from))?;
+                        }
+                        if Original::observe(workspace, from)? != Original::File(before.clone()) {
+                            vfs.write(&workspace.absolute(from), before)?;
+                        }
+                        Ok(())
+                    }
+                    Original::File(text) if text == *before => {
+                        match Original::observe(workspace, to)? {
+                            Original::Absent => Ok(()),
+                            Original::File(text) if text == *before => {
+                                operation = crate::RecoveryOperation::RemoveFile;
+                                failed_path = to;
+                                vfs.remove_file(&workspace.absolute(to))
+                            }
+                            _ => Err(VfsError::Io {
+                                path: workspace.absolute(to),
+                                source: std::io::Error::new(
+                                    std::io::ErrorKind::AlreadyExists,
+                                    "recovery destination has different contents",
+                                ),
+                            }),
+                        }
+                    }
+                    _ => Err(VfsError::Io {
+                        path: workspace.absolute(from),
+                        source: std::io::Error::new(
+                            std::io::ErrorKind::AlreadyExists,
+                            "recovery refuses to overwrite an occupied source",
+                        ),
+                    }),
+                },
+                Self::Directory(path) => match vfs.entry_kind(&workspace.absolute(path))? {
+                    None => Ok(()),
+                    Some(_) => vfs.remove_empty_dir(&workspace.absolute(path)),
+                },
+            }
+        })();
+        result.map_err(|error| crate::RecoveryIssue {
+            operation,
+            path: failed_path.clone(),
+            code: crate::ErrorCode::Io,
+            message: error.to_string(),
+        })
     }
 }
 
@@ -378,7 +620,7 @@ mod tests {
         let plan = fixture.replacement();
         ws.vfs().write(Path::new("/ws/b.txt"), "changed").unwrap();
         assert!(
-            matches!(plan.apply(ws), Err(ApplyError::Stale { path }) if path == Path::new("b.txt"))
+            matches!(plan.apply(ws), Err(crate::EngineError::Apply(ApplyError::Stale { path })) if path == Path::new("b.txt"))
         );
         assert_eq!(
             ws.vfs().read(Path::new("/ws/a.txt")).unwrap(),

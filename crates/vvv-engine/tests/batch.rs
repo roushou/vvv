@@ -130,3 +130,58 @@ fn a_failing_step_rolls_the_earlier_ones_back() {
     );
     assert_eq!(engine.run(HistoryQuery).unwrap().entries.len(), 0);
 }
+
+#[test]
+fn batch_recovers_every_attempted_step_after_a_partial_write() {
+    let fixture = common::FaultFixture::new(&[("a.p", "one")]);
+    let planned = fixture
+        .engine
+        .run(BatchIntent::new([
+            Intent::Rewrite(RewriteIntent::new(Query::pattern("one"), "two")),
+            Intent::Rewrite(RewriteIntent::new(Query::pattern("two"), "three")),
+        ]))
+        .unwrap();
+    fixture.arm(
+        common::FaultOperation::Write,
+        "a.p",
+        1,
+        common::FaultAction::Partial("cut".into()),
+    );
+    assert!(matches!(
+        fixture.engine.run(Apply(planned)),
+        Err(EngineError::Apply(_))
+    ));
+    assert_eq!(fixture.read("a.p"), "one");
+}
+
+#[test]
+fn batch_reports_failure_to_restore_an_earlier_step() {
+    let fixture = common::FaultFixture::new(&[("a.p", "one"), ("b.p", "two")]);
+    let planned = fixture
+        .engine
+        .run(BatchIntent::new([
+            Intent::Rewrite(RewriteIntent::new(Query::pattern("one"), "1")),
+            Intent::Rewrite(RewriteIntent::new(Query::pattern("two"), "2")),
+        ]))
+        .unwrap();
+    fixture.arm(
+        common::FaultOperation::Write,
+        "b.p",
+        0,
+        common::FaultAction::Before,
+    );
+    fixture.arm(
+        common::FaultOperation::Write,
+        "a.p",
+        1,
+        common::FaultAction::Before,
+    );
+    let error = fixture.engine.run(Apply(planned)).unwrap_err();
+    let EngineError::Recovery(recovery) = error else {
+        panic!("expected recovery error: {error}")
+    };
+    assert_eq!(recovery.details.remaining.len(), 1);
+    assert_eq!(recovery.details.remaining[0].path, Path::new("a.p"));
+    assert_eq!(fixture.read("a.p"), "1");
+    assert_eq!(fixture.read("b.p"), "two");
+}

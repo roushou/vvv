@@ -60,6 +60,8 @@ pub enum EngineError {
     Apply(#[from] ApplyError),
     #[error(transparent)]
     History(#[from] HistoryError),
+    #[error(transparent)]
+    Recovery(#[from] RecoveryError),
 }
 
 impl EngineError {
@@ -96,6 +98,7 @@ impl EngineError {
                 _ => ErrorCode::Io,
             },
             Self::History(_) => ErrorCode::NoHistory,
+            Self::Recovery(_) => ErrorCode::RecoveryFailed,
         }
     }
 
@@ -123,10 +126,50 @@ impl EngineError {
 
 impl From<&EngineError> for Failure {
     fn from(error: &EngineError) -> Self {
-        let failure = Failure::new(error.code(), format!("{error:#}"));
+        let mut failure = Failure::new(error.code(), format!("{error:#}"));
+        if let EngineError::Recovery(recovery) = error {
+            failure = failure.with_recovery(recovery.details.clone());
+        }
         match error.hint() {
             Some(hint) => failure.with_hint(hint),
             None => failure,
         }
+    }
+}
+
+/// A failed mutation whose effects could not all be restored and verified.
+#[derive(Debug)]
+pub struct RecoveryError {
+    pub cause: Box<EngineError>,
+    pub details: crate::Recovery,
+}
+
+impl std::fmt::Display for RecoveryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}; recovery incomplete", self.cause)?;
+        for effect in &self.details.remaining {
+            write!(
+                f,
+                "; {}: expected {:?}, observed {:?}",
+                effect.path.display(),
+                effect.expected,
+                effect.observed
+            )?;
+        }
+        for issue in &self.details.unverified {
+            write!(
+                f,
+                "; {}: state unverified ({})",
+                issue.path.display(),
+                issue.message
+            )?;
+        }
+        Ok(())
+    }
+}
+
+impl std::error::Error for RecoveryError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(self.cause.as_ref())
     }
 }

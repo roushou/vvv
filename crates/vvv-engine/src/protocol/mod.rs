@@ -31,7 +31,10 @@ pub use answer::{
     Unreferenced,
 };
 pub use diff::{Diff, DiffKind, DiffLine, Hunk, LineRange};
-pub use failure::{ErrorCode, Failure};
+pub use failure::{
+    ErrorCode, Failure, Recovery, RecoveryEffect, RecoveryIssue, RecoveryOperation, RecoveryState,
+    RecoveryUnverified,
+};
 pub use intent::{BatchIntent, Intent, RewriteIntent, RewriteOf};
 pub use notice::{Notice, NoticeKind};
 pub use question::{

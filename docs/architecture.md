@@ -377,10 +377,26 @@ is in its graph.
 declares a `Method` when inside `impl_item`"_ as a `SymbolRule`; the traversal that
 applies it lives once, in `vvv-lang/src/syntax/`. Adding a language is adding a table.
 
-**Writes happen in exactly one place.** `Plan::apply`. It stages every file first
-(read, fingerprint check, compute), then writes — renaming first when a file moves —
-and restores on failure. `Receipt::rollback` undoes moves in reverse before restoring
-contents. `ChangeSet` has no `apply` method.
+**Plans authorize file writes.** `Plan` stages every file first (read, fingerprint
+check, compute), then writes through a `Transaction`. Before a write or move is
+attempted, the transaction retains its before-state and appends the effect to an
+ordered recovery log. One transaction spans all plans of an apply, including a batch.
+A successful `Receipt` describes the applied changes; it is not the recovery log
+for a partially attempted operation. `ChangeSet` has no write method.
+
+On a file-operation failure, recovery reverses the effect log, continues restoring
+independent effects after an error, and checks every retained before-state. Complete
+verified restoration returns the initiating error. Otherwise `EngineError::Recovery`
+reports the cause, failed restoration operations, confirmed remaining effects, and
+paths whose state could not be verified. Recovery also removes owned empty parent
+directories; `Vfs::prepare_parent` identifies the directories it actually created,
+even when preparation fails partway through.
+
+This is in-memory failure recovery, not crash consistency: there is no durable
+journal, restart recovery, or isolation from external writers. Restoration concerns
+file contents and locations and owned directories, not inode identity, timestamps,
+or complete filesystem metadata. History-save compensation and coupled undo are
+subsequent transaction changes; a ledger-save failure is not yet compensated.
 
 **Plan provenance covers edited and moved files.** An immutable `SourceFile` gives
 an edit producer a `SourceWitness` (relative path and content fingerprint). `Change`

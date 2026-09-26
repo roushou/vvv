@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::sync::RwLock;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use super::{Stamp, Vfs, VfsError};
+use super::{EntryKind, ParentCreation, Stamp, Vfs, VfsError};
 
 /// In-memory file tree. Paths are stored exactly as given. Every write and
 /// rename gives the file a fresh version, so stamps behave like mtimes.
@@ -81,6 +81,27 @@ impl Vfs for MemoryVfs {
             .read()
             .expect("MemoryVfs lock poisoned")
             .contains_key(path)
+    }
+
+    fn entry_kind(&self, path: &Path) -> Result<Option<EntryKind>, VfsError> {
+        Ok(self.exists(path).then_some(EntryKind::File))
+    }
+
+    fn prepare_parent(&self, _path: &Path) -> ParentCreation {
+        ParentCreation::new(Vec::new(), Ok(()))
+    }
+
+    fn remove_file(&self, path: &Path) -> Result<(), VfsError> {
+        self.files
+            .write()
+            .expect("MemoryVfs lock poisoned")
+            .remove(path)
+            .map(|_| ())
+            .ok_or_else(|| VfsError::NotFound(path.to_path_buf()))
+    }
+
+    fn remove_empty_dir(&self, path: &Path) -> Result<(), VfsError> {
+        Err(VfsError::NotFound(path.to_path_buf()))
     }
 
     fn rename(&self, from: &Path, to: &Path) -> Result<(), VfsError> {

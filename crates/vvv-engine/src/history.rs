@@ -173,24 +173,13 @@ impl<T: Mutation> Command for Apply<T> {
         // Whatever happens below, the tree is no longer what the graph saw.
         cx.graph.touched();
         let (mut result, plans) = self.0.into_parts();
-        let mut receipt: Option<Receipt> = None;
+        let mut transaction = crate::plan::Transaction::new(workspace);
         for plan in plans {
-            match plan.apply(workspace) {
-                Ok(applied) => {
-                    receipt = Some(match receipt.take() {
-                        Some(so_far) => so_far.then(applied),
-                        None => applied,
-                    });
-                }
-                Err(error) => {
-                    if let Some(so_far) = receipt {
-                        let _ = so_far.rollback(workspace);
-                    }
-                    return Err(error.into());
-                }
+            if let Err(error) = transaction.apply(plan) {
+                return Err(transaction.recover(error.into()));
             }
         }
-        let record = history.push(snapshot, id, result.intent(), receipt.unwrap_or_default())?;
+        let record = history.push(snapshot, id, result.intent(), transaction.receipt())?;
         result.applied(record.id);
         Ok(result)
     }
