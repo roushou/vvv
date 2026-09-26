@@ -91,6 +91,7 @@ impl EngineError {
                 _ => ErrorCode::Unmovable,
             },
             Self::Apply(e) => match e {
+                ApplyError::DestinationExists { .. } => ErrorCode::Exists,
                 ApplyError::Stale { .. } | ApplyError::Modified { .. } => ErrorCode::Stale,
                 _ => ErrorCode::Io,
             },

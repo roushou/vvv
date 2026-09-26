@@ -381,6 +381,11 @@ Moves a file or a directory, then rewrites every import that pointed at anything
 it, along with the moved files' own imports. Renaming as you go is fine: `vvv move
 src/util src/core/tools` both relocates and renames the module.
 
+Every destination must be absent. Apply checks all move destinations again before
+writing, so a file created after planning is preserved and the move is refused.
+The check does not reserve the paths against another process creating a file during
+the write.
+
 The preview separates what is mechanical from what you should read:
 
 ```console

@@ -432,6 +432,11 @@ numbers work the same way for a human at a terminal; a program should prefer ids
 which do not depend on the result order.
 Likewise a plan refuses to apply to a file whose contents differ from when it was
 previewed (`… changed since the plan was made`).
+Source fingerprints come from the snapshots used by edit and move producers, so
+changes before the initial preview are refused too. Resolution-only inputs are not
+included. A move also checks that every destination remains absent before writing;
+an occupied destination returns `exists`. This is a preflight check, not a reservation
+against another process creating the destination during the write.
 
 ## Errors
 

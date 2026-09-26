@@ -27,6 +27,8 @@ pub enum ApplyError {
     Vfs(#[from] VfsError),
     #[error("{} changed since the plan was made", path.display())]
     Stale { path: RelPath },
+    #[error("{} already exists", path.display())]
+    DestinationExists { path: RelPath },
     #[error("{} changed since it was written; refusing to undo", path.display())]
     Modified { path: RelPath },
     #[error("writing {} failed; {restored} file(s) restored: {source}", path.display())]
@@ -42,15 +44,19 @@ pub enum ApplyError {
 pub struct Plan {
     change_set: ChangeSet,
     fingerprints: BTreeMap<PathBuf, Fingerprint>,
+    /// Destinations that must still be absent when the plan stages.
+    absent: BTreeSet<RelPath>,
 }
 
 impl Plan {
     /// Retain the source fingerprints observed by the edit producers.
     pub(crate) fn new(change: crate::change::WitnessedChangeSet) -> Self {
         let (change_set, fingerprints) = change.into_parts();
+        let absent = change_set.moves().map(|(_, to)| to.into()).collect();
         Self {
             change_set,
             fingerprints,
+            absent,
         }
     }
 
@@ -105,6 +111,13 @@ impl Plan {
 
     /// Read every touched file, check it is unchanged, and compute its new contents.
     fn stage(&self, workspace: &Workspace) -> Result<Vec<FilePreview>, ApplyError> {
+        // Check every move before any file is written. This is a preflight
+        // condition, not an atomic reservation against external writers.
+        for path in &self.absent {
+            if workspace.vfs().exists(&workspace.absolute(path)) {
+                return Err(ApplyError::DestinationExists { path: path.clone() });
+            }
+        }
         self.fingerprints
             .iter()
             .map(|(path, expected)| {
@@ -265,6 +278,29 @@ mod tests {
         assert_eq!(
             ws.vfs().read(Path::new("/ws/a.txt")).unwrap(),
             "hello world"
+        );
+    }
+
+    #[test]
+    fn preview_refuses_a_newly_occupied_destination() {
+        let fixture = Fixture::new();
+        let ws = &fixture.workspace;
+        let mut cs = ChangeSet::new();
+        cs.move_file("a.txt", "new.txt").unwrap();
+        let plan = fixture.plan(cs);
+        ws.vfs()
+            .write(Path::new("/ws/new.txt"), "precious new file")
+            .unwrap();
+        assert!(
+            matches!(plan.preview(ws), Err(ApplyError::DestinationExists { path }) if path == Path::new("new.txt"))
+        );
+        assert_eq!(
+            ws.vfs().read(Path::new("/ws/a.txt")).unwrap(),
+            "hello world"
+        );
+        assert_eq!(
+            ws.vfs().read(Path::new("/ws/new.txt")).unwrap(),
+            "precious new file"
         );
     }
 

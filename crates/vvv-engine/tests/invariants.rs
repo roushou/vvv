@@ -236,7 +236,6 @@ fn namespace_scopes_follow_project_changes_after_read_only_queries() {
 }
 
 #[test]
-#[ignore = "known bug: apply does not recheck move destination occupancy"]
 fn apply_preserves_a_destination_created_after_planning() {
     let fixture = Fixture::new(&[("manifest.p", ""), ("a.p", "def foo\nfoo")]);
     let planned = fixture.engine.run(MoveIntent::new("a.p", "b.p")).unwrap();
@@ -250,6 +249,13 @@ fn apply_preserves_a_destination_created_after_planning() {
         result.is_err(),
         "an occupied destination must be refused: {result:?}"
     );
+    let error = result.unwrap_err();
+    assert_eq!(error.code(), vvv_engine::ErrorCode::Exists);
+    assert!(
+        matches!(&error, EngineError::Apply(vvv_engine::ApplyError::DestinationExists { path }) if path == Path::new("b.p"))
+    );
+    let failure = serde_json::to_value(vvv_engine::Failure::from(&error)).unwrap();
+    assert_eq!(failure["code"], "exists");
     assert_eq!(fixture.read("a.p"), "def foo\nfoo");
     assert_eq!(fixture.read("b.p"), "precious new file");
     assert_eq!(fixture.read("manifest.p"), "");
@@ -490,4 +496,54 @@ fn rewrite_of_accepts_reported_declaration_addresses() {
         .unwrap();
     fixture.engine.run(Apply(planned)).unwrap();
     assert_eq!(fixture.read("a.p"), "def bar");
+}
+
+#[test]
+fn directory_moves_check_all_destinations_before_writes() {
+    let fixture = Fixture::new(&[
+        ("manifest.p", ""),
+        ("a/a.p", "def first"),
+        ("a/z.p", "def last"),
+        ("lib.p", "use a/a.p/first\nfirst"),
+    ]);
+    let planned = fixture.engine.run(MoveIntent::new("a", "d")).unwrap();
+    fixture
+        .vfs
+        .write(Path::new("/ws/d/z.p"), "precious new file")
+        .unwrap();
+    let error = fixture.engine.run(Apply(planned)).unwrap_err();
+    assert!(
+        matches!(error, EngineError::Apply(vvv_engine::ApplyError::DestinationExists { path }) if path == Path::new("d/z.p"))
+    );
+    assert_eq!(fixture.read("a/a.p"), "def first");
+    assert_eq!(fixture.read("a/z.p"), "def last");
+    assert_eq!(fixture.read("d/z.p"), "precious new file");
+    assert_eq!(fixture.read("lib.p"), "use a/a.p/first\nfirst");
+    assert_eq!(fixture.read("manifest.p"), "");
+    assert!(!fixture.vfs.exists(Path::new("/ws/d/a.p")));
+    assert!(!fixture.vfs.exists(Path::new("/ws/.vvv/history.json")));
+}
+
+#[test]
+fn a_batch_restores_earlier_steps_when_a_move_destination_becomes_occupied() {
+    let fixture = Fixture::new(&[("manifest.p", ""), ("a.p", "def foo\nfoo")]);
+    let planned = fixture
+        .engine
+        .run(vvv_engine::BatchIntent::new([
+            Intent::Rename(RenameIntent::new("foo", "bar")),
+            Intent::Move(MoveIntent::new("a.p", "b.p")),
+        ]))
+        .unwrap();
+    fixture
+        .vfs
+        .write(Path::new("/ws/b.p"), "precious new file")
+        .unwrap();
+    let error = fixture.engine.run(Apply(planned)).unwrap_err();
+    assert!(
+        matches!(error, EngineError::Apply(vvv_engine::ApplyError::DestinationExists { path }) if path == Path::new("b.p"))
+    );
+    assert_eq!(fixture.read("a.p"), "def foo\nfoo");
+    assert_eq!(fixture.read("b.p"), "precious new file");
+    assert_eq!(fixture.read("manifest.p"), "");
+    assert!(!fixture.vfs.exists(Path::new("/ws/.vvv/history.json")));
 }

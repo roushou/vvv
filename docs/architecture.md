@@ -396,6 +396,13 @@ plan stale. Provenance protects the coordinates and contents of edited and moved
 files; it is not a snapshot transaction over all resolution dependencies, nor does
 it prevent external writes between staging and writing.
 
+**Move destinations are preconditions.** A plan retains absence requirements for
+every destination and checks all of them during preview and apply, before writing
+any file. An occupied destination returns `exists`. This preflight is not an atomic
+reservation: another process can still create a destination between the check and
+`Vfs::rename`. Destination-preserving moves and their recovery outcomes belong to
+the transaction work; the current Vfs move can replace a destination.
+
 **Errors and notices are variants, not sentences.** `ResolveError` has one variant per
 situation a layout can refuse (`Root`, `IntoItself`, `CrossProject`, `NoParentFile`
 with the candidate files, …) and `Notice` carries a `NoticeKind`. `thiserror` gives
