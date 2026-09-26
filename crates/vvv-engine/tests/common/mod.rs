@@ -10,7 +10,7 @@
 //!   `use {path}` marks a grouped (non-rewritable) entry, `use <path>/*` a glob;
 //! - the layout treats addresses as path components; the surgery renders them
 //!   as paths and adds one side edit per move (a line in `manifest.p`) so
-//!   side edits are exercised.
+//!   side edits are exercised; an optional `package` manifest names the package.
 
 #![allow(dead_code)]
 
@@ -18,7 +18,7 @@ use std::path::{Path, PathBuf};
 
 use vvv_core::{
     Address, Capture, CaptureValue, Edit, Facts, ImportGroup, ImportRef, Language, LanguageId,
-    Layout, Modifier, ModulePath, Parsed, PathHead, PathSyntax, Project, Query, RawMatch,
+    Layout, Modifier, ModulePath, Package, Parsed, PathHead, PathSyntax, Project, Query, RawMatch,
     ReachKind, ResolveError, SearchError, Semantics, SideEdit, SourceText, Span, Surgery, Symbol,
     SymbolKind, VisibilityRule,
 };
@@ -277,16 +277,25 @@ pub struct PathLayout;
 
 impl Layout for PathLayout {
     fn manifests(&self) -> &'static [&'static str] {
-        &[]
+        &["package"]
     }
 
-    fn package(&self, _: &Path, _: &str) -> Option<vvv_core::Package> {
-        None
+    fn package(&self, manifest: &Path, text: &str) -> Option<Package> {
+        let name = text.trim();
+        (!name.is_empty()).then(|| Package {
+            id: name.into(),
+            name: name.to_owned(),
+            root: manifest.parent().unwrap_or(Path::new("")).to_path_buf(),
+            dependencies: Vec::new(),
+        })
     }
 
-    fn address(&self, _: &Project, path: &Path) -> Result<Address, ResolveError> {
+    fn address(&self, project: &Project, path: &Path) -> Result<Address, ResolveError> {
         Ok(Address::new(
-            "ws",
+            project
+                .packages
+                .containing(path)
+                .map_or_else(|| "ws".into(), |package| package.id.clone()),
             path.components()
                 .map(|c| c.as_os_str().to_string_lossy().into_owned()),
         ))
@@ -298,11 +307,14 @@ impl Layout for PathLayout {
 
     /// `ext/...` is an external package: unknowable, like a foreign crate.
     /// Paths are workspace-relative whatever syntax spelled them.
-    fn resolve(&self, _: &Project, _: &Path, import: &ModulePath) -> Option<Address> {
+    fn resolve(&self, project: &Project, from: &Path, import: &ModulePath) -> Option<Address> {
         if import.head != PathHead::Named || import.first().is_some_and(|f| f.as_str() == "ext") {
             return None;
         }
-        Some(Address::new("ws", import.segments.iter().cloned()))
+        Some(Address::new(
+            self.address(project, from).ok()?.package().clone(),
+            import.segments.iter().cloned(),
+        ))
     }
 }
 

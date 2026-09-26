@@ -146,6 +146,15 @@ const TS: Corpus = Corpus {
     },
 };
 
+/// Rust forms whose move invariants need a real grammar. These cases are
+/// isolated from the golden corpus until the known failures are repaired.
+#[cfg(feature = "rust")]
+const RUST_MOVES: Corpus = Corpus {
+    name: "rust-moves",
+    cases: &[],
+    mutations: || Vec::new(),
+};
+
 impl Corpus {
     fn dir(&self) -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -460,4 +469,90 @@ fn rust_batch_is_composition() {
 #[test]
 fn ts_batch_is_composition() {
     batch_is_composition(&TS);
+}
+
+#[cfg(feature = "rust")]
+#[test]
+#[ignore = "known bug: symbol moves bypass fragment resolution for imported module aliases"]
+fn symbol_moves_preserve_references_through_module_aliases() {
+    use vvv_engine::{Confidence, ReferencesQuery};
+
+    let (vfs, engine) = RUST_MOVES.engine();
+    let before = engine
+        .run(ReferencesQuery::new("Foo").declared_in("src/a.rs"))
+        .unwrap();
+    assert!(before.occurrences.iter().any(|occurrence| {
+        occurrence.m.path == Path::new("src/c.rs") && occurrence.confidence == Confidence::Resolved
+    }));
+
+    let planned = engine
+        .run(MoveSymbolIntent::new("Foo", "src/a.rs", "src/b.rs"))
+        .unwrap();
+    engine.run(vvv_engine::Apply(planned)).unwrap();
+    let after = engine
+        .run(ReferencesQuery::new("Foo").declared_in("src/b.rs"))
+        .unwrap();
+    let consumers: Vec<_> = after
+        .occurrences
+        .iter()
+        .filter(|occurrence| occurrence.m.path == Path::new("src/c.rs"))
+        .collect();
+    assert!(
+        !consumers.is_empty(),
+        "the consumer must retain its reference"
+    );
+    assert!(
+        consumers
+            .iter()
+            .all(|occurrence| occurrence.confidence == Confidence::Resolved),
+        "the module-alias consumer must resolve to the moved declaration: {consumers:?}"
+    );
+    assert!(
+        !vfs.read(Path::new("/ws/src/a.rs"))
+            .unwrap()
+            .contains("struct Foo")
+    );
+    assert!(
+        vfs.read(Path::new("/ws/src/b.rs"))
+            .unwrap()
+            .contains("pub struct Foo;")
+    );
+}
+
+#[cfg(feature = "rust")]
+#[test]
+#[ignore = "known bug: moved self references receive overlapping edits during extraction"]
+fn symbol_moves_preserve_self_references() {
+    use vvv_engine::{Confidence, ReferencesQuery};
+
+    let (vfs, engine) = RUST_MOVES.engine();
+    let planned = engine
+        .run(MoveSymbolIntent::new("foo", "src/a.rs", "src/b.rs"))
+        .expect("a self-reference must be movable without conflicting edits");
+    engine.run(vvv_engine::Apply(planned)).unwrap();
+
+    let references = engine
+        .run(ReferencesQuery::new("foo").declared_in("src/b.rs"))
+        .unwrap();
+    let moved: Vec<_> = references
+        .occurrences
+        .iter()
+        .filter(|occurrence| occurrence.m.path == Path::new("src/b.rs"))
+        .collect();
+    assert_eq!(
+        moved.len(),
+        2,
+        "the declaration and its self-reference must travel together"
+    );
+    assert!(
+        moved
+            .iter()
+            .all(|occurrence| occurrence.confidence == Confidence::Resolved)
+    );
+    let source = vfs.read(Path::new("/ws/src/a.rs")).unwrap();
+    assert!(!source.contains("fn foo"));
+    assert!(
+        source.contains("pub struct Foo;"),
+        "the sibling declaration must stay behind"
+    );
 }
