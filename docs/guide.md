@@ -387,7 +387,10 @@ Moves a file or a directory, then rewrites every import that pointed at anything
 it, along with the moved files' own imports. Renaming as you go is fine: `vvv move
 src/util src/core/tools` both relocates and renames the module.
 
-Every destination must be absent. Apply checks all move destinations again before
+Every destination must be absent, except a case-only file rename on a
+case-insensitive filesystem: `config.rs` → `Config.rs` addresses the same entry
+and is allowed. Distinct hard links still count as occupied destinations.
+Apply checks all move destinations again before
 writing, so a file created after planning is preserved and the move is refused.
 The move itself also refuses to replace a destination created after that check,
 and recovery moves protect occupied destinations too. Disk moves use native
@@ -395,6 +398,10 @@ no-replace renames where supported; the unsupported-operation fallback links the
 removes the source. That fallback is destination-preserving but not atomic: if
 source removal fails, recovery removes the acquired link or reports it as remaining.
 Neither path falls back to copying across filesystems.
+Case-only renames use a unique temporary name and two destination-preserving moves;
+they are not atomic as a whole. Recovery and undo restore the original stored
+filename as well as its contents. A recovery failure names any temporary file left
+behind. A file created between the two legs is preserved.
 The check does not reserve the paths against another process creating a file during
 the write.
 

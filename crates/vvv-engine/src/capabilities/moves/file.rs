@@ -118,7 +118,16 @@ impl Command for MoveIntent {
             if !same_language(t) {
                 return Err(EngineError::NoLanguage(t.into()));
             }
-            if cx.workspace.vfs().exists(&cx.workspace.absolute(t)) {
+            if cx
+                .workspace
+                .vfs()
+                .entry_kind(&cx.workspace.absolute(t))?
+                .is_some()
+                && !cx
+                    .workspace
+                    .vfs()
+                    .same_entry(&cx.workspace.absolute(f), &cx.workspace.absolute(t))?
+            {
                 return Err(EngineError::Exists(t.into()));
             }
         }

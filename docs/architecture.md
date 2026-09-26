@@ -197,7 +197,10 @@ recovery. The caller prepares parents explicitly so their creation stays in the
 transaction's effect log. A failed move returns a `MoveError` with a `MoveState`:
 unchanged, moved, destination linked with source removal incomplete, or unknown.
 An unchanged failure does not acquire the destination; recovery preserves a racing
-creator even if its contents equal the source.
+creator even if its contents equal the source. Recovery never acquires or removes a
+destination whose acquisition is unknown; it reports any differences that remain.
+Disk errors can confirm a completed move by the retained source file handle at
+the destination, rather than guessing from equal contents.
 
 Disk moves use atomic no-replace renames: rustix's `renameat2(RENAME_NOREPLACE)`
 on Linux and `renamex_np(RENAME_EXCL)` on macOS. Windows uses the safe
@@ -212,6 +215,25 @@ and reports that effect. Filesystems without hard links fail without replacing
 the destination. Memory and overlay moves acquire their state lock for the
 destination check and mutation; overlay moves never write through to the base.
 The overlay isolates its own mutations, not independent changes to its base.
+
+Case-only file moves admit a destination only when `Vfs::same_entry` proves
+that both names address one directory entry. Separate hard links are occupied
+destinations even when their inode identity matches. `entry_path` returns stored
+spelling, and `names_alias` lets the overlay apply the base's naming policy to
+new staged files too. Disk entry lookup compares actual directory entries and
+file handles; for absent staged names it observes an existing cased entry in the
+directory (or nearest existing ancestor), without writing a probe.
+
+The transaction routes a case-only move through a unique hidden name in the source
+directory. Both destination-preserving legs enter the effect log before I/O,
+including retry attempts whose temporary destination was occupied. It retains the
+initial stored spelling and observes it during recovery, so equal contents alone
+cannot hide a failed restoration of case. Temporary files that cannot be restored
+appear explicitly in `Recovery.remaining`. This logical two-leg operation is not
+atomic, even when each primitive rename is atomic. Receipts record the logical
+source and destination, and receipt rollback uses the same transaction and case
+handling. File-restoration failures in undo now recover to the pre-undo file state;
+removing the history entry is still a separate operation pending coupled undo.
 
 CI tests run on Linux, macOS, and Windows; formatting, documentation, lint and
 feature-matrix gates run on Linux. Local validation is on the host platform.

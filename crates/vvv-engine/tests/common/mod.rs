@@ -515,6 +515,7 @@ pub enum FaultOperation {
     Read,
     Write,
     Rename,
+    RenameDestination,
     Inspect,
     PrepareParent,
     RemoveFile,
@@ -528,6 +529,7 @@ pub enum FaultAction {
     After,
     Always,
     Occupy(String),
+    Uncertain,
 }
 
 impl FaultAction {
@@ -618,7 +620,9 @@ impl vvv_engine::Vfs for FaultVfs {
                 }
                 Err(action.error(path))
             }
-            Some(action @ FaultAction::Occupy(_)) => Err(action.error(path)),
+            Some(action @ (FaultAction::Occupy(_) | FaultAction::Uncertain)) => {
+                Err(action.error(path))
+            }
             None => self.base.write(path, contents),
         }
     }
@@ -637,13 +641,26 @@ impl vvv_engine::Vfs for FaultVfs {
         self.base.entry_kind(path)
     }
 
+    fn entry_path(&self, path: &Path) -> Result<Option<PathBuf>, vvv_engine::VfsError> {
+        self.base.entry_path(path)
+    }
+
+    fn same_entry(&self, from: &Path, to: &Path) -> Result<bool, vvv_engine::VfsError> {
+        self.base.same_entry(from, to)
+    }
+
+    fn names_alias(&self, from: &Path, to: &Path) -> Result<bool, vvv_engine::VfsError> {
+        self.base.names_alias(from, to)
+    }
+
     fn prepare_parent(&self, path: &Path) -> vvv_engine::ParentCreation {
         match self.action(FaultOperation::PrepareParent, path) {
             Some(
                 action @ (FaultAction::Before
                 | FaultAction::Always
                 | FaultAction::Partial(_)
-                | FaultAction::Occupy(_)),
+                | FaultAction::Occupy(_)
+                | FaultAction::Uncertain),
             ) => vvv_engine::ParentCreation::new(Vec::new(), Err(action.error(path))),
             Some(action @ FaultAction::After) => {
                 let mut outcome = self.base.prepare_parent(path);
@@ -678,7 +695,10 @@ impl vvv_engine::Vfs for FaultVfs {
 
     fn move_if_absent(&self, from: &Path, to: &Path) -> Result<(), vvv_engine::MoveError> {
         use vvv_engine::{MoveError, MoveState};
-        match self.action(FaultOperation::Rename, from) {
+        match self
+            .action(FaultOperation::Rename, from)
+            .or_else(|| self.action(FaultOperation::RenameDestination, to))
+        {
             Some(action @ (FaultAction::Before | FaultAction::Always)) => {
                 Err(MoveError::new(action.error(from), MoveState::Unchanged))
             }
@@ -709,6 +729,16 @@ impl vvv_engine::Vfs for FaultVfs {
                     action.error(from),
                     MoveState::DestinationLinked,
                 ))
+            }
+            Some(action @ FaultAction::Uncertain) => {
+                let contents = self
+                    .base
+                    .read(from)
+                    .map_err(|error| MoveError::new(error, MoveState::Unchanged))?;
+                self.base
+                    .write(to, &contents)
+                    .map_err(|error| MoveError::new(error, MoveState::Unknown))?;
+                Err(MoveError::new(action.error(from), MoveState::Unknown))
             }
             Some(FaultAction::Occupy(contents)) => {
                 self.base
@@ -745,6 +775,27 @@ impl FaultFixture {
         Self { vfs, engine }
     }
 
+    pub fn case_insensitive(files: &[(&str, &str)]) -> Self {
+        let base = CaseInsensitiveVfs::new(files);
+        let vfs = std::sync::Arc::new(FaultVfs::over(std::sync::Arc::new(base)));
+        let engine = vvv_engine::Engine::new(
+            vvv_engine::Workspace::new("/ws", vfs.clone()),
+            vvv_engine::Languages::new().with(Fake::default()),
+        );
+        Self { vfs, engine }
+    }
+
+    pub fn stored(&self, path: &str) -> Option<PathBuf> {
+        self.vfs
+            .base
+            .entry_path(&Path::new("/ws").join(path))
+            .unwrap()
+    }
+
+    pub fn files(&self) -> Vec<PathBuf> {
+        self.vfs.base.walk(Path::new("/ws")).unwrap()
+    }
+
     pub fn read(&self, path: &str) -> String {
         self.vfs.base.read(&Path::new("/ws").join(path)).unwrap()
     }
@@ -752,5 +803,154 @@ impl FaultFixture {
     pub fn arm(&self, operation: FaultOperation, path: &str, skip: usize, action: FaultAction) {
         self.vfs
             .arm(operation, &Path::new("/ws").join(path), skip, action);
+    }
+}
+
+// A deterministic directory-entry model for case-insensitive filesystems.
+// Stored spelling remains observable; reads and existence resolve aliases.
+pub struct CaseInsensitiveVfs {
+    files: std::sync::RwLock<std::collections::BTreeMap<PathBuf, CaseEntry>>,
+    versions: std::sync::atomic::AtomicU64,
+}
+
+struct CaseEntry {
+    path: PathBuf,
+    contents: String,
+    version: u64,
+}
+
+impl CaseInsensitiveVfs {
+    pub fn new(files: &[(&str, &str)]) -> Self {
+        let vfs = Self {
+            files: Default::default(),
+            versions: std::sync::atomic::AtomicU64::new(1),
+        };
+        for (path, text) in files {
+            vvv_engine::Vfs::write(&vfs, &Path::new("/ws").join(path), text).unwrap()
+        }
+        vfs
+    }
+
+    fn key(&self, path: &Path) -> PathBuf {
+        path.components()
+            .map(|component| component.as_os_str().to_string_lossy().to_lowercase())
+            .collect()
+    }
+}
+
+impl vvv_engine::Vfs for CaseInsensitiveVfs {
+    fn read(&self, path: &Path) -> Result<String, vvv_engine::VfsError> {
+        self.files
+            .read()
+            .unwrap()
+            .get(&self.key(path))
+            .map(|entry| entry.contents.clone())
+            .ok_or_else(|| vvv_engine::VfsError::NotFound(path.to_path_buf()))
+    }
+
+    fn stamp(&self, path: &Path) -> Result<vvv_engine::Stamp, vvv_engine::VfsError> {
+        self.files
+            .read()
+            .unwrap()
+            .get(&self.key(path))
+            .map(|entry| {
+                vvv_engine::Stamp::new(u128::from(entry.version), entry.contents.len() as u64)
+            })
+            .ok_or_else(|| vvv_engine::VfsError::NotFound(path.to_path_buf()))
+    }
+
+    fn write(&self, path: &Path, contents: &str) -> Result<(), vvv_engine::VfsError> {
+        let mut files = self.files.write().unwrap();
+        let key = self.key(path);
+        let path = files
+            .get(&key)
+            .map_or_else(|| path.to_path_buf(), |entry| entry.path.clone());
+        files.insert(
+            key,
+            CaseEntry {
+                path,
+                contents: contents.to_owned(),
+                version: self
+                    .versions
+                    .fetch_add(1, std::sync::atomic::Ordering::Relaxed),
+            },
+        );
+        Ok(())
+    }
+
+    fn exists(&self, path: &Path) -> bool {
+        self.files.read().unwrap().contains_key(&self.key(path))
+    }
+
+    fn entry_kind(
+        &self,
+        path: &Path,
+    ) -> Result<Option<vvv_engine::EntryKind>, vvv_engine::VfsError> {
+        Ok(self.exists(path).then_some(vvv_engine::EntryKind::File))
+    }
+
+    fn entry_path(&self, path: &Path) -> Result<Option<PathBuf>, vvv_engine::VfsError> {
+        Ok(self
+            .files
+            .read()
+            .unwrap()
+            .get(&self.key(path))
+            .map(|entry| entry.path.clone()))
+    }
+
+    fn names_alias(&self, from: &Path, to: &Path) -> Result<bool, vvv_engine::VfsError> {
+        Ok(self.key(from) == self.key(to))
+    }
+
+    fn prepare_parent(&self, _path: &Path) -> vvv_engine::ParentCreation {
+        vvv_engine::ParentCreation::new(Vec::new(), Ok(()))
+    }
+
+    fn remove_file(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
+        self.files
+            .write()
+            .unwrap()
+            .remove(&self.key(path))
+            .map(|_| ())
+            .ok_or_else(|| vvv_engine::VfsError::NotFound(path.to_path_buf()))
+    }
+
+    fn remove_empty_dir(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
+        Err(vvv_engine::VfsError::NotFound(path.to_path_buf()))
+    }
+
+    fn move_if_absent(&self, from: &Path, to: &Path) -> Result<(), vvv_engine::MoveError> {
+        let mut files = self.files.write().unwrap();
+        if files.contains_key(&self.key(to)) {
+            return Err(vvv_engine::MoveError::new(
+                vvv_engine::VfsError::Exists(to.to_path_buf()),
+                vvv_engine::MoveState::Unchanged,
+            ));
+        }
+        let mut moved = files.remove(&self.key(from)).ok_or_else(|| {
+            vvv_engine::MoveError::new(
+                vvv_engine::VfsError::NotFound(from.to_path_buf()),
+                vvv_engine::MoveState::Unchanged,
+            )
+        })?;
+        moved.path = to.to_path_buf();
+        moved.version = self
+            .versions
+            .fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        files.insert(self.key(to), moved);
+        Ok(())
+    }
+
+    fn walk(&self, root: &Path) -> Result<Vec<PathBuf>, vvv_engine::VfsError> {
+        let mut paths: Vec<_> = self
+            .files
+            .read()
+            .unwrap()
+            .values()
+            .filter(|entry| self.key(&entry.path).starts_with(self.key(root)))
+            .map(|entry| entry.path.clone())
+            .collect();
+        paths.sort();
+        Ok(paths)
     }
 }

@@ -45,6 +45,18 @@ impl Vfs for Counting {
     ) -> Result<Option<vvv_engine::EntryKind>, vvv_engine::VfsError> {
         self.inner.entry_kind(path)
     }
+    fn entry_path(&self, path: &Path) -> Result<Option<PathBuf>, vvv_engine::VfsError> {
+        self.inner.entry_path(path)
+    }
+
+    fn same_entry(&self, from: &Path, to: &Path) -> Result<bool, vvv_engine::VfsError> {
+        self.inner.same_entry(from, to)
+    }
+
+    fn names_alias(&self, from: &Path, to: &Path) -> Result<bool, vvv_engine::VfsError> {
+        self.inner.names_alias(from, to)
+    }
+
     fn prepare_parent(&self, path: &Path) -> vvv_engine::ParentCreation {
         self.inner.prepare_parent(path)
     }

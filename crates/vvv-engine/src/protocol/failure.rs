@@ -124,7 +124,11 @@ pub struct RecoveryEffect {
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum RecoveryState {
     Absent,
-    File { fingerprint: String },
+    File {
+        fingerprint: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        spelling: Option<crate::RelPath>,
+    },
     Directory,
     Other,
 }

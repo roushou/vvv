@@ -43,19 +43,15 @@ pub enum ApplyError {
 pub struct Plan {
     change_set: ChangeSet,
     fingerprints: BTreeMap<PathBuf, Fingerprint>,
-    /// Destinations that must still be absent when the plan stages.
-    absent: BTreeSet<RelPath>,
 }
 
 impl Plan {
     /// Retain the source fingerprints observed by the edit producers.
     pub(crate) fn new(change: crate::change::WitnessedChangeSet) -> Self {
         let (change_set, fingerprints) = change.into_parts();
-        let absent = change_set.moves().map(|(_, to)| to.into()).collect();
         Self {
             change_set,
             fingerprints,
-            absent,
         }
     }
 
@@ -85,15 +81,28 @@ impl Plan {
         let staged = self.stage(transaction.workspace)?;
         let mut receipt = Receipt::default();
         for file in &staged {
-            // Retain the original before either the move or the write is attempted.
+            // Preserve the actual stored source spelling in history, even if
+            // the planned source has become a case alias before apply.
+            let original_path: RelPath = if file.moved_to.is_some() {
+                let stored = transaction
+                    .workspace
+                    .vfs()
+                    .entry_path(&transaction.workspace.absolute(&file.path))?
+                    .ok_or_else(|| {
+                        VfsError::NotFound(transaction.workspace.absolute(&file.path))
+                    })?;
+                transaction.workspace.relative(&stored).into()
+            } else {
+                file.path.clone()
+            };
             receipt
                 .originals
-                .insert(file.path.to_path_buf(), file.before.clone());
+                .insert(original_path.to_path_buf(), file.before.clone());
             let final_path = if let Some(to) = &file.moved_to {
-                transaction.move_file(&file.path, to, &file.before)?;
+                transaction.move_file(&original_path, to, &file.before)?;
                 receipt
                     .moves
-                    .push((file.path.to_path_buf(), to.to_path_buf()));
+                    .push((original_path.to_path_buf(), to.to_path_buf()));
                 to
             } else {
                 &file.path
@@ -110,9 +119,16 @@ impl Plan {
     fn stage(&self, workspace: &Workspace) -> Result<Vec<FilePreview>, ApplyError> {
         // Check every move before any file is written. This is a preflight
         // condition, not an atomic reservation against external writers.
-        for path in &self.absent {
-            if workspace.vfs().exists(&workspace.absolute(path)) {
-                return Err(ApplyError::DestinationExists { path: path.clone() });
+        for (from, to) in self.change_set.moves() {
+            if workspace
+                .vfs()
+                .entry_kind(&workspace.absolute(to))?
+                .is_some()
+                && !workspace
+                    .vfs()
+                    .same_entry(&workspace.absolute(from), &workspace.absolute(to))?
+            {
+                return Err(ApplyError::DestinationExists { path: to.into() });
             }
         }
         self.fingerprints
@@ -195,29 +211,37 @@ impl Receipt {
     /// Undo: move files back, then restore every file to its pre-apply
     /// contents. Returns how many files were restored. Does not check that
     /// the files are still as written; see [`Receipt::undo`].
-    pub fn rollback(&self, workspace: &Workspace) -> Result<usize, VfsError> {
-        let vfs = workspace.vfs();
-        for (from, to) in self.moves.iter().rev() {
-            vfs.move_if_absent(&workspace.absolute(to), &workspace.absolute(from))
-                .map_err(crate::MoveError::into_source)?;
+    pub fn rollback(&self, workspace: &Workspace) -> Result<usize, crate::EngineError> {
+        let mut transaction = Transaction::new(workspace);
+        let result = (|| -> Result<(), ApplyError> {
+            for (from, to) in self.moves.iter().rev() {
+                let before = workspace.vfs().read(&workspace.absolute(to))?;
+                transaction.move_file(&to.clone().into(), &from.clone().into(), &before)?;
+            }
+            for (path, original) in &self.originals {
+                let before = workspace.vfs().read(&workspace.absolute(path))?;
+                transaction.write(&path.clone().into(), &before, original)?;
+            }
+            Ok(())
+        })();
+        match result {
+            Ok(()) => Ok(self.originals.len()),
+            Err(error) => Err(transaction.recover(error.into())),
         }
-        for (path, original) in &self.originals {
-            vfs.write(&workspace.absolute(path), original)?;
-        }
-        Ok(self.originals.len())
     }
 
     /// Roll back only if every file is still exactly as this apply left it.
-    pub fn undo(&self, workspace: &Workspace) -> Result<usize, ApplyError> {
+    pub fn undo(&self, workspace: &Workspace) -> Result<usize, crate::EngineError> {
         for (path, expected) in &self.written {
             let current = workspace.vfs().read(&workspace.absolute(path))?;
             if &Fingerprint::of(&current) != expected {
                 return Err(ApplyError::Modified {
                     path: path.clone().into(),
-                });
+                }
+                .into());
             }
         }
-        Ok(self.rollback(workspace)?)
+        self.rollback(workspace)
     }
 }
 
@@ -287,6 +311,62 @@ impl<'a> Transaction<'a> {
     }
 
     fn move_file(&mut self, from: &RelPath, to: &RelPath, before: &str) -> Result<(), ApplyError> {
+        if !self
+            .workspace
+            .vfs()
+            .same_entry(&self.workspace.absolute(from), &self.workspace.absolute(to))?
+        {
+            return self.move_entry(from, to, before);
+        }
+        let stored = self
+            .workspace
+            .vfs()
+            .entry_path(&self.workspace.absolute(from))?
+            .ok_or_else(|| VfsError::NotFound(self.workspace.absolute(from)))?;
+        let original = match self.originals.get(from) {
+            Some(Original::File(contents)) => Original::SpelledFile {
+                contents: contents.clone(),
+                spelling: self.workspace.relative(&stored).into(),
+            },
+            Some(original) => original.clone(),
+            None => Original::SpelledFile {
+                contents: before.to_owned(),
+                spelling: self.workspace.relative(&stored).into(),
+            },
+        };
+        self.originals.insert(from.clone(), original.clone());
+        self.originals.entry(to.clone()).or_insert(original);
+        static IDS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        for _ in 0..32 {
+            let id = IDS.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+            let name = format!(".vvv-move-{}-{id}.tmp", std::process::id());
+            let temporary: RelPath = from.parent().unwrap_or(Path::new("")).join(name).into();
+            match self.move_entry(from, &temporary, before) {
+                Err(ApplyError::Vfs(VfsError::Exists(_)))
+                    if matches!(
+                        self.effects.last(),
+                        Some(Effect::Move {
+                            state: crate::MoveState::Unchanged,
+                            ..
+                        })
+                    ) =>
+                {
+                    continue;
+                }
+                Err(error) => return Err(error),
+                Ok(()) => return self.move_entry(&temporary, to, before),
+            }
+        }
+        Err(VfsError::Io {
+            path: self.workspace.absolute(from),
+            source: std::io::Error::other(
+                "could not acquire a temporary name for the case-only move",
+            ),
+        }
+        .into())
+    }
+
+    fn move_entry(&mut self, from: &RelPath, to: &RelPath, before: &str) -> Result<(), ApplyError> {
         self.prepare_parent(to)?;
         self.originals
             .entry(from.clone())
@@ -329,7 +409,7 @@ impl<'a> Transaction<'a> {
         let mut remaining = Vec::new();
         let mut unverified = Vec::new();
         for (path, expected) in std::mem::take(&mut self.originals) {
-            match Original::observe(self.workspace, &path) {
+            match expected.observe_like(self.workspace, &path) {
                 Ok(observed) if observed != expected => remaining.push(crate::RecoveryEffect {
                     path,
                     expected: expected.state(),
@@ -360,10 +440,11 @@ impl<'a> Transaction<'a> {
     }
 }
 
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 enum Original {
     Absent,
     File(String),
+    SpelledFile { contents: String, spelling: RelPath },
     Directory,
     Other,
 }
@@ -379,11 +460,32 @@ impl Original {
         }
     }
 
+    fn observe_like(&self, workspace: &Workspace, path: &RelPath) -> Result<Self, VfsError> {
+        let observed = Self::observe(workspace, path)?;
+        if let (Self::SpelledFile { .. }, Self::File(contents)) = (self, &observed) {
+            let absolute = workspace.absolute(path);
+            let stored = workspace
+                .vfs()
+                .entry_path(&absolute)?
+                .ok_or(VfsError::NotFound(absolute))?;
+            return Ok(Self::SpelledFile {
+                contents: contents.clone(),
+                spelling: workspace.relative(&stored).into(),
+            });
+        }
+        Ok(observed)
+    }
+
     fn state(&self) -> crate::RecoveryState {
         match self {
             Self::Absent => crate::RecoveryState::Absent,
             Self::File(text) => crate::RecoveryState::File {
                 fingerprint: Fingerprint::of(text).as_str().to_owned(),
+                spelling: None,
+            },
+            Self::SpelledFile { contents, spelling } => crate::RecoveryState::File {
+                fingerprint: Fingerprint::of(contents).as_str().to_owned(),
+                spelling: Some(spelling.clone()),
             },
             Self::Directory => crate::RecoveryState::Directory,
             Self::Other => crate::RecoveryState::Other,
@@ -437,6 +539,16 @@ impl Effect {
                     state: crate::MoveState::Unchanged,
                     ..
                 } => Ok(()),
+                Self::Move {
+                    state: crate::MoveState::Unknown,
+                    from,
+                    ..
+                } => Err(VfsError::Io {
+                    path: workspace.absolute(from),
+                    source: std::io::Error::other(
+                        "move outcome is unknown; recovery cannot acquire or remove its destination",
+                    ),
+                }),
                 Self::Move {
                     from,
                     to,
@@ -635,7 +747,7 @@ mod tests {
             .write(Path::new("/ws/b.txt"), "edited later")
             .unwrap();
         assert!(
-            matches!(receipt.undo(ws), Err(ApplyError::Modified { path }) if path == Path::new("b.txt"))
+            matches!(receipt.undo(ws), Err(crate::EngineError::Apply(ApplyError::Modified { path })) if path == Path::new("b.txt"))
         );
         assert_eq!(
             ws.vfs().read(Path::new("/ws/a.txt")).unwrap(),

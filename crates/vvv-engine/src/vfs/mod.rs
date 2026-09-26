@@ -106,6 +106,28 @@ pub trait Vfs: Send + Sync {
     /// Inspect a directory entry without following its final symlink.
     fn entry_kind(&self, path: &Path) -> Result<Option<EntryKind>, VfsError>;
     /// Create missing parents and retain every directory created, even on error.
+    /// Stored directory-entry spelling, rather than a requested case alias.
+    /// Case-sensitive implementations can use this default.
+    fn entry_path(&self, path: &Path) -> Result<Option<PathBuf>, VfsError> {
+        Ok(self.entry_kind(path)?.map(|_| path.to_path_buf()))
+    }
+
+    /// Whether two names would address one entry, even when the names are
+    /// currently absent. Overlay uses this to preserve the base's name policy.
+    /// Case-sensitive filesystems use lexical equality.
+    fn names_alias(&self, from: &Path, to: &Path) -> Result<bool, VfsError> {
+        Ok(from == to)
+    }
+
+    /// Whether two paths resolve to the same directory entry. Distinct hard
+    /// links to the same inode are different entries and return false.
+    fn same_entry(&self, from: &Path, to: &Path) -> Result<bool, VfsError> {
+        let Some(from) = self.entry_path(from)? else {
+            return Ok(false);
+        };
+        Ok(self.entry_path(to)?.is_some_and(|to| from == to))
+    }
+
     fn prepare_parent(&self, path: &Path) -> ParentCreation;
     fn remove_file(&self, path: &Path) -> Result<(), VfsError>;
     /// Remove only an empty directory.

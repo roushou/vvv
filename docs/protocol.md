@@ -482,6 +482,10 @@ omit this field. The envelope schema remains 1; this is an additive field.
 A state is `{ "kind": "absent" }`, `{ "kind": "file", "fingerprint": "…" }`,
 `{ "kind": "directory" }`, or `{ "kind": "other" }` (for example, a symlink).
 File fingerprints are full hexadecimal BLAKE3 content hashes, not file contents.
+For a case-only move, a file state also carries an optional `spelling` relative
+path: the directory entry's stored filename. Expected and observed spellings can
+differ even when the fingerprints match. Unrestored temporary files appear as
+their own paths in `remaining`; they are never hidden inside an error message.
 The lists are in deterministic recovery or path order. Recovery attempts continue
 for independent effects after a failure. If the final before-states are all verified,
 the initiating error is returned instead, even if a restoration operation returned

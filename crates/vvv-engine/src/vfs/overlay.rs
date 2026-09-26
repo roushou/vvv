@@ -21,6 +21,28 @@ struct OverlayState {
     removed: BTreeSet<PathBuf>,
 }
 
+impl OverlayState {
+    fn layer_path(&self, base: &dyn Vfs, path: &Path) -> Result<Option<PathBuf>, VfsError> {
+        if self.layer.contains_key(path) {
+            return Ok(Some(path.to_path_buf()));
+        }
+        for candidate in self.layer.keys() {
+            if base.names_alias(candidate, path)? {
+                return Ok(Some(candidate.clone()));
+            }
+        }
+        Ok(None)
+    }
+
+    fn entry_path(&self, base: &dyn Vfs, path: &Path) -> Result<Option<PathBuf>, VfsError> {
+        if let Some(path) = self.layer_path(base, path)? {
+            return Ok(Some(path));
+        }
+        let stored = base.entry_path(path)?;
+        Ok(stored.filter(|stored| !self.removed.contains(stored) && !self.removed.contains(path)))
+    }
+}
+
 #[derive(Debug)]
 struct Entry {
     contents: String,
@@ -50,74 +72,74 @@ impl Overlay {
             versions: AtomicU64::new(1 << 62), // never collides with a base version
         }
     }
-
-    fn is_removed(&self, path: &Path) -> bool {
-        self.state
-            .read()
-            .expect("overlay lock")
-            .removed
-            .contains(path)
-    }
 }
 
 impl Vfs for Overlay {
     fn read(&self, path: &Path) -> Result<String, VfsError> {
-        if let Some(entry) = self.state.read().expect("overlay lock").layer.get(path) {
+        let state = self.state.read().expect("overlay lock");
+        let stored = state
+            .entry_path(self.base.as_ref(), path)?
+            .ok_or_else(|| VfsError::NotFound(path.to_path_buf()))?;
+        if let Some(entry) = state.layer.get(&stored) {
             return Ok(entry.contents.clone());
         }
-        if self.is_removed(path) {
-            return Err(VfsError::NotFound(path.to_path_buf()));
-        }
-        self.base.read(path)
+        self.base.read(&stored)
     }
 
     fn stamp(&self, path: &Path) -> Result<Stamp, VfsError> {
-        if let Some(entry) = self.state.read().expect("overlay lock").layer.get(path) {
+        let state = self.state.read().expect("overlay lock");
+        let stored = state
+            .entry_path(self.base.as_ref(), path)?
+            .ok_or_else(|| VfsError::NotFound(path.to_path_buf()))?;
+        if let Some(entry) = state.layer.get(&stored) {
             return Ok(Stamp::new(
                 u128::from(entry.version),
                 entry.contents.len() as u64,
             ));
         }
-        if self.is_removed(path) {
-            return Err(VfsError::NotFound(path.to_path_buf()));
-        }
-        self.base.stamp(path)
+        self.base.stamp(&stored)
     }
 
     fn write(&self, path: &Path, contents: &str) -> Result<(), VfsError> {
-        let entry = Entry {
-            contents: contents.to_owned(),
-            version: self.versions.fetch_add(1, Ordering::Relaxed),
-        };
         let mut state = self.state.write().expect("overlay lock");
-        state.layer.insert(path.to_path_buf(), entry);
-        state.removed.remove(path);
+        let stored = state
+            .entry_path(self.base.as_ref(), path)?
+            .unwrap_or_else(|| path.to_path_buf());
+        state.layer.insert(
+            stored.clone(),
+            Entry {
+                contents: contents.to_owned(),
+                version: self.versions.fetch_add(1, Ordering::Relaxed),
+            },
+        );
+        state.removed.remove(&stored);
         Ok(())
     }
 
     fn exists(&self, path: &Path) -> bool {
-        self.state
-            .read()
-            .expect("overlay lock")
-            .layer
-            .contains_key(path)
-            || (!self.is_removed(path) && self.base.exists(path))
+        self.entry_path(path).is_ok_and(|stored| stored.is_some())
     }
 
     fn entry_kind(&self, path: &Path) -> Result<Option<EntryKind>, VfsError> {
-        if self
-            .state
-            .read()
-            .expect("overlay lock")
-            .layer
-            .contains_key(path)
-        {
+        let state = self.state.read().expect("overlay lock");
+        let Some(stored) = state.entry_path(self.base.as_ref(), path)? else {
+            return Ok(None);
+        };
+        if state.layer.contains_key(&stored) {
             return Ok(Some(EntryKind::File));
         }
-        if self.is_removed(path) {
-            return Ok(None);
-        }
-        self.base.entry_kind(path)
+        self.base.entry_kind(&stored)
+    }
+
+    fn entry_path(&self, path: &Path) -> Result<Option<PathBuf>, VfsError> {
+        self.state
+            .read()
+            .expect("overlay lock")
+            .entry_path(self.base.as_ref(), path)
+    }
+
+    fn names_alias(&self, from: &Path, to: &Path) -> Result<bool, VfsError> {
+        self.base.names_alias(from, to)
     }
 
     fn prepare_parent(&self, _path: &Path) -> ParentCreation {
@@ -125,12 +147,12 @@ impl Vfs for Overlay {
     }
 
     fn remove_file(&self, path: &Path) -> Result<(), VfsError> {
-        if !self.exists(path) {
-            return Err(VfsError::NotFound(path.to_path_buf()));
-        }
         let mut state = self.state.write().expect("overlay lock");
-        state.layer.remove(path);
-        state.removed.insert(path.to_path_buf());
+        let stored = state
+            .entry_path(self.base.as_ref(), path)?
+            .ok_or_else(|| VfsError::NotFound(path.to_path_buf()))?;
+        state.layer.remove(&stored);
+        state.removed.insert(stored);
         Ok(())
     }
 
@@ -140,33 +162,25 @@ impl Vfs for Overlay {
 
     fn move_if_absent(&self, from: &Path, to: &Path) -> Result<(), MoveError> {
         let mut state = self.state.write().expect("overlay lock");
-        if state.layer.contains_key(to)
-            || (!state.removed.contains(to)
-                && self
-                    .base
-                    .entry_kind(to)
-                    .map_err(|error| MoveError::new(error, MoveState::Unchanged))?
-                    .is_some())
+        let unchanged = |error| MoveError::new(error, MoveState::Unchanged);
+        if state
+            .entry_path(self.base.as_ref(), to)
+            .map_err(unchanged)?
+            .is_some()
         {
-            return Err(MoveError::new(
-                VfsError::Exists(to.to_path_buf()),
-                MoveState::Unchanged,
-            ));
+            return Err(unchanged(VfsError::Exists(to.to_path_buf())));
         }
-        let contents = if let Some(entry) = state.layer.get(from) {
+        let source = state
+            .entry_path(self.base.as_ref(), from)
+            .map_err(unchanged)?
+            .ok_or_else(|| unchanged(VfsError::NotFound(from.to_path_buf())))?;
+        let contents = if let Some(entry) = state.layer.get(&source) {
             entry.contents.clone()
-        } else if state.removed.contains(from) {
-            return Err(MoveError::new(
-                VfsError::NotFound(from.to_path_buf()),
-                MoveState::Unchanged,
-            ));
         } else {
-            self.base
-                .read(from)
-                .map_err(|error| MoveError::new(error, MoveState::Unchanged))?
+            self.base.read(&source).map_err(unchanged)?
         };
-        state.layer.remove(from);
-        state.removed.insert(from.to_path_buf());
+        state.layer.remove(&source);
+        state.removed.insert(source);
         state.removed.remove(to);
         state.layer.insert(
             to.to_path_buf(),
@@ -179,19 +193,18 @@ impl Vfs for Overlay {
     }
 
     fn walk(&self, root: &Path) -> Result<Vec<PathBuf>, VfsError> {
+        let state = self.state.read().expect("overlay lock");
         let mut files: BTreeSet<PathBuf> = self
             .base
             .walk(root)?
             .into_iter()
-            .filter(|p| !self.is_removed(p))
+            .filter(|path| !state.removed.contains(path))
             .collect();
         files.extend(
-            self.state
-                .read()
-                .expect("overlay lock")
+            state
                 .layer
                 .keys()
-                .filter(|p| p.starts_with(root))
+                .filter(|path| path.starts_with(root))
                 .cloned(),
         );
         Ok(files.into_iter().collect())

@@ -404,6 +404,18 @@ impl Vfs for ChangingRead {
     ) -> Result<Option<vvv_engine::EntryKind>, vvv_engine::VfsError> {
         self.inner.entry_kind(path)
     }
+    fn entry_path(&self, path: &Path) -> Result<Option<PathBuf>, vvv_engine::VfsError> {
+        self.inner.entry_path(path)
+    }
+
+    fn same_entry(&self, from: &Path, to: &Path) -> Result<bool, vvv_engine::VfsError> {
+        self.inner.same_entry(from, to)
+    }
+
+    fn names_alias(&self, from: &Path, to: &Path) -> Result<bool, vvv_engine::VfsError> {
+        self.inner.names_alias(from, to)
+    }
+
     fn prepare_parent(&self, path: &Path) -> vvv_engine::ParentCreation {
         self.inner.prepare_parent(path)
     }
@@ -1157,4 +1169,720 @@ foo"
             .iter()
             .any(|effect| effect.path == Path::new("b.p"))
     );
+}
+
+#[test]
+fn case_only_moves_apply_and_undo_the_stored_spelling() {
+    let fixture = common::FaultFixture::case_insensitive(&[
+        (
+            "config.p",
+            "def foo
+foo",
+        ),
+        ("manifest.p", ""),
+    ]);
+    let planned = fixture
+        .engine
+        .run(MoveIntent::new("config.p", "Config.p"))
+        .unwrap();
+    assert_eq!(
+        fixture.stored("Config.p").unwrap(),
+        Path::new("/ws/config.p")
+    );
+    fixture.engine.run(Apply(planned)).unwrap();
+    assert_eq!(
+        fixture.stored("config.p").unwrap(),
+        Path::new("/ws/Config.p")
+    );
+    assert_eq!(
+        fixture.read("config.p"),
+        "def foo
+foo"
+    );
+    assert!(!fixture.files().iter().any(|path| {
+        path.file_name()
+            .unwrap()
+            .to_string_lossy()
+            .starts_with(".vvv-move-")
+    }));
+    fixture.engine.run(vvv_engine::UndoLast).unwrap();
+    assert_eq!(
+        fixture.stored("Config.p").unwrap(),
+        Path::new("/ws/config.p")
+    );
+    assert_eq!(fixture.read("manifest.p"), "");
+}
+
+#[test]
+fn case_only_moves_restore_the_original_spelling_after_a_partial_write() {
+    let fixture = common::FaultFixture::case_insensitive(&[
+        (
+            "config.p",
+            "def foo
+foo",
+        ),
+        ("manifest.p", ""),
+    ]);
+    let planned = fixture
+        .engine
+        .run(MoveIntent::new("config.p", "Config.p"))
+        .unwrap();
+    fixture.arm(
+        common::FaultOperation::Write,
+        "Config.p",
+        0,
+        common::FaultAction::Partial("cut".into()),
+    );
+    assert!(matches!(
+        fixture.engine.run(Apply(planned)),
+        Err(EngineError::Apply(_))
+    ));
+    assert_eq!(
+        fixture.stored("Config.p").unwrap(),
+        Path::new("/ws/config.p")
+    );
+    assert_eq!(
+        fixture.read("config.p"),
+        "def foo
+foo"
+    );
+    assert_eq!(
+        fixture.files(),
+        [
+            PathBuf::from("/ws/config.p"),
+            PathBuf::from("/ws/manifest.p")
+        ]
+    );
+}
+
+#[test]
+fn case_only_moves_restore_the_original_after_the_second_leg_fails() {
+    let fixture = common::FaultFixture::case_insensitive(&[
+        (
+            "config.p",
+            "def foo
+foo",
+        ),
+        ("manifest.p", ""),
+    ]);
+    let planned = fixture
+        .engine
+        .run(MoveIntent::new("config.p", "Config.p"))
+        .unwrap();
+    fixture.arm(
+        common::FaultOperation::RenameDestination,
+        "Config.p",
+        0,
+        common::FaultAction::Before,
+    );
+    assert!(matches!(
+        fixture.engine.run(Apply(planned)),
+        Err(EngineError::Apply(_))
+    ));
+    assert_eq!(
+        fixture.stored("Config.p").unwrap(),
+        Path::new("/ws/config.p")
+    );
+    assert_eq!(
+        fixture.files(),
+        [
+            PathBuf::from("/ws/config.p"),
+            PathBuf::from("/ws/manifest.p")
+        ]
+    );
+}
+
+#[test]
+fn case_only_moves_restore_a_second_leg_that_completed_before_failing() {
+    let fixture = common::FaultFixture::case_insensitive(&[
+        (
+            "config.p",
+            "def foo
+foo",
+        ),
+        ("manifest.p", ""),
+    ]);
+    let planned = fixture
+        .engine
+        .run(MoveIntent::new("config.p", "Config.p"))
+        .unwrap();
+    fixture.arm(
+        common::FaultOperation::RenameDestination,
+        "Config.p",
+        0,
+        common::FaultAction::After,
+    );
+    assert!(matches!(
+        fixture.engine.run(Apply(planned)),
+        Err(EngineError::Apply(_))
+    ));
+    assert_eq!(
+        fixture.stored("Config.p").unwrap(),
+        Path::new("/ws/config.p")
+    );
+    assert_eq!(
+        fixture.files(),
+        [
+            PathBuf::from("/ws/config.p"),
+            PathBuf::from("/ws/manifest.p")
+        ]
+    );
+}
+
+#[test]
+fn case_only_recovery_reports_unrestored_spelling_even_when_contents_match() {
+    let fixture = common::FaultFixture::case_insensitive(&[
+        (
+            "config.p",
+            "def foo
+foo",
+        ),
+        ("manifest.p", ""),
+    ]);
+    let planned = fixture
+        .engine
+        .run(MoveIntent::new("config.p", "Config.p"))
+        .unwrap();
+    fixture.arm(
+        common::FaultOperation::Write,
+        "Config.p",
+        0,
+        common::FaultAction::Before,
+    );
+    fixture.arm(
+        common::FaultOperation::Rename,
+        "Config.p",
+        0,
+        common::FaultAction::Before,
+    );
+    let error = fixture.engine.run(Apply(planned)).unwrap_err();
+    let EngineError::Recovery(recovery) = &error else {
+        panic!("expected recovery error: {error}")
+    };
+    assert_eq!(
+        fixture.stored("config.p").unwrap(),
+        Path::new("/ws/Config.p")
+    );
+    assert_eq!(
+        fixture.read("Config.p"),
+        "def foo
+foo"
+    );
+    assert!(recovery.details.remaining.iter().any(|effect| matches!(
+        &effect.expected, vvv_engine::RecoveryState::File { spelling: Some(spelling), .. } if spelling == Path::new("config.p")
+    ) && matches!(&effect.observed, vvv_engine::RecoveryState::File { spelling: Some(spelling), .. } if spelling == Path::new("Config.p"))));
+    let wire = serde_json::to_value(vvv_engine::Failure::from(&error)).unwrap();
+    assert_eq!(wire["code"], "recovery_failed");
+    assert!(
+        wire["recovery"]["remaining"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|effect| effect["observed"]["spelling"] == "Config.p")
+    );
+}
+
+#[test]
+fn case_only_moves_preserve_a_destination_created_between_their_legs() {
+    let fixture = common::FaultFixture::case_insensitive(&[
+        (
+            "config.p",
+            "def foo
+foo",
+        ),
+        ("manifest.p", ""),
+    ]);
+    let planned = fixture
+        .engine
+        .run(MoveIntent::new("config.p", "Config.p"))
+        .unwrap();
+    fixture.arm(
+        common::FaultOperation::RenameDestination,
+        "Config.p",
+        0,
+        common::FaultAction::Occupy("foreign".into()),
+    );
+    let error = fixture.engine.run(Apply(planned)).unwrap_err();
+    let EngineError::Recovery(recovery) = error else {
+        panic!("expected recovery error: {error}")
+    };
+    assert_eq!(fixture.read("config.p"), "foreign");
+    let temporary = fixture
+        .files()
+        .into_iter()
+        .find(|path| {
+            path.file_name()
+                .unwrap()
+                .to_string_lossy()
+                .starts_with(".vvv-move-")
+        })
+        .unwrap();
+    assert_eq!(
+        fixture.vfs.base.read(&temporary).unwrap(),
+        "def foo
+foo"
+    );
+    assert!(
+        recovery
+            .details
+            .remaining
+            .iter()
+            .any(|effect| Path::new("/ws").join(&effect.path) == temporary)
+    );
+}
+
+#[test]
+fn case_only_moves_compose_in_a_batch_and_undo_to_the_original_spelling() {
+    let fixture = common::FaultFixture::case_insensitive(&[
+        (
+            "config.p",
+            "def foo
+foo",
+        ),
+        ("manifest.p", ""),
+    ]);
+    let planned = fixture
+        .engine
+        .run(vvv_engine::BatchIntent::new([
+            Intent::Move(MoveIntent::new("config.p", "Config.p")),
+            Intent::Rename(RenameIntent::new("foo", "bar").declared_in("Config.p")),
+        ]))
+        .unwrap();
+    fixture.engine.run(Apply(planned)).unwrap();
+    assert_eq!(
+        fixture.stored("config.p").unwrap(),
+        Path::new("/ws/Config.p")
+    );
+    assert_eq!(
+        fixture.read("Config.p"),
+        "def bar
+bar"
+    );
+    fixture.engine.run(vvv_engine::UndoLast).unwrap();
+    assert_eq!(
+        fixture.stored("Config.p").unwrap(),
+        Path::new("/ws/config.p")
+    );
+    assert_eq!(
+        fixture.read("config.p"),
+        "def foo
+foo"
+    );
+}
+
+#[test]
+fn recovery_of_a_batch_restores_files_before_a_case_only_move() {
+    let fixture = common::FaultFixture::case_insensitive(&[
+        (
+            "a.p",
+            "def foo
+foo",
+        ),
+        ("manifest.p", ""),
+    ]);
+    let planned = fixture
+        .engine
+        .run(vvv_engine::BatchIntent::new([
+            Intent::Move(MoveIntent::new("a.p", "config.p")),
+            Intent::Move(MoveIntent::new("config.p", "Config.p")),
+        ]))
+        .unwrap();
+    fixture.arm(
+        common::FaultOperation::Write,
+        "Config.p",
+        0,
+        common::FaultAction::Partial("cut".into()),
+    );
+    let error = fixture.engine.run(Apply(planned)).unwrap_err();
+    assert!(matches!(error, EngineError::Apply(_)), "{error}");
+    assert_eq!(
+        fixture.files(),
+        [PathBuf::from("/ws/a.p"), PathBuf::from("/ws/manifest.p")]
+    );
+    assert_eq!(
+        fixture.read("a.p"),
+        "def foo
+foo"
+    );
+}
+
+#[test]
+fn disk_case_only_moves_apply_and_undo_the_stored_spelling() {
+    let fixture = DiskHistoryFixture::new();
+    std::fs::write(fixture.root.join("manifest.p"), "").unwrap();
+    let source = fixture.root.join("config.p");
+    std::fs::rename(fixture.root.join("a.p"), &source).unwrap();
+    if !fixture.root.join("Config.p").exists() {
+        return; // Case-sensitive host: deterministic Vfs tests cover this on every run.
+    }
+    let planned = fixture
+        .engine
+        .run(MoveIntent::new("config.p", "Config.p"))
+        .unwrap();
+    fixture.engine.run(Apply(planned)).unwrap();
+    let names: Vec<_> = std::fs::read_dir(&fixture.root)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name())
+        .collect();
+    assert!(names.contains(&std::ffi::OsString::from("Config.p")));
+    assert!(!names.contains(&std::ffi::OsString::from("config.p")));
+    fixture.engine.run(vvv_engine::UndoLast).unwrap();
+    let names: Vec<_> = std::fs::read_dir(&fixture.root)
+        .unwrap()
+        .map(|entry| entry.unwrap().file_name())
+        .collect();
+    assert!(names.contains(&std::ffi::OsString::from("config.p")));
+    assert!(!names.contains(&std::ffi::OsString::from("Config.p")));
+}
+
+#[test]
+fn overlay_preserves_case_aliases_of_files_created_by_staging() {
+    let base = Arc::new(common::CaseInsensitiveVfs::new(&[("a.p", "source")]));
+    let workspace = Workspace::new("/ws", base.clone()).staged();
+    let overlay = workspace.vfs();
+    overlay
+        .move_if_absent(Path::new("/ws/a.p"), Path::new("/ws/config.p"))
+        .unwrap();
+    assert_eq!(overlay.read(Path::new("/ws/Config.p")).unwrap(), "source");
+    assert!(
+        overlay
+            .same_entry(Path::new("/ws/config.p"), Path::new("/ws/Config.p"))
+            .unwrap()
+    );
+    assert_eq!(
+        overlay
+            .entry_path(Path::new("/ws/CONFIG.p"))
+            .unwrap()
+            .unwrap(),
+        Path::new("/ws/config.p")
+    );
+    overlay.write(Path::new("/ws/Config.p"), "updated").unwrap();
+    assert_eq!(
+        overlay.walk(Path::new("/ws")).unwrap(),
+        [PathBuf::from("/ws/config.p")]
+    );
+    assert_eq!(overlay.read(Path::new("/ws/config.p")).unwrap(), "updated");
+    assert_eq!(base.read(Path::new("/ws/a.p")).unwrap(), "source");
+}
+
+#[test]
+fn batch_planning_refuses_case_aliases_of_an_occupied_staged_destination() {
+    let fixture = common::FaultFixture::case_insensitive(&[
+        ("a.p", "def foo"),
+        ("b.p", "def bar"),
+        ("manifest.p", ""),
+    ]);
+    let error = fixture
+        .engine
+        .run(vvv_engine::BatchIntent::new([
+            Intent::Move(MoveIntent::new("a.p", "config.p")),
+            Intent::Move(MoveIntent::new("b.p", "Config.p")),
+        ]))
+        .unwrap_err();
+    assert_eq!(error.code(), vvv_engine::ErrorCode::Exists);
+    assert_eq!(fixture.read("a.p"), "def foo");
+    assert_eq!(fixture.read("b.p"), "def bar");
+}
+
+#[test]
+fn disk_overlay_preserves_case_aliases_of_files_created_by_staging() {
+    let fixture = DiskHistoryFixture::new();
+    if !fixture.root.join("A.p").exists() {
+        return;
+    }
+    let workspace = Workspace::disk(&fixture.root).unwrap();
+    let staged = workspace.staged();
+    let from = staged.absolute(Path::new("a.p"));
+    let to = staged.absolute(Path::new("config.p"));
+    staged.vfs().move_if_absent(&from, &to).unwrap();
+    assert_eq!(
+        staged
+            .vfs()
+            .read(&staged.absolute(Path::new("Config.p")))
+            .unwrap(),
+        "def foo
+foo"
+    );
+    assert_eq!(
+        staged
+            .vfs()
+            .entry_path(&staged.absolute(Path::new("CONFIG.p")))
+            .unwrap()
+            .unwrap(),
+        to
+    );
+    assert_eq!(
+        fixture.source(),
+        "def foo
+foo"
+    );
+}
+
+#[test]
+fn case_only_moves_restore_every_outcome_of_a_failed_first_leg() {
+    for action in [
+        common::FaultAction::Before,
+        common::FaultAction::After,
+        common::FaultAction::Partial(String::new()),
+    ] {
+        let fixture = common::FaultFixture::case_insensitive(&[
+            (
+                "config.p",
+                "def foo
+foo",
+            ),
+            ("manifest.p", ""),
+        ]);
+        let planned = fixture
+            .engine
+            .run(MoveIntent::new("config.p", "Config.p"))
+            .unwrap();
+        fixture.arm(common::FaultOperation::Rename, "config.p", 0, action);
+        let error = fixture.engine.run(Apply(planned)).unwrap_err();
+        assert!(matches!(error, EngineError::Apply(_)), "{error}");
+        assert_eq!(
+            fixture.stored("Config.p").unwrap(),
+            Path::new("/ws/config.p")
+        );
+        assert_eq!(
+            fixture.files(),
+            [
+                PathBuf::from("/ws/config.p"),
+                PathBuf::from("/ws/manifest.p")
+            ]
+        );
+    }
+}
+
+#[test]
+fn case_only_recovery_reports_a_temporary_file_it_cannot_restore() {
+    let fixture = common::FaultFixture::case_insensitive(&[
+        (
+            "config.p",
+            "def foo
+foo",
+        ),
+        ("manifest.p", ""),
+    ]);
+    let planned = fixture
+        .engine
+        .run(MoveIntent::new("config.p", "Config.p"))
+        .unwrap();
+    fixture.arm(
+        common::FaultOperation::RenameDestination,
+        "Config.p",
+        0,
+        common::FaultAction::Before,
+    );
+    fixture.arm(
+        common::FaultOperation::RenameDestination,
+        "config.p",
+        0,
+        common::FaultAction::Before,
+    );
+    let error = fixture.engine.run(Apply(planned)).unwrap_err();
+    let EngineError::Recovery(recovery) = error else {
+        panic!("expected recovery error: {error}")
+    };
+    let temporary = fixture
+        .files()
+        .into_iter()
+        .find(|path| {
+            path.file_name()
+                .unwrap()
+                .to_string_lossy()
+                .starts_with(".vvv-move-")
+        })
+        .unwrap();
+    assert_eq!(
+        fixture.vfs.base.read(&temporary).unwrap(),
+        "def foo
+foo"
+    );
+    assert!(fixture.stored("config.p").is_none());
+    assert!(
+        recovery
+            .details
+            .remaining
+            .iter()
+            .any(|effect| Path::new("/ws").join(&effect.path) == temporary
+                && effect.expected == vvv_engine::RecoveryState::Absent)
+    );
+    assert!(
+        recovery
+            .details
+            .remaining
+            .iter()
+            .any(|effect| effect.path == Path::new("config.p"))
+    );
+}
+
+#[test]
+fn case_only_moves_preserve_an_occupied_temporary_name_and_retry() {
+    let fixture = common::FaultFixture::case_insensitive(&[
+        (
+            "config.p",
+            "def foo
+foo",
+        ),
+        ("manifest.p", ""),
+    ]);
+    let planned = fixture
+        .engine
+        .run(MoveIntent::new("config.p", "Config.p"))
+        .unwrap();
+    fixture.arm(
+        common::FaultOperation::Rename,
+        "config.p",
+        0,
+        common::FaultAction::Occupy("foreign".into()),
+    );
+    fixture.engine.run(Apply(planned)).unwrap();
+    assert_eq!(
+        fixture.stored("config.p").unwrap(),
+        Path::new("/ws/Config.p")
+    );
+    let foreign = fixture
+        .files()
+        .into_iter()
+        .find(|path| {
+            path.file_name()
+                .unwrap()
+                .to_string_lossy()
+                .starts_with(".vvv-move-")
+        })
+        .unwrap();
+    assert_eq!(fixture.vfs.base.read(&foreign).unwrap(), "foreign");
+    fixture.engine.run(vvv_engine::UndoLast).unwrap();
+    assert_eq!(fixture.vfs.base.read(&foreign).unwrap(), "foreign");
+    assert_eq!(
+        fixture.stored("Config.p").unwrap(),
+        Path::new("/ws/config.p")
+    );
+}
+
+#[test]
+fn undo_restores_the_source_spelling_observed_at_apply() {
+    let fixture = common::FaultFixture::case_insensitive(&[
+        (
+            "config.p",
+            "def foo
+foo",
+        ),
+        ("manifest.p", ""),
+    ]);
+    let planned = fixture
+        .engine
+        .run(MoveIntent::new("config.p", "Config.p"))
+        .unwrap();
+    fixture
+        .vfs
+        .base
+        .move_if_absent(Path::new("/ws/config.p"), Path::new("/ws/external.tmp"))
+        .unwrap();
+    fixture
+        .vfs
+        .base
+        .move_if_absent(Path::new("/ws/external.tmp"), Path::new("/ws/CONFIG.p"))
+        .unwrap();
+    fixture.engine.run(Apply(planned)).unwrap();
+    fixture.engine.run(vvv_engine::UndoLast).unwrap();
+    assert_eq!(
+        fixture.stored("config.p").unwrap(),
+        Path::new("/ws/CONFIG.p")
+    );
+    assert_eq!(
+        fixture.read("CONFIG.p"),
+        "def foo
+foo"
+    );
+}
+
+#[test]
+fn failed_case_only_undo_restores_the_pre_undo_spelling_and_keeps_history() {
+    let fixture = common::FaultFixture::case_insensitive(&[
+        (
+            "config.p",
+            "def foo
+foo",
+        ),
+        ("manifest.p", ""),
+    ]);
+    let planned = fixture
+        .engine
+        .run(MoveIntent::new("config.p", "Config.p"))
+        .unwrap();
+    fixture.engine.run(Apply(planned)).unwrap();
+    fixture.arm(
+        common::FaultOperation::Write,
+        "config.p",
+        0,
+        common::FaultAction::Partial("cut".into()),
+    );
+    let error = fixture.engine.run(vvv_engine::UndoLast).unwrap_err();
+    assert!(matches!(error, EngineError::Apply(_)), "{error}");
+    assert_eq!(
+        fixture.stored("config.p").unwrap(),
+        Path::new("/ws/Config.p")
+    );
+    assert_eq!(
+        fixture.read("Config.p"),
+        "def foo
+foo"
+    );
+    assert_eq!(
+        fixture
+            .engine
+            .run(vvv_engine::HistoryQuery)
+            .unwrap()
+            .entries
+            .len(),
+        1
+    );
+    assert!(!fixture.files().iter().any(|path| {
+        path.file_name()
+            .unwrap()
+            .to_string_lossy()
+            .starts_with(".vvv-move-")
+    }));
+    fixture.engine.run(vvv_engine::UndoLast).unwrap();
+    assert_eq!(
+        fixture.stored("Config.p").unwrap(),
+        Path::new("/ws/config.p")
+    );
+}
+
+#[test]
+fn recovery_preserves_a_destination_whose_acquisition_is_unknown() {
+    let fixture = common::FaultFixture::new(&[
+        (
+            "a.p",
+            "def foo
+foo",
+        ),
+        ("manifest.p", ""),
+    ]);
+    let planned = fixture.engine.run(MoveIntent::new("a.p", "b.p")).unwrap();
+    fixture.arm(
+        common::FaultOperation::Rename,
+        "a.p",
+        0,
+        common::FaultAction::Uncertain,
+    );
+    let error = fixture.engine.run(Apply(planned)).unwrap_err();
+    let EngineError::Recovery(recovery) = error else {
+        panic!("expected recovery error: {error}")
+    };
+    assert_eq!(
+        fixture.read("a.p"),
+        "def foo
+foo"
+    );
+    assert_eq!(
+        fixture.read("b.p"),
+        "def foo
+foo"
+    );
+    assert_eq!(recovery.details.remaining.len(), 1);
+    assert_eq!(recovery.details.remaining[0].path, Path::new("b.p"));
 }

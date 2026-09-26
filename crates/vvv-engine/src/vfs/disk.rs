@@ -66,6 +66,158 @@ impl Vfs for DiskVfs {
         }
     }
 
+    fn entry_path(&self, path: &Path) -> Result<Option<PathBuf>, VfsError> {
+        let Some(kind) = self.entry_kind(path)? else {
+            return Ok(None);
+        };
+        let Some(name) = path.file_name() else {
+            return std::fs::canonicalize(path)
+                .map(Some)
+                .map_err(|error| Self::io(path, error));
+        };
+        let parent = path
+            .parent()
+            .filter(|p| !p.as_os_str().is_empty())
+            .unwrap_or(Path::new("."));
+        let requested_parent = parent;
+        let parent = std::fs::canonicalize(parent).map_err(|error| Self::io(parent, error))?;
+        let entries = std::fs::read_dir(&parent)
+            .map_err(|error| Self::io(&parent, error))?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|error| Self::io(&parent, error))?;
+        if let Some(entry) = entries.iter().find(|entry| entry.file_name() == name) {
+            return Ok(Some(requested_parent.join(entry.file_name())));
+        }
+        if kind != EntryKind::File {
+            return Err(Self::io(
+                path,
+                std::io::Error::other("cannot determine directory-entry spelling"),
+            ));
+        }
+        let handle = same_file::Handle::from_path(path).map_err(|error| Self::io(path, error))?;
+        let mut matches = Vec::new();
+        let mut folded = Vec::new();
+        for entry in entries {
+            if entry
+                .file_type()
+                .map_err(|error| Self::io(&entry.path(), error))?
+                .is_file()
+                && same_file::Handle::from_path(entry.path())
+                    .is_ok_and(|candidate| candidate == handle)
+            {
+                if entry.file_name().to_string_lossy().to_lowercase()
+                    == name.to_string_lossy().to_lowercase()
+                {
+                    folded.push(requested_parent.join(entry.file_name()));
+                }
+                matches.push(requested_parent.join(entry.file_name()));
+            }
+        }
+        let mut candidates = if folded.is_empty() { matches } else { folded };
+        if candidates.len() == 1 {
+            return Ok(candidates.pop());
+        }
+        Err(Self::io(
+            path,
+            std::io::Error::other("ambiguous directory-entry spelling"),
+        ))
+    }
+
+    fn same_entry(&self, from: &Path, to: &Path) -> Result<bool, VfsError> {
+        let (Some(from), Some(to)) = (self.entry_path(from)?, self.entry_path(to)?) else {
+            return Ok(false);
+        };
+        if from.file_name() != to.file_name() {
+            return Ok(false);
+        }
+        let from_parent = from.parent().unwrap_or(Path::new("."));
+        let to_parent = to.parent().unwrap_or(Path::new("."));
+        let from_handle = same_file::Handle::from_path(from_parent)
+            .map_err(|error| Self::io(from_parent, error))?;
+        let to_handle =
+            same_file::Handle::from_path(to_parent).map_err(|error| Self::io(to_parent, error))?;
+        Ok(from_handle == to_handle)
+    }
+
+    fn names_alias(&self, from: &Path, to: &Path) -> Result<bool, VfsError> {
+        if from == to {
+            return Ok(true);
+        }
+        let (Some(from_name), Some(to_name)) = (from.file_name(), to.file_name()) else {
+            return Ok(false);
+        };
+        if from_name.to_string_lossy().to_lowercase() != to_name.to_string_lossy().to_lowercase() {
+            return Ok(false);
+        }
+        let from_parent = from.parent().unwrap_or(Path::new("."));
+        let to_parent = to.parent().unwrap_or(Path::new("."));
+        // Existing aliases resolve directly. An absent staged name needs the
+        // directory's name policy, read from a real entry without creating a probe.
+        let from_entry = self.entry_path(from)?;
+        let to_entry = self.entry_path(to)?;
+        if from_entry.is_some() || to_entry.is_some() {
+            return self.same_entry(from, to);
+        }
+        let mut parent = from_parent;
+        if from_parent != to_parent
+            && !(same_file::Handle::from_path(from_parent)
+                .ok()
+                .zip(same_file::Handle::from_path(to_parent).ok())
+                .is_some_and(|(from, to)| from == to))
+        {
+            return Ok(false);
+        }
+        while !parent.exists() {
+            parent = parent.parent().ok_or_else(|| {
+                Self::io(
+                    from,
+                    std::io::Error::other("no existing ancestor for name policy"),
+                )
+            })?;
+        }
+        let entries = std::fs::read_dir(parent)
+            .map_err(|error| Self::io(parent, error))?
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|error| Self::io(parent, error))?;
+        for entry in &entries {
+            let Some(name) = entry.file_name().to_str().map(str::to_owned) else {
+                continue;
+            };
+            let alternative: String = name
+                .chars()
+                .map(|ch| {
+                    if ch.is_ascii_lowercase() {
+                        ch.to_ascii_uppercase()
+                    } else {
+                        ch.to_ascii_lowercase()
+                    }
+                })
+                .collect();
+            if name == alternative {
+                continue;
+            }
+            // An actual second directory entry (including a hard link) proves
+            // these spellings are distinct; inode identity alone is insufficient.
+            if entries
+                .iter()
+                .any(|candidate| candidate.file_name() == std::ffi::OsStr::new(&alternative))
+            {
+                return Ok(false);
+            }
+            return parent
+                .join(alternative)
+                .try_exists()
+                .map_err(|error| Self::io(parent, error));
+        }
+        Err(Self::io(
+            parent,
+            std::io::Error::new(
+                std::io::ErrorKind::Unsupported,
+                "cannot determine directory name policy without an existing cased entry",
+            ),
+        ))
+    }
+
     fn prepare_parent(&self, path: &Path) -> ParentCreation {
         let mut created = Vec::new();
         let parents: Vec<_> = path
@@ -262,7 +414,14 @@ impl<'a> DiskMove<'a> {
                 MoveState::Unchanged,
             );
         }
-        let state = if unchanged {
+        let destination_is_source =
+            same_file::Handle::from_path(self.to).is_ok_and(|handle| handle == self.source);
+        let state = if !unchanged
+            && destination_is_source
+            && error.kind() != std::io::ErrorKind::AlreadyExists
+        {
+            MoveState::Moved
+        } else if unchanged {
             MoveState::Unchanged
         } else {
             MoveState::Unknown
