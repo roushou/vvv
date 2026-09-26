@@ -192,6 +192,30 @@ The engine's supporting modules:
 and computes its next id with checked arithmetic. An unreadable ledger prevents
 apply without changing files.
 
+`Vfs::move_if_absent` never replaces an occupied destination, including during
+recovery. The caller prepares parents explicitly so their creation stays in the
+transaction's effect log. A failed move returns a `MoveError` with a `MoveState`:
+unchanged, moved, destination linked with source removal incomplete, or unknown.
+An unchanged failure does not acquire the destination; recovery preserves a racing
+creator even if its contents equal the source.
+
+Disk moves use atomic no-replace renames: rustix's `renameat2(RENAME_NOREPLACE)`
+on Linux and `renamex_np(RENAME_EXCL)` on macOS. Windows uses the safe
+`atomicwrites::move_atomic` wrapper over `MoveFileExW` without replacement or
+cross-volume copy flags. Same-volume local renames are a single native operation;
+remote filesystem errors can leave an uncertain outcome. There is no cross-volume
+copy fallback. Linux/macOS fall back to `hard_link` then `remove_file` only for
+`ENOSYS`, `EOPNOTSUPP`/`ENOTSUP`, or `EINVAL` (unsupported rename flags).
+Other platforms fall back only on an unsupported-operation error. The fallback
+preserves the destination but is not atomic: an unlink failure leaves both names
+and reports that effect. Filesystems without hard links fail without replacing
+the destination. Memory and overlay moves acquire their state lock for the
+destination check and mutation; overlay moves never write through to the base.
+The overlay isolates its own mutations, not independent changes to its base.
+
+CI tests run on Linux, macOS, and Windows; formatting, documentation, lint and
+feature-matrix gates run on Linux. Local validation is on the host platform.
+
 `history.rs` is the undo stack: `.vvv/history.json`, newest last, capped at 20 because a
 receipt carries full pre-apply file contents. Each record stores the `Intent` that was
 applied — data, never a sentence — and its receipt; the receipt never leaves the engine,

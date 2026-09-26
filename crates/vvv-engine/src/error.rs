@@ -73,6 +73,7 @@ impl EngineError {
             | Self::History(HistoryError::Vfs(e))
             | Self::Apply(ApplyError::Vfs(e)) => match e {
                 VfsError::NotFound(_) => ErrorCode::NotFound,
+                VfsError::Exists(_) => ErrorCode::Exists,
                 _ => ErrorCode::Io,
             },
             Self::Query(_) => ErrorCode::BadQuery,

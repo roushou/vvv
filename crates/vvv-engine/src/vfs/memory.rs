@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::sync::RwLock;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use super::{EntryKind, ParentCreation, Stamp, Vfs, VfsError};
+use super::{EntryKind, MoveError, MoveState, ParentCreation, Stamp, Vfs, VfsError};
 
 /// In-memory file tree. Paths are stored exactly as given. Every write and
 /// rename gives the file a fresh version, so stamps behave like mtimes.
@@ -104,11 +104,17 @@ impl Vfs for MemoryVfs {
         Err(VfsError::NotFound(path.to_path_buf()))
     }
 
-    fn rename(&self, from: &Path, to: &Path) -> Result<(), VfsError> {
+    fn move_if_absent(&self, from: &Path, to: &Path) -> Result<(), MoveError> {
         let mut files = self.files.write().expect("MemoryVfs lock poisoned");
-        let moved = files
-            .remove(from)
-            .ok_or_else(|| VfsError::NotFound(from.to_path_buf()))?;
+        if files.contains_key(to) {
+            return Err(MoveError::new(
+                VfsError::Exists(to.to_path_buf()),
+                MoveState::Unchanged,
+            ));
+        }
+        let moved = files.remove(from).ok_or_else(|| {
+            MoveError::new(VfsError::NotFound(from.to_path_buf()), MoveState::Unchanged)
+        })?;
         let entry = Entry {
             contents: moved.contents,
             version: self.versions.fetch_add(1, Ordering::Relaxed),
@@ -132,6 +138,20 @@ impl Vfs for MemoryVfs {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn memory_moves_preserve_occupied_destinations() {
+        let vfs = MemoryVfs::new()
+            .with_file("/ws/a", "source")
+            .with_file("/ws/b", "foreign");
+        let error = vfs
+            .move_if_absent(Path::new("/ws/a"), Path::new("/ws/b"))
+            .unwrap_err();
+        assert_eq!(error.state, MoveState::Unchanged);
+        assert!(matches!(error.source, VfsError::Exists(_)));
+        assert_eq!(vfs.read(Path::new("/ws/a")).unwrap(), "source");
+        assert_eq!(vfs.read(Path::new("/ws/b")).unwrap(), "foreign");
+    }
 
     #[test]
     fn walk_is_scoped_and_sorted() {

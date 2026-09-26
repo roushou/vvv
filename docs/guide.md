@@ -389,6 +389,12 @@ src/util src/core/tools` both relocates and renames the module.
 
 Every destination must be absent. Apply checks all move destinations again before
 writing, so a file created after planning is preserved and the move is refused.
+The move itself also refuses to replace a destination created after that check,
+and recovery moves protect occupied destinations too. Disk moves use native
+no-replace renames where supported; the unsupported-operation fallback links then
+removes the source. That fallback is destination-preserving but not atomic: if
+source removal fails, recovery removes the acquired link or reports it as remaining.
+Neither path falls back to copying across filesystems.
 The check does not reserve the paths against another process creating a file during
 the write.
 

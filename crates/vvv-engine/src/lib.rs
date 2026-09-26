@@ -46,7 +46,9 @@ pub use protocol::{
     Site, Skipped, Surface, SurfaceQuery, Template, TemplateError, Undo, UndoLast, Unreferenced,
     WhereQuery,
 };
-pub use vfs::{DiskVfs, EntryKind, MemoryVfs, ParentCreation, Stamp, Vfs, VfsError};
+pub use vfs::{
+    DiskVfs, EntryKind, MemoryVfs, MoveError, MoveState, ParentCreation, Stamp, Vfs, VfsError,
+};
 pub use workspace::Workspace;
 
 /// The nouns of the plugin contract that appear in the engine's answers, so

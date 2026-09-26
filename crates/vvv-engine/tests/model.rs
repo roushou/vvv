@@ -54,8 +54,8 @@ impl Vfs for Counting {
     fn remove_empty_dir(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
         self.inner.remove_empty_dir(path)
     }
-    fn rename(&self, from: &Path, to: &Path) -> Result<(), VfsError> {
-        self.inner.rename(from, to)
+    fn move_if_absent(&self, from: &Path, to: &Path) -> Result<(), vvv_engine::MoveError> {
+        self.inner.move_if_absent(from, to)
     }
     fn walk(&self, root: &Path) -> Result<Vec<PathBuf>, VfsError> {
         self.inner.walk(root)
@@ -125,12 +125,12 @@ fn session_sees_edits_new_files_deletions_and_renames() {
     assert_eq!(paths(&engine, "foo"), ["a.p", "b.p", "c.p"]);
 
     // Renamed: the old path is gone, the new one is loaded.
-    vfs.rename(Path::new("/ws/c.p"), Path::new("/ws/d.p"))
+    vfs.move_if_absent(Path::new("/ws/c.p"), Path::new("/ws/d.p"))
         .unwrap();
     assert_eq!(paths(&engine, "foo"), ["a.p", "b.p", "d.p"]);
 
     // Vanished (a rename to a path no language claims).
-    vfs.rename(Path::new("/ws/d.p"), Path::new("/ws/d.txt"))
+    vfs.move_if_absent(Path::new("/ws/d.p"), Path::new("/ws/d.txt"))
         .unwrap();
     assert_eq!(paths(&engine, "foo"), ["a.p", "b.p"]);
 }

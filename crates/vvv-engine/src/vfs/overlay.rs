@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::{Arc, RwLock};
 
-use super::{EntryKind, ParentCreation, Stamp, Vfs, VfsError};
+use super::{EntryKind, MoveError, MoveState, ParentCreation, Stamp, Vfs, VfsError};
 
 /// Writes on top of a file system that is never touched: what a plan looks
 /// like once applied, without applying it. A second plan can be made against
@@ -11,10 +11,14 @@ use super::{EntryKind, ParentCreation, Stamp, Vfs, VfsError};
 pub struct Overlay {
     base: Arc<dyn Vfs>,
     /// Files written here, at their overlay paths.
-    layer: RwLock<BTreeMap<PathBuf, Entry>>,
-    /// Base files moved away or otherwise gone from the overlay's view.
-    removed: RwLock<BTreeSet<PathBuf>>,
+    state: RwLock<OverlayState>,
     versions: AtomicU64,
+}
+
+#[derive(Debug, Default)]
+struct OverlayState {
+    layer: BTreeMap<PathBuf, Entry>,
+    removed: BTreeSet<PathBuf>,
 }
 
 #[derive(Debug)]
@@ -26,8 +30,14 @@ struct Entry {
 impl std::fmt::Debug for Overlay {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Overlay")
-            .field("written", &self.layer.read().expect("overlay lock").len())
-            .field("removed", &self.removed.read().expect("overlay lock").len())
+            .field(
+                "written",
+                &self.state.read().expect("overlay lock").layer.len(),
+            )
+            .field(
+                "removed",
+                &self.state.read().expect("overlay lock").removed.len(),
+            )
             .finish()
     }
 }
@@ -36,20 +46,23 @@ impl Overlay {
     pub fn over(base: Arc<dyn Vfs>) -> Self {
         Self {
             base,
-            layer: RwLock::new(BTreeMap::new()),
-            removed: RwLock::new(BTreeSet::new()),
+            state: RwLock::new(OverlayState::default()),
             versions: AtomicU64::new(1 << 62), // never collides with a base version
         }
     }
 
     fn is_removed(&self, path: &Path) -> bool {
-        self.removed.read().expect("overlay lock").contains(path)
+        self.state
+            .read()
+            .expect("overlay lock")
+            .removed
+            .contains(path)
     }
 }
 
 impl Vfs for Overlay {
     fn read(&self, path: &Path) -> Result<String, VfsError> {
-        if let Some(entry) = self.layer.read().expect("overlay lock").get(path) {
+        if let Some(entry) = self.state.read().expect("overlay lock").layer.get(path) {
             return Ok(entry.contents.clone());
         }
         if self.is_removed(path) {
@@ -59,7 +72,7 @@ impl Vfs for Overlay {
     }
 
     fn stamp(&self, path: &Path) -> Result<Stamp, VfsError> {
-        if let Some(entry) = self.layer.read().expect("overlay lock").get(path) {
+        if let Some(entry) = self.state.read().expect("overlay lock").layer.get(path) {
             return Ok(Stamp::new(
                 u128::from(entry.version),
                 entry.contents.len() as u64,
@@ -76,21 +89,29 @@ impl Vfs for Overlay {
             contents: contents.to_owned(),
             version: self.versions.fetch_add(1, Ordering::Relaxed),
         };
-        self.layer
-            .write()
-            .expect("overlay lock")
-            .insert(path.to_path_buf(), entry);
-        self.removed.write().expect("overlay lock").remove(path);
+        let mut state = self.state.write().expect("overlay lock");
+        state.layer.insert(path.to_path_buf(), entry);
+        state.removed.remove(path);
         Ok(())
     }
 
     fn exists(&self, path: &Path) -> bool {
-        self.layer.read().expect("overlay lock").contains_key(path)
+        self.state
+            .read()
+            .expect("overlay lock")
+            .layer
+            .contains_key(path)
             || (!self.is_removed(path) && self.base.exists(path))
     }
 
     fn entry_kind(&self, path: &Path) -> Result<Option<EntryKind>, VfsError> {
-        if self.layer.read().expect("overlay lock").contains_key(path) {
+        if self
+            .state
+            .read()
+            .expect("overlay lock")
+            .layer
+            .contains_key(path)
+        {
             return Ok(Some(EntryKind::File));
         }
         if self.is_removed(path) {
@@ -107,11 +128,9 @@ impl Vfs for Overlay {
         if !self.exists(path) {
             return Err(VfsError::NotFound(path.to_path_buf()));
         }
-        self.layer.write().expect("overlay lock").remove(path);
-        self.removed
-            .write()
-            .expect("overlay lock")
-            .insert(path.to_path_buf());
+        let mut state = self.state.write().expect("overlay lock");
+        state.layer.remove(path);
+        state.removed.insert(path.to_path_buf());
         Ok(())
     }
 
@@ -119,14 +138,43 @@ impl Vfs for Overlay {
         Err(VfsError::NotFound(path.to_path_buf()))
     }
 
-    fn rename(&self, from: &Path, to: &Path) -> Result<(), VfsError> {
-        let contents = self.read(from)?;
-        self.write(to, &contents)?;
-        self.layer.write().expect("overlay lock").remove(from);
-        self.removed
-            .write()
-            .expect("overlay lock")
-            .insert(from.to_path_buf());
+    fn move_if_absent(&self, from: &Path, to: &Path) -> Result<(), MoveError> {
+        let mut state = self.state.write().expect("overlay lock");
+        if state.layer.contains_key(to)
+            || (!state.removed.contains(to)
+                && self
+                    .base
+                    .entry_kind(to)
+                    .map_err(|error| MoveError::new(error, MoveState::Unchanged))?
+                    .is_some())
+        {
+            return Err(MoveError::new(
+                VfsError::Exists(to.to_path_buf()),
+                MoveState::Unchanged,
+            ));
+        }
+        let contents = if let Some(entry) = state.layer.get(from) {
+            entry.contents.clone()
+        } else if state.removed.contains(from) {
+            return Err(MoveError::new(
+                VfsError::NotFound(from.to_path_buf()),
+                MoveState::Unchanged,
+            ));
+        } else {
+            self.base
+                .read(from)
+                .map_err(|error| MoveError::new(error, MoveState::Unchanged))?
+        };
+        state.layer.remove(from);
+        state.removed.insert(from.to_path_buf());
+        state.removed.remove(to);
+        state.layer.insert(
+            to.to_path_buf(),
+            Entry {
+                contents,
+                version: self.versions.fetch_add(1, Ordering::Relaxed),
+            },
+        );
         Ok(())
     }
 
@@ -138,9 +186,10 @@ impl Vfs for Overlay {
             .filter(|p| !self.is_removed(p))
             .collect();
         files.extend(
-            self.layer
+            self.state
                 .read()
                 .expect("overlay lock")
+                .layer
                 .keys()
                 .filter(|p| p.starts_with(root))
                 .cloned(),
@@ -155,6 +204,23 @@ mod tests {
     use crate::MemoryVfs;
 
     #[test]
+    fn overlay_moves_preserve_occupied_destinations() {
+        let base = Arc::new(
+            MemoryVfs::new()
+                .with_file("/ws/a", "source")
+                .with_file("/ws/b", "foreign"),
+        );
+        let vfs = Overlay::over(base.clone());
+        let error = vfs
+            .move_if_absent(Path::new("/ws/a"), Path::new("/ws/b"))
+            .unwrap_err();
+        assert_eq!(error.state, MoveState::Unchanged);
+        assert!(matches!(error.source, VfsError::Exists(_)));
+        assert_eq!(vfs.read(Path::new("/ws/a")).unwrap(), "source");
+        assert_eq!(vfs.read(Path::new("/ws/b")).unwrap(), "foreign");
+    }
+
+    #[test]
     fn overlay_shadows_moves_and_never_writes_through() {
         let base = Arc::new(
             MemoryVfs::new()
@@ -164,7 +230,7 @@ mod tests {
         let overlay = Overlay::over(base.clone());
         overlay.write(Path::new("/ws/a.txt"), "A").unwrap();
         overlay
-            .rename(Path::new("/ws/b.txt"), Path::new("/ws/c.txt"))
+            .move_if_absent(Path::new("/ws/b.txt"), Path::new("/ws/c.txt"))
             .unwrap();
         overlay.write(Path::new("/ws/new.txt"), "n").unwrap();
 

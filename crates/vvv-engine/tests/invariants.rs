@@ -413,8 +413,8 @@ impl Vfs for ChangingRead {
     fn remove_empty_dir(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
         self.inner.remove_empty_dir(path)
     }
-    fn rename(&self, from: &Path, to: &Path) -> Result<(), vvv_engine::VfsError> {
-        self.inner.rename(from, to)
+    fn move_if_absent(&self, from: &Path, to: &Path) -> Result<(), vvv_engine::MoveError> {
+        self.inner.move_if_absent(from, to)
     }
     fn walk(&self, root: &Path) -> Result<Vec<PathBuf>, vvv_engine::VfsError> {
         self.inner.walk(root)
@@ -1071,4 +1071,90 @@ fn recovery_restores_disk_files_and_cleans_move_parent_directories() {
     assert_eq!(fixture.source(), "def foo\nfoo");
     assert!(!fixture.root.join("nested").exists());
     assert!(!fixture.root.join(".vvv/history.json").exists());
+}
+
+#[test]
+fn apply_preserves_a_destination_created_during_its_move() {
+    let fixture = common::FaultFixture::new(&[
+        (
+            "a.p",
+            "def foo
+foo",
+        ),
+        ("manifest.p", ""),
+    ]);
+    let planned = fixture.engine.run(MoveIntent::new("a.p", "b.p")).unwrap();
+    fixture.arm(
+        common::FaultOperation::Rename,
+        "a.p",
+        0,
+        common::FaultAction::Occupy(
+            "def foo
+foo"
+            .into(),
+        ),
+    );
+    let error = fixture.engine.run(Apply(planned)).unwrap_err();
+    assert_eq!(error.code(), vvv_engine::ErrorCode::Exists);
+    assert_eq!(
+        fixture.read("a.p"),
+        "def foo
+foo"
+    );
+    assert_eq!(
+        fixture.read("b.p"),
+        "def foo
+foo"
+    );
+    assert_eq!(fixture.read("manifest.p"), "");
+}
+
+#[test]
+fn recovery_preserves_a_source_created_during_the_reverse_move() {
+    let fixture = common::FaultFixture::new(&[
+        (
+            "a.p",
+            "def foo
+foo",
+        ),
+        ("manifest.p", ""),
+    ]);
+    let planned = fixture.engine.run(MoveIntent::new("a.p", "b.p")).unwrap();
+    fixture.arm(
+        common::FaultOperation::Write,
+        "b.p",
+        0,
+        common::FaultAction::Partial("cut".into()),
+    );
+    fixture.arm(
+        common::FaultOperation::Rename,
+        "b.p",
+        0,
+        common::FaultAction::Occupy("foreign".into()),
+    );
+    let error = fixture.engine.run(Apply(planned)).unwrap_err();
+    let EngineError::Recovery(recovery) = error else {
+        panic!("expected recovery error: {error}")
+    };
+    assert_eq!(fixture.read("a.p"), "foreign");
+    assert_eq!(
+        fixture.read("b.p"),
+        "def foo
+foo"
+    );
+    assert_eq!(recovery.details.remaining.len(), 2);
+    assert!(
+        recovery
+            .details
+            .remaining
+            .iter()
+            .any(|effect| effect.path == Path::new("a.p"))
+    );
+    assert!(
+        recovery
+            .details
+            .remaining
+            .iter()
+            .any(|effect| effect.path == Path::new("b.p"))
+    );
 }

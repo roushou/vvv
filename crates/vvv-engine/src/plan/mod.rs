@@ -198,7 +198,8 @@ impl Receipt {
     pub fn rollback(&self, workspace: &Workspace) -> Result<usize, VfsError> {
         let vfs = workspace.vfs();
         for (from, to) in self.moves.iter().rev() {
-            vfs.rename(&workspace.absolute(to), &workspace.absolute(from))?;
+            vfs.move_if_absent(&workspace.absolute(to), &workspace.absolute(from))
+                .map_err(crate::MoveError::into_source)?;
         }
         for (path, original) in &self.originals {
             vfs.write(&workspace.absolute(path), original)?;
@@ -290,16 +291,32 @@ impl<'a> Transaction<'a> {
         self.originals
             .entry(from.clone())
             .or_insert_with(|| Original::File(before.to_owned()));
-        self.originals.entry(to.clone()).or_insert(Original::Absent);
+        let index = self.effects.len();
         self.effects.push(Effect::Move {
             from: from.clone(),
             to: to.clone(),
             before: before.to_owned(),
+            state: crate::MoveState::Unknown,
         });
-        Ok(self
+        let outcome = self
             .workspace
             .vfs()
-            .rename(&self.workspace.absolute(from), &self.workspace.absolute(to))?)
+            .move_if_absent(&self.workspace.absolute(from), &self.workspace.absolute(to));
+        let state = outcome
+            .as_ref()
+            .map_or_else(|error| error.state, |_| crate::MoveState::Moved);
+        if let Effect::Move {
+            state: recorded, ..
+        } = &mut self.effects[index]
+        {
+            *recorded = state;
+        }
+        // An unchanged failure has not acquired the destination. In particular,
+        // a racing creator owns it even when its contents equal the source.
+        if state != crate::MoveState::Unchanged {
+            self.originals.entry(to.clone()).or_insert(Original::Absent);
+        }
+        outcome.map_err(|error| ApplyError::Vfs(error.into_source()))
     }
 
     pub(crate) fn recover(mut self, cause: crate::EngineError) -> crate::EngineError {
@@ -383,6 +400,7 @@ enum Effect {
         from: RelPath,
         to: RelPath,
         before: String,
+        state: crate::MoveState,
     },
     Directory(RelPath),
 }
@@ -415,10 +433,20 @@ impl Effect {
                     }
                     vfs.write(&workspace.absolute(path), before)
                 }
-                Self::Move { from, to, before } => match Original::observe(workspace, from)? {
+                Self::Move {
+                    state: crate::MoveState::Unchanged,
+                    ..
+                } => Ok(()),
+                Self::Move {
+                    from,
+                    to,
+                    before,
+                    state,
+                } => match Original::observe(workspace, from)? {
                     Original::Absent => {
                         if Original::observe(workspace, to)? != Original::Absent {
-                            vfs.rename(&workspace.absolute(to), &workspace.absolute(from))?;
+                            vfs.move_if_absent(&workspace.absolute(to), &workspace.absolute(from))
+                                .map_err(crate::MoveError::into_source)?;
                         }
                         if Original::observe(workspace, from)? != Original::File(before.clone()) {
                             vfs.write(&workspace.absolute(from), before)?;
@@ -428,7 +456,10 @@ impl Effect {
                     Original::File(text) if text == *before => {
                         match Original::observe(workspace, to)? {
                             Original::Absent => Ok(()),
-                            Original::File(text) if text == *before => {
+                            Original::File(text)
+                                if text == *before
+                                    && *state == crate::MoveState::DestinationLinked =>
+                            {
                                 operation = crate::RecoveryOperation::RemoveFile;
                                 failed_path = to;
                                 vfs.remove_file(&workspace.absolute(to))

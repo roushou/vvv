@@ -527,6 +527,7 @@ pub enum FaultAction {
     Partial(String),
     After,
     Always,
+    Occupy(String),
 }
 
 impl FaultAction {
@@ -617,6 +618,7 @@ impl vvv_engine::Vfs for FaultVfs {
                 }
                 Err(action.error(path))
             }
+            Some(action @ FaultAction::Occupy(_)) => Err(action.error(path)),
             None => self.base.write(path, contents),
         }
     }
@@ -638,7 +640,10 @@ impl vvv_engine::Vfs for FaultVfs {
     fn prepare_parent(&self, path: &Path) -> vvv_engine::ParentCreation {
         match self.action(FaultOperation::PrepareParent, path) {
             Some(
-                action @ (FaultAction::Before | FaultAction::Always | FaultAction::Partial(_)),
+                action @ (FaultAction::Before
+                | FaultAction::Always
+                | FaultAction::Partial(_)
+                | FaultAction::Occupy(_)),
             ) => vvv_engine::ParentCreation::new(Vec::new(), Err(action.error(path))),
             Some(action @ FaultAction::After) => {
                 let mut outcome = self.base.prepare_parent(path);
@@ -671,18 +676,47 @@ impl vvv_engine::Vfs for FaultVfs {
         }
     }
 
-    fn rename(&self, from: &Path, to: &Path) -> Result<(), vvv_engine::VfsError> {
+    fn move_if_absent(&self, from: &Path, to: &Path) -> Result<(), vvv_engine::MoveError> {
+        use vvv_engine::{MoveError, MoveState};
         match self.action(FaultOperation::Rename, from) {
-            Some(action @ (FaultAction::Before | FaultAction::Always)) => Err(action.error(from)),
+            Some(action @ (FaultAction::Before | FaultAction::Always)) => {
+                Err(MoveError::new(action.error(from), MoveState::Unchanged))
+            }
             Some(action @ FaultAction::After) => {
-                self.base.rename(from, to)?;
-                Err(action.error(from))
+                self.base.move_if_absent(from, to)?;
+                Err(MoveError::new(action.error(from), MoveState::Moved))
             }
             Some(action @ FaultAction::Partial(_)) => {
-                self.base.write(to, &self.base.read(from)?)?;
-                Err(action.error(from))
+                if self
+                    .base
+                    .entry_kind(to)
+                    .map_err(|error| MoveError::new(error, MoveState::Unchanged))?
+                    .is_some()
+                {
+                    return Err(MoveError::new(
+                        vvv_engine::VfsError::Exists(to.to_path_buf()),
+                        MoveState::Unchanged,
+                    ));
+                }
+                let contents = self
+                    .base
+                    .read(from)
+                    .map_err(|error| MoveError::new(error, MoveState::Unchanged))?;
+                self.base
+                    .write(to, &contents)
+                    .map_err(|error| MoveError::new(error, MoveState::Unknown))?;
+                Err(MoveError::new(
+                    action.error(from),
+                    MoveState::DestinationLinked,
+                ))
             }
-            None => self.base.rename(from, to),
+            Some(FaultAction::Occupy(contents)) => {
+                self.base
+                    .write(to, &contents)
+                    .map_err(|error| MoveError::new(error, MoveState::Unchanged))?;
+                self.base.move_if_absent(from, to)
+            }
+            None => self.base.move_if_absent(from, to),
         }
     }
 
