@@ -11,11 +11,14 @@ use std::path::{Path, PathBuf};
 
 use vvv_core::{ChangeSet, Edit, EditConflict};
 
+use crate::plan::{ApplyError, Fingerprint};
+use crate::workspace::SourceWitness;
+
 use crate::{Notice, Respelling};
 
 #[derive(Debug, Default)]
 pub(crate) struct Change {
-    edits: BTreeMap<PathBuf, Vec<Edit>>,
+    files: BTreeMap<PathBuf, FileEdits>,
     moves: Vec<(PathBuf, PathBuf)>,
     notices: Vec<Notice>,
     respellings: Vec<Respelling>,
@@ -26,19 +29,40 @@ impl Change {
         Self::default()
     }
 
-    pub fn edit(&mut self, path: impl Into<PathBuf>, edit: Edit) {
-        self.edits.entry(path.into()).or_default().push(edit);
+    fn file(&mut self, source: &SourceWitness) -> Result<&mut FileEdits, ApplyError> {
+        let file = self
+            .files
+            .entry(source.path().to_path_buf())
+            .or_insert_with(|| FileEdits {
+                source: source.clone(),
+                edits: Vec::new(),
+            });
+        file.source.check(source)?;
+        Ok(file)
     }
 
-    pub fn edits(&mut self, path: &Path, edits: impl IntoIterator<Item = Edit>) {
-        self.edits
-            .entry(path.to_path_buf())
-            .or_default()
-            .extend(edits);
+    pub fn edit(&mut self, source: &SourceWitness, edit: Edit) -> Result<(), ApplyError> {
+        self.file(source)?.edits.push(edit);
+        Ok(())
     }
 
-    pub fn move_file(&mut self, from: impl Into<PathBuf>, to: impl Into<PathBuf>) {
-        self.moves.push((from.into(), to.into()));
+    pub fn edits(
+        &mut self,
+        source: &SourceWitness,
+        edits: impl IntoIterator<Item = Edit>,
+    ) -> Result<(), ApplyError> {
+        self.file(source)?.edits.extend(edits);
+        Ok(())
+    }
+
+    pub fn move_file(
+        &mut self,
+        source: &SourceWitness,
+        to: impl Into<PathBuf>,
+    ) -> Result<(), ApplyError> {
+        self.file(source)?;
+        self.moves.push((source.path().to_path_buf(), to.into()));
+        Ok(())
     }
 
     pub fn notice(&mut self, notice: Notice) {
@@ -55,27 +79,41 @@ impl Change {
     }
 
     /// Everything `other` proposes, after what this one already does.
-    pub fn merge(&mut self, other: Change) {
-        for (path, edits) in other.edits {
-            self.edits.entry(path).or_default().extend(edits);
+    pub fn merge(&mut self, other: Change) -> Result<(), ApplyError> {
+        // Check before merging anything, so a rejected contribution changes nothing.
+        for (path, file) in &other.files {
+            if let Some(existing) = self.files.get(path) {
+                existing.source.check(&file.source)?;
+            }
+        }
+        for (_, file) in other.files {
+            self.edits(&file.source, file.edits)?;
         }
         self.moves.extend(other.moves);
         self.notices.extend(other.notices);
         self.respellings.extend(other.respellings);
+        Ok(())
     }
 
     /// Take the edits proposed for `path` out of the change: an operation
     /// that relocates text takes the edits inside it along.
     pub fn take_edits(&mut self, path: &Path) -> Vec<Edit> {
-        self.edits.remove(path).unwrap_or_default()
+        self.files
+            .get_mut(path)
+            .map(|file| std::mem::take(&mut file.edits))
+            .unwrap_or_default()
     }
 
     /// Bind the proposal to a change set: edits sorted per file, overlaps
     /// refused, moves registered. What is not an edit stays with the change.
     pub fn bind(self) -> Result<Bound, EditConflict> {
         let mut change_set = ChangeSet::new();
-        for (path, edits) in self.edits {
-            for edit in edits {
+        let mut fingerprints = BTreeMap::new();
+        for (path, file) in self.files {
+            if !file.edits.is_empty() || self.moves.iter().any(|(from, _)| from == &path) {
+                fingerprints.insert(path.clone(), file.source.fingerprint().clone());
+            }
+            for edit in file.edits {
                 change_set.insert(&path, edit)?;
             }
         }
@@ -83,7 +121,10 @@ impl Change {
             change_set.move_file(from, to)?;
         }
         Ok(Bound {
-            change_set,
+            change_set: WitnessedChangeSet {
+                change_set,
+                fingerprints,
+            },
             notices: self.notices,
             respellings: self.respellings,
         })
@@ -92,7 +133,27 @@ impl Change {
 
 /// A change bound to a change set, with what the plan does not carry.
 pub(crate) struct Bound {
-    pub change_set: ChangeSet,
+    pub change_set: WitnessedChangeSet,
     pub notices: Vec<Notice>,
     pub respellings: Vec<Respelling>,
+}
+
+#[derive(Debug)]
+struct FileEdits {
+    source: SourceWitness,
+    edits: Vec<Edit>,
+}
+
+/// A change set whose edited and moved sources all have observed fingerprints.
+/// Only binding a witnessed Change can construct a nonempty value.
+#[derive(Debug, Default)]
+pub(crate) struct WitnessedChangeSet {
+    change_set: ChangeSet,
+    fingerprints: BTreeMap<PathBuf, Fingerprint>,
+}
+
+impl WitnessedChangeSet {
+    pub fn into_parts(self) -> (ChangeSet, BTreeMap<PathBuf, Fingerprint>) {
+        (self.change_set, self.fingerprints)
+    }
 }

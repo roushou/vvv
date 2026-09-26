@@ -116,10 +116,10 @@ impl Command for MoveSymbolIntent {
         mv.respell_inner_paths();
         mv.provision()?;
         mv.rebase_consumers(&candidates)?;
-        mv.keep_old_file_working();
-        mv.drop_redundant_import();
+        mv.keep_old_file_working()?;
+        mv.drop_redundant_import()?;
         mv.widen_for_consumers();
-        mv.cut_and_paste();
+        mv.cut_and_paste()?;
         let (change, from, to) = mv.finish();
         Planned::of(cx.workspace, change, |bound, files| MoveSymbol {
             intent: self.clone(),
@@ -148,6 +148,8 @@ struct SymbolMove<'a> {
     new: Address,
     source: Parsed<'a>,
     dest: Parsed<'a>,
+    source_witness: &'a crate::workspace::SourceWitness,
+    dest_witness: &'a crate::workspace::SourceWitness,
     extraction: Extraction<'a>,
     /// Modules that name the declaration and must still reach it afterwards.
     consumers: Vec<Address>,
@@ -193,6 +195,8 @@ impl<'a> SymbolMove<'a> {
                 source: dest.file().source(),
                 facts: dest.facts()?,
             },
+            source_witness: source.file().witness(),
+            dest_witness: dest.file().witness(),
             extraction,
             consumers,
             old_file_still_uses: false,
@@ -336,7 +340,7 @@ impl<'a> SymbolMove<'a> {
                     ),
                 };
                 match widen.plan(self.surgery) {
-                    Ok(edit) => self.change.edit(self.from_path, edit),
+                    Ok(edit) => self.change.edit(self.source_witness, edit)?,
                     Err(notice) => self.change.notice(notice),
                 }
             }
@@ -366,19 +370,19 @@ impl<'a> SymbolMove<'a> {
                     .into_iter()
                     .partition(|e| self.extraction.contains(e.span));
                 self.text_edits.extend(moving);
-                rewrite.change.edits(self.from_path, staying);
+                rewrite.change.edits(self.source_witness, staying)?;
                 let extraction = &self.extraction;
                 rewrite
                     .change
                     .retain_respellings(|r| !extraction.contains(r.span));
             }
-            self.change.merge(rewrite.change);
+            self.change.merge(rewrite.change)?;
         }
         Ok(())
     }
 
     /// A bare use left in the old file needs an import of the new address.
-    fn keep_old_file_working(&mut self) {
+    fn keep_old_file_working(&mut self) -> Result<(), EngineError> {
         if self.old_file_still_uses
             && let Some(statement) = self.surgery.import_statement(
                 self.ns.project(),
@@ -388,18 +392,19 @@ impl<'a> SymbolMove<'a> {
             )
         {
             self.change.edit(
-                self.from_path,
+                self.source_witness,
                 Edit::insert(
                     self.surgery.import_insertion(&self.source),
                     format!("{statement}\n"),
                 ),
-            );
+            )?;
         }
+        Ok(())
     }
 
     /// An import of the declaration in the file it moves to is now
     /// redundant: delete the statement, or say so when it shares a group.
-    fn drop_redundant_import(&mut self) {
+    fn drop_redundant_import(&mut self) -> Result<(), EngineError> {
         let text = self.dest.source.as_str();
         for import in self.dest.facts.imports.iter().filter(|i| i.declares) {
             if self.ns.resolve(self.to_path, &import.path).as_ref() != Some(&self.old) {
@@ -413,7 +418,8 @@ impl<'a> SymbolMove<'a> {
                             .find('\n')
                             .map_or(text.len(), |nl| import.span.end + nl + 1),
                     );
-                    self.change.edit(self.to_path, Edit::delete(statement));
+                    self.change
+                        .edit(self.dest_witness, Edit::delete(statement))?;
                 }
                 Some(_) => self.change.notice(Notice {
                     path: self.to_path.into(),
@@ -424,6 +430,7 @@ impl<'a> SymbolMove<'a> {
                 }),
             }
         }
+        Ok(())
     }
 
     /// The item's own reach at its new home: widened for the consumers it
@@ -457,15 +464,16 @@ impl<'a> SymbolMove<'a> {
 
     /// Cut the pieces out of the old file; paste them, with their edits,
     /// where the destination keeps items, its new imports above.
-    fn cut_and_paste(&mut self) {
+    fn cut_and_paste(&mut self) -> Result<(), EngineError> {
         let moved = self.extraction.assemble(&self.text_edits);
         for cut in self.extraction.cuts() {
-            self.change.edit(self.from_path, Edit::delete(cut));
+            self.change.edit(self.source_witness, Edit::delete(cut))?;
         }
         if !self.new_imports.is_empty() {
             let at = self.surgery.import_insertion(&self.dest);
             let block: String = self.new_imports.iter().map(|s| format!("{s}\n")).collect();
-            self.change.edit(self.to_path, Edit::insert(at, block));
+            self.change
+                .edit(self.dest_witness, Edit::insert(at, block))?;
         }
         let at = self.surgery.item_insertion(&self.dest);
         let text = self.dest.source.as_str();
@@ -477,9 +485,10 @@ impl<'a> SymbolMove<'a> {
             "\n\n"
         };
         self.change.edit(
-            self.to_path,
+            self.dest_witness,
             Edit::insert(at, format!("{separator}{moved}\n")),
-        );
+        )?;
+        Ok(())
     }
 
     fn finish(self) -> (Change, Address, Address) {

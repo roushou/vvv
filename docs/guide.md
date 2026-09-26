@@ -271,6 +271,9 @@ plan, prints it, and stops; the last line on standard error is the plan's size a
 flag to go on with (`± 2   2 files` / `hint: --apply to write`). When you add
 `--apply`, the plan is written all at once — and if any of the files changed between
 the preview and the apply, vvv stops and tells you instead of writing over the changes.
+The same check rejects a plan whose edited or moved source changed after the engine
+read it, including a cached source in a session. Files consulted only to resolve
+references are outside this check.
 What you get back is a receipt naming the history entry: `✓ #3   ± 2   2 files`.
 
 Each apply is saved to `.vvv/history.json` (worth adding `.vvv/` to `.gitignore`).

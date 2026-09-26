@@ -378,6 +378,20 @@ applies it lives once, in `vvv-lang/src/syntax/`. Adding a language is adding a 
 and restores on failure. `Receipt::rollback` undoes moves in reverse before restoring
 contents. `ChangeSet` has no `apply` method.
 
+**Plan provenance covers edited and moved files.** An immutable `SourceFile` gives
+an edit producer a `SourceWitness` (relative path and content fingerprint). `Change`
+requires that witness for edits and moves and refuses contributions from different
+snapshots of the same file. Binding carries those observed fingerprints into `Plan`;
+it never substitutes a fresh read for the source used to compute an edit. Preview and
+apply compare the current contents with the observed snapshots before writing.
+Relocation side edits use the snapshots handed to the surgery.
+
+Files only consulted during resolution are not witnessed by the plan. A manifest,
+an unedited declaration, or another resolution input can change without making the
+plan stale. Provenance protects the coordinates and contents of edited and moved
+files; it is not a snapshot transaction over all resolution dependencies, nor does
+it prevent external writes between staging and writing.
+
 **Errors and notices are variants, not sentences.** `ResolveError` has one variant per
 situation a layout can refuse (`Root`, `IntoItself`, `CrossProject`, `NoParentFile`
 with the candidate files, …) and `Notice` carries a `NoticeKind`. `thiserror` gives

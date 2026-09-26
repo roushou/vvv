@@ -38,26 +38,20 @@ pub enum ApplyError {
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Plan {
     change_set: ChangeSet,
     fingerprints: BTreeMap<PathBuf, Fingerprint>,
 }
 
 impl Plan {
-    /// Bind a change set to the current contents of the files it touches.
-    pub fn new(change_set: ChangeSet, workspace: &Workspace) -> Result<Self, VfsError> {
-        let fingerprints = change_set
-            .paths()
-            .map(|path| {
-                let text = workspace.vfs().read(&workspace.absolute(path))?;
-                Ok((path.to_path_buf(), Fingerprint::of(&text)))
-            })
-            .collect::<Result<_, VfsError>>()?;
-        Ok(Self {
+    /// Retain the source fingerprints observed by the edit producers.
+    pub(crate) fn new(change: crate::change::WitnessedChangeSet) -> Self {
+        let (change_set, fingerprints) = change.into_parts();
+        Self {
             change_set,
             fingerprints,
-        })
+        }
     }
 
     pub fn change_set(&self) -> &ChangeSet {
@@ -224,26 +218,49 @@ mod tests {
     use crate::MemoryVfs;
     use vvv_core::{Edit, Span};
 
-    fn workspace() -> Workspace {
-        let vfs = MemoryVfs::new()
-            .with_file("/ws/a.txt", "hello world")
-            .with_file("/ws/b.txt", "foo");
-        Workspace::new("/ws", Arc::new(vfs))
+    struct Fixture {
+        workspace: Workspace,
     }
 
-    fn plan(ws: &Workspace) -> Plan {
-        let mut cs = ChangeSet::new();
-        cs.insert("a.txt", Edit::replace(Span::new(0, 5), "goodbye"))
-            .unwrap();
-        cs.insert("b.txt", Edit::replace(Span::new(0, 3), "bar"))
-            .unwrap();
-        Plan::new(cs, ws).unwrap()
+    impl Fixture {
+        fn new() -> Self {
+            let vfs = MemoryVfs::new()
+                .with_file("/ws/a.txt", "hello world")
+                .with_file("/ws/b.txt", "foo");
+            Self {
+                workspace: Workspace::new("/ws", Arc::new(vfs)),
+            }
+        }
+
+        fn plan(&self, cs: ChangeSet) -> Plan {
+            let mut change = crate::change::Change::new();
+            for path in cs.paths() {
+                let file = self.workspace.load(path).unwrap();
+                change
+                    .edits(file.witness(), cs.edits_for(path).iter().cloned())
+                    .unwrap();
+                if let Some(to) = cs.destination(path) {
+                    change.move_file(file.witness(), to).unwrap();
+                }
+            }
+            Plan::new(change.bind().unwrap().change_set)
+        }
+
+        fn replacement(&self) -> Plan {
+            let mut cs = ChangeSet::new();
+            cs.insert("a.txt", Edit::replace(Span::new(0, 5), "goodbye"))
+                .unwrap();
+            cs.insert("b.txt", Edit::replace(Span::new(0, 3), "bar"))
+                .unwrap();
+            self.plan(cs)
+        }
     }
 
     #[test]
     fn preview_does_not_write() {
-        let ws = workspace();
-        let preview = plan(&ws).preview(&ws).unwrap();
+        let fixture = Fixture::new();
+        let ws = &fixture.workspace;
+        let preview = fixture.replacement().preview(ws).unwrap();
         assert_eq!(preview.files[0].after, "goodbye world");
         assert_eq!(
             ws.vfs().read(Path::new("/ws/a.txt")).unwrap(),
@@ -253,14 +270,15 @@ mod tests {
 
     #[test]
     fn apply_then_rollback_round_trips() {
-        let ws = workspace();
-        let receipt = plan(&ws).apply(&ws).unwrap();
+        let fixture = Fixture::new();
+        let ws = &fixture.workspace;
+        let receipt = fixture.replacement().apply(ws).unwrap();
         assert_eq!(
             ws.vfs().read(Path::new("/ws/a.txt")).unwrap(),
             "goodbye world"
         );
         assert_eq!(ws.vfs().read(Path::new("/ws/b.txt")).unwrap(), "bar");
-        assert_eq!(receipt.rollback(&ws).unwrap(), 2);
+        assert_eq!(receipt.rollback(ws).unwrap(), 2);
         assert_eq!(
             ws.vfs().read(Path::new("/ws/a.txt")).unwrap(),
             "hello world"
@@ -269,28 +287,29 @@ mod tests {
 
     #[test]
     fn moves_apply_after_edits_and_roll_back_in_reverse() {
-        let ws = workspace();
+        let fixture = Fixture::new();
+        let ws = &fixture.workspace;
         let mut cs = ChangeSet::new();
         cs.insert("a.txt", Edit::replace(Span::new(0, 5), "moved"))
             .unwrap();
         cs.move_file("a.txt", "dir/z.txt").unwrap();
-        let plan = Plan::new(cs, &ws).unwrap();
+        let plan = fixture.plan(cs);
 
-        let preview = plan.preview(&ws).unwrap();
+        let preview = plan.preview(ws).unwrap();
         assert_eq!(
             preview.files[0].moved_to.as_deref(),
             Some(Path::new("dir/z.txt"))
         );
         assert_eq!(preview.files[0].after, "moved world");
 
-        let receipt = plan.apply(&ws).unwrap();
+        let receipt = plan.apply(ws).unwrap();
         assert!(!ws.vfs().exists(Path::new("/ws/a.txt")));
         assert_eq!(
             ws.vfs().read(Path::new("/ws/dir/z.txt")).unwrap(),
             "moved world"
         );
 
-        receipt.rollback(&ws).unwrap();
+        receipt.rollback(ws).unwrap();
         assert!(!ws.vfs().exists(Path::new("/ws/dir/z.txt")));
         assert_eq!(
             ws.vfs().read(Path::new("/ws/a.txt")).unwrap(),
@@ -300,13 +319,14 @@ mod tests {
 
     #[test]
     fn undo_refuses_files_edited_after_apply() {
-        let ws = workspace();
-        let receipt = plan(&ws).apply(&ws).unwrap();
+        let fixture = Fixture::new();
+        let ws = &fixture.workspace;
+        let receipt = fixture.replacement().apply(ws).unwrap();
         ws.vfs()
             .write(Path::new("/ws/b.txt"), "edited later")
             .unwrap();
         assert!(
-            matches!(receipt.undo(&ws), Err(ApplyError::Modified { path }) if path == Path::new("b.txt"))
+            matches!(receipt.undo(ws), Err(ApplyError::Modified { path }) if path == Path::new("b.txt"))
         );
         assert_eq!(
             ws.vfs().read(Path::new("/ws/a.txt")).unwrap(),
@@ -317,11 +337,12 @@ mod tests {
 
     #[test]
     fn stale_file_is_refused() {
-        let ws = workspace();
-        let plan = plan(&ws);
+        let fixture = Fixture::new();
+        let ws = &fixture.workspace;
+        let plan = fixture.replacement();
         ws.vfs().write(Path::new("/ws/b.txt"), "changed").unwrap();
         assert!(
-            matches!(plan.apply(&ws), Err(ApplyError::Stale { path }) if path == Path::new("b.txt"))
+            matches!(plan.apply(ws), Err(ApplyError::Stale { path }) if path == Path::new("b.txt"))
         );
         assert_eq!(
             ws.vfs().read(Path::new("/ws/a.txt")).unwrap(),
@@ -333,13 +354,14 @@ mod tests {
     /// the chained receipt back restores the tree exactly.
     #[test]
     fn chained_receipts_roll_back_both_steps() {
-        let ws = workspace();
+        let fixture = Fixture::new();
+        let ws = &fixture.workspace;
         let mut first = ChangeSet::new();
         first.move_file("a.txt", "moved.txt").unwrap();
         first
             .insert("b.txt", Edit::replace(Span::new(0, 3), "bar"))
             .unwrap();
-        let r1 = Plan::new(first, &ws).unwrap().apply(&ws).unwrap();
+        let r1 = fixture.plan(first).apply(ws).unwrap();
         let mut second = ChangeSet::new();
         second
             .insert("moved.txt", Edit::replace(Span::new(0, 5), "goodbye"))
@@ -347,7 +369,7 @@ mod tests {
         second
             .insert("b.txt", Edit::replace(Span::new(0, 3), "baz"))
             .unwrap();
-        let r2 = Plan::new(second, &ws).unwrap().apply(&ws).unwrap();
+        let r2 = fixture.plan(second).apply(ws).unwrap();
         let read = |p: &str| ws.vfs().read(Path::new(p)).unwrap();
         assert_eq!(read("/ws/moved.txt"), "goodbye world");
         assert_eq!(read("/ws/b.txt"), "baz");
@@ -358,7 +380,7 @@ mod tests {
             2,
             "originals keyed by pre-batch paths"
         );
-        chained.undo(&ws).unwrap();
+        chained.undo(ws).unwrap();
         assert_eq!(read("/ws/a.txt"), "hello world");
         assert_eq!(read("/ws/b.txt"), "foo");
         assert!(!ws.vfs().exists(Path::new("/ws/moved.txt")));

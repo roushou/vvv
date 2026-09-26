@@ -49,7 +49,7 @@ impl Command for RewriteOf {
                     source,
                 }
             })?;
-            change.edit(&m.path, Edit::replace(m.span, replacement));
+            change.edit(file.witness(), Edit::replace(m.span, replacement))?;
         }
         Planned::of(cx.workspace, change, |_, files| Rewrite {
             intent: intent.clone(),

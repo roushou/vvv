@@ -31,7 +31,7 @@ impl<T> Planned<T> {
     ) -> Result<Self, EngineError> {
         let mut bound = change.bind()?;
         let change_set = std::mem::take(&mut bound.change_set);
-        let plan = Plan::new(change_set, workspace)?;
+        let plan = Plan::new(change_set);
         let preview = plan.preview(workspace)?.files;
         let files = FileChange::all(Some(&plan), &preview);
         Ok(Self::new(result(bound, files), vec![plan], preview))

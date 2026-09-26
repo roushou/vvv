@@ -305,6 +305,15 @@ impl Layout for PathLayout {
         vec![address.path().iter().map(|n| n.as_str()).collect()]
     }
 
+    fn touched_by_move(
+        &self,
+        _: &Project,
+        _: &Path,
+        _: &Path,
+    ) -> Result<Vec<PathBuf>, ResolveError> {
+        Ok(vec![PathBuf::from("manifest.p")])
+    }
+
     /// `ext/...` is an external package: unknowable, like a foreign crate.
     /// Paths are workspace-relative whatever syntax spelled them.
     fn resolve(&self, project: &Project, from: &Path, import: &ModulePath) -> Option<Address> {
@@ -400,6 +409,15 @@ impl Layout for CountingLayout {
 
     fn candidates(&self, project: &Project, address: &Address) -> Vec<PathBuf> {
         PathLayout.candidates(project, address)
+    }
+
+    fn touched_by_move(
+        &self,
+        project: &Project,
+        from: &Path,
+        to: &Path,
+    ) -> Result<Vec<PathBuf>, ResolveError> {
+        PathLayout.touched_by_move(project, from, to)
     }
 
     fn resolve(&self, project: &Project, file: &Path, import: &ModulePath) -> Option<Address> {

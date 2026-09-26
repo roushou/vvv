@@ -139,7 +139,10 @@ impl Command for RenameIntent {
         };
         let mut change = Change::new();
         for m in intent.selection.narrow(chosen)? {
-            change.edit(&m.path, Edit::replace(m.span, &intent.to));
+            change.edit(
+                graph.file(&m.path)?.file().witness(),
+                Edit::replace(m.span, &intent.to),
+            )?;
         }
         Planned::of(cx.workspace, change, |_, files| Rename {
             intent: intent.clone(),

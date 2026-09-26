@@ -113,17 +113,18 @@ impl<'a> Rebase<'a> {
         import: &ImportRef,
         target: &Address,
         out: &mut FileRewrite,
-    ) {
+    ) -> Result<(), EngineError> {
         let rendered = self
             .surgery
             .render(self.project, &site.render_from, target, &import.path);
         if rendered != import.path {
             out.change.respell(self.respelling(site, import, &rendered));
             out.change.edit(
-                site.path(),
+                site.file.witness(),
                 Edit::replace(import.span, rendered.to_string()),
-            );
+            )?;
         }
+        Ok(())
     }
 
     fn respelling(&self, site: &Site<'_>, import: &ImportRef, to: &ModulePath) -> Respelling {
@@ -155,7 +156,12 @@ impl<'a> Rebase<'a> {
 
     /// Hand one statement's grouped entries to the surgery; what it cannot
     /// rewrite becomes a notice carrying the text it would have written.
-    fn regroup(&self, site: &Site<'_>, entries: &[(ImportRef, Address)], out: &mut FileRewrite) {
+    fn regroup(
+        &self,
+        site: &Site<'_>,
+        entries: &[(ImportRef, Address)],
+        out: &mut FileRewrite,
+    ) -> Result<(), EngineError> {
         let regrouped =
             self.surgery
                 .regroup(self.project, &site.render_from, site.file.source(), entries);
@@ -169,7 +175,7 @@ impl<'a> Rebase<'a> {
                 out.change.respell(self.respelling(site, import, &to));
             }
         }
-        out.change.edits(site.path(), regrouped.edits);
+        out.change.edits(site.file.witness(), regrouped.edits)?;
         for import in regrouped.skipped {
             let replacement = entries
                 .iter()
@@ -189,6 +195,7 @@ impl<'a> Rebase<'a> {
                 },
             });
         }
+        Ok(())
     }
 
     /// What the move changes in `candidate`: its imports re-rendered, and a
@@ -208,7 +215,7 @@ impl<'a> Rebase<'a> {
                 out.references.push((from.clone(), target.clone()));
             }
             match &import.group {
-                None => self.standalone(&site, &import, &target, &mut out),
+                None => self.standalone(&site, &import, &target, &mut out)?,
                 Some(group) if self.grouped_needs_change(&site, group, under_old) => grouped
                     .entry(group.statement)
                     .or_default()
@@ -217,7 +224,7 @@ impl<'a> Rebase<'a> {
             }
         }
         for entries in grouped.values() {
-            self.regroup(&site, entries, &mut out);
+            self.regroup(&site, entries, &mut out)?;
         }
         Ok(out)
     }

@@ -128,7 +128,7 @@ impl Command for MoveIntent {
         let mut references: Vec<(Address, Address)> = Vec::new();
         for candidate in &candidates {
             let rewrite = rebase.rewrite(candidate)?;
-            change.merge(rewrite.change);
+            change.merge(rewrite.change)?;
             references.extend(rewrite.references);
         }
         references.sort();
@@ -149,7 +149,8 @@ impl Command for MoveIntent {
                 moved_mod_needs = Some(violation.needs);
                 continue;
             }
-            let file = cx.workspace.load(&violation.path)?;
+            let candidate = graph.file(&violation.path)?;
+            let file = candidate.file();
             let at = (
                 violation.path.clone(),
                 file.source().position(violation.symbol.name_span.start),
@@ -176,7 +177,7 @@ impl Command for MoveIntent {
                     notice_at: at.clone(),
                 };
                 match widen.plan(surgery) {
-                    Ok(edit) => change.edit(&violation.path, edit),
+                    Ok(edit) => change.edit(file.witness(), edit)?,
                     Err(notice) => change.notice(notice),
                 }
             }
@@ -188,7 +189,10 @@ impl Command for MoveIntent {
             .touched_by_move(&project, &from, &to)?
             .into_iter()
             .map(|path| {
-                let file = cx.workspace.load(&path)?;
+                let file = match graph.candidate(&path) {
+                    Some(candidate) => candidate.file().clone(),
+                    None => cx.workspace.load(&path)?,
+                };
                 let facts = language
                     .facts(file.text())
                     .map_err(|source| EngineError::Search {
@@ -207,10 +211,14 @@ impl Command for MoveIntent {
             })
             .collect();
         for side in surgery.relocate(&project, &from, &to, &parsed, moved_mod_needs)? {
-            change.edit(side.path, side.edit);
+            let file = touched
+                .iter()
+                .find(|(file, _)| file.path() == side.path)
+                .ok_or_else(|| ResolveError::Missing(side.path.clone().into()))?;
+            change.edit(file.0.witness(), side.edit)?;
         }
         for (f, t) in moves.iter() {
-            change.move_file(f, t);
+            change.move_file(graph.file(f)?.file().witness(), t)?;
         }
         Planned::of(cx.workspace, change, |bound, files| Move {
             intent: intent.clone(),
