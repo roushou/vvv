@@ -7,26 +7,72 @@
 //! [`Surgery`](vvv_core::Surgery) adds whatever else it needs (Rust `mod`
 //! declarations), from the parsed files the layout named.
 
-mod extraction;
-mod reachability;
-mod rebase;
-mod set;
-mod symbol;
-mod widen;
+use std::path::{Path, PathBuf};
 
-pub(crate) use extraction::Extraction;
-pub(crate) use reachability::Reachability;
-pub(crate) use rebase::Rebase;
-pub(crate) use set::MoveSet;
-pub(crate) use widen::Widen;
+use serde::{Deserialize, Serialize};
+use vvv_core::{Address, Facts, Parsed, ReachKind, RelPath, ResolveError};
 
-use std::path::Path;
-
-use vvv_core::{Address, Facts, Parsed, ReachKind, ResolveError};
-
+use super::{MoveSet, Reachability, Rebase, Widen};
 use crate::change::Change;
 use crate::command::{Command, Context};
-use crate::{EngineError, Move, MoveIntent, Planned, SourceFile, VfsError};
+use crate::protocol::vocabulary::IntentLine;
+use crate::report::{Document, MoveCounts, Options};
+use crate::{
+    EngineError, FileChange, Intent, Mutation, Notice, Planned, Respelling, SourceFile, VfsError,
+};
+
+/// Move a file and make every reference to it follow.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MoveIntent {
+    pub from: PathBuf,
+    pub to: PathBuf,
+}
+
+impl MoveIntent {
+    pub fn new(from: impl Into<PathBuf>, to: impl Into<PathBuf>) -> Self {
+        Self {
+            from: from.into(),
+            to: to.into(),
+        }
+    }
+}
+
+/// `vvv move`: a file or directory moved, its importers respelled.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Move {
+    pub intent: MoveIntent,
+    pub applied: bool,
+    /// The history entry the apply made, when `applied`; what `undo` reverses.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub history_id: Option<u64>,
+    /// Normalised, workspace-relative source and destination.
+    pub from: RelPath,
+    pub to: RelPath,
+    /// The module address before and after, when the language has one.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub from_address: Option<Address>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub to_address: Option<Address>,
+    /// References vvv found but could not rewrite.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub notices: Vec<Notice>,
+    /// References rewritten in place; every other edit in `files` is
+    /// structural (a `mod` line moved, a visibility widened).
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub respellings: Vec<Respelling>,
+    pub files: Vec<FileChange>,
+}
+
+impl Mutation for Move {
+    fn intent(&self) -> Intent {
+        Intent::Move(self.intent.clone())
+    }
+
+    fn applied(&mut self, id: u64) {
+        self.applied = true;
+        self.history_id = Some(id);
+    }
+}
 
 /// Plan moving a file or a directory. Nothing is written; see
 /// [`Apply`](crate::Apply). A directory moves with everything under it; a
@@ -178,5 +224,29 @@ impl Command for MoveIntent {
             respellings: bound.respellings,
             files,
         })
+    }
+}
+
+impl Document {
+    pub(crate) fn move_file(result: &Move, options: Options) -> Self {
+        let mut report = Self::new();
+        // Normalised paths, not the ones typed: what history will show.
+        report.title(IntentLine(&Intent::Move(MoveIntent::new(
+            &result.from,
+            &result.to,
+        ))));
+        let structural = report.moved(&result.files, &result.respellings, &result.notices);
+        report.moved_summary(
+            result.applied,
+            result.history_id,
+            MoveCounts {
+                respellings: result.respellings.len(),
+                structural,
+                notices: result.notices.len(),
+                files: result.files.len(),
+            },
+            options.diff,
+        );
+        report
     }
 }

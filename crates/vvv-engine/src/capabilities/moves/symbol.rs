@@ -11,18 +11,74 @@
 //! others, since edits inside the moved text travel with it.
 
 use std::collections::BTreeSet;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
+use serde::{Deserialize, Serialize};
 use vvv_core::{Address, Edit, Name, Parsed, Span, Surgery};
 
 use super::{Extraction, MoveSet, Rebase, Widen};
 use crate::change::Change;
 use crate::command::{Command, Context};
 use crate::graph::{Candidate, Namespace};
+use crate::protocol::vocabulary::IntentLine;
+use crate::report::{Document, MoveCounts, Options};
 use crate::{
-    Confidence, EngineError, MoveSymbol, MoveSymbolIntent, Notice, NoticeKind, Planned, Reach,
-    ReferencesQuery, VfsError,
+    Confidence, EngineError, FileChange, Intent, Mutation, Notice, NoticeKind, Planned, Reach,
+    ReferencesQuery, Respelling, VfsError,
 };
+
+/// Move one declaration — with what belongs to it in the text, and for Rust
+/// its `impl` blocks — from the file declaring it to another file of the
+/// same language, and make every reference follow.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MoveSymbolIntent {
+    pub name: String,
+    /// The file declaring it.
+    pub from: PathBuf,
+    /// The file to declare it in; it must exist.
+    pub to: PathBuf,
+}
+
+impl MoveSymbolIntent {
+    pub fn new(name: impl Into<String>, from: impl Into<PathBuf>, to: impl Into<PathBuf>) -> Self {
+        Self {
+            name: name.into(),
+            from: from.into(),
+            to: to.into(),
+        }
+    }
+}
+
+/// `vvv move --symbol`: one declaration moved between files.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MoveSymbol {
+    pub intent: MoveSymbolIntent,
+    pub applied: bool,
+    /// The history entry the apply made, when `applied`; what `undo` reverses.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub history_id: Option<u64>,
+    /// The declaration's address before and after.
+    pub from: Address,
+    pub to: Address,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub notices: Vec<Notice>,
+    /// Consumers rewritten in place; every other edit in `files` is the
+    /// declaration itself moving.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub respellings: Vec<Respelling>,
+    pub files: Vec<FileChange>,
+}
+
+impl Mutation for MoveSymbol {
+    fn intent(&self) -> Intent {
+        Intent::MoveSymbol(self.intent.clone())
+    }
+
+    fn applied(&mut self, id: u64) {
+        self.applied = true;
+        self.history_id = Some(id);
+    }
+}
 
 /// Plan moving one declaration to another file of its language. Nothing is
 /// written; see [`Apply`](crate::Apply).
@@ -428,5 +484,25 @@ impl<'a> SymbolMove<'a> {
 
     fn finish(self) -> (Change, Address, Address) {
         (self.change, self.old, self.new)
+    }
+}
+
+impl Document {
+    pub(crate) fn move_symbol(result: &MoveSymbol, options: Options) -> Self {
+        let mut report = Self::new();
+        report.title(IntentLine(&Intent::MoveSymbol(result.intent.clone())));
+        let structural = report.moved(&result.files, &result.respellings, &result.notices);
+        report.moved_summary(
+            result.applied,
+            result.history_id,
+            MoveCounts {
+                respellings: result.respellings.len(),
+                structural,
+                notices: result.notices.len(),
+                files: result.files.len(),
+            },
+            options.diff,
+        );
+        report
     }
 }

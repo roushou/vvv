@@ -6,22 +6,21 @@
 //!
 //! Interfaces (CLI, TUI, JSON) talk only to [`Engine::run`]; they never touch
 //! a language or the file system directly. Each command lives with its
-//! components in its own module — `rewrite`, `rename`, `move_file`,
+//! components in its own module — `rewrite`, `capabilities::rename`, `capabilities::moves`,
 //! `answers`, `understanding`, `batch`, `history` — as `impl Command for
 //! <request>`.
 
 mod answers;
 mod batch;
+mod capabilities;
 mod change;
 mod command;
 mod engine;
 mod error;
 mod graph;
 mod history;
-mod move_file;
 mod plan;
 pub mod protocol;
-mod rename;
 pub mod report;
 mod request;
 mod rewrite;

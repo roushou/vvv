@@ -23,6 +23,8 @@ pub mod vocabulary;
 
 use serde::{Deserialize, Serialize};
 
+pub use crate::capabilities::moves::{Move, MoveIntent, MoveSymbol, MoveSymbolIntent};
+pub use crate::capabilities::rename::{Rename, RenameIntent};
 pub use answer::{
     Consumer, Dead, Dep, Deps, Explanation, Exposed, File, Impact, ImportSite, Importer,
     ImportsReport, Locations, Outline, OutlineItem, Placed, References, Site, Surface,
@@ -30,9 +32,7 @@ pub use answer::{
 };
 pub use diff::{Diff, DiffKind, DiffLine, Hunk, LineRange};
 pub use failure::{ErrorCode, Failure};
-pub use intent::{
-    BatchIntent, Intent, MoveIntent, MoveSymbolIntent, RenameIntent, RewriteIntent, RewriteOf,
-};
+pub use intent::{BatchIntent, Intent, RewriteIntent, RewriteOf};
 pub use notice::{Notice, NoticeKind};
 pub use question::{
     DeadQuery, DepsQuery, ExplainQuery, FileQuery, HistoryQuery, ImpactQuery, ImportsQuery,
@@ -42,10 +42,7 @@ pub use reach::Reach;
 pub use references::ReferencesQuery;
 pub use request::{Answer, Call, Reply, Request};
 pub use respelling::Respelling;
-pub use result::{
-    Batch, FileChange, History, HistoryEntry, Move, MoveSymbol, Mutation, Rename, Rewrite, Search,
-    Undo,
-};
+pub use result::{Batch, FileChange, History, HistoryEntry, Mutation, Rewrite, Search, Undo};
 pub use search::{Confidence, Match, MatchId, Occurrence, Reason, Skipped};
 pub use selection::{Selection, SelectionError};
 pub use template::{Template, TemplateError};

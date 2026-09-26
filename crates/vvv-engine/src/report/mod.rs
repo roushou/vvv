@@ -17,8 +17,8 @@ use crate::protocol::display::{Line, Role};
 use crate::protocol::vocabulary::{Files, IntentLine, Mark, Plural};
 use crate::protocol::{
     Answer, Batch, BatchIntent, Consumer, Dead, Dep, Deps, Explanation, Exposed, Failure, History,
-    Impact, ImportSite, Importer, ImportsReport, Intent, Locations, Move, MoveIntent, MoveSymbol,
-    Outline, OutlineItem, References, Rename, Rewrite, Site, Skipped, Surface, Undo, Unreferenced,
+    Impact, ImportSite, Importer, ImportsReport, Intent, Locations, Outline, OutlineItem,
+    References, Rewrite, Site, Skipped, Surface, Undo, Unreferenced,
 };
 use crate::{Confidence, FileChange, HistoryEntry, Match, Notice, Occurrence, Respelling};
 
@@ -111,12 +111,12 @@ impl Document {
     // ---------------------------------------------------------------- helpers
 
     /// A title line, then a blank.
-    fn title(&mut self, text: impl std::fmt::Display) {
+    pub(crate) fn title(&mut self, text: impl std::fmt::Display) {
         self.block_body(Block::Title(text.to_string()));
     }
 
     /// `hint: …` on the note stream.
-    fn hint(&mut self, text: impl std::fmt::Display) {
+    pub(crate) fn hint(&mut self, text: impl std::fmt::Display) {
         self.block_note(Block::Note(Note::Hint(text.to_string())));
     }
 
@@ -133,7 +133,7 @@ impl Document {
     /// The body of a move preview: counts, the `→` rows, the `!` rows, and a
     /// `±` hunk for every file whose edits are more than re-spelled paths (or
     /// every file, with `--diff`). Answers how many are structural.
-    fn moved(
+    pub(crate) fn moved(
         &mut self,
         files: &[FileChange],
         respellings: &[Respelling],
@@ -152,7 +152,7 @@ impl Document {
     }
 
     /// `→ 12  ± 2  ! 1   12 files` on the note stream, then the verdict.
-    fn moved_summary(
+    pub(crate) fn moved_summary(
         &mut self,
         applied: bool,
         history_id: Option<u64>,
@@ -204,7 +204,7 @@ impl Document {
 
     /// The last line of a mutating command: `counts` then, applied, the
     /// history entry it made (`✓ #3`); otherwise the flag to go on with.
-    fn receipt(&mut self, applied: bool, history_id: Option<u64>, counts: Line) {
+    pub(crate) fn receipt(&mut self, applied: bool, history_id: Option<u64>, counts: Line) {
         match (applied, history_id) {
             (true, Some(id)) => self.notes([Line::mark(Mark::Safe)
                 .and(Role::Plain, " ")
@@ -222,13 +222,13 @@ impl Document {
     }
 
     /// The `●` lines a rename or references answer opens with.
-    fn declarations(&mut self, declarations: &[Match]) {
+    pub(crate) fn declarations(&mut self, declarations: &[Match]) {
         self.body(declarations.iter().map(|m| l::Declaration::new(m).line()));
         self.block_body(Block::Blank);
     }
 
     /// `✓ 26  ? 7  ✗ 0   4 files`, for a caller to end or continue.
-    fn verdict_counts(occurrences: &[Occurrence]) -> Line {
+    pub(crate) fn verdict_counts(occurrences: &[Occurrence]) -> Line {
         let count = |c: Confidence| occurrences.iter().filter(|o| o.confidence == c).count();
         Line::counts(&[
             (
@@ -250,7 +250,7 @@ impl Document {
         )
     }
 
-    fn edits_in(files: &[FileChange]) -> usize {
+    pub(crate) fn edits_in(files: &[FileChange]) -> usize {
         files.iter().map(|f| f.edits.len()).sum()
     }
 
@@ -611,96 +611,6 @@ impl Document {
         report
     }
 
-    // ---------------------------------------------------------------- rename
-
-    fn rename(result: &Rename, options: Options) -> Self {
-        let mut report = Self::new();
-        report.title(IntentLine(&Intent::Rename(result.intent.clone())));
-        report.declarations(&result.declarations);
-        report.block_body(Block::Verdicts {
-            occurrences: result.occurrences.clone(),
-            files: Some(result.files.clone()),
-        });
-        // The plan's patch, when asked for: a rename's rows are the verdicts,
-        // so unlike a rewrite its diff is not the default view.
-        if options.diff {
-            report.block_body(Block::Changes(result.files.clone()));
-        }
-        let strip = Self::verdict_counts(&result.occurrences);
-        let edits = Self::edits_in(&result.files);
-        let plan = Line::of(
-            Role::Dim,
-            format!(
-                "→ {} in {}",
-                Plural(edits, "occurrence"),
-                Plural(result.files.len(), "file")
-            ),
-        );
-        if result.applied {
-            report.block_note(Block::Summary(strip));
-            report.receipt(true, result.history_id, plan);
-            return report;
-        }
-        report.block_note(Block::Summary(strip.and(Role::Plain, "   ").and_line(plan)));
-        let unsure = l::Verdicts::selection(&result.occurrences, Confidence::Unresolved);
-        let mut flags = vec!["--apply to write".to_owned()];
-        if !unsure.is_empty() {
-            flags.push(format!("--select {unsure} for the ? rows alone"));
-        }
-        if !options.verbose
-            && result
-                .occurrences
-                .iter()
-                .any(|o| o.confidence == Confidence::Resolved)
-        {
-            flags.push("-v to list the ✓ rows".to_owned());
-        }
-        report.hint(flags.join(" · "));
-        report
-    }
-
-    // ----------------------------------------------------------------- moves
-
-    fn move_file(result: &Move, options: Options) -> Self {
-        let mut report = Self::new();
-        // Normalised paths, not the ones typed: what history will show.
-        report.title(IntentLine(&Intent::Move(MoveIntent::new(
-            &result.from,
-            &result.to,
-        ))));
-        let structural = report.moved(&result.files, &result.respellings, &result.notices);
-        report.moved_summary(
-            result.applied,
-            result.history_id,
-            MoveCounts {
-                respellings: result.respellings.len(),
-                structural,
-                notices: result.notices.len(),
-                files: result.files.len(),
-            },
-            options.diff,
-        );
-        report
-    }
-
-    fn move_symbol(result: &MoveSymbol, options: Options) -> Self {
-        let mut report = Self::new();
-        report.title(IntentLine(&Intent::MoveSymbol(result.intent.clone())));
-        let structural = report.moved(&result.files, &result.respellings, &result.notices);
-        report.moved_summary(
-            result.applied,
-            result.history_id,
-            MoveCounts {
-                respellings: result.respellings.len(),
-                structural,
-                notices: result.notices.len(),
-                files: result.files.len(),
-            },
-            options.diff,
-        );
-        report
-    }
-
     fn batch(result: &Batch, options: Options) -> Self {
         let mut report = Self::new();
         report.title(IntentLine(&Intent::Batch(BatchIntent {
@@ -885,9 +795,9 @@ pub enum Note {
 }
 
 /// The counts a move's summary line reports.
-struct MoveCounts {
-    respellings: usize,
-    structural: usize,
-    notices: usize,
-    files: usize,
+pub(crate) struct MoveCounts {
+    pub(crate) respellings: usize,
+    pub(crate) structural: usize,
+    pub(crate) notices: usize,
+    pub(crate) files: usize,
 }

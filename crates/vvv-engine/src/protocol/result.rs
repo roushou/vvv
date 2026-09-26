@@ -4,13 +4,10 @@
 use vvv_core::RelPath;
 
 use serde::{Deserialize, Serialize};
-use vvv_core::{Address, Edit, Query};
+use vvv_core::{Edit, Query};
 
 use super::diff::Diff;
-use super::{
-    BatchIntent, Intent, Match, MoveIntent, MoveSymbolIntent, Notice, Occurrence, RenameIntent,
-    Respelling, RewriteIntent, Skipped,
-};
+use super::{BatchIntent, Intent, Match, Notice, RewriteIntent, Skipped};
 use crate::plan::{FilePreview, Plan};
 
 /// `vvv search`: what was found, and which languages could not be asked.
@@ -33,68 +30,6 @@ pub struct Rewrite {
     /// The history entry the apply made, when `applied`; what `undo` reverses.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub history_id: Option<u64>,
-    pub files: Vec<FileChange>,
-}
-
-/// `vvv rename`: the declaration and every occurrence, each judged.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Rename {
-    pub intent: RenameIntent,
-    pub applied: bool,
-    /// The history entry the apply made, when `applied`; what `undo` reverses.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub history_id: Option<u64>,
-    /// Where `name` is declared; more than one means the rename is ambiguous.
-    pub declarations: Vec<Match>,
-    /// Every identifier spelling the name, each judged against the target;
-    /// their ids feed a later `--select`.
-    pub occurrences: Vec<Occurrence>,
-    pub files: Vec<FileChange>,
-}
-
-/// `vvv move`: a file or directory moved, its importers respelled.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Move {
-    pub intent: MoveIntent,
-    pub applied: bool,
-    /// The history entry the apply made, when `applied`; what `undo` reverses.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub history_id: Option<u64>,
-    /// Normalised, workspace-relative source and destination.
-    pub from: RelPath,
-    pub to: RelPath,
-    /// The module address before and after, when the language has one.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub from_address: Option<Address>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub to_address: Option<Address>,
-    /// References vvv found but could not rewrite.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub notices: Vec<Notice>,
-    /// References rewritten in place; every other edit in `files` is
-    /// structural (a `mod` line moved, a visibility widened).
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub respellings: Vec<Respelling>,
-    pub files: Vec<FileChange>,
-}
-
-/// `vvv move --symbol`: one declaration moved between files.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct MoveSymbol {
-    pub intent: MoveSymbolIntent,
-    pub applied: bool,
-    /// The history entry the apply made, when `applied`; what `undo` reverses.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub history_id: Option<u64>,
-    /// The declaration's address before and after.
-    pub from: Address,
-    pub to: Address,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub notices: Vec<Notice>,
-    /// Consumers rewritten in place; every other edit in `files` is the
-    /// declaration itself moving.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub respellings: Vec<Respelling>,
     pub files: Vec<FileChange>,
 }
 
@@ -209,9 +144,6 @@ macro_rules! mutation {
 }
 
 mutation!(Rewrite, Rewrite);
-mutation!(Rename, Rename);
-mutation!(Move, Move);
-mutation!(MoveSymbol, MoveSymbol);
 
 impl Mutation for Batch {
     fn intent(&self) -> Intent {

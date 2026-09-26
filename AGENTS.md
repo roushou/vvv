@@ -41,9 +41,10 @@ crates/
                 they take and return; no parser, no I/O, no lifecycle
   vvv-lang      syntax/ (the only code that touches ast-grep nodes) + one module per
                 language behind a feature: grammar + semantics tables, a Layout, a Surgery
-  vvv-engine    the façade: Engine, the plan lifecycle, the workspace and its Vfs,
-                history, and protocol/ — every type --json prints, the contract for AI
-                tools. Takes a LanguageRegistry; names no language
+  vvv-engine    the façade: Engine, capability modules, the plan lifecycle, the
+                workspace and its Vfs, history, and protocol/ — the shared wire
+                types and re-exports that AI tools consume. Takes a
+                LanguageRegistry; names no language
   vvv-tui       the picker: Tui::new(engine).editor(..).color(..).run(); links the engine only
   vvv           the entrypoint: clap consumer of vvv-engine (+ vvv-tui behind `tui`);
                 cli/commands/ map 1:1 to intents; languages.rs is the composition root
@@ -55,9 +56,12 @@ docs/          architecture, guide, protocol, report
 ## Rules
 
 - **An engine runs commands.** `Engine` has `new`, `run`, `root` and
-  `language_ids`; every capability is a request type in `protocol/` with an
-  `impl Command` next to its components. A new method on `Engine` is the wrong place
-  for anything.
+  `language_ids`. A capability may own its request and answer data, `impl Command`,
+  and report composition in one module. `protocol/` owns shared wire types and
+  the central `Request`/`Answer` contract, and re-exports capability-owned wire
+  types. Keep the data and serialization part independent of `Workspace`; only
+  execution may read the tree. A new method on `Engine` is the wrong place for
+  a capability.
 - **Library first.** Behaviour lives in `vvv-engine`. `crates/vvv` builds an intent,
   runs it, runs `Apply` if asked, hands the result to a `Reporter`. Nothing else —
   no `format!` of user-facing text outside `output/`. What crosses a boundary is data
@@ -70,9 +74,10 @@ docs/          architecture, guide, protocol, report
   `grep -rn "use vvv_core\|use vvv_lang" crates/vvv/src crates/vvv-tui/src`, excluding
   `languages.rs`, must find nothing. An interface that wants the workspace has found a
   missing engine method; one that wants a language plugin has found the composition
-  root. One membership test per crate: core — does a plugin need it to be one?; engine —
-  does it act on a tree, or cross to a client as data (then `protocol/`, which takes no
-  `Workspace`)?
+  root. One membership test per crate: core — does a plugin need it to be one?;
+  engine — does it act on a tree or cross to a client as data? Put shared client
+  data in `protocol/`; put data specific to one capability beside its execution,
+  with no tree access in the data or serialization code.
 - **The report is the result; the view is how it is shown.** `vvv-engine::report`
   composes an `Answer` into a `Document` — the facts every interface can read, with
   no layout — and a `View` lays it out as a `Presentation` of rows (`Detailed` is
