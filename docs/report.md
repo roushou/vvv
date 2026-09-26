@@ -41,6 +41,7 @@ crates/vvv-engine/src/
 crates/vvv/src/output/
   mod.rs                    Reporter, OutputFormat
   human/mod.rs              HumanReporter: Renderer + Reporter
+  human/advice.rs           CLI flag advice appended after composition
   render/                   the Renderer trait, Palette, Styled
   json.rs                   the --json reporter (the Answer, not the report)
   diagnosis.rs              Diagnose
@@ -52,7 +53,8 @@ crates/vvv-tui/src/
 ```
 
 `report/` is pure: no `Workspace`, no I/O, no interface. It is data crossing to
-a client, which is the test `protocol/` passes.
+a client, which is the test `protocol/` passes. The human CLI reporter appends
+flag advice after `Document::of`; the picker sees the shared report without it.
 
 ## The report
 
@@ -231,8 +233,9 @@ No composition decides a column, a glyph or a colour. The rows a command prints
 come from the same builder every view calls
 (`Verdicts::new(..).expanded(options.verbose).planned(..)`).
 
-`Document::error(&Failure)` is the other entry: a failure as `✗ message` and its
-hints, which both reporters print.
+`Document::error(&Failure)` is the other entry: a failure as `✗ message`. The
+human CLI reporter appends its hint lines; the JSON reporter serializes the
+`Failure` directly.
 
 ## JSON stays the protocol
 

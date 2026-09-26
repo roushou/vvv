@@ -167,7 +167,8 @@ mod scope {
         assert!(
             matches!(&err, EngineError::AmbiguousSymbol { declarations, .. } if declarations.len() == 2)
         );
-        assert!(err.to_string().contains("a.p:1:1") && err.to_string().contains("--in"));
+        assert!(err.to_string().contains("a.p:1:1"));
+        assert!(!err.to_string().contains("--in"));
     }
 
     #[test]

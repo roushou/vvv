@@ -224,7 +224,8 @@ constructor is implemented beside its request, answer, and command in
 `HistoryLine`, `SiteLine`, `ImportSiteLine`, `PlacedLine`, `SkippedLine`, `Caret`,
 `Diff`, `Tag`, `Verdict`) turn protocol data into `Line`s. The report knows the business
 and names no interface; both the CLI and the picker read it. `--json` is not this —
-it is the `Answer`, the wire contract.
+it is the `Answer`, the wire contract. The human CLI reporter appends flag advice
+after composition; the picker receives the shared report without CLI instructions.
 
 ### `crates/vvv` — the entrypoint
 
@@ -250,6 +251,8 @@ how results look. Two renderers implement it, and they share only `Diagnose`:
   pipeline `Answer → Document → View → Presentation → Styled → text`. It builds
   the report (`vvv_engine::report::Document::of`) and draws it
   (`Renderer::render`), writing results to `O` (stdout), notes to `E` (stderr).
+- `human/advice.rs` — the CLI's flag hints, appended to the document before
+  rendering; no engine report composition names a CLI flag.
 - `json.rs` — `JsonReporter<W: Write>`, one `Response` envelope per invocation.
   It serializes the `Answer` itself: no document, no view, no colour.
 - `render/` — the drawing side, which names no command:

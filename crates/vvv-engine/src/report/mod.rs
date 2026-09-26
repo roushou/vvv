@@ -24,12 +24,12 @@ use crate::{Confidence, FileChange, HistoryEntry, Match, Notice, Occurrence, Res
 
 use lines as l;
 
-/// The flags a view needs beyond the answer.
+/// The presentation choices a view needs beyond the answer.
 #[derive(Debug, Clone, Copy, Default)]
 pub struct Options {
-    /// Expand what is collapsed by default (`-v`).
+    /// Expand what is collapsed by default.
     pub verbose: bool,
-    /// Print every file's full patch, not only structural edits (`--diff`).
+    /// Show every file's full patch, not only structural edits.
     pub diff: bool,
 }
 
@@ -90,21 +90,18 @@ impl Document {
             Answer::File(_) => Self::new(),
             Answer::Rewrite(r) => Self::rewrite(r),
             Answer::Rename(r) => Self::rename(r, options),
-            Answer::Move(r) => Self::move_file(r, options),
-            Answer::MoveSymbol(r) => Self::move_symbol(r, options),
-            Answer::Batch(r) => Self::batch(r, options),
+            Answer::Move(r) => Self::move_file(r),
+            Answer::MoveSymbol(r) => Self::move_symbol(r),
+            Answer::Batch(r) => Self::batch(r),
             Answer::Undo(r) => Self::undo(r),
             Answer::History(r) => Self::history(r),
         }
     }
 
-    /// Compose a failure: `✗ message`, then each hint line.
+    /// Compose a failure as `✗ message`; interfaces present its hints.
     pub fn error(failure: &Failure) -> Self {
         let mut report = Self::new();
         report.notes([Line::of(Role::Error, "✗ ").and(Role::Plain, failure.message.clone())]);
-        for line in failure.hint.iter().flat_map(|h| h.lines()) {
-            report.hint(line);
-        }
         report
     }
 
@@ -113,11 +110,6 @@ impl Document {
     /// A title line, then a blank.
     pub(crate) fn title(&mut self, text: impl std::fmt::Display) {
         self.block_body(Block::Title(text.to_string()));
-    }
-
-    /// `hint: …` on the note stream.
-    pub(crate) fn hint(&mut self, text: impl std::fmt::Display) {
-        self.block_note(Block::Note(Note::Hint(text.to_string())));
     }
 
     /// `warning: …` on the note stream.
@@ -131,8 +123,8 @@ impl Document {
     }
 
     /// The body of a move preview: counts, the `→` rows, the `!` rows, and a
-    /// `±` hunk for every file whose edits are more than re-spelled paths (or
-    /// every file, with `--diff`). Answers how many are structural.
+    /// `±` hunk for every file whose edits are more than re-spelled paths.
+    /// Answers how many are structural.
     pub(crate) fn moved(
         &mut self,
         files: &[FileChange],
@@ -157,7 +149,6 @@ impl Document {
         applied: bool,
         history_id: Option<u64>,
         counts: MoveCounts,
-        diff: bool,
     ) {
         let MoveCounts {
             respellings,
@@ -195,15 +186,10 @@ impl Document {
             return;
         }
         self.notes([counts]);
-        let mut flags = vec!["--apply to write"];
-        if !diff {
-            flags.push("--diff for the full patch");
-        }
-        self.hint(flags.join(" · "));
     }
 
     /// The last line of a mutating command: `counts` then, applied, the
-    /// history entry it made (`✓ #3`); otherwise the flag to go on with.
+    /// history entry it made (`✓ #3`).
     pub(crate) fn receipt(&mut self, applied: bool, history_id: Option<u64>, counts: Line) {
         match (applied, history_id) {
             (true, Some(id)) => self.notes([Line::mark(Mark::Safe)
@@ -214,10 +200,7 @@ impl Document {
             (true, None) => self.notes([Line::mark(Mark::Safe)
                 .and(Role::Plain, "   ")
                 .and_line(counts)]),
-            (false, _) => {
-                self.notes([counts]);
-                self.hint("--apply to write");
-            }
+            (false, _) => self.notes([counts]),
         }
     }
 
@@ -280,11 +263,6 @@ impl Document {
         }
         for skipped in skipped {
             report.warning(l::SkippedLine::new(skipped).line());
-        }
-        if !skipped.is_empty() {
-            report.hint(
-                "a pattern is written in one language; pass --lang to search that one only (the matches above are complete for the others)",
-            );
         }
         report
     }
@@ -382,11 +360,6 @@ impl Document {
                 .and(Role::Plain, " ")
                 .and(Role::Plain, result.sites.len().to_string()),
         ));
-        if result.sites.iter().all(|s| s.import.is_none())
-            && result.sites.iter().any(|s| s.address.is_some())
-        {
-            report.hint("--from <file> for the import to write there");
-        }
         report
     }
 
@@ -611,7 +584,7 @@ impl Document {
         report
     }
 
-    fn batch(result: &Batch, options: Options) -> Self {
+    fn batch(result: &Batch) -> Self {
         let mut report = Self::new();
         report.title(IntentLine(&Intent::Batch(BatchIntent {
             intents: result.intents.clone(),
@@ -629,7 +602,6 @@ impl Document {
                 notices: result.notices.len(),
                 files: result.files.len(),
             },
-            options.diff,
         );
         report
     }
@@ -665,8 +637,6 @@ impl Document {
             report.block_note(Block::Summary(
                 Line::mark(Mark::Nothing).and(Role::Plain, " no history"),
             ));
-            report
-                .hint("--apply writes a plan and records it here; `vvv undo` reverses the newest");
             return report;
         }
         let last = result.entries.len() - 1;

@@ -36,7 +36,7 @@ pub enum EngineError {
     },
     #[error(transparent)]
     Conflict(#[from] EditConflict),
-    #[error("`{name}` is declared in several places ({}); pick one with --in <file>", declarations.iter().map(ToString::to_string).collect::<Vec<_>>().join(", "))]
+    #[error("`{name}` is declared in several places ({})", declarations.iter().map(ToString::to_string).collect::<Vec<_>>().join(", "))]
     AmbiguousSymbol {
         name: String,
         declarations: Vec<crate::graph::DeclarationSite>,

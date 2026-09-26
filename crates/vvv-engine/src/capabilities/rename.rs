@@ -9,7 +9,7 @@ use crate::command::{Command, Context};
 use crate::graph::Evidence;
 use crate::protocol::display::{Line, Role};
 use crate::protocol::vocabulary::{IntentLine, Plural};
-use crate::report::{Block, Document, Options, lines as l};
+use crate::report::{Block, Document, Options};
 use crate::{
     Confidence, EngineError, FileChange, Intent, Match, Mutation, Occurrence, Planned, References,
     ReferencesQuery, Selection,
@@ -199,20 +199,6 @@ impl Document {
             return report;
         }
         report.block_note(Block::Summary(strip.and(Role::Plain, "   ").and_line(plan)));
-        let unsure = l::Verdicts::selection(&result.occurrences, Confidence::Unresolved);
-        let mut flags = vec!["--apply to write".to_owned()];
-        if !unsure.is_empty() {
-            flags.push(format!("--select {unsure} for the ? rows alone"));
-        }
-        if !options.verbose
-            && result
-                .occurrences
-                .iter()
-                .any(|o| o.confidence == Confidence::Resolved)
-        {
-            flags.push("-v to list the ✓ rows".to_owned());
-        }
-        report.hint(flags.join(" · "));
         report
     }
 }

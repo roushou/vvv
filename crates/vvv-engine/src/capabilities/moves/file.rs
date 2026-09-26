@@ -16,7 +16,7 @@ use super::{MoveSet, Reachability, Rebase, Widen};
 use crate::change::Change;
 use crate::command::{Command, Context};
 use crate::protocol::vocabulary::IntentLine;
-use crate::report::{Document, MoveCounts, Options};
+use crate::report::{Document, MoveCounts};
 use crate::{
     EngineError, FileChange, Intent, Mutation, Notice, Planned, Respelling, SourceFile, VfsError,
 };
@@ -228,7 +228,7 @@ impl Command for MoveIntent {
 }
 
 impl Document {
-    pub(crate) fn move_file(result: &Move, options: Options) -> Self {
+    pub(crate) fn move_file(result: &Move) -> Self {
         let mut report = Self::new();
         // Normalised paths, not the ones typed: what history will show.
         report.title(IntentLine(&Intent::Move(MoveIntent::new(
@@ -245,7 +245,6 @@ impl Document {
                 notices: result.notices.len(),
                 files: result.files.len(),
             },
-            options.diff,
         );
         report
     }

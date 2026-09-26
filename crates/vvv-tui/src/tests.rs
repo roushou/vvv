@@ -857,6 +857,22 @@ fn snapshot_report_overlay() {
 }
 
 #[test]
+fn shared_move_and_rename_reports_have_no_cli_flag_advice() {
+    use vvv_engine::report::{Block, Document, Note, Options};
+
+    for answer in [Answer::Rename(fx::rename(1)), Answer::Move(fx::move_file())] {
+        let report = Document::of(&answer, Options::default());
+        assert!(
+            report
+                .parts()
+                .1
+                .iter()
+                .all(|block| !matches!(block, Block::Note(Note::Hint(_))))
+        );
+    }
+}
+
+#[test]
 fn snapshot_search() {
     let mut m = searched();
     m.update(Action::Enter);

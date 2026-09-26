@@ -104,6 +104,9 @@ docs/          architecture, guide, protocol, report
   it is a struct. A struct named with a verb, or a method whose only input is the
   previous step's output, is the smell. A helper with no natural owner is a sign the
   type is missing.
+- **No free functions.** Behavior lives as a method on the type that owns the
+  data it uses, or in a trait impl. Do not add a unit struct solely to namespace
+  an associated function. `#[test]` functions, `main`, and closures are exempt.
 - **Nothing writes without a `Plan`.** Planners emit a `ChangeSet`; `Plan::preview` is
   read-only; `Plan::apply(self)` consumes the plan, checks fingerprints, and returns a
   `Receipt`. `ChangeSet` has no write method on purpose. A command returns

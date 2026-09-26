@@ -371,27 +371,6 @@ impl<'a> Verdicts<'a> {
         self
     }
 
-    /// The row numbers of one verdict, as `--select` would take them: `27-33`
-    /// when contiguous, else a list.
-    pub fn selection(occurrences: &[Occurrence], confidence: Confidence) -> String {
-        let numbers: Vec<usize> = occurrences
-            .iter()
-            .enumerate()
-            .filter(|(_, o)| o.confidence == confidence)
-            .map(|(i, _)| i + 1)
-            .collect();
-        match (numbers.first(), numbers.last()) {
-            (Some(first), Some(last)) if last - first + 1 == numbers.len() && first != last => {
-                format!("{first}-{last}")
-            }
-            _ => numbers
-                .iter()
-                .map(ToString::to_string)
-                .collect::<Vec<_>>()
-                .join(","),
-        }
-    }
-
     pub fn lines(&self) -> Vec<Row> {
         let width = self.occurrences.len().to_string().len();
         let mut rows = Vec::new();

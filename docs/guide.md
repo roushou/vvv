@@ -496,8 +496,9 @@ where you act: `↓` or `⏎` from the query (from the context, `esc` or `←`),
 letters — `r` renames what is under the cursor, `m` moves its file, `M` moves the
 declaration, `w` rewrites the search's matches, `h` opens history, `u` undoes the
 newest apply. `v`
-switches the rows between the compact list and the full report the CLI prints —
-search results, a rename's verdict rows, a move's paths and notices.
+switches the rows between the compact list and the full report's result rows —
+search results, a rename's verdict rows, a move's paths and notices. CLI flag
+hints stay in the CLI; the picker shows its own actions.
 
 `⏎` on a declaration — or on a use that resolves to exactly one — _enters its scope_:
 the rows become that declaration's judged references, grouped by verdict (`✓ safe`,

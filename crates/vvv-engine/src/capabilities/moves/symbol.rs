@@ -21,7 +21,7 @@ use crate::change::Change;
 use crate::command::{Command, Context};
 use crate::graph::{Candidate, Namespace};
 use crate::protocol::vocabulary::IntentLine;
-use crate::report::{Document, MoveCounts, Options};
+use crate::report::{Document, MoveCounts};
 use crate::{
     Confidence, EngineError, FileChange, Intent, Mutation, Notice, NoticeKind, Planned, Reach,
     ReferencesQuery, Respelling, VfsError,
@@ -488,7 +488,7 @@ impl<'a> SymbolMove<'a> {
 }
 
 impl Document {
-    pub(crate) fn move_symbol(result: &MoveSymbol, options: Options) -> Self {
+    pub(crate) fn move_symbol(result: &MoveSymbol) -> Self {
         let mut report = Self::new();
         report.title(IntentLine(&Intent::MoveSymbol(result.intent.clone())));
         let structural = report.moved(&result.files, &result.respellings, &result.notices);
@@ -501,7 +501,6 @@ impl Document {
                 notices: result.notices.len(),
                 files: result.files.len(),
             },
-            options.diff,
         );
         report
     }
