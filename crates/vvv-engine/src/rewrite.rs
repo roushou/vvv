@@ -67,12 +67,17 @@ impl RewriteMatches {
         for file in self.files.values() {
             file.edits(&self.intent, &mut change)?;
         }
-        Planned::of(workspace, change, |_, files| Rewrite {
-            intent: self.intent,
-            applied: false,
-            history_id: None,
-            files,
-        })
+        Planned::of(
+            workspace,
+            change,
+            crate::Intent::Rewrite(self.intent.clone()),
+            |_, files| Rewrite {
+                intent: self.intent,
+                applied: false,
+                history_id: None,
+                files,
+            },
+        )
     }
 }
 

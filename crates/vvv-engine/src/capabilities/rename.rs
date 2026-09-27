@@ -99,10 +99,6 @@ impl Mutation for Rename {
         crate::MutationAnswer::Rename(self)
     }
 
-    fn intent(&self) -> Intent {
-        Intent::Rename(self.intent.clone())
-    }
-
     fn applied(&mut self, id: u64) {
         self.applied = true;
         self.history_id = Some(id);
@@ -148,14 +144,19 @@ impl Command for RenameIntent {
                 Edit::replace(m.span, &intent.to),
             )?;
         }
-        Planned::of(cx.workspace, change, |_, files| Rename {
-            intent: intent.clone(),
-            applied: false,
-            history_id: None,
-            declarations,
-            occurrences,
-            files,
-        })
+        Planned::of(
+            cx.workspace,
+            change,
+            Intent::Rename(intent.clone()),
+            |_, files| Rename {
+                intent: intent.clone(),
+                applied: false,
+                history_id: None,
+                declarations,
+                occurrences,
+                files,
+            },
+        )
     }
 }
 

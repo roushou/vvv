@@ -95,7 +95,9 @@ the picker or `serve` plans any intent without matching its variants. `Apply` wr
 records history and hands the same answer back marked applied — it needs the
 `Mutation` capability, sealed to the five mutation payloads and their closed
 `MutationAnswer` sum. Queries cannot carry a `Planned` or reach `Apply`. Typed plans
-wrap their payload with `into_mutation`; there is no arbitrary result mapping.
+wrap their payload with `into_mutation`; there is no arbitrary result mapping or
+mutable result access. `Planned` captures its history `Intent` when constructed,
+independently of its presentation data, and `Apply` records that captured intent.
 `MutationAnswer` becomes an `Answer` only at the reporting boundary; `UndoLast` and
 `HistoryQuery` are commands too. `FileQuery` gives an interface a file with its highlights; `root()` and
 `language_ids()` are the two facts about the session. Nothing about a command lives

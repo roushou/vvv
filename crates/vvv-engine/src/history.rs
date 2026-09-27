@@ -173,7 +173,7 @@ impl<T: Mutation> Command for Apply<T> {
         let id = snapshot.next_id()?;
         // Whatever happens below, the tree is no longer what the graph saw.
         cx.graph.touched();
-        let (mut result, plans) = self.0.into_parts();
+        let (intent, mut result, plans) = self.0.into_parts();
         let mut transaction = crate::plan::Transaction::new(workspace);
         for plan in plans {
             if let Err(error) = transaction.apply(plan) {
@@ -181,7 +181,7 @@ impl<T: Mutation> Command for Apply<T> {
             }
         }
         let receipt = transaction.receipt();
-        let record = match snapshot.push(id, result.intent(), receipt, &mut transaction) {
+        let record = match snapshot.push(id, intent, receipt, &mut transaction) {
             Ok(record) => record,
             Err(error) => return Err(transaction.recover(error.into())),
         };

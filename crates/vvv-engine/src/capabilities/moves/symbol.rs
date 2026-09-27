@@ -74,10 +74,6 @@ impl Mutation for MoveSymbol {
         crate::MutationAnswer::MoveSymbol(self)
     }
 
-    fn intent(&self) -> Intent {
-        Intent::MoveSymbol(self.intent.clone())
-    }
-
     fn applied(&mut self, id: u64) {
         self.applied = true;
         self.history_id = Some(id);
@@ -125,16 +121,21 @@ impl Command for MoveSymbolIntent {
         mv.widen_for_consumers();
         mv.cut_and_paste()?;
         let (change, from, to) = mv.finish();
-        Planned::of(cx.workspace, change, |bound, files| MoveSymbol {
-            intent: self.clone(),
-            applied: false,
-            history_id: None,
-            from,
-            to,
-            notices: bound.notices,
-            respellings: bound.respellings,
-            files,
-        })
+        Planned::of(
+            cx.workspace,
+            change,
+            Intent::MoveSymbol(self.clone()),
+            |bound, files| MoveSymbol {
+                intent: self.clone(),
+                applied: false,
+                history_id: None,
+                from,
+                to,
+                notices: bound.notices,
+                respellings: bound.respellings,
+                files,
+            },
+        )
     }
 }
 

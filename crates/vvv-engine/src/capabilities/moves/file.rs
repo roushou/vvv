@@ -68,10 +68,6 @@ impl Mutation for Move {
         crate::MutationAnswer::Move(self)
     }
 
-    fn intent(&self) -> Intent {
-        Intent::Move(self.intent.clone())
-    }
-
     fn applied(&mut self, id: u64) {
         self.applied = true;
         self.history_id = Some(id);
@@ -233,18 +229,23 @@ impl Command for MoveIntent {
         for (f, t) in moves.iter() {
             change.move_file(graph.file(f)?.file().witness(), t)?;
         }
-        Planned::of(cx.workspace, change, |bound, files| Move {
-            intent: intent.clone(),
-            applied: false,
-            history_id: None,
-            from: from.into(),
-            to: to.into(),
-            from_address: Some(old),
-            to_address: Some(new),
-            notices: bound.notices,
-            respellings: bound.respellings,
-            files,
-        })
+        Planned::of(
+            cx.workspace,
+            change,
+            Intent::Move(intent.clone()),
+            |bound, files| Move {
+                intent: intent.clone(),
+                applied: false,
+                history_id: None,
+                from: from.into(),
+                to: to.into(),
+                from_address: Some(old),
+                to_address: Some(new),
+                notices: bound.notices,
+                respellings: bound.respellings,
+                files,
+            },
+        )
     }
 }
 

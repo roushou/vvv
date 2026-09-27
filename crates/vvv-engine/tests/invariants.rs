@@ -2793,3 +2793,24 @@ fn every_mutation_intent_keeps_its_result_variant_through_apply() {
         );
     }
 }
+
+#[test]
+fn detached_presentation_changes_cannot_change_the_plan_or_its_history_intent() {
+    let fixture = Fixture::new(&[("a.p", "def foo\nfoo")]);
+    let intent = RenameIntent::new("foo", "bar");
+    let planned = fixture.engine.run(intent.clone()).unwrap();
+    let mut presentation = (*planned).clone();
+    presentation.intent.to = "presentation only".into();
+    presentation.files.clear();
+    fixture.engine.run(Apply(planned.into_mutation())).unwrap();
+    assert_eq!(fixture.read("a.p"), "def bar\nbar");
+    assert_eq!(
+        fixture
+            .engine
+            .run(vvv_engine::HistoryQuery)
+            .unwrap()
+            .entries[0]
+            .intent,
+        Intent::Rename(intent),
+    );
+}

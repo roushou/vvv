@@ -4,7 +4,9 @@
 //! preview, one apply, one undo.
 
 use crate::command::{Command, Context};
-use crate::{Batch, BatchIntent, EngineError, FileChange, FilePreview, Planned, Receipt, VfsError};
+use crate::{
+    Batch, BatchIntent, EngineError, FileChange, FilePreview, Intent, Planned, Receipt, VfsError,
+};
 
 /// Plan several intents as one. Each is planned against a staging copy of
 /// the workspace onto which the previous steps have been applied, so a
@@ -56,6 +58,7 @@ impl Command for BatchIntent {
         };
         let files = FileChange::all(None, &preview);
         Ok(Planned::new(
+            Intent::Batch(self.clone()),
             Batch {
                 intents: self.intents,
                 applied: false,

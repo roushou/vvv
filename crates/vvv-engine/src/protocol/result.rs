@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 use vvv_core::{Edit, Query};
 
 use super::diff::Diff;
-use super::{BatchIntent, Intent, Match, Notice, RewriteIntent, Skipped};
+use super::{Intent, Match, Notice, RewriteIntent, Skipped};
 use crate::plan::{FilePreview, Plan};
 
 /// `vvv search`: what was found, and which languages could not be asked.
@@ -124,19 +124,16 @@ impl FileChange {
 /// External payloads cannot authorize writes:
 ///
 /// ```compile_fail,E0277
-/// use vvv_engine::{Intent, Mutation, MutationAnswer};
+/// use vvv_engine::{Mutation, MutationAnswer};
 /// struct External;
 /// impl Mutation for External {
 ///     fn into_mutation(self) -> MutationAnswer { unimplemented!() }
-///     fn intent(&self) -> Intent { unimplemented!() }
 ///     fn applied(&mut self, _: u64) {}
 /// }
 /// ```
 pub trait Mutation: sealed::Sealed {
     /// Wrap this payload in the closed mutation result.
     fn into_mutation(self) -> MutationAnswer;
-    /// What is recorded in history.
-    fn intent(&self) -> Intent;
     /// Mark the result as written by history entry `id`.
     fn applied(&mut self, id: u64);
 }
@@ -146,9 +143,6 @@ macro_rules! mutation {
         impl Mutation for $t {
             fn into_mutation(self) -> MutationAnswer {
                 MutationAnswer::$variant(self)
-            }
-            fn intent(&self) -> Intent {
-                Intent::$variant(self.intent.clone())
             }
             fn applied(&mut self, id: u64) {
                 self.applied = true;
@@ -163,11 +157,6 @@ mutation!(Rewrite, Rewrite);
 impl Mutation for Batch {
     fn into_mutation(self) -> MutationAnswer {
         MutationAnswer::Batch(self)
-    }
-    fn intent(&self) -> Intent {
-        Intent::Batch(BatchIntent {
-            intents: self.intents.clone(),
-        })
     }
     fn applied(&mut self, id: u64) {
         self.applied = true;
@@ -213,16 +202,6 @@ impl MutationAnswer {
 impl Mutation for MutationAnswer {
     fn into_mutation(self) -> Self {
         self
-    }
-
-    fn intent(&self) -> Intent {
-        match self {
-            Self::Rewrite(result) => result.intent(),
-            Self::Rename(result) => result.intent(),
-            Self::Move(result) => result.intent(),
-            Self::MoveSymbol(result) => result.intent(),
-            Self::Batch(result) => result.intent(),
-        }
     }
 
     fn applied(&mut self, id: u64) {
