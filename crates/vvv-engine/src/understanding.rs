@@ -69,7 +69,7 @@ impl Command for SurfaceQuery {
                         .filter(|n| {
                             n.fragment
                                 .imports()
-                                .any(|e| e.address.as_ref().is_some_and(|a| addresses.contains(a)))
+                                .any(|e| e.address().is_some_and(|a| addresses.contains(a)))
                         })
                         .count();
                     items.push(Exposed {
@@ -136,7 +136,7 @@ impl Command for ImpactQuery {
                 let through = node
                     .fragment
                     .imports()
-                    .filter_map(|e| e.address.as_ref())
+                    .filter_map(|e| e.address())
                     .find(|a| frontier.iter().any(|f| a.starts_with(f)))
                     .and_then(|a| {
                         frontier.iter().find(|f| a.starts_with(f)).map(|f| {
@@ -276,7 +276,7 @@ impl Command for ImportsQuery {
                     path: candidate.path().into(),
                     import: edge.import.clone(),
                     start: source.position(edge.import.span.start),
-                    address: edge.address.clone(),
+                    address: edge.address().cloned(),
                 };
                 // What each statement brings in: a glob of `X` and `X`
                 // itself are different things.
@@ -285,11 +285,11 @@ impl Command for ImportsQuery {
                     if parsed.is_group_prefix(&edge.import) {
                         continue;
                     }
-                    if edge.address.is_none() {
+                    if edge.address().is_none() {
                         report.unresolved.push(site(edge));
                         continue;
                     }
-                    if let Some(address) = &edge.address {
+                    if let Some(address) = edge.address() {
                         let seen = brought
                             .entry((address.clone(), edge.import.glob))
                             .or_default();

@@ -226,7 +226,7 @@ impl Graph {
                     continue;
                 };
                 for edge in fragment.edges.iter().filter(|e| e.import.reexport) {
-                    let Some(resolved) = &edge.address else {
+                    let Some(resolved) = edge.address() else {
                         continue;
                     };
                     let offered: Vec<Name> = if edge.import.glob {
@@ -348,7 +348,7 @@ impl Graph {
             return Ok(Some(at.clone()));
         }
         for edge in fragment.edges.iter().filter(|e| e.import.reexport) {
-            let Some(resolved) = &edge.address else {
+            let Some(resolved) = edge.address() else {
                 continue;
             };
             let next = if edge.import.glob {

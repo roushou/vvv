@@ -16,10 +16,10 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use vvv_core::{Address, Edit, Name, Parsed, Span, Surgery};
 
-use super::{Extraction, MoveSet, Rebase, Widen};
+use super::{Extraction, Rebase, Widen};
 use crate::change::Change;
 use crate::command::{Command, Context};
-use crate::graph::{Candidate, Namespace};
+use crate::graph::{Candidate, Fragment, Namespace, Node};
 use crate::protocol::vocabulary::IntentLine;
 use crate::report::{Document, MoveCounts};
 use crate::{
@@ -107,13 +107,13 @@ impl Command for MoveSymbolIntent {
         let consumers = graph.consumers(&ns, &old, &[&from_path, &to_path])?;
         let evidence =
             graph.references(&ReferencesQuery::new(self.name.as_str()).declared_in(&from_path))?;
-        let candidates = graph.files(Some(&ns.id()));
+        let nodes = graph.fragments(&ns)?;
 
         let mut mv = SymbolMove::new(&ns, &self.name, &source, &dest, extraction, consumers)?;
         mv.notice_resolved_uses(&evidence.occurrences);
         mv.respell_inner_paths();
         mv.provision()?;
-        mv.rebase_consumers(&candidates)?;
+        mv.rebase_consumers(&nodes)?;
         mv.keep_old_file_working()?;
         mv.drop_redundant_import()?;
         mv.widen_for_consumers();
@@ -148,6 +148,8 @@ struct SymbolMove<'a> {
     new_module: Address,
     old: Address,
     new: Address,
+    source_fragment: std::sync::Arc<Fragment>,
+    dest_fragment: std::sync::Arc<Fragment>,
     source: Parsed<'a>,
     dest: Parsed<'a>,
     source_witness: &'a crate::workspace::SourceWitness,
@@ -187,6 +189,8 @@ impl<'a> SymbolMove<'a> {
             new: new_module.join(name),
             old_module,
             new_module,
+            source_fragment: source.fragment(ns)?,
+            dest_fragment: dest.fragment(ns)?,
             source: Parsed {
                 path: source.path(),
                 source: source.file().source(),
@@ -238,17 +242,17 @@ impl<'a> SymbolMove<'a> {
 
     /// Qualified paths inside the moved text, re-rendered from the new file.
     fn respell_inner_paths(&mut self) {
-        for import in self
-            .source
-            .facts
-            .imports
+        for edge in self
+            .source_fragment
+            .edges
             .iter()
-            .filter(|i| !i.declares && self.extraction.contains(i.span))
+            .filter(|e| !e.import.declares && self.extraction.contains(e.import.span))
         {
-            if let Some(resolved) = self.ns.resolve(self.from_path, &import.path) {
+            let import = &edge.import;
+            if let Some(resolved) = edge.address() {
                 let rendered =
                     self.surgery
-                        .render(self.ns.project(), self.to_path, &resolved, &import.path);
+                        .render(self.ns.project(), self.to_path, resolved, &import.path);
                 if rendered != import.path {
                     self.text_edits
                         .push(Edit::replace(import.span, rendered.to_string()));
@@ -272,12 +276,12 @@ impl<'a> SymbolMove<'a> {
             .map(Name::to_string)
             .collect();
         let source = self.source;
-        for import in source
-            .facts
-            .imports
-            .iter()
-            .filter(|i| i.declares && !self.extraction.contains(i.span))
+        for edge in self
+            .source_fragment
+            .imports()
+            .filter(|e| !self.extraction.contains(e.import.span))
         {
+            let import = &edge.import;
             if source.is_group_prefix(import) {
                 continue;
             }
@@ -287,10 +291,10 @@ impl<'a> SymbolMove<'a> {
             if !used.contains(&name) || already.contains(&name) || name == self.name {
                 continue;
             }
-            let statement = match self.ns.resolve(self.from_path, &import.path) {
+            let statement = match edge.address() {
                 Some(address) if !address.is_root() => {
                     self.surgery
-                        .import_statement(self.ns.project(), self.to_path, &address, &name)
+                        .import_statement(self.ns.project(), self.to_path, address, &name)
                 }
                 _ => self.surgery.import_of_path(&import.path, &name),
             };
@@ -353,19 +357,11 @@ impl<'a> SymbolMove<'a> {
     /// Every consumer: imports and qualified paths are rebased to the new
     /// address. Self-references inside the moved text travel with it and are
     /// not rows of the preview.
-    fn rebase_consumers(&mut self, candidates: &[Candidate]) -> Result<(), EngineError> {
-        let no_moves = MoveSet::default();
-        let rebase = Rebase::of_addresses(
-            self.ns.layout(),
-            self.surgery,
-            self.ns.project(),
-            &no_moves,
-            self.old.clone(),
-            self.new.clone(),
-        );
-        for candidate in candidates.iter().filter(|c| c.path() != self.to_path) {
-            let mut rewrite = rebase.rewrite(candidate)?;
-            if candidate.path() == self.from_path {
+    fn rebase_consumers(&mut self, nodes: &[Node]) -> Result<(), EngineError> {
+        let rebase = Rebase::new(self.ns, self.old.clone(), self.new.clone());
+        for node in nodes.iter().filter(|c| c.path() != self.to_path) {
+            let mut rewrite = rebase.rewrite(node, node.path())?;
+            if node.path() == self.from_path {
                 let (moving, staying): (Vec<Edit>, Vec<Edit>) = rewrite
                     .change
                     .take_edits(self.from_path)
@@ -408,8 +404,9 @@ impl<'a> SymbolMove<'a> {
     /// redundant: delete the statement, or say so when it shares a group.
     fn drop_redundant_import(&mut self) -> Result<(), EngineError> {
         let text = self.dest.source.as_str();
-        for import in self.dest.facts.imports.iter().filter(|i| i.declares) {
-            if self.ns.resolve(self.to_path, &import.path).as_ref() != Some(&self.old) {
+        for edge in self.dest_fragment.imports() {
+            let import = &edge.import;
+            if edge.address() != Some(&self.old) {
                 continue;
             }
             match &import.group {

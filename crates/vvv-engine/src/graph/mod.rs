@@ -414,18 +414,18 @@ impl Graph {
         source: &SourceText,
         edge: &Edge,
     ) -> Result<Dep, EngineError> {
-        let origin = match &edge.address {
+        let origin = match edge.address() {
             Some(address) => self.origin_of(ns, address)?.filter(|o| o != address),
             None => None,
         };
         let file = origin
             .as_ref()
-            .or(edge.address.as_ref())
+            .or(edge.address())
             .and_then(|a| ns.file_of(a));
         Ok(Dep {
             import: edge.import.clone(),
             start: source.position(edge.import.span.start),
-            address: edge.address.clone(),
+            address: edge.address().cloned(),
             origin,
             file: file.map(Into::into),
         })
@@ -459,7 +459,7 @@ impl Graph {
             .flat_map(|node| {
                 node.fragment
                     .imports()
-                    .filter(|e| e.address.as_ref().is_some_and(&leads))
+                    .filter(|e| e.address().is_some_and(&leads))
                     .map(|e| Importer {
                         path: node.path().into(),
                         import: e.import.clone(),

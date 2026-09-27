@@ -7,7 +7,7 @@ use std::sync::{Arc, OnceLock, RwLock};
 use super::{Fragment, Namespace, Scope};
 use crate::{Match, SourceFile};
 
-use vvv_core::{Facts, ImportRef, Language, LanguageId, Project, Query, SearchError};
+use vvv_core::{Facts, Language, LanguageId, Project, Query, SearchError};
 
 use crate::EngineError;
 
@@ -177,11 +177,6 @@ impl Candidate {
                 Match::locate(raw, &self.file, self.language.id())
             })
             .collect())
-    }
-
-    /// Import paths in this file, in source order.
-    pub fn imports(&self) -> Result<Vec<ImportRef>, EngineError> {
-        Ok(self.facts()?.imports.clone())
     }
 
     fn locate(&self, raw: Vec<vvv_core::RawMatch>) -> Vec<Match> {

@@ -1,0 +1,87 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "intent": {
+      "from": "src/a.rs",
+      "to": "src/d.rs"
+    },
+    "applied": false,
+    "from": "src/a.rs",
+    "to": "src/d.rs",
+    "from_address": {
+      "package": "corpus_moves",
+      "path": [
+        "a"
+      ]
+    },
+    "to_address": {
+      "package": "corpus_moves",
+      "path": [
+        "d"
+      ]
+    },
+    "respellings": [
+      {
+        "path": "src/c.rs",
+        "span": {
+          "start": 4,
+          "end": 12
+        },
+        "start": {
+          "line": 0,
+          "column": 4
+        },
+        "from": "crate::a",
+        "to": "crate::d"
+      }
+    ],
+    "files": [
+      {
+        "path": "src/a/sub.rs",
+        "moved_to": "src/d/sub.rs",
+        "edits": [],
+        "diff": "--- a/src/a/sub.rs\n+++ b/src/d/sub.rs\n"
+      },
+      {
+        "path": "src/a.rs",
+        "moved_to": "src/d.rs",
+        "edits": [],
+        "diff": "--- a/src/a.rs\n+++ b/src/d.rs\n"
+      },
+      {
+        "path": "src/c.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 4,
+              "end": 12
+            },
+            "replacement": "crate::d"
+          }
+        ],
+        "diff": "--- a/src/c.rs\n+++ b/src/c.rs\n@@ -1,4 +1,4 @@\n-use crate::a as alias;\n+use crate::d as alias;\n \n fn consume(_: alias::Foo) {}\n \n"
+      },
+      {
+        "path": "src/lib.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 8,
+              "end": 9
+            },
+            "replacement": "d"
+          }
+        ],
+        "diff": "--- a/src/lib.rs\n+++ b/src/lib.rs\n@@ -1,4 +1,4 @@\n-pub mod a;\n+pub mod d;\n pub mod b;\n pub mod c;\n pub mod origin;\n"
+      }
+    ]
+  }
+}
+--- stderr ---

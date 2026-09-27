@@ -4,18 +4,15 @@ use std::path::{Path, PathBuf};
 use crate::change::Change;
 use crate::{Notice, NoticeKind, Respelling, SourceFile};
 
-use vvv_core::{Address, Edit, ImportGroup, ImportRef, Layout, ModulePath, Project, Span, Surgery};
+use vvv_core::{Address, Edit, ImportGroup, ImportRef, ModulePath, Span};
 
-use super::MoveSet;
-use crate::{Candidate, EngineError};
+use crate::EngineError;
+use crate::graph::{Edge, Namespace, Node};
 
 /// The move as imports see it: an old address becoming a new one. Asked, per
 /// file, what has to change so every path still points where it did.
 pub struct Rebase<'a> {
-    layout: &'a dyn Layout,
-    surgery: &'a dyn Surgery,
-    project: &'a Project,
-    moves: &'a MoveSet,
+    ns: &'a Namespace,
     old: Address,
     new: Address,
 }
@@ -29,12 +26,11 @@ struct Site<'a> {
 }
 
 impl<'a> Site<'a> {
-    fn of(file: &'a SourceFile, moves: &MoveSet) -> Self {
-        let destination = moves.destination(file.path());
+    fn of(file: &'a SourceFile, render_from: &Path) -> Self {
         Self {
             file,
-            render_from: destination.unwrap_or(file.path()).to_path_buf(),
-            is_moved: destination.is_some(),
+            render_from: render_from.to_path_buf(),
+            is_moved: render_from != file.path(),
         }
     }
 
@@ -54,56 +50,36 @@ pub(crate) struct FileRewrite {
 }
 
 impl<'a> Rebase<'a> {
-    pub fn new(
-        layout: &'a dyn Layout,
-        surgery: &'a dyn Surgery,
-        project: &'a Project,
-        from: &Path,
-        to: &Path,
-        moves: &'a MoveSet,
-    ) -> Result<Self, EngineError> {
-        Ok(Self {
-            layout,
-            surgery,
-            project,
-            moves,
-            old: layout.address(project, from)?,
-            new: layout.address(project, to)?,
-        })
-    }
-
-    /// A rebase of addresses alone — an item moving between files — with no
-    /// file moving: every file is read from where it is.
-    pub fn of_addresses(
-        layout: &'a dyn Layout,
-        surgery: &'a dyn Surgery,
-        project: &'a Project,
-        moves: &'a MoveSet,
-        old: Address,
-        new: Address,
-    ) -> Self {
-        Self {
-            layout,
-            surgery,
-            project,
-            moves,
-            old,
-            new,
-        }
+    pub fn new(ns: &'a Namespace, old: Address, new: Address) -> Self {
+        Self { ns, old, new }
     }
 
     /// Where `import` must point after the move, or `None` if it is unaffected.
     /// Under the moved address it is rebased; in the moved file every
     /// resolvable import is re-rendered from the new location.
-    fn target(&self, site: &Site<'_>, import: &ImportRef) -> Option<(Address, bool)> {
-        let resolved = self
-            .layout
-            .resolve(self.project, site.path(), &import.path)?;
+    fn target(&self, site: &Site<'_>, edge: &Edge) -> Option<(Address, bool)> {
+        let resolved = edge.address()?;
         match resolved.rebase(&self.old, &self.new) {
             Some(rebased) => Some((rebased, true)),
-            None if site.is_moved => Some((resolved, false)),
+            None if site.is_moved => Some((resolved.clone(), false)),
             None => None,
         }
+    }
+
+    /// Preserve an alias path when the binding's own rewrite already gives
+    /// it the required meaning. Otherwise render the resolved target directly.
+    fn binding_keeps_path(&self, node: &Node, edge: &Edge, target: &Address) -> bool {
+        let Some(binding) = edge
+            .binding()
+            .and_then(|span| node.fragment.edges.iter().find(|e| e.import.span == span))
+            .and_then(Edge::address)
+        else {
+            return false;
+        };
+        let after = binding
+            .rebase(&self.old, &self.new)
+            .unwrap_or_else(|| binding.clone());
+        after.extend(edge.import.path.segments[1..].iter().cloned()) == *target
     }
 
     /// A standalone import: replace its span if the rendering changes.
@@ -114,9 +90,10 @@ impl<'a> Rebase<'a> {
         target: &Address,
         out: &mut FileRewrite,
     ) -> Result<(), EngineError> {
-        let rendered = self
-            .surgery
-            .render(self.project, &site.render_from, target, &import.path);
+        let rendered =
+            self.ns
+                .surgery()?
+                .render(self.ns.project(), &site.render_from, target, &import.path);
         if rendered != import.path {
             out.change.respell(self.respelling(site, import, &rendered));
             out.change.edit(
@@ -141,17 +118,29 @@ impl<'a> Rebase<'a> {
     /// the group's own prefix is being rewritten (that covers it), and not when
     /// the prefix keeps its meaning from the new location and the entry itself
     /// is not under the moved address.
-    fn grouped_needs_change(&self, site: &Site<'_>, group: &ImportGroup, under_old: bool) -> bool {
+    fn grouped_needs_change(
+        &self,
+        site: &Site<'_>,
+        node: &Node,
+        group: &ImportGroup,
+        under_old: bool,
+    ) -> bool {
         let prefix = &group.prefix;
-        let prefix_before = self.layout.resolve(self.project, site.path(), prefix);
-        if prefix_before
-            .as_ref()
-            .is_some_and(|p| p.starts_with(&self.old))
-        {
+        let prefix_before = node
+            .fragment
+            .edges
+            .iter()
+            .find(|e| e.import.path == *prefix && group.statement.contains(&e.import.span))
+            .and_then(Edge::address);
+        if prefix_before.is_some_and(|p| p.starts_with(&self.old)) {
             return false;
         }
-        let prefix_now = self.layout.resolve(self.project, &site.render_from, prefix);
-        under_old || prefix_now != prefix_before
+        let prefix_now = if site.is_moved {
+            self.ns.resolve(&site.render_from, prefix)
+        } else {
+            prefix_before.cloned()
+        };
+        under_old || prefix_now.as_ref() != prefix_before
     }
 
     /// Hand one statement's grouped entries to the surgery; what it cannot
@@ -162,16 +151,23 @@ impl<'a> Rebase<'a> {
         entries: &[(ImportRef, Address)],
         out: &mut FileRewrite,
     ) -> Result<(), EngineError> {
-        let regrouped =
-            self.surgery
-                .regroup(self.project, &site.render_from, site.file.source(), entries);
+        let surgery = self.ns.surgery()?;
+        let regrouped = self.ns.surgery()?.regroup(
+            self.ns.project(),
+            &site.render_from,
+            site.file.source(),
+            entries,
+        );
         // An entry rewritten within its span is a respelling; one the
         // surgery took out of the group is more than that and stays a hunk.
         for (import, target) in entries {
             if regrouped.edits.iter().any(|e| e.span == import.span) {
-                let to = self
-                    .surgery
-                    .render(self.project, &site.render_from, target, &import.path);
+                let to = self.ns.surgery()?.render(
+                    self.ns.project(),
+                    &site.render_from,
+                    target,
+                    &import.path,
+                );
                 out.change.respell(self.respelling(site, import, &to));
             }
         }
@@ -181,8 +177,8 @@ impl<'a> Rebase<'a> {
                 .iter()
                 .find(|(r, _)| r.span == import.span)
                 .map(|(_, t)| {
-                    self.surgery
-                        .render(self.project, &site.render_from, t, &import.path)
+                    surgery
+                        .render(self.ns.project(), &site.render_from, t, &import.path)
                         .to_string()
                 })
                 .unwrap_or_default();
@@ -200,26 +196,27 @@ impl<'a> Rebase<'a> {
 
     /// What the move changes in `candidate`: its imports re-rendered, and a
     /// notice for each one the surgery could not rewrite.
-    pub fn rewrite(&self, candidate: &Candidate) -> Result<FileRewrite, EngineError> {
-        let site = Site::of(candidate.file(), self.moves);
-        let imports = candidate.imports()?;
+    pub fn rewrite(&self, node: &Node, render_from: &Path) -> Result<FileRewrite, EngineError> {
+        let site = Site::of(node.candidate.file(), render_from);
 
         let mut out = FileRewrite::default();
         let mut grouped: BTreeMap<Span, Vec<(ImportRef, Address)>> = BTreeMap::new();
-        let from = self.layout.address(self.project, &site.render_from).ok();
-        for import in imports {
-            let Some((target, under_old)) = self.target(&site, &import) else {
+        let from = self.ns.address(&site.render_from).ok();
+        for edge in &node.fragment.edges {
+            let import = &edge.import;
+            let Some((target, under_old)) = self.target(&site, edge) else {
                 continue;
             };
             if let Some(from) = &from {
                 out.references.push((from.clone(), target.clone()));
             }
             match &import.group {
-                None => self.standalone(&site, &import, &target, &mut out)?,
-                Some(group) if self.grouped_needs_change(&site, group, under_old) => grouped
+                None if self.binding_keeps_path(node, edge, &target) => {}
+                None => self.standalone(&site, import, &target, &mut out)?,
+                Some(group) if self.grouped_needs_change(&site, node, group, under_old) => grouped
                     .entry(group.statement)
                     .or_default()
-                    .push((import, target)),
+                    .push((import.clone(), target)),
                 Some(_) => {}
             }
         }

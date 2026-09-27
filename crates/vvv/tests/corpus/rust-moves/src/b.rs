@@ -1,1 +1,1 @@
-//! Destination for moved declarations.
+// Destination for moved declarations.

@@ -147,12 +147,59 @@ const TS: Corpus = Corpus {
 };
 
 /// Rust forms whose move invariants need a real grammar. These cases are
-/// isolated from the golden corpus until the known failures are repaired.
+/// kept separate so adding move cases cannot alter query golden outputs.
 #[cfg(feature = "rust")]
 const RUST_MOVES: Corpus = Corpus {
     name: "rust-moves",
-    cases: &[],
-    mutations: || Vec::new(),
+    cases: &[
+        (
+            "move-symbol-alias",
+            &["move", "src/a.rs", "src/b.rs", "--symbol", "Foo"],
+        ),
+        (
+            "move-child-alias",
+            &["move", "src/a/sub.rs", "src/b/sub.rs"],
+        ),
+        ("move-module-alias", &["move", "src/a.rs", "src/d.rs"]),
+        (
+            "move-provision-alias",
+            &["move", "src/origin.rs", "src/b.rs", "--symbol", "moved"],
+        ),
+        (
+            "move-cleanup-alias",
+            &[
+                "move",
+                "src/origin.rs",
+                "src/cleanup.rs",
+                "--symbol",
+                "needed",
+            ],
+        ),
+    ],
+    mutations: || {
+        vec![
+            Request::MoveSymbol {
+                intent: MoveSymbolIntent::new("Foo", "src/a.rs", "src/b.rs"),
+                apply: false,
+            },
+            Request::Move {
+                intent: MoveIntent::new("src/a/sub.rs", "src/b/sub.rs"),
+                apply: false,
+            },
+            Request::Move {
+                intent: MoveIntent::new("src/a.rs", "src/d.rs"),
+                apply: false,
+            },
+            Request::MoveSymbol {
+                intent: MoveSymbolIntent::new("moved", "src/origin.rs", "src/b.rs"),
+                apply: false,
+            },
+            Request::MoveSymbol {
+                intent: MoveSymbolIntent::new("needed", "src/origin.rs", "src/cleanup.rs"),
+                apply: false,
+            },
+        ]
+    },
 };
 
 impl Corpus {
@@ -247,15 +294,24 @@ fn snapshot(vfs: &MemoryVfs) -> BTreeMap<PathBuf, String> {
         .collect()
 }
 
-/// `text` with `edits` made, whatever order they came in.
-fn edited(text: &str, edits: &[Edit]) -> String {
-    let mut edits: Vec<&Edit> = edits.iter().collect();
-    edits.sort_by_key(|e| std::cmp::Reverse(e.span.start));
-    let mut out = text.to_owned();
-    for edit in edits {
-        out.replace_range(edit.span.start..edit.span.end, &edit.replacement);
+/// The preview's edit sequence interpreted independently of the engine.
+struct Edited<'a> {
+    text: &'a str,
+    edits: &'a [Edit],
+}
+
+impl Edited<'_> {
+    fn apply(&self) -> String {
+        let mut edits: Vec<_> = self.edits.iter().enumerate().collect();
+        // Applying backwards also reverses coincident insertions, so their
+        // final text preserves the order carried by the preview.
+        edits.sort_by_key(|(index, edit)| std::cmp::Reverse((edit.span.start, *index)));
+        let mut out = self.text.to_owned();
+        for (_, edit) in edits {
+            out.replace_range(edit.span.start..edit.span.end, &edit.replacement);
+        }
+        out
     }
-    out
 }
 
 fn files(answer: &Answer) -> &[FileChange] {
@@ -351,7 +407,14 @@ fn apply_is_preview(corpus: &Corpus) {
             if to != from {
                 expected.remove(&from);
             }
-            expected.insert(to, edited(&original, &change.edits));
+            expected.insert(
+                to,
+                Edited {
+                    text: &original,
+                    edits: &change.edits,
+                }
+                .apply(),
+            );
         }
         engine.run(applying(&request)).unwrap();
         let after = snapshot(&vfs);
@@ -473,7 +536,6 @@ fn ts_batch_is_composition() {
 
 #[cfg(feature = "rust")]
 #[test]
-#[ignore = "known bug: symbol moves bypass fragment resolution for imported module aliases"]
 fn symbol_moves_preserve_references_through_module_aliases() {
     use vvv_engine::{Confidence, ReferencesQuery};
 
@@ -554,5 +616,132 @@ fn symbol_moves_preserve_self_references() {
     assert!(
         source.contains("pub struct Foo;"),
         "the sibling declaration must stay behind"
+    );
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_moves_golden() {
+    golden(&RUST_MOVES);
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_moves_apply_is_preview() {
+    apply_is_preview(&RUST_MOVES);
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_moves_undo_is_identity() {
+    undo_is_identity(&RUST_MOVES);
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_moves_batch_is_composition() {
+    batch_is_composition(&RUST_MOVES);
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn file_moves_preserve_references_through_module_aliases() {
+    use vvv_engine::{Confidence, ReferencesQuery};
+    let (vfs, engine) = RUST_MOVES.engine();
+    engine
+        .run(vvv_engine::Apply(
+            engine
+                .run(MoveIntent::new("src/a/sub.rs", "src/b/sub.rs"))
+                .unwrap(),
+        ))
+        .unwrap();
+    let after = engine
+        .run(ReferencesQuery::new("Nested").declared_in("src/b/sub.rs"))
+        .unwrap();
+    assert!(
+        after
+            .occurrences
+            .iter()
+            .any(|o| o.m.path == Path::new("src/c.rs") && o.confidence == Confidence::Resolved)
+    );
+    assert!(
+        vfs.read(Path::new("/ws/src/c.rs"))
+            .unwrap()
+            .contains("crate::b::sub::Nested")
+    );
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn module_moves_keep_alias_spellings_when_the_binding_is_rebased() {
+    let (vfs, engine) = RUST_MOVES.engine();
+    engine
+        .run(vvv_engine::Apply(
+            engine.run(MoveIntent::new("src/a.rs", "src/d.rs")).unwrap(),
+        ))
+        .unwrap();
+    let consumer = vfs.read(Path::new("/ws/src/c.rs")).unwrap();
+    assert!(consumer.contains("use crate::d as alias;"));
+    assert!(consumer.contains("alias::Foo"));
+    assert!(consumer.contains("alias::sub::Nested"));
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn moved_declarations_provision_imports_from_resolved_edges() {
+    use vvv_engine::{Confidence, ReferencesQuery};
+    let (vfs, engine) = RUST_MOVES.engine();
+    engine
+        .run(vvv_engine::Apply(
+            engine
+                .run(MoveSymbolIntent::new("moved", "src/origin.rs", "src/b.rs"))
+                .unwrap(),
+        ))
+        .unwrap();
+    let dest = vfs.read(Path::new("/ws/src/b.rs")).unwrap();
+    assert!(dest.contains("use crate::dependency::Dep;"));
+    assert!(!dest.contains("use alias::Dep;"));
+    let after = engine
+        .run(ReferencesQuery::new("Dep").declared_in("src/dependency.rs"))
+        .unwrap();
+    assert!(
+        after
+            .occurrences
+            .iter()
+            .any(|o| o.m.path == Path::new("src/b.rs") && o.confidence == Confidence::Resolved)
+    );
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn destination_cleanup_recognizes_imports_through_module_aliases() {
+    let (vfs, engine) = RUST_MOVES.engine();
+    engine
+        .run(vvv_engine::Apply(
+            engine
+                .run(MoveSymbolIntent::new(
+                    "needed",
+                    "src/origin.rs",
+                    "src/cleanup.rs",
+                ))
+                .unwrap(),
+        ))
+        .unwrap();
+    let dest = vfs.read(Path::new("/ws/src/cleanup.rs")).unwrap();
+    assert!(!dest.contains("use alias::needed;"));
+    assert!(dest.contains("pub fn needed() {}"));
+    assert!(dest.contains("needed();"));
+}
+
+#[test]
+fn preview_insertions_keep_their_wire_order() {
+    let edits = [Edit::insert(0, "import\n"), Edit::insert(0, "item\n")];
+    assert_eq!(
+        Edited {
+            text: "",
+            edits: &edits
+        }
+        .apply(),
+        "import\nitem\n"
     );
 }

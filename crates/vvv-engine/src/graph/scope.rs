@@ -88,7 +88,7 @@ impl Scope {
         let mut unresolved = Vec::new();
         for edge in &fragment.edges {
             let import = &edge.import;
-            let Some(address) = &edge.address else {
+            let Some(address) = edge.address() else {
                 unresolved.push((import.span, import.path.clone()));
                 continue;
             };

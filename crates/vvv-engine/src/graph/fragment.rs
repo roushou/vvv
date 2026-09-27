@@ -5,7 +5,7 @@
 
 use std::sync::Arc;
 
-use vvv_core::{Address, ImportRef, Name, PathHead, Symbol};
+use vvv_core::{Address, ImportRef, Name, PathHead, Span, Symbol};
 
 use super::{Candidate, Graph, Namespace};
 use crate::{EngineError, Reach};
@@ -22,7 +22,29 @@ pub struct Declared {
 #[derive(Debug, Clone)]
 pub struct Edge {
     pub import: ImportRef,
-    pub address: Option<Address>,
+    resolution: Option<Resolution>,
+}
+
+/// How an edge acquired its meaning; binding identity survives path rendering.
+#[derive(Debug, Clone)]
+enum Resolution {
+    Direct(Address),
+    Bound { address: Address, binding: Span },
+}
+
+impl Edge {
+    pub fn address(&self) -> Option<&Address> {
+        self.resolution.as_ref().map(|r| match r {
+            Resolution::Direct(address) | Resolution::Bound { address, .. } => address,
+        })
+    }
+
+    pub fn binding(&self) -> Option<Span> {
+        match &self.resolution {
+            Some(Resolution::Bound { binding, .. }) => Some(*binding),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -59,29 +81,38 @@ impl Fragment {
             .imports
             .iter()
             .map(|import| Edge {
-                address: ns.resolve(path, &import.path),
+                resolution: ns.resolve(path, &import.path).map(Resolution::Direct),
                 import: import.clone(),
             })
             .collect();
         // A path whose head is a name another import binds continues that
         // import: `SymbolKind::*` after `use vvv_core::SymbolKind`.
-        let bound: Vec<(Name, Address)> = edges
+        let bound: Vec<(Name, Address, Span)> = edges
             .iter()
             .filter(|e| e.import.declares)
-            .filter_map(|e| Some((e.import.binding()?.clone(), e.address.clone()?)))
+            .filter_map(|e| {
+                Some((
+                    e.import.binding()?.clone(),
+                    e.address()?.clone(),
+                    e.import.span,
+                ))
+            })
             .collect();
-        for edge in edges.iter_mut().filter(|e| e.address.is_none()) {
+        for edge in edges.iter_mut().filter(|e| e.address().is_none()) {
             let path = &edge.import.path;
             if path.head != PathHead::Named {
                 continue;
             }
-            let Some((_, base)) = path
+            let Some((_, base, binding)) = path
                 .first()
-                .and_then(|head| bound.iter().find(|(name, _)| name == head))
+                .and_then(|head| bound.iter().find(|(name, _, _)| name == head))
             else {
                 continue;
             };
-            edge.address = Some(base.extend(path.segments[1..].iter().cloned()));
+            edge.resolution = Some(Resolution::Bound {
+                address: base.extend(path.segments[1..].iter().cloned()),
+                binding: *binding,
+            });
         }
         Ok(Self {
             module,
@@ -99,7 +130,7 @@ impl Fragment {
     pub fn reaches(&self, address: &Address) -> bool {
         self.edges
             .iter()
-            .any(|e| e.address.as_ref().is_some_and(|a| a.starts_with(address)))
+            .any(|e| e.address().is_some_and(|a| a.starts_with(address)))
     }
 }
 

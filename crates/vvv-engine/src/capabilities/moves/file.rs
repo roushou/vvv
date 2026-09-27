@@ -99,7 +99,7 @@ impl Command for MoveIntent {
             .ok_or_else(|| EngineError::NoLayout(language.id()))?;
         let (layout, surgery) = (ns.layout(), ns.surgery()?);
         let project = ns.project().clone();
-        let candidates = graph.files(Some(&language.id()));
+        let nodes = graph.fragments(&ns)?;
         let moves = MoveSet::compute(cx.workspace, layout, &project, &from, &to)?;
         if moves.is_empty() {
             return Err(VfsError::NotFound(from).into());
@@ -130,11 +130,14 @@ impl Command for MoveIntent {
             }
         }
 
-        let rebase = Rebase::new(layout, surgery, &project, &from, &to, &moves)?;
+        let old = ns.address(&from)?;
+        let new = ns.address(&to)?;
+        let rebase = Rebase::new(&ns, old.clone(), new.clone());
         let mut change = Change::new();
         let mut references: Vec<(Address, Address)> = Vec::new();
-        for candidate in &candidates {
-            let rewrite = rebase.rewrite(candidate)?;
+        for node in &nodes {
+            let rewrite =
+                rebase.rewrite(node, moves.destination(node.path()).unwrap_or(node.path()))?;
             change.merge(rewrite.change)?;
             references.extend(rewrite.references);
         }
@@ -143,8 +146,6 @@ impl Command for MoveIntent {
 
         // Can every reference still see what it names? Widen what needs it,
         // as narrowly as real code writes; across a package boundary, say so.
-        let old = layout.address(&project, &from)?;
-        let new = layout.address(&project, &to)?;
         let violations = Reachability::new(layout, ns.semantics(), &project, &old, &new)
             .check(graph, &references)?;
         let mut moved_mod_needs: Option<ReachKind> = None;
