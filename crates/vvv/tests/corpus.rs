@@ -26,6 +26,36 @@ struct Corpus {
     mutations: fn() -> Vec<Request>,
 }
 
+/// Read-only resolution forms, ported from the abstraction audit probes.
+#[cfg(feature = "rust")]
+const RUST_RESOLUTION: Corpus = Corpus {
+    name: "rust-resolution",
+    cases: &[
+        (
+            "references-parent",
+            &["references", "Foo", "--in", "src/a.rs"],
+        ),
+        (
+            "references-child-module",
+            &["references", "child", "--in", "src/a.rs"],
+        ),
+        (
+            "references-leaf",
+            &["references", "Child", "--in", "src/a/child.rs"],
+        ),
+        ("deps-chain", &["deps", "src/chained.rs"]),
+        ("explain-chain", &["explain", "src/chained.rs:3:6"]),
+        ("explain-grouped", &["explain", "src/consumer.rs:3:31"]),
+        ("explain-nested-child", &["explain", "src/nested.rs:2:28"]),
+        (
+            "explain-nested-function",
+            &["explain", "src/nested.rs:2:35"],
+        ),
+        ("explain-nested-sibling", &["explain", "src/nested.rs:2:46"]),
+    ],
+    mutations: Vec::new,
+};
+
 const RUST: Corpus = Corpus {
     name: "rust",
     cases: &[
@@ -881,4 +911,169 @@ fn companion_paths_travel_with_the_declaration_and_keep_their_targets() {
         "{:?}",
         references.occurrences
     );
+}
+
+#[cfg(feature = "rust")]
+struct ResolutionFixture {
+    engine: Engine,
+}
+
+#[cfg(feature = "rust")]
+impl ResolutionFixture {
+    fn new() -> Self {
+        Self {
+            engine: RUST_RESOLUTION.engine().1,
+        }
+    }
+
+    fn import_at(&self, path: &str, position: vvv_engine::Position) -> vvv_engine::Dep {
+        self.engine
+            .run(vvv_engine::ExplainQuery {
+                path: path.into(),
+                position,
+            })
+            .unwrap()
+            .import
+            .expect("the position is inside an import")
+    }
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_resolution_golden() {
+    golden(&RUST_RESOLUTION);
+}
+
+#[cfg(feature = "rust")]
+#[test]
+#[ignore = "known bug: explain lets a grouped statement's first edge hide the entry under the cursor"]
+fn explain_selects_the_grouped_entry_under_the_cursor() {
+    let fixture = ResolutionFixture::new();
+    let import = fixture.import_at("src/consumer.rs", vvv_engine::Position::new(2, 30));
+    assert_eq!(import.import.path.to_string(), "module_alias::child::Child");
+    assert_eq!(
+        import.address,
+        Some(vvv_engine::Address::new(
+            "resolution_probe",
+            ["a", "child", "Child"]
+        ))
+    );
+}
+
+#[cfg(feature = "rust")]
+#[test]
+#[ignore = "known bug: explain selects a nested group prefix instead of its exact leaf or sibling entry"]
+fn explain_selects_exact_entries_in_nested_groups() {
+    let fixture = ResolutionFixture::new();
+    for (column, path, address) in [
+        (
+            27,
+            "module_alias::child::Child",
+            vec!["a", "child", "Child"],
+        ),
+        (
+            34,
+            "module_alias::child::child_fn",
+            vec!["a", "child", "child_fn"],
+        ),
+        (45, "module_alias::Foo", vec!["a", "Foo"]),
+    ] {
+        let import = fixture.import_at("src/nested.rs", vvv_engine::Position::new(1, column));
+        assert_eq!(import.import.path.to_string(), path, "column {column}");
+        assert_eq!(
+            import.address,
+            Some(vvv_engine::Address::new("resolution_probe", address))
+        );
+    }
+}
+
+#[cfg(feature = "rust")]
+#[test]
+#[ignore = "known bug: Fragment under-resolves alias chains that references already follows"]
+fn same_file_alias_chains_agree_across_references_deps_and_explain() {
+    use vvv_engine::{Address, Confidence, DepsQuery, Position, ReferencesQuery};
+
+    let fixture = ResolutionFixture::new();
+    for (name, line) in [("Foo", 4), ("child", 2)] {
+        let references = fixture
+            .engine
+            .run(ReferencesQuery::new(name).declared_in("src/a.rs"))
+            .unwrap();
+        let occurrence = references
+            .occurrences
+            .iter()
+            .find(|o| o.m.path == Path::new("src/chained.rs") && o.m.start.line == line)
+            .unwrap();
+        assert_eq!(
+            occurrence.confidence,
+            Confidence::Resolved,
+            "{name} already resolves correctly"
+        );
+    }
+    let deps = fixture
+        .engine
+        .run(DepsQuery {
+            path: "src/chained.rs".into(),
+        })
+        .unwrap();
+    let leaf = deps
+        .imports
+        .iter()
+        .find(|dep| dep.import.alias.as_deref() == Some("leaf"))
+        .unwrap();
+    let expected = Address::new("resolution_probe", ["a", "child"]);
+    assert_eq!(
+        leaf.address.as_ref(),
+        Some(&expected),
+        "deps must follow the same binding as references"
+    );
+    let explained = fixture.import_at("src/chained.rs", Position::new(2, 5));
+    assert_eq!(explained.address, Some(expected));
+    let references = fixture
+        .engine
+        .run(ReferencesQuery::new("Child").declared_in("src/a/child.rs"))
+        .unwrap();
+    let occurrence = references
+        .occurrences
+        .iter()
+        .find(|o| o.m.path == Path::new("src/chained.rs") && o.m.start.line == 5)
+        .unwrap();
+    assert_eq!(
+        occurrence.confidence,
+        Confidence::Resolved,
+        "the next alias hop must resolve too"
+    );
+}
+
+#[cfg(feature = "rust")]
+#[test]
+#[ignore = "known limitation: cross-file private parent-module aliases are not followed"]
+fn child_modules_follow_private_module_aliases_imported_from_their_parent() {
+    use vvv_engine::{Address, Confidence, DepsQuery, Position, ReferencesQuery};
+
+    let fixture = ResolutionFixture::new();
+    let deps = fixture
+        .engine
+        .run(DepsQuery {
+            path: "src/parent_context/nested.rs".into(),
+        })
+        .unwrap();
+    let expected = Address::new("resolution_probe", ["a"]);
+    assert_eq!(deps.imports[0].address, Some(expected.clone()));
+    assert_eq!(
+        fixture
+            .import_at("src/parent_context/nested.rs", Position::new(0, 10))
+            .address,
+        Some(expected)
+    );
+    let references = fixture
+        .engine
+        .run(ReferencesQuery::new("Foo").declared_in("src/a.rs"))
+        .unwrap();
+    let occurrence = references
+        .occurrences
+        .iter()
+        .find(|o| o.m.path == Path::new("src/parent_context/nested.rs"))
+        .unwrap();
+    assert_eq!(occurrence.confidence, Confidence::Resolved);
 }

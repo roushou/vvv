@@ -1,0 +1,62 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "path": "src/consumer.rs",
+    "position": {
+      "line": 2,
+      "column": 30
+    },
+    "module": {
+      "package": "resolution_probe",
+      "path": [
+        "consumer"
+      ]
+    },
+    "import": {
+      "span": {
+        "start": 76,
+        "end": 79
+      },
+      "path": "module_alias::Foo",
+      "group": {
+        "prefix": "module_alias",
+        "item": {
+          "start": 76,
+          "end": 79
+        },
+        "list": {
+          "start": 75,
+          "end": 94
+        },
+        "items": 2,
+        "statement": {
+          "start": 57,
+          "end": 95
+        },
+        "top_level": true
+      },
+      "declares": true,
+      "start": {
+        "line": 2,
+        "column": 19
+      },
+      "address": {
+        "package": "resolution_probe",
+        "path": [
+          "a",
+          "Foo"
+        ]
+      },
+      "file": "src/a.rs"
+    },
+    "importers": []
+  }
+}
+--- stderr ---

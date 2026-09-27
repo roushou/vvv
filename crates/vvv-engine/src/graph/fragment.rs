@@ -10,6 +10,10 @@ use vvv_core::{Address, ImportRef, Name, PathHead, Span, Symbol};
 use super::{Candidate, Graph, Namespace};
 use crate::{EngineError, Reach};
 
+#[cfg(test)]
+#[path = "../../tests/common/mod.rs"]
+mod common;
+
 /// A declaration a path can reach, placed.
 #[derive(Debug, Clone)]
 pub struct Declared {
@@ -170,5 +174,76 @@ impl Structure {
         self.namespaces
             .iter()
             .map(|(ns, fragments)| (ns, fragments.as_slice()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::path::PathBuf;
+
+    use super::{common::Fake, *};
+    use crate::{Command, Context, Engine, Languages, MemoryVfs, Workspace};
+
+    struct FragmentQuery {
+        path: PathBuf,
+    }
+
+    impl Command for FragmentQuery {
+        type Output = Arc<Fragment>;
+
+        fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+            let ns = cx.graph.namespace_of(&self.path)?;
+            cx.graph.file(&self.path)?.fragment(&ns)
+        }
+    }
+
+    #[test]
+    #[ignore = "known bug: Fragment stops before newly resolved aliases can supply other bindings"]
+    fn fragment_propagates_alias_chains_with_binding_provenance() {
+        let source = "use a.p as root\nuse root::child as parent\nuse parent::nested as leaf\nparent::Foo leaf::Child";
+        let engine = Engine::new(
+            Workspace::new(
+                "/ws",
+                Arc::new(MemoryVfs::new().with_file("/ws/consumer.p", source)),
+            ),
+            Languages::new()
+                .with(Fake::default().with_unresolved_heads(&["root", "parent", "leaf"])),
+        );
+        let fragment = engine
+            .run(FragmentQuery {
+                path: "consumer.p".into(),
+            })
+            .unwrap();
+        let expected = [
+            ("root::child", Address::new("ws", ["a.p", "child"]), "a.p"),
+            (
+                "parent::nested",
+                Address::new("ws", ["a.p", "child", "nested"]),
+                "root::child",
+            ),
+            (
+                "parent::Foo",
+                Address::new("ws", ["a.p", "child", "Foo"]),
+                "root::child",
+            ),
+            (
+                "leaf::Child",
+                Address::new("ws", ["a.p", "child", "nested", "Child"]),
+                "parent::nested",
+            ),
+        ];
+        for (path, address, binding_path) in expected {
+            let edge = fragment
+                .edges
+                .iter()
+                .find(|edge| edge.import.path.to_string() == path)
+                .unwrap();
+            let binding = fragment
+                .imports()
+                .find(|edge| edge.import.path.to_string() == binding_path)
+                .unwrap();
+            assert_eq!(edge.address(), Some(&address), "{path}");
+            assert_eq!(edge.binding(), Some(binding.import.span), "{path}");
+        }
     }
 }

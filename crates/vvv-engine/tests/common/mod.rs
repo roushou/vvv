@@ -28,6 +28,7 @@ pub struct Fake {
     id: &'static str,
     extensions: &'static [&'static str],
     surgery: PathSurgery,
+    layout: PathLayout,
 }
 
 impl Fake {
@@ -36,6 +37,7 @@ impl Fake {
             id,
             extensions,
             surgery: PathSurgery::default(),
+            layout: PathLayout::default(),
         }
     }
 
@@ -46,6 +48,12 @@ impl Fake {
 
     pub fn with_regrouped(mut self, result: Regrouped) -> Self {
         self.surgery.regrouped = Some(result);
+        self
+    }
+
+    /// Heads the layout cannot place without another same-file binding.
+    pub fn with_unresolved_heads(mut self, heads: &'static [&'static str]) -> Self {
+        self.layout.unresolved_heads = heads;
         self
     }
 
@@ -265,6 +273,11 @@ impl Language for Fake {
                         alias: None,
                     },
                     None => {
+                        let syntax = if path.contains("::") {
+                            PathSyntax::Scoped
+                        } else {
+                            syntax
+                        };
                         // `use a/x.p/foo as bar` binds `bar`; the span is the path.
                         let (path, alias) = match path.split_once(" as ") {
                             Some((path, alias)) => (path, Some(alias)),
@@ -296,7 +309,7 @@ impl Language for Fake {
     }
 
     fn layout(&self) -> Option<&dyn Layout> {
-        Some(&PathLayout)
+        Some(&self.layout)
     }
 
     fn surgery(&self) -> Option<&dyn Surgery> {
@@ -306,7 +319,10 @@ impl Language for Fake {
 
 /// Addresses are path components under one package; imports are
 /// workspace-relative paths.
-pub struct PathLayout;
+#[derive(Default)]
+pub struct PathLayout {
+    unresolved_heads: &'static [&'static str],
+}
 
 impl Layout for PathLayout {
     fn manifests(&self) -> &'static [&'static str] {
@@ -350,7 +366,11 @@ impl Layout for PathLayout {
     /// `ext/...` is an external package: unknowable, like a foreign crate.
     /// Paths are workspace-relative whatever syntax spelled them.
     fn resolve(&self, project: &Project, from: &Path, import: &ModulePath) -> Option<Address> {
-        if import.head != PathHead::Named || import.first().is_some_and(|f| f.as_str() == "ext") {
+        if import.head != PathHead::Named
+            || import
+                .first()
+                .is_some_and(|f| f.as_str() == "ext" || self.unresolved_heads.contains(&f.as_str()))
+        {
             return None;
         }
         Some(Address::new(
@@ -443,19 +463,19 @@ pub struct CountingLayout {
 
 impl Layout for CountingLayout {
     fn manifests(&self) -> &'static [&'static str] {
-        PathLayout.manifests()
+        PathLayout::default().manifests()
     }
 
     fn package(&self, root: &Path, manifest: &str) -> Option<vvv_core::Package> {
-        PathLayout.package(root, manifest)
+        PathLayout::default().package(root, manifest)
     }
 
     fn address(&self, project: &Project, path: &Path) -> Result<Address, ResolveError> {
-        PathLayout.address(project, path)
+        PathLayout::default().address(project, path)
     }
 
     fn candidates(&self, project: &Project, address: &Address) -> Vec<PathBuf> {
-        PathLayout.candidates(project, address)
+        PathLayout::default().candidates(project, address)
     }
 
     fn touched_by_move(
@@ -464,13 +484,13 @@ impl Layout for CountingLayout {
         from: &Path,
         to: &Path,
     ) -> Result<Vec<PathBuf>, ResolveError> {
-        PathLayout.touched_by_move(project, from, to)
+        PathLayout::default().touched_by_move(project, from, to)
     }
 
     fn resolve(&self, project: &Project, file: &Path, import: &ModulePath) -> Option<Address> {
         self.resolves
             .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
-        PathLayout.resolve(project, file, import)
+        PathLayout::default().resolve(project, file, import)
     }
 }
 

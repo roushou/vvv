@@ -10,6 +10,9 @@
 //! `answers`, `understanding`, `batch`, `history` — as `impl Command for
 //! <request>`.
 
+#[cfg(test)]
+extern crate self as vvv_engine;
+
 mod answers;
 mod batch;
 mod capabilities;

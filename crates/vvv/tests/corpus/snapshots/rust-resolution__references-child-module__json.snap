@@ -1,0 +1,184 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "name": "child",
+    "declarations": [
+      {
+        "id": "ae9c33bce5d4",
+        "path": "src/a.rs",
+        "language": "rust",
+        "span": {
+          "start": 0,
+          "end": 14
+        },
+        "start": {
+          "line": 0,
+          "column": 0
+        },
+        "end": {
+          "line": 0,
+          "column": 14
+        },
+        "kind": "mod_item",
+        "text": "pub mod child;",
+        "line": "pub mod child;",
+        "symbol": {
+          "kind": "module",
+          "name": "child",
+          "name_span": {
+            "start": 8,
+            "end": 13
+          },
+          "span": {
+            "start": 0,
+            "end": 14
+          },
+          "extent": {
+            "start": 0,
+            "end": 14
+          },
+          "visibility": {
+            "span": {
+              "start": 0,
+              "end": 3
+            },
+            "text": "pub"
+          }
+        },
+        "role": "declaration",
+        "address": {
+          "package": "resolution_probe",
+          "path": [
+            "a",
+            "child"
+          ]
+        }
+      }
+    ],
+    "occurrences": [
+      {
+        "id": "0a8bde66ba9e",
+        "path": "src/a.rs",
+        "language": "rust",
+        "span": {
+          "start": 8,
+          "end": 13
+        },
+        "start": {
+          "line": 0,
+          "column": 8
+        },
+        "end": {
+          "line": 0,
+          "column": 13
+        },
+        "kind": "identifier",
+        "text": "child",
+        "line": "pub mod child;",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "declaring"
+      },
+      {
+        "id": "301ba1b1c7d5",
+        "path": "src/chained.rs",
+        "language": "rust",
+        "span": {
+          "start": 54,
+          "end": 59
+        },
+        "start": {
+          "line": 2,
+          "column": 12
+        },
+        "end": {
+          "line": 2,
+          "column": 17
+        },
+        "kind": "identifier",
+        "text": "child",
+        "line": "use parent::child as leaf;",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "path"
+      },
+      {
+        "id": "2b4537a7afe9",
+        "path": "src/consumer.rs",
+        "language": "rust",
+        "span": {
+          "start": 81,
+          "end": 86
+        },
+        "start": {
+          "line": 2,
+          "column": 24
+        },
+        "end": {
+          "line": 2,
+          "column": 29
+        },
+        "kind": "identifier",
+        "text": "child",
+        "line": "use module_alias::{Foo, child::Child};",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "path"
+      },
+      {
+        "id": "69eff325e3a9",
+        "path": "src/consumer.rs",
+        "language": "rust",
+        "span": {
+          "start": 180,
+          "end": 185
+        },
+        "start": {
+          "line": 5,
+          "column": 39
+        },
+        "end": {
+          "line": 5,
+          "column": 44
+        },
+        "kind": "identifier",
+        "text": "child",
+        "line": "pub fn parent_path(_: parent_alias::a::child::Child) {}",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "path"
+      },
+      {
+        "id": "2b379fdc9ac7",
+        "path": "src/nested.rs",
+        "language": "rust",
+        "span": {
+          "start": 49,
+          "end": 54
+        },
+        "start": {
+          "line": 1,
+          "column": 19
+        },
+        "end": {
+          "line": 1,
+          "column": 24
+        },
+        "kind": "identifier",
+        "text": "child",
+        "line": "use module_alias::{child::{Child, child_fn}, Foo};",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "path"
+      }
+    ]
+  }
+}
+--- stderr ---

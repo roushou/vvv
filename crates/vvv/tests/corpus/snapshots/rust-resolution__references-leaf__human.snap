@@ -1,0 +1,20 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● struct Child   src/a/child.rs:1:1
+
+✓ 6  3 files
+  1  src/a/child.rs
+  3  src/consumer.rs
+  2  src/nested.rs
+
+? 1  1 file   ∅ unresolved
+src/chained.rs
+  7      6:27   pub fn via_child(_: leaf::Child) {}
+
+✗ 0
+--- stderr ---
+✓ 6  ? 1  ✗ 0   4 files

@@ -400,6 +400,13 @@ enough for functions, structs, enums, traits, type aliases, constants and module
 isn't enough for methods and fields, which you reach through a type: their occurrences
 are all `? ∅ by name`, and `--select` is how you narrow them down.
 
+A known Rust limitation is a private module alias imported from another file.
+If a parent has `use crate::a as parent`, a child that writes
+`use super::parent as local` is not followed through to `crate::a`. Dependencies
+and explanations can retain an address through the alias instead of its underlying
+module, and references such as `local::Foo` remain unresolved. Using the underlying
+module path avoids this limitation.
+
 In a Cargo workspace, paths into another crate resolve — `use fff::Config` where
 `fff` is a member, under whatever name the manifest gives it — so a rename crosses
 crates.
