@@ -1,8 +1,9 @@
 //! What a file can see, as far as syntax and the layout can tell: which
 //! names its imports bring in and where they point. Used to decide whether a
 //! token spelling the renamed name refers to the target declaration. Read
-//! off the file's [`Fragment`], so it costs no resolution of its own, and
-//! kept with the file for as long as the fragment is.
+//! off the file's [`Fragment`] and retained with it. Construction reuses
+//! resolved edges; classification can resolve a prefix for a token inside
+//! a qualified path.
 
 use std::collections::HashMap;
 use std::path::PathBuf;

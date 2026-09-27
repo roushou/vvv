@@ -5,13 +5,13 @@ knows about anything above, and the interfaces know only the engine — with one
 exception: the CLI's composition root names the plugins the engine is built with.
 
 ```
-crates/vvv   vvv-tui     the interfaces: CLI, picker
-      │        │             the CLI's composition root (`languages.rs`) also names plugins
-    vvv-engine            Engine: one entry point, `run`; capability-owned and shared wire data
-         │
-     vvv-lang             syntax/ (ast-grep adapter) + rust/, typescript/ behind features
-         │
-     vvv-core             the plugin contract: nouns + traits (no parser, no I/O)
+crates/vvv ──▶ vvv-tui             CLI and picker
+     │             │
+     ├─────────────┴──▶ vvv-engine ──▶ vvv-core
+     │                  capabilities,    plugin contract:
+     │                  lifecycle, wire  data and traits
+     └──▶ vvv-lang ──────────────────────▶ vvv-core
+          languages.rs composes syntax/ and language plugins
 ```
 
 One membership test per crate: core — _does a language plugin need it
@@ -92,16 +92,15 @@ mutation intents' and `RewriteOf`'s `plan`, `Apply<T>::apply`, or
 `Ledger::new(&Engine).history()` / `.undo()`. These keep concrete outputs such as
 `Search`, `Planned<Rename>`, and `Applied<Rename>`. `SearchQuery` wraps the plugin's
 `Query` without changing its serialization. Execution bodies take the graph,
-workspace, or registry they use explicitly; there is no `Command` trait or engine
-`Context`. Public typed methods acquire the same operation guard as the dispatcher;
-internal bodies do not reacquire it.
+workspace, or registry they use explicitly. Public typed methods acquire the
+same operation guard as the dispatcher; internal bodies do not reacquire it.
 
 `Engine::run` returns an in-process `Execution`: `Completed(Answer)`,
 `Preview(Planned<MutationAnswer>)`, or `Applied(Applied<MutationAnswer>)`. Only
 mutation previews retain executable plans. `into_preview` and `into_applied`
 reject a mismatched kind with a structured error; `into_answer` consumes the handle
 at a reporting or wire boundary. `Execution` is not serialized. The CLI and serve
-convert it to the existing `Answer`; the picker retains previews and applied
+convert it to the wire `Answer`; the picker retains previews and applied
 completions until it has extracted what its view needs.
 
 A mutation answers with `Planned<T>`: immutable presentation data beside plans
@@ -109,12 +108,13 @@ and the captured history intent. `Apply` requires the sealed `Mutation` capabili
 writes the plans, records history, and returns `Applied<T>` with a required history
 id. Queries cannot carry `Planned` or reach `Apply`. Typed plans and completions can
 widen to the closed `MutationAnswer` sum without losing their handles; they become
-`Answer` only at the reporting boundary. There is no arbitrary result mapping or
-mutable result access. Mutation payloads own a `MutationState`: `Preview` or
-`Applied { history_id }`, serialized as the existing `applied` and `history_id`
-fields. Contradictory states are rejected during deserialization.
+`Answer` only at the reporting boundary. `Planned` exposes its result through
+immutable access and retains its captured intent independently of presentation.
+Mutation payloads own a `MutationState`: `Preview` or `Applied { history_id }`,
+serialized as the wire `applied` and `history_id` fields. Contradictory states
+are rejected during deserialization.
 
-`Intent` remains a mutation description recorded by history and composed by batch.
+`Intent` is a mutation description recorded by history and composed by batch.
 Its `into_request(apply)` conversion adds execution policy as data; Intent does not
 execute or dispatch capabilities. A batch runs preview requests on an independent
 staging engine, extracts their executable previews, and applies the retained plans
@@ -142,10 +142,10 @@ mutation types are `vvv_engine::Rename`, `vvv_engine::RenameIntent`,
 owning modules; `protocol` provides no aliases for them. Data and serialization
 code do not access `Workspace`.
 
-Deferred API work: query types retain both crate-root and `protocol::` public
-paths for compatibility, while the six mutation types above are root-only.
-Unify this policy in a separate API commit; structural moves preserve both query
-paths and do not restore mutation aliases.
+Query types are available at both crate-root and `protocol::` public paths,
+while the six mutation types above are root-only. This public-path inconsistency
+is tracked in [backlog.md](backlog.md#api-path-unification); Rust import paths are
+independent of the serialized request and answer contract.
 
 Each `Candidate` (a file with its language) answers
 `find`, `references`, and `imports` for itself, and parses once however many
@@ -180,9 +180,10 @@ compared. `Session { trust }` (the TUI) keeps files and facts between commands,
 stamps what it loads (`Vfs::stamp`: mtime and size on disk, a version counter in
 memory) and on the next command re-reads only what changed; it still walks, so new and
 deleted files are seen — except within `trust` of the last walk, when it does not look
-at all: a burst of keystrokes walks a large tree once (the walk is the floor on a
-76k-file tree, ~230 ms), and the engine's own writes (`Apply`, `Ledger::undo`) or
-`Engine::touched()` (the TUI after an editor hand-off) end the trust at once.
+at all. Repeated requests within the trust interval reuse the walk. The engine's
+own writes (`Apply`, `Ledger::undo`) or `Engine::touched()` (the TUI after an editor
+hand-off) expire that interval; the next graph access checks file stamps and reads
+only changed contents.
 One command uses one graph however many questions it asks — a
 rename's declarations, its other declarations, its occurrences and its project all come
 from the same walk.
@@ -195,8 +196,8 @@ when the path's head is a name the file imports). An edge retains whether that
 address came directly from the layout or through a particular imported binding;
 the immediate binding links back to its edge, retaining provenance across an alias
 chain. Same-file bindings propagate to a fixed point, independent of import order;
-unseeded cycles stay unresolved. Scope consumes those completed resolutions rather
-than following an additional alias hop. Move planners consume these edges,
+unseeded cycles stay unresolved. Scope consumes the fragment's completed
+resolutions. Move planners consume these edges,
 including for import provisioning and destination cleanup. `Rebase` transforms
 resolved addresses and preserves an alias spelling when rebasing its binding
 already supplies the required target; it does not resolve raw source paths again. A candidate builds it once per
@@ -211,35 +212,56 @@ only a token in the middle of a path costs a resolution of its prefix. `aliases_
 reads only files spelling one of the names found so far, or — for glob re-exports —
 the language's `glob_marker` (`::*` in Rust) in the alias's own package or naming it.
 
-| command            | what it asks                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `SearchQuery`      | `Graph::search`: `containing(literals)`, then each `Candidate::find(query)`, in parallel; declarations get their address from the namespace and move to the front                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `RewriteIntent`    | `search`, `Selection::narrow`, one `Edit` per match from the `Template`, `Plan::new`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `RenameIntent`     | declarations by name (narrowed by `declared_in`); per declaring language: a `Target` (module address + name, via the language's `Layout`) when one path-addressable declaration is meant — two refuse and ask for `declared_in` — then `Graph::containing(name)` and `Target::judge` on each file (each token judged by a `Scope` built from the file's imports; a token ending a path is judged by the path, or `?` when its head is unknown); default selection by confidence; `Selection::narrow`, one `Edit` per occurrence, `Plan::new`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `MoveIntent`       | validate paths and language, `Graph::namespace_of` (layout, surgery, project in one), compute the `MoveSet` (a file, or every file under a directory, plus the layout's companions such as Rust's `a.rs` ↔ `a/`), then `Rebase::rewrite` on sites from every `Graph::fragments(ns)` (re-render every import resolving under the old address, moved files' own imports from their new locations — each a snapshot-bound `FileRewrite`, converted to a `Change`), `Reachability::check` on the references it touched, a `Widen` per violation (an edit, or a notice across a package boundary), the surgery's side edits (`relocate`, told what the moved `mod` line needs), record every move, `Planned::of`                                                                                                                                                                                                                                                                                                                                                                |
-| `MoveSymbolIntent` | the graph establishes the situation — the `Extraction` (the declaration and its pieces; `impl` blocks are `Impl` symbols named after their type), both files parsed, `Graph::consumers` of the old address, `Graph::references` for the old file's remaining uses — then `SymbolMove` runs its operations over it, each appending to one `Change`: the old file's imports and siblings the text names become imports in the new file (siblings `Widen`ed if needed); `Site::partition` assigns source edges to moving and staying text before `Rebase` transforms and renders each selected edge once in its final context, and rewrites other consumers from their own sites; a bare use left in the old file imports it back; an import of it in the new file is deleted; the declaration is `Widen`ed for consumers its reach at the new module no longer admits; last, the cut (`Extraction::cuts`) and the paste (`Extraction::assemble`, which carries only edits computed for the moving site) at `Surgery::item_insertion`, imports at `Surgery::import_insertion` |
-| `BatchIntent`      | `Workspace::staged()` (an `Overlay` the real files never see); each intent planned by an engine over it and applied to it, receipts chained with `Receipt::then`; the preview is every touched file now against the staging tree at its final path                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `Request`          | one match in `Engine::run`, delegating to typed capability bodies and returning `Execution`; mutation previews retain plans, applied requests commit them through `Apply`; `into_answer` consumes the result at the presentation boundary                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `Apply(planned)`   | validate the history snapshot and next id, then apply every plan through one `Transaction`; retain effects and receipts until saving the ledger succeeds; a file or ledger failure recovers the full before-state; the result comes back with `applied` and `history_id` set                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `Ledger::undo`     | one validated history snapshot; `Receipt::undo_in` checks fingerprints, restores files and cleans owned empty directories through one `Transaction`; save the snapshot without its newest entry before releasing recovery effects; on failure, recover the pre-undo state; answers `Undo` with what was restored                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `Ledger::history`  | `Ledger` reads a validated snapshot and returns each record's entry                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `SurfaceQuery`     | every fragment's declarations in the package; each public one, or one `aliases_of` offers elsewhere, listed with its aliases and how many other fragments import any of its addresses                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `ImpactQuery`      | `references` for the declaration, `aliases_of` for its addresses, then breadth first over fragments: a module whose imports lead under a frontier address joins the next ring, once, at the depth it is first reached                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `DeadQuery`        | for each placed declaration (a type and its impls once), `references(name declared_in file)`: no `Resolved` token beyond its own name spans means unreferenced, `Unresolved` tokens are counted as `unsure`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `ImportsQuery`     | each fragment's declared imports: no address is unresolved; the same (address, glob) twice is redundant; a binding (`ImportRef::binding`, alias or last segment) no token outside the statement spells is unused, skipped for re-exports and for languages whose imports hide which names they take; files with no module address are `unplaced`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `FileQuery`        | the file loaded, `Language::highlights` from the language claiming it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+Capability execution uses these components:
+
+- `SearchQuery` asks `Graph::search` to filter candidates by literals and execute
+  `Candidate::find` in parallel. Addressed declarations precede other matches.
+- `RewriteIntent` narrows search matches and expands `Template` against each
+  matched source snapshot. `RewriteOf` validates retained matches and captures.
+- `RenameIntent` contains a `ReferencesQuery`. `Target` selects an addressable
+  declaration per language, and `Scope` judges occurrences. Ambiguous declarations
+  require `declared_in`; confidence and `Selection` determine the edits.
+- `MoveIntent` builds a `MoveSet`, including layout-defined companions such as
+  Rust's `a.rs` and `a/`. `Rebase` transforms resolved fragment edges;
+  `Reachability` checks visibility and `Widen` supplies allowed modifier edits.
+  Surgery supplies relocation edits from witnessed source snapshots.
+- `MoveSymbolIntent` builds an `Extraction` and `SymbolMove` from the source,
+  destination, and consumers. `Site::partition` assigns moving and staying edges
+  before rebasing. Import provisioning, destination cleanup, and visibility edits
+  contribute to one `Change`; validated extraction edits determine the cut and
+  insertion. Rust `impl` pieces move with their type.
+- `BatchIntent` plans and applies intents in order on a staged `Overlay`.
+  `Receipt::then` composes their before-states; the preview compares the real
+  before-state with the final staged contents and locations.
+- `SurfaceQuery` lists public declarations and re-export aliases with importer
+  counts. `ImpactQuery` follows importing modules breadth first.
+  `DeadQuery` counts resolved references and unverified tokens per declaration.
+- `ImportsQuery` classifies unresolved, repeated, and unused bindings from
+  fragments. Re-exports and imports with hidden binding names are excluded from
+  unused checks; files without a module address are reported as unplaced.
+- `FileQuery` loads source text and asks the claiming language for highlights.
+- `Ledger::history` reads validated entries. `Ledger::undo` checks receipt
+  fingerprints, restores files, cleans owned directories, and saves the ledger
+  through one transaction.
+
+Mutation producers merge witnessed `Change` values. `Planned::of` binds the
+result to a `ChangeSet`, rejects edit conflicts, previews it, and retains plans
+and intent beside the typed result. `Apply` commits those retained plans and their
+history entry through one `Transaction`.
 
 The engine's supporting modules:
 
-| module                                                                                          | holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| ----------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `vfs`                                                                                           | `Vfs` trait (read, write, walk, `stamp`); `MemoryVfs` for tests, `DiskVfs` (`.gitignore`-aware parallel walk), `Overlay` (writes over a base that is never touched — how plans compose)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `workspace`                                                                                     | `Workspace` = root + `Arc<dyn Vfs>`; `SourceFile`; relative/absolute path handling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `change`                                                                                        | `Change`: what an operation proposes before it is bound to the tree — edits by file, files moved, notices, respellings. Every step of a mutation (a `Rebase` rewrite, a widening, a relocation) answers with one; the command merges them and `Planned::of` binds the result to a `ChangeSet` (overlaps refused there, once), previews it and keeps notices and respellings for the answer                                                                                                                                                                                                                                                                                                                    |
-| `plan`                                                                                          | `Plan` (change set + fingerprints) → `preview` / `apply` → `Receipt` (with post-apply fingerprints) → `rollback` / `undo`; `Planned<T>`, a result with its plans and preview, `Deref` to the result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `protocol`                                                                                      | shared wire types, never tree access: `Match`/`MatchId`/`Occurrence` with `Confidence` and `Reason`, `Selection`, the answers (`Outline`, `Deps`, `Explanation`, `References`, `Locations`, `File`), `Notice`, `Respelling`, `Reach`, `Template`, `HistoryEntry`, `FileChange` with a `Diff` (its `Hunk`s read from `similar`, rendered to the wire string), `SCHEMA` and the `Response` envelope, `Request`/`Answer` (every command as one value and every result as one), `Call`/`Reply` (a request with an `id` and its reply, what `vvv serve` speaks), `Failure` with its `ErrorCode` (what an error is on the wire; `EngineError::code()` and `::hint()` say which), `display` — the shared styled-line |
-| IR (`Role`/`Piece`/`Line`, `hit`, `diff`, `counts`) each interface renders in its own colours — |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| and `vocabulary` — how the answers are read (below). Documented in [protocol.md](protocol.md)   |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Module      | Responsibility                                                                                  |
+| ----------- | ----------------------------------------------------------------------------------------------- |
+| `vfs`       | Filesystem operations and stamps; disk, memory, and staged overlay backends                     |
+| `workspace` | Root and Vfs ownership, immutable `SourceFile` snapshots, source witnesses, and path conversion |
+| `change`    | Witnessed edits and moves, notices, respellings, and conflict-checked binding                   |
+| `plan`      | Preconditions, preview, transactions, receipts, immutable planned results, and fingerprints     |
+| `protocol`  | Shared wire data, `Request`/`Answer`, envelopes, errors, styled lines, and vocabulary           |
+
+Capability-specific wire types live with their execution and composition, as
+listed in the command ownership index. [protocol.md](protocol.md) specifies the
+serialized contract.
 
 `Apply` validates and retains the history ledger before attempting any file write,
 and computes its next id with checked arithmetic. An unreadable ledger prevents
@@ -305,12 +327,12 @@ applied — data, never a sentence — and its receipt; the receipt never leaves
 a client sees the `HistoryEntry` (id, time, intent, what was written). It goes through the
 `Vfs` like everything else, so engine tests exercise it in memory.
 
-New receipts also retain the directories actually created by the file plans, in
+Receipts also retain the directories actually created by the file plans, in
 creation order; `Receipt::then` keeps that ownership across batch steps. Ledger-only
 parent directories are excluded from the receipt. Undo removes owned directories
 in reverse creation order only when empty. Pre-existing directories and directories
-containing other files are retained. Old receipts have no directory ownership
-evidence and conservatively retain their directories. A removed directory has a
+containing other files are retained. Receipts without directory ownership
+evidence retain their directories. A removed directory has a
 before-state in the undo transaction; recovery recreates parents before children
 through `Vfs::create_dir`, which does not replace an occupied entry.
 The directory-capable disk backend implements this recovery primitive; file-only
@@ -345,14 +367,14 @@ path. Reference verdicts retain a `ReferencePlan` with files and mutation state,
 even when a view hides its patch. Per-answer constructors live on `Document`,
 implemented beside execution in the capability's owner (see the command ownership
 index). References shares rename's module; rewrite, batch, history, and undo
-composition live in their existing execution modules. File preview still has no
+composition live beside their execution. File preview has no
 rendered document.
 
 The shared report modules are `document.rs` (construction, shared helpers, and
 `of`/`error` delegation), `block.rs` (structured blocks, notes, and reference plan
 data), `row.rs` (rows and source sites), `view.rs` (View, Options, Presentation, and
 Detailed), and `lines.rs` (shared line builders). `report/mod.rs` re-exports the
-same public vocabulary; capability-specific summaries stay with composition.
+public vocabulary; capability-specific summaries stay with composition.
 
 `View::present` turns those blocks into a `Presentation` of rows. `Options` belongs
 to this boundary: the view chooses collapsed or expanded verdicts, reach details,
@@ -464,7 +486,7 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
   callbacks; panels render from that view without inspecting `Mode`.
   `screen/defaults.rs` holds the shared key layers. Each mode binds its view once;
   the application chooses the shown mode before panel rendering. Panels never
-  receive `Model` or inspect `Mode`. There is no legacy renderer.
+  receive `Model` or inspect `Mode`.
 - `overlays/` — menu, confirmation, help, and report state, transitions, metadata,
   and typed boxes. `Overlay` owns report-source selection and help scrolling;
   each box renders from its own borrowed data. Help retains static screen metadata
@@ -527,8 +549,8 @@ applies it lives once, in `vvv-lang/src/syntax/`. Adding a language is adding a 
 staging, preview, and its thin apply entry point. `plan/transaction.rs` owns
 attempted effects, before-states, and recovery; `plan/receipt.rs` owns applied
 receipts, their composition, and undo validation/restoration. `planned.rs` and
-`fingerprint.rs` keep their existing responsibilities. Internal re-exports keep
-the lifecycle's callers independent of these file locations.
+`fingerprint.rs` own immutable mutation handles and content fingerprints,
+respectively. Internal re-exports expose these components within the lifecycle.
 
 `Plan` stages every file first (read, fingerprint
 check, compute), then writes through a `Transaction`. Before a write or move is
@@ -557,8 +579,9 @@ structured recovery failure naming confirmed remaining effects and unverified
 paths. Successful undo restores the receipt's file contents, locations, and case
 spelling, removes its history entry, and removes owned empty directories.
 Directories containing other files and directories without ownership evidence
-are retained. These guarantees exclude crashes and concurrent-writer isolation;
-they do not promise to restore inode identity, timestamps, or complete metadata.
+are retained. These guarantees cover returned errors, not panics, and exclude
+crashes and concurrent-writer isolation. They do not promise to restore inode
+identity, timestamps, or complete metadata.
 
 **Plan provenance covers edited and moved files.** An immutable `SourceFile` gives
 an edit producer a `SourceWitness` (relative path and content fingerprint). `Change`
@@ -578,18 +601,23 @@ plan stale. Provenance protects the coordinates and contents of edited and moved
 files; it is not a snapshot transaction over all resolution dependencies, nor does
 it prevent external writes between staging and writing.
 
-**Move destinations are preconditions.** A plan retains absence requirements for
-every destination and checks all of them during preview and apply, before writing
-any file. An occupied destination returns `exists`. This preflight is not an atomic
-reservation: another process can still create a destination between the check and
-`Vfs::rename`. Destination-preserving moves and their recovery outcomes belong to
-the transaction work; the current Vfs move can replace a destination.
+**Move destinations are preconditions.** A plan retains an absence requirement
+for each destination, or a same-entry requirement for a case-only rename. Preview
+and apply check every destination before any file write; an occupied destination
+returns `exists`. Preflight does not reserve a path. Forward and recovery moves
+also use `Vfs::move_if_absent`, which preserves a destination created after that
+check. Case-only moves use two destination-preserving legs through a unique
+name, with stored spelling retained for recovery and undo. The native operations,
+fallbacks, and partial outcomes are specified in the lifecycle section above.
 
 **Errors and notices are variants, not sentences.** `ResolveError` has one variant per
 situation a layout can refuse (`Root`, `IntoItself`, `CrossProject`, `NoParentFile`
 with the candidate files, …) and `Notice` carries a `NoticeKind`. `thiserror` gives
-errors a canonical message; the CLI layers hints on top by matching variants, and JSON
-clients get the fields, not the prose.
+errors a canonical message. `EngineError::code()` maps failures to stable wire
+codes; conversion to `Failure` includes a display message, an optional string hint,
+and structured recovery details when restoration cannot be verified. Hints can
+contain CLI syntax; structured hint actions and distinct Layout/Surgery errors are
+open contracts tracked in [backlog.md](backlog.md).
 
 **Rename resolves through imports, not types.** `graph/scope.rs` builds, per file,
 what its imports bring in: names (`use a::b::X`, grouped entries), opened modules

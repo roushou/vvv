@@ -20,7 +20,7 @@ pub struct Receipt {
     #[serde(default)]
     pub(super) written: BTreeMap<PathBuf, Fingerprint>,
     /// Only directories actually created by the file plans, in creation order.
-    /// Old receipts lack this evidence and conservatively keep their directories.
+    /// Receipts without ownership evidence retain directories during undo.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub(super) directories: Vec<RelPath>,
 }

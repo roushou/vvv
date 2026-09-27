@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use vvv_core::Query;
 
 /// A structural or symbolic search with a typed engine answer.
-/// The wrapped query retains the existing wire shape.
+/// Serializes transparently as the wrapped query.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct SearchQuery(pub vvv_core::Query);

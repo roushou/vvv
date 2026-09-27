@@ -20,9 +20,10 @@
   <em>Rename, move and rewrite code by syntax, not string matching.</em>
 </p>
 
-vvv reads declarations, identifiers and imports, so a rename follows every reference and
-a move rewrites every path that pointed at it. Nothing is written until you have seen the
-diff, and every write can be undone.
+vvv reads declarations, identifiers, and imports. Rename follows references resolved
+through module paths, and move rewrites paths it can resolve. Mutations preview by
+default; `--apply` writes a checked plan and records an undo entry. Resolution and
+failure-recovery limits are specified in the [guide](docs/guide.md).
 
 ## Install
 

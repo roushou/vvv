@@ -259,22 +259,25 @@ vvv search 'foo($$$A)'                                  # look at the rows
 vvv rewrite 'foo($$$A)' 'bar($$$A)' --select 2,5-7 --apply
 ```
 
-The numbers are positions in the same search run again, so they mean the same thing as
-long as the code hasn't changed in between; if it has, the plan's fingerprint refuses
-to apply rather than acting on whatever is there now. `--json` output carries a
-content-derived `id` per match instead (`827aff1a882c`, computed from the file, the
-position and the text), and `--select` accepts those too — for scripts and agents that
-keep results across runs. Without `--select`, a command acts on all of its matches.
+Numbers select positions in the current search result order. Separate CLI
+invocations repeat the search; source changes can change which match an ordinal
+selects. `--json` carries a content-derived `id` per match (`827aff1a882c`, computed
+from its path, byte span, and matched text). `--select` also accepts these IDs and
+rejects IDs absent from the current results. Use IDs when retaining selections
+across invocations. A plan's fingerprint protects its witnessed source snapshots
+between planning and writing. Without `--select`, a command uses its default
+selection: rename selects resolved occurrences, and rewrite selects all matches.
 
 ## Previewing, applying and undoing
 
 None of `rewrite`, `rename` or `move` writes anything on its own. Each one works out a
 plan, prints it, and stops; the last line on standard error is the plan's size and the
 flag to go on with (`± 2   2 files` / `hint: --apply to write`). When you add
-`--apply`, the plan is checked and written — and if any of the files changed between
-the preview and the apply, vvv stops and tells you instead of writing over the changes.
-The same check rejects a plan whose edited or moved source changed after the engine
-read it, including a cached source in a session. Plans witness the files they edit
+`--apply`, that invocation computes a plan, checks it, and writes it. A separate
+preview invocation does not retain a plan for the next CLI invocation. Rust clients
+can retain a `Planned<T>` and pass it to `Apply`; apply rejects it if a witnessed
+source has changed. The same check rejects a source changed after the engine read
+it during planning, including a cached source in a session. Plans witness the files they edit
 or move; files consulted only during resolution are not re-checked at apply.
 What you get back is a receipt naming the history entry: `✓ #3   ± 2   2 files`.
 
@@ -315,7 +318,7 @@ $ vvv undo
 Successful undo restores the receipt's file contents, locations, and case spelling,
 removes its history entry, and removes owned empty directories (a moved file shows
 as `src/b.rs → src/a.rs`). Pre-existing directories, directories containing other
-files, and directories without ownership evidence in older receipts are retained.
+files, and directories without receipt ownership evidence are retained.
 If you've edited one of those files since the apply, undo refuses before restoration
 and leaves the history entry in place.
 
@@ -323,10 +326,12 @@ Undo keeps its recovery state until the updated history ledger is saved. If file
 restoration, directory cleanup, or that history save returns an error, undo restores
 the pre-undo file and ledger state, including directories it removed, or returns
 `recovery_failed` naming confirmed remaining effects and unverified paths.
-Apply, batch, and undo are failure-correct for returned I/O errors; they are not
-crash-consistent and do not isolate concurrent writers. The recovery guarantee covers
-returned errors, not panics. They do not restore inode identity, timestamps, or
-complete filesystem metadata.
+Apply, batch, and undo retain recovery state for returned file-operation,
+directory-cleanup, and history-save errors. The guarantee covers returned errors,
+not panics. There is no durable journal or crash recovery, and commands do not
+isolate concurrent writers. Restoration covers file contents, locations, case
+spelling, ledger bytes, and owned empty directories; it excludes inode identity,
+timestamps, and complete filesystem metadata.
 
 Errors start with `✗` and are followed by `hint:` lines when there is an obvious next
 thing to try; an empty answer is `∅`.
@@ -441,8 +446,8 @@ Case-only renames use a unique temporary name and two destination-preserving mov
 they are not atomic as a whole. Recovery and undo restore the original stored
 filename as well as its contents. A recovery failure names any temporary file left
 behind. A file created between the two legs is preserved.
-The check does not reserve the paths against another process creating a file during
-the write.
+Preflight does not reserve the paths; destination-preserving move operations enforce
+the no-replacement requirement at each move.
 
 The preview separates what is mechanical from what you should read:
 

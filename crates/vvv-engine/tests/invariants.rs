@@ -105,7 +105,7 @@ fn applying_a_query_result_is_rejected_before_writes() {
     let query = fixture.engine.run(vvv_engine::Request::History).unwrap();
     let rejected = MutationAnswer::try_from(query.into_answer());
     assert!(matches!(rejected, Err(Answer::History(_))));
-    // The original substitution into Planned is now checked by its compile-fail doctest.
+    // Planned's compile-fail doctests reject substituting query presentation data.
     assert_eq!(fixture.read("a.p"), "def foo\nfoo");
     assert!(!fixture.vfs.exists(Path::new("/ws/.vvv/history.json")));
 }

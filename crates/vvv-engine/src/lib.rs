@@ -1,7 +1,7 @@
 //! The engine: typed capabilities over a workspace and a language registry.
 //! [`Engine::run`] dispatches a [`Request`] and returns an in-process [`Execution`].
 //! Queries answer with concrete data; mutations retain [`Planned`] results until
-//! [`Apply`] writes and commits their history entry. [`Intent`] remains the
+//! [`Apply`] writes and commits their history entry. [`Intent`] is the
 //! mutation description shared by history and batch.
 //!
 //! Typed clients call capability-owned `execute`, `plan`, or `apply` methods,

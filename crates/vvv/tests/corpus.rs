@@ -1,8 +1,7 @@
-//! The corpus gate: two small workspaces under `tests/corpus/` — one Rust
-//! workspace of two crates, one TypeScript project — with every command's
-//! exact output kept as a snapshot, and three properties every mutation must
-//! keep: what is applied is what was previewed, an apply undone leaves the
-//! tree as it was, and a batch of two is the second applied after the first.
+//! Corpus workspaces under `tests/corpus/` cover Rust, TypeScript, moves, and
+//! import resolution. Command cases retain exact human and JSON snapshots.
+//! Mutation cases check three properties: apply equals preview, undo restores
+//! the original tree, and batch equals sequential application.
 //! Changing what a command means changes a snapshot; review it, then
 //! `INSTA_UPDATE=always cargo test -p vvv-rs --test corpus` to accept.
 
@@ -26,7 +25,7 @@ struct Corpus {
     mutations: fn() -> Vec<Request>,
 }
 
-/// Read-only resolution forms, ported from the abstraction audit probes.
+/// Import resolution: same-file alias chains, grouped entries, and nested groups.
 #[cfg(feature = "rust")]
 const RUST_RESOLUTION: Corpus = Corpus {
     name: "rust-resolution",

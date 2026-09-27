@@ -4,9 +4,10 @@ Pass `--json` to any command. Output is a single JSON document on stdout, includ
 errors, so a client never needs stderr. Exit code is `0` for `ok`, `1` for `error`.
 Or run `vvv serve` and send the same commands as JSON, one per line (below).
 
-The types are defined in `vvv_engine::protocol` (`crates/vvv-engine/src/protocol/`); a
-Rust client depends on `vvv-engine` alone and gets them alone. This
-page is the human-readable contract. Field order is not significant. Absent optional
+The wire types are exported by `vvv-engine`. Shared types live in `protocol/`;
+capability-specific requests and answers live with their implementations and are
+exported at the crate root. See [architecture.md](architecture.md) for Rust import
+paths. A Rust client needs only `vvv-engine`. This page specifies serialization. Field order is not significant. Absent optional
 fields are omitted, not `null`.
 
 ## Envelope
@@ -392,7 +393,9 @@ touches.
 `files` shows every touched file before the first step against after the last, at its
 final path; `edits` is empty there, since each step's edits are in the coordinates of
 the state before it. Applying is one transaction: if a step no longer holds against the
-real tree, the steps before it are rolled back and nothing is recorded. History records
+real tree, recovery restores earlier effects or returns `recovery_failed` naming
+remaining effects and unverified paths. Recovery also compensates failed history
+saves (see [Errors](#errors)). History records
 one entry, `{ "command": "batch", "intents": [ … ] }`, and one `undo` reverses it all.
 
 ## Intent
@@ -436,18 +439,22 @@ the history entry so the situation can be fixed by hand and retried.
 1. Run the command without `--apply`. Inspect `files[].diff` and the ids.
 2. Re-run with `--select id,id,…` (optional) and `--apply`.
 
-Between the two runs the engine recomputes everything; ids are the only state
-carried. If a file changed in between, an id no longer resolves and the command
-errors with `no match with id(s) …` rather than acting on a different span. Row
-numbers work the same way for a human at a terminal; a program should prefer ids,
-which do not depend on the result order.
-Likewise a plan refuses to apply to a file whose contents differ from when it was
-previewed (`… changed since the plan was made`).
+Separate CLI invocations recompute the search and plan. An ID includes the
+match's path, byte span, and text; an ID absent from the recomputed results returns
+`no match with id(s) …`. Edits elsewhere in the file do not necessarily change that
+ID. Ordinals select the current result order and can identify different matches
+after source changes; a client retaining selections should prefer IDs.
+
+A Rust client can retain `Planned<T>` and apply it without replanning. Apply
+refuses a witnessed source whose contents differ from its planning snapshot
+(`… changed since the plan was made`).
 Source fingerprints come from the snapshots used by edit and move producers, so
 changes before the initial preview are refused too. Resolution-only inputs are not
-included. A move also checks that every destination remains absent before writing;
-an occupied destination returns `exists`. This is a preflight check, not a reservation
-against another process creating the destination during the write.
+included. A move checks destination absence before writing, with a same-entry
+exception for case-only renames; other occupied destinations return `exists`.
+Preflight does not reserve paths. Forward and recovery moves also preserve
+any destination created after the check. Case-only moves use two such operations
+through a unique name and are not atomic as a whole.
 
 ## Errors
 
@@ -477,7 +484,7 @@ happened in words and `hint` (when present) what to try, and neither is for pars
 
 A failed file mutation whose recovery cannot restore or verify every attempted
 effect returns `recovery_failed` with an additional `recovery` object. Other errors
-omit this field. The envelope schema remains 1; this is an additive field.
+omit this field. The envelope schema is 1.
 
 `recovery` contains:
 
@@ -502,17 +509,19 @@ for independent effects after a failure. If the final before-states are all veri
 the initiating error is returned instead, even if a restoration operation returned
 an error after completing its effect.
 
-These are in-memory recovery results, not crash-recovery records. Apply, batch,
-and undo include ledger-save compensation: an unrestored `.vvv/history.json` is
+These results describe recovery from returned errors, not panics or crashes.
+There is no durable recovery journal or isolation from concurrent writers.
+Apply, batch, and undo include ledger-save compensation: an unrestored `.vvv/history.json` is
 listed like any other remaining file. An unrestored owned directory is listed
 as a directory; `restore_directory` identifies a failed attempt to recreate one
 removed during undo. During failed undo, expected states describe the pre-undo
 (applied) state, including the original ledger with the entry still present.
-Successful answer shapes are unchanged; the envelope schema remains 1.
-Directory ownership is kept in internal history receipts, with an empty default
-for receipts written by older versions; it is not a new field in client answers.
+Directory ownership is stored in internal history receipts and is absent from
+client answers. A receipt without this field defaults to no owned directories,
+so undo retains directories without ownership evidence.
 
 The Rust library dispatcher returns an in-process `Execution` so a mutation preview
 can retain its executable plan and an applied completion can retain its committed
 history id. Interfaces consume `Execution::into_answer()` before serializing the
-existing `Answer`. These handles do not change the JSON request or reply shapes.
+wire `Answer`. Executable plans and committed completion handles are not
+serialized.

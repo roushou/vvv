@@ -6,7 +6,7 @@ the rules that keep the crates apart.
 ## Commands
 
 ```console
-cargo build                                   # default features: rust, typescript
+cargo build                                   # default features: rust, typescript, tui
 cargo test --workspace --all-features --no-fail-fast    # the corpus gate is in here
 cargo clippy --workspace --all-targets --all-features
 cargo fmt --all
@@ -47,7 +47,7 @@ crates/
                 LanguageRegistry; names no language
   vvv-tui       the picker: Tui::new(engine).editor(..).color(..).run(); links the engine only
   vvv           the entrypoint: clap consumer of vvv-engine (+ vvv-tui behind `tui`);
-                cli/commands/ map 1:1 to intents; languages.rs is the composition root
+                cli/commands/ build requests; languages.rs is the composition root
                 that names vvv-lang and picks the plugins the build ships
                 (package `vvv-rs` — `vvv` is taken on crates.io — binary `vvv`)
 docs/          architecture, guide, protocol, report
@@ -61,11 +61,12 @@ docs/          architecture, guide, protocol, report
   capability module. The [command ownership index](crates/vvv-engine/src/capabilities/mod.rs)
   maps every command to its owner; update it when adding or moving a command.
   `protocol/` owns shared wire types and the central `Request`/`Answer` contract,
-  and preserves existing query re-exports. Keep the data and serialization part independent of `Workspace`; only
-  execution may read the tree. A new method on `Engine` is the wrong place for
+  and re-exports query types. Keep data and serialization independent of
+  `Workspace`; only execution may read the tree. A new method on `Engine` is the wrong place for
   a capability.
-- **Library first.** Behaviour lives in `vvv-engine`. `crates/vvv` builds an intent,
-  runs its Request (including apply policy), hands the result to a `Reporter`. Nothing else —
+- **Library first.** Behaviour lives in `vvv-engine`. `crates/vvv` builds a
+  `Request` (including apply policy), runs it, and hands the answer to a `Reporter`.
+  Interface code handles argument parsing and reporting —
   no `format!` of user-facing text outside `output/`. What crosses a boundary is data
   (`Intent`, `NoticeKind`, error variants, protocol types); words are the display
   layer's job. An error or notice that only exists as a `String` is a bug.
@@ -89,7 +90,7 @@ docs/          architecture, guide, protocol, report
   `grep -rn "Answer\|Match\|Occurrence\|Search\|Rename\|Move"
   crates/vvv/src/output/render/` must find nothing. The report is never serialized:
   `--json` is the `Answer`. A row an interface can act on carries a
-  `Site { path, line }`.
+  `Source { path: RelPath, line }`.
 - **The plugin boundary is data.** `Language` methods take `&str` and return plain
   serializable values (`RawMatch`, `Symbol`). Only `vvv-lang/src/syntax/` imports
   `ast_grep_core`; language modules contribute `Grammar`/`Semantics` tables, a pure
@@ -102,9 +103,9 @@ docs/          architecture, guide, protocol, report
   it is and what it can answer — `Graph`, `Namespace`, `Candidate`, `Scope`, `Target`, `Rebase`,
   `Extraction`, `Widen`, `SymbolMove`,
   `Plan` — never for the step it performs. Behaviour hangs off the type that owns the
-  data; sequences live in the `Engine` method as plain code short enough to read as a
-  sentence. A trait exists once two real implementations answer its question; with one
-  it is a struct. A struct named with a verb, or a method whose only input is the
+  data; capability execution sequences stay with their owning type; `Engine::run`
+  only routes requests and coordinates lifecycle access. A trait exists once two
+  real implementations answer its question; with one it is a struct. A struct named with a verb, or a method whose only input is the
   previous step's output, is the smell. A helper with no natural owner is a sign the
   type is missing.
 - **No free functions.** Behavior lives as a method on the type that owns the
@@ -138,6 +139,9 @@ docs/          architecture, guide, protocol, report
 
 ## When you change something
 
+- Docs and comments describe current contracts, invariants, and implementation
+  constraints. Keep migration status, audit chronology, and completed-work notes
+  out of technical documentation; `docs/backlog.md` contains unresolved issues.
 - User-visible behaviour changed (a flag, a key, what a command rewrites) → update
   `docs/guide.md`; the README stays a front door and only changes for headline features.
 - JSON output changed → update `docs/protocol.md` in the same change.
@@ -147,7 +151,7 @@ docs/          architecture, guide, protocol, report
   `INSTA_UPDATE=always cargo test -p vvv-rs` (or `-p vvv-tui`) to accept. Never
   `println!` in a reporter: write to its `out`/`err` so tests can capture it.
 - What a command _means_ changed (a verdict, an address, an edit) → the corpus gate
-  changes: `crates/vvv/tests/corpus.rs` runs every command over the two workspaces
+  changes: `crates/vvv/tests/corpus.rs` runs command cases over the registered workspaces
   under `crates/vvv/tests/corpus/` and keeps the exact output in
   `crates/vvv/tests/corpus/snapshots/`. Read the diff as the review of the change —
   every line that moved is a behaviour that moved — then accept with
