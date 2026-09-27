@@ -159,16 +159,7 @@ impl Command for ExplainQuery {
             return Ok(explanation);
         };
         let fragment = candidate.fragment(&ns)?;
-        // Inside an import statement: the entry under the position, or the
-        // statement's own path when the position is on none of its entries.
-        let statement = fragment.imports().find(|e| {
-            e.import.span.contains_offset(offset)
-                || e.import
-                    .group
-                    .as_ref()
-                    .is_some_and(|g| g.statement.contains_offset(offset))
-        });
-        if let Some(edge) = statement {
+        if let Some(edge) = fragment.import_at(offset) {
             explanation.import = Some(graph.dep(&ns, source, edge)?);
         }
         let Ok(module) = ns.address(&path) else {

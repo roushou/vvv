@@ -5,6 +5,6 @@ expression: "corpus.run(args, false)"
 exit 0
 --- stdout ---
 src/consumer.rs:3:31
-→ module_alias::Foo
-  src/a.rs
+→ module_alias::child::Child
+  src/a/child.rs
 --- stderr ---

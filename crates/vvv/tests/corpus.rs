@@ -946,7 +946,6 @@ fn rust_resolution_golden() {
 
 #[cfg(feature = "rust")]
 #[test]
-#[ignore = "known bug: explain lets a grouped statement's first edge hide the entry under the cursor"]
 fn explain_selects_the_grouped_entry_under_the_cursor() {
     let fixture = ResolutionFixture::new();
     let import = fixture.import_at("src/consumer.rs", vvv_engine::Position::new(2, 30));
@@ -962,7 +961,6 @@ fn explain_selects_the_grouped_entry_under_the_cursor() {
 
 #[cfg(feature = "rust")]
 #[test]
-#[ignore = "known bug: explain selects a nested group prefix instead of its exact leaf or sibling entry"]
 fn explain_selects_exact_entries_in_nested_groups() {
     let fixture = ResolutionFixture::new();
     for (column, path, address) in [
@@ -985,6 +983,22 @@ fn explain_selects_exact_entries_in_nested_groups() {
             Some(vvv_engine::Address::new("resolution_probe", address))
         );
     }
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn explain_retains_a_statement_fallback_outside_import_entry_spans() {
+    let fixture = ResolutionFixture::new();
+    for (column, path) in [
+        (0, "module_alias::Foo"),
+        (4, "module_alias"),
+        (23, "module_alias::Foo"),
+    ] {
+        let import = fixture.import_at("src/consumer.rs", vvv_engine::Position::new(2, column));
+        assert_eq!(import.import.path.to_string(), path, "column {column}");
+    }
+    let prefix = fixture.import_at("src/nested.rs", vvv_engine::Position::new(1, 19));
+    assert_eq!(prefix.import.path.to_string(), "module_alias::child");
 }
 
 #[cfg(feature = "rust")]

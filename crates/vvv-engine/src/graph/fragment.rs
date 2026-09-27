@@ -147,6 +147,22 @@ impl Fragment {
         self.edges.iter().filter(|e| e.import.declares)
     }
 
+    /// The exact import path under a position takes precedence over an entry
+    /// whose grouped statement merely contains it. Outside entry spans, keep
+    /// the containing statement's first grouped entry as the fallback.
+    pub fn import_at(&self, offset: usize) -> Option<&Edge> {
+        self.imports()
+            .find(|edge| edge.import.span.contains_offset(offset))
+            .or_else(|| {
+                self.imports().find(|edge| {
+                    edge.import
+                        .group
+                        .as_ref()
+                        .is_some_and(|group| group.statement.contains_offset(offset))
+                })
+            })
+    }
+
     /// Whether anything here — an import or a path — resolves under `address`.
     pub fn reaches(&self, address: &Address) -> bool {
         self.edges

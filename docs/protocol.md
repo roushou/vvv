@@ -194,9 +194,11 @@ empty. Pass `language` to ask one language only.
 
 Read-only answers built from the same declarations and imports a rename uses. Same-file
 imported alias chains resolve to the same addresses in dependencies, explanations
-and references. Each is
-a plain structure of the shared types; `Symbol` fields are flattened into an outline
-item.
+and references. Each is a plain structure of the shared types; `Symbol` fields are
+flattened into an outline item. On `explain`, an exact import path under `position`
+takes precedence over grouped-statement containment, including nested groups.
+Outside entry spans, the containing statement's first grouped entry remains the
+fallback.
 
 ```json
 { "path": "src/plan/mod.rs", "module": Address,

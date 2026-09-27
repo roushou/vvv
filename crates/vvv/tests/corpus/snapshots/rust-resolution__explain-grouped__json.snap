@@ -21,15 +21,15 @@ exit 0
     },
     "import": {
       "span": {
-        "start": 76,
-        "end": 79
+        "start": 81,
+        "end": 93
       },
-      "path": "module_alias::Foo",
+      "path": "module_alias::child::Child",
       "group": {
         "prefix": "module_alias",
         "item": {
-          "start": 76,
-          "end": 79
+          "start": 81,
+          "end": 93
         },
         "list": {
           "start": 75,
@@ -45,16 +45,17 @@ exit 0
       "declares": true,
       "start": {
         "line": 2,
-        "column": 19
+        "column": 24
       },
       "address": {
         "package": "resolution_probe",
         "path": [
           "a",
-          "Foo"
+          "child",
+          "Child"
         ]
       },
-      "file": "src/a.rs"
+      "file": "src/a/child.rs"
     },
     "importers": []
   }

@@ -5,6 +5,6 @@ expression: "corpus.run(args, false)"
 exit 0
 --- stdout ---
 src/nested.rs:2:28
-→ module_alias::child
+→ module_alias::child::Child
   src/a/child.rs
 --- stderr ---

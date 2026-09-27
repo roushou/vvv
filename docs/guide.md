@@ -168,7 +168,9 @@ crates/vvv-core/src/semantics.rs:40:12
 ```
 
 On an import statement it says where the thing really comes from — what the path
-spells, then `↗` the declaration a re-export chain leads to and its file:
+spells, then `↗` the declaration a re-export chain leads to and its file. Inside a
+grouped import, the entry under the column takes precedence over the enclosing
+statement, including in nested groups:
 
 ```console
 crates/vvv-engine/src/change.rs:12:20
