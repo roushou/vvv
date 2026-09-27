@@ -9,7 +9,7 @@ use std::sync::Arc;
 use common::Fake;
 use vvv_engine::{
     Apply, Engine, EngineError, FileQuery, Languages, MemoryVfs, MoveIntent, MoveSymbolIntent,
-    RelPath, UndoLast, Workspace,
+    RelPath, UndoLast, Vfs, Workspace,
 };
 
 fn engine() -> Engine {
@@ -207,4 +207,33 @@ fn a_symbol_moves_with_its_consumers_following() {
     );
     engine.run(UndoLast).unwrap();
     assert_eq!(read(&engine, "a/x.p"), "def helper\ndef other\nhelper");
+}
+
+#[test]
+fn grouped_rewrites_must_account_for_every_requested_entry_before_writes() {
+    let vfs = Arc::new(
+        MemoryVfs::new()
+            .with_file("/ws/manifest.p", "")
+            .with_file("/ws/a.p", "def x\n")
+            .with_file("/ws/consumer.p", "use {a.p}\n"),
+    );
+    let engine = Engine::new(
+        Workspace::new("/ws", vfs.clone()),
+        Languages::new().with(Fake::default().with_regrouped(vvv_core::Regrouped::default())),
+    );
+    let error = match engine.run(MoveIntent::new("a.p", "b.p")) {
+        Err(error) => error,
+        Ok(_) => panic!("an omitted grouped outcome must be rejected"),
+    };
+    assert!(matches!(
+        error,
+        EngineError::Regroup(vvv_core::RegroupError::MissingOutcome(_))
+    ));
+    assert_eq!(error.code(), vvv_engine::ErrorCode::Conflict);
+    assert_eq!(vfs.read(Path::new("/ws/a.p")).unwrap(), "def x\n");
+    assert_eq!(
+        vfs.read(Path::new("/ws/consumer.p")).unwrap(),
+        "use {a.p}\n"
+    );
+    assert!(!vfs.exists(Path::new("/ws/b.p")));
 }

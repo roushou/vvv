@@ -287,7 +287,8 @@ identity, timestamps, or complete filesystem metadata.
 
 File and symbol moves follow resolved qualified paths through imported module
 aliases. An alias path keeps its spelling when changing the alias import is enough;
-otherwise the path is rewritten to the moved target. Imports needed by a moved
+otherwise the path is rewritten to the moved target. Grouped entries retain their
+group when its resolved prefix still covers the target, including module aliases. Imports needed by a moved
 declaration and redundant destination imports use the same resolved edges.
 
 Invalid declaration extents or overlapping edits in a symbol move are rejected as

@@ -41,6 +41,19 @@ exit 0
         },
         "from": "alias::Foo",
         "to": "crate::b::Foo"
+      },
+      {
+        "path": "src/grouped.rs",
+        "span": {
+          "start": 46,
+          "end": 52
+        },
+        "start": {
+          "line": 1,
+          "column": 27
+        },
+        "from": "root::a::Foo",
+        "to": "b::Foo"
       }
     ],
     "files": [
@@ -82,6 +95,19 @@ exit 0
           }
         ],
         "diff": "--- a/src/c.rs\n+++ b/src/c.rs\n@@ -1,5 +1,5 @@\n use crate::a as alias;\n \n-fn consume(_: alias::Foo) {}\n+fn consume(_: crate::b::Foo) {}\n \n fn nested(_: alias::sub::Nested) {}\n"
+      },
+      {
+        "path": "src/grouped.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 46,
+              "end": 52
+            },
+            "replacement": "b::Foo"
+          }
+        ],
+        "diff": "--- a/src/grouped.rs\n+++ b/src/grouped.rs\n@@ -1,5 +1,5 @@\n use crate as root;\n-use root::{a::sub::Nested, a::Foo};\n+use root::{a::sub::Nested, b::Foo};\n \n fn nested(_: Nested) {}\n fn foo(_: Foo) {}\n"
       }
     ]
   }

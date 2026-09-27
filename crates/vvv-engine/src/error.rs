@@ -38,6 +38,8 @@ pub enum EngineError {
     Conflict(#[from] EditConflict),
     #[error(transparent)]
     Extraction(#[from] crate::ExtractionError),
+    #[error(transparent)]
+    Regroup(#[from] vvv_core::RegroupError),
     #[error("`{name}` is declared in several places ({})", declarations.iter().map(ToString::to_string).collect::<Vec<_>>().join(", "))]
     AmbiguousSymbol {
         name: String,
@@ -82,7 +84,7 @@ impl EngineError {
             Self::Search { .. } => ErrorCode::BadPattern,
             Self::Selection(_) => ErrorCode::BadSelection,
             Self::Template { .. } => ErrorCode::BadTemplate,
-            Self::Conflict(_) | Self::Extraction(_) => ErrorCode::Conflict,
+            Self::Conflict(_) | Self::Extraction(_) | Self::Regroup(_) => ErrorCode::Conflict,
             Self::AmbiguousSymbol { .. } => ErrorCode::AmbiguousSymbol,
             Self::NoSuchSymbol { .. } => ErrorCode::NoSuchSymbol,
             Self::Exists(_) => ErrorCode::Exists,

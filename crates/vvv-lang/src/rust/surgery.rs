@@ -5,8 +5,9 @@
 use std::path::Path;
 
 use vvv_core::{
-    Address, Edit, ImportGroup, ImportRef, Layout, ModulePath, Parsed, PathHead, Project,
-    ReachKind, Regrouped, ResolveError, SideEdit, SourceText, Span, Surgery, Symbol, SymbolKind,
+    Address, Edit, GroupedImports, ImportGroup, ModulePath, Parsed, PathHead, Project, ReachKind,
+    Regrouped, RegroupedEntry, RegroupedOutcome, ResolveError, SideEdit, SourceText, Span, Surgery,
+    Symbol, SymbolKind,
 };
 
 use super::layout::{RustLayout, SYNTAX};
@@ -62,19 +63,6 @@ impl RustSurgery {
                     .map(|m| (m.span.start, m.span.end - m.span.start)),
             })
             .collect()
-    }
-
-    /// If `target` still sits under what the group's prefix means from
-    /// `file`, the entry can be rewritten in place: the remaining segments.
-    fn rest_within_group(
-        project: &Project,
-        file: &Path,
-        group: &ImportGroup,
-        target: &Address,
-    ) -> Option<String> {
-        let prefix_now = RustLayout.resolve(project, file, &group.prefix)?;
-        let rest = target.strip_prefix(&prefix_now)?;
-        (!rest.is_empty()).then(|| group.prefix.spell_segments(rest))
     }
 
     /// Take `leaving` entries out of their statement into statements of their
@@ -252,40 +240,56 @@ impl Surgery for RustSurgery {
         project: &Project,
         from: &Path,
         source: &SourceText,
-        entries: &[(ImportRef, Address)],
+        imports: &GroupedImports,
     ) -> Regrouped {
-        let Some(statement) = entries.first().and_then(|(r, _)| r.group.as_ref()) else {
-            return Regrouped::default();
-        };
-        let statement = statement.statement;
+        let statement = imports.statement();
         let mut edits = Vec::new();
+        let mut outcomes = Vec::new();
         let mut leaving: Vec<Leaving<'_>> = Vec::new();
-
-        for (import, target) in entries {
+        for entry in imports.entries() {
+            let import = &entry.import;
+            let target = &entry.target;
             let Some(group) = &import.group else {
+                outcomes.push(RegroupedEntry {
+                    span: import.span,
+                    outcome: RegroupedOutcome::Skipped,
+                });
                 continue;
             };
-            match Self::rest_within_group(project, from, group, target) {
-                Some(rest) => edits.push(Edit::replace(import.span, rest)),
-                None => leaving.push(Leaving {
-                    group,
-                    // The entry's tail: ` as Alias`, `::*`, `::{self, X}`.
-                    path: format!(
-                        "{}{}",
-                        self.render(project, from, target, &import.path),
-                        source.slice(Span::new(import.span.end, group.item.end))
-                    ),
-                }),
-            }
+            let rest = entry
+                .prefix
+                .as_ref()
+                .and_then(|p| target.strip_prefix(p))
+                .filter(|r| !r.is_empty());
+            let outcome = match rest {
+                Some(rest) => {
+                    let replacement =
+                        ModulePath::new(SYNTAX, PathHead::Named, rest.iter().cloned());
+                    edits.push(Edit::replace(import.span, replacement.to_string()));
+                    RegroupedOutcome::InPlace { replacement }
+                }
+                None => {
+                    leaving.push(Leaving {
+                        group,
+                        path: format!(
+                            "{}{}",
+                            self.render(project, from, target, &import.path),
+                            source.slice(Span::new(import.span.end, group.item.end))
+                        ),
+                    });
+                    RegroupedOutcome::Structural
+                }
+            };
+            outcomes.push(RegroupedEntry {
+                span: import.span,
+                outcome,
+            });
         }
 
         if !leaving.is_empty() {
             edits.extend(Self::leave_group(source, statement, &leaving));
         }
-        Regrouped {
-            edits,
-            skipped: Vec::new(),
-        }
+        Regrouped { edits, outcomes }
     }
 
     /// Move the `mod` declaration: a rename in place when the parent is

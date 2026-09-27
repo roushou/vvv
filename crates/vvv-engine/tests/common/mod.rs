@@ -18,25 +18,35 @@
 use std::path::{Path, PathBuf};
 
 use vvv_core::{
-    Address, Capture, CaptureValue, Edit, Facts, ImportGroup, ImportRef, Language, LanguageId,
-    Layout, Modifier, ModulePath, Package, Parsed, PathHead, PathSyntax, Project, Query, RawMatch,
-    ReachKind, ResolveError, SearchError, Semantics, SideEdit, SourceText, Span, Surgery, Symbol,
-    SymbolKind, VisibilityRule,
+    Address, Capture, CaptureValue, Edit, Facts, GroupedImports, ImportGroup, ImportRef, Language,
+    LanguageId, Layout, Modifier, ModulePath, Package, Parsed, PathHead, PathSyntax, Project,
+    Query, RawMatch, ReachKind, Regrouped, ResolveError, SearchError, Semantics, SideEdit,
+    SourceText, Span, Surgery, Symbol, SymbolKind, VisibilityRule,
 };
 
 pub struct Fake {
     id: &'static str,
     extensions: &'static [&'static str],
+    surgery: PathSurgery,
 }
 
 impl Fake {
     pub fn new(id: &'static str, extensions: &'static [&'static str]) -> Self {
-        Self { id, extensions }
+        Self {
+            id,
+            extensions,
+            surgery: PathSurgery::default(),
+        }
     }
 
     /// The default fake: language `fake`, extension `.p`.
     pub fn default() -> Self {
         Self::new("fake", &["p"])
+    }
+
+    pub fn with_regrouped(mut self, result: Regrouped) -> Self {
+        self.surgery.regrouped = Some(result);
+        self
     }
 
     fn words(source: &str) -> Vec<(usize, &str)> {
@@ -290,7 +300,7 @@ impl Language for Fake {
     }
 
     fn surgery(&self) -> Option<&dyn Surgery> {
-        Some(&PathSurgery)
+        Some(&self.surgery)
     }
 }
 
@@ -352,9 +362,23 @@ impl Layout for PathLayout {
 
 /// Renders addresses as paths and adds one side edit per move (a line in
 /// `manifest.p`) so side edits are exercised.
-pub struct PathSurgery;
+#[derive(Default)]
+pub struct PathSurgery {
+    regrouped: Option<Regrouped>,
+}
 
 impl Surgery for PathSurgery {
+    fn regroup(
+        &self,
+        _: &Project,
+        _: &Path,
+        _: &SourceText,
+        imports: &GroupedImports,
+    ) -> Regrouped {
+        self.regrouped
+            .clone()
+            .unwrap_or_else(|| Regrouped::skipped(imports))
+    }
     fn render(&self, _: &Project, _: &Path, target: &Address, _: &ModulePath) -> ModulePath {
         ModulePath::new(
             PathSyntax::Posix,

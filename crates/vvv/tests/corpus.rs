@@ -745,3 +745,30 @@ fn preview_insertions_keep_their_wire_order() {
         "import\nitem\n"
     );
 }
+
+#[cfg(feature = "rust")]
+#[test]
+fn grouped_alias_prefixes_keep_their_resolved_meaning() {
+    use vvv_engine::{Confidence, ReferencesQuery};
+    let (vfs, engine) = RUST_MOVES.engine();
+    engine
+        .run(vvv_engine::Apply(
+            engine
+                .run(MoveIntent::new("src/a/sub.rs", "src/b/sub.rs"))
+                .unwrap(),
+        ))
+        .unwrap();
+    let text = vfs.read(Path::new("/ws/src/grouped.rs")).unwrap();
+    assert!(
+        text.contains("use root::{b::sub::Nested, a::Foo};"),
+        "{text}"
+    );
+    let references = engine
+        .run(ReferencesQuery::new("Nested").declared_in("src/b/sub.rs"))
+        .unwrap();
+    assert!(
+        references.occurrences.iter().any(
+            |o| o.m.path == Path::new("src/grouped.rs") && o.confidence == Confidence::Resolved
+        )
+    );
+}

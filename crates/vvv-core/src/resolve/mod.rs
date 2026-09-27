@@ -21,7 +21,7 @@ use crate::import::ImportRef;
 use crate::paths::{ModulePath, RelPath};
 use crate::semantics::ReachKind;
 use crate::symbol::Symbol;
-use crate::text::SourceText;
+use crate::text::{SourceText, Span};
 
 /// Why a resolver could not address, read, or relocate a file. Each variant
 /// is a distinct situation with its own remedy; the message is one rendering.
@@ -167,20 +167,18 @@ pub trait Surgery: Send + Sync {
     /// target: in place when the target stays under the group's prefix,
     /// otherwise by moving the entry out into its own statement. `from` is
     /// where the statement will live; `entries` all share one
-    /// [`ImportGroup::statement`](crate::import::ImportGroup::statement). Entries left out of the result could not
-    /// be handled and become notices.
+    /// [`ImportGroup::statement`](crate::import::ImportGroup::statement). Every requested entry must have exactly one explicit outcome;
+    /// skipped entries become notices. Prefix addresses are supplied by the
+    /// caller after its planned prefix and binding changes, never re-resolved.
     fn regroup(
         &self,
         project: &Project,
         from: &Path,
         source: &SourceText,
-        entries: &[(ImportRef, Address)],
+        imports: &GroupedImports,
     ) -> Regrouped {
         let _ = (project, from, source);
-        Regrouped {
-            edits: Vec::new(),
-            skipped: entries.iter().map(|(r, _)| r.clone()).collect(),
-        }
+        Regrouped::skipped(imports)
     }
 
     /// Changes beyond import rewrites when `from` becomes `to`, computed from
@@ -237,9 +235,285 @@ pub trait Surgery: Send + Sync {
     }
 }
 
-/// Outcome of [`Surgery::regroup`].
+/// One grouped entry's required target and its prefix's meaning after the move.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GroupedImport {
+    pub import: ImportRef,
+    pub target: Address,
+    pub prefix: Option<Address>,
+}
+
+/// Unique grouped entries from one statement, validated at construction.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct GroupedImports {
+    entries: Vec<GroupedImport>,
+    statement: Span,
+}
+
+impl GroupedImports {
+    pub fn new(entries: Vec<GroupedImport>) -> Result<Self, RegroupError> {
+        let first = entries.first().ok_or(RegroupError::Empty)?;
+        let statement = first
+            .import
+            .group
+            .as_ref()
+            .ok_or(RegroupError::NotGrouped(first.import.span))?
+            .statement;
+        for (i, entry) in entries.iter().enumerate() {
+            let group = entry
+                .import
+                .group
+                .as_ref()
+                .ok_or(RegroupError::NotGrouped(entry.import.span))?;
+            if entry.import.path.head != group.prefix.head
+                || !entry
+                    .import
+                    .path
+                    .segments
+                    .starts_with(&group.prefix.segments)
+            {
+                return Err(RegroupError::InvalidPrefix(entry.import.span));
+            }
+            if group.statement != statement {
+                return Err(RegroupError::DifferentStatement(entry.import.span));
+            }
+            if entries[..i]
+                .iter()
+                .any(|e| e.import.span == entry.import.span)
+            {
+                return Err(RegroupError::DuplicateEntry(entry.import.span));
+            }
+        }
+        Ok(Self { entries, statement })
+    }
+
+    pub fn entries(&self) -> &[GroupedImport] {
+        &self.entries
+    }
+    pub fn statement(&self) -> Span {
+        self.statement
+    }
+}
+
+/// The actual handling of one requested entry. In-place replacement is the
+/// text for the entry span, not a separately rendered full path.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum RegroupedOutcome {
+    InPlace { replacement: ModulePath },
+    Structural,
+    Skipped,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RegroupedEntry {
+    pub span: Span,
+    pub outcome: RegroupedOutcome,
+}
+
+/// Outcome of [`Surgery::regroup`], checked against its request before use.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct Regrouped {
     pub edits: Vec<Edit>,
-    pub skipped: Vec<ImportRef>,
+    pub outcomes: Vec<RegroupedEntry>,
+}
+
+impl Regrouped {
+    pub fn skipped(imports: &GroupedImports) -> Self {
+        Self {
+            edits: Vec::new(),
+            outcomes: imports
+                .entries()
+                .iter()
+                .map(|e| RegroupedEntry {
+                    span: e.import.span,
+                    outcome: RegroupedOutcome::Skipped,
+                })
+                .collect(),
+        }
+    }
+
+    pub fn validate<'a>(
+        &'a self,
+        imports: &'a GroupedImports,
+    ) -> Result<Vec<(&'a GroupedImport, &'a RegroupedOutcome)>, RegroupError> {
+        for (i, outcome) in self.outcomes.iter().enumerate() {
+            if !imports
+                .entries()
+                .iter()
+                .any(|e| e.import.span == outcome.span)
+            {
+                return Err(RegroupError::ForeignOutcome(outcome.span));
+            }
+            if self.outcomes[..i].iter().any(|o| o.span == outcome.span) {
+                return Err(RegroupError::DuplicateOutcome(outcome.span));
+            }
+        }
+        imports
+            .entries()
+            .iter()
+            .map(|entry| {
+                let outcome = self
+                    .outcomes
+                    .iter()
+                    .find(|o| o.span == entry.import.span)
+                    .ok_or(RegroupError::MissingOutcome(entry.import.span))?;
+                if let RegroupedOutcome::InPlace { replacement } = &outcome.outcome {
+                    let matching: Vec<_> = self
+                        .edits
+                        .iter()
+                        .filter(|e| e.span == entry.import.span)
+                        .collect();
+                    if matching.len() != 1 || matching[0].replacement != replacement.to_string() {
+                        return Err(RegroupError::InconsistentReplacement(entry.import.span));
+                    }
+                }
+                Ok((entry, &outcome.outcome))
+            })
+            .collect()
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum RegroupError {
+    #[error("a grouped rewrite requires at least one entry")]
+    Empty,
+    #[error("entry {0:?} is not grouped")]
+    NotGrouped(Span),
+    #[error("entry {0:?} belongs to another statement")]
+    DifferentStatement(Span),
+    #[error("entry {0:?} does not extend its group prefix")]
+    InvalidPrefix(Span),
+    #[error("duplicate grouped entry {0:?}")]
+    DuplicateEntry(Span),
+    #[error("grouped rewrite returned a foreign entry {0:?}")]
+    ForeignOutcome(Span),
+    #[error("grouped rewrite returned entry {0:?} twice")]
+    DuplicateOutcome(Span),
+    #[error("grouped rewrite omitted entry {0:?}")]
+    MissingOutcome(Span),
+    #[error("grouped rewrite replacement for {0:?} differs from its edit")]
+    InconsistentReplacement(Span),
+}
+
+#[cfg(test)]
+mod regroup_tests {
+    use super::*;
+    use crate::{ImportGroup, PathSyntax};
+
+    struct Fixture {
+        imports: GroupedImports,
+    }
+
+    impl Fixture {
+        fn new() -> Self {
+            let prefix = PathSyntax::Scoped.parse("crate::a");
+            let mut import =
+                ImportRef::new(Span::new(15, 16), PathSyntax::Scoped.parse("crate::a::X"));
+            import.group = Some(ImportGroup {
+                prefix,
+                item: import.span,
+                list: Span::new(14, 17),
+                items: 1,
+                statement: Span::new(0, 18),
+                top_level: true,
+            });
+            Self {
+                imports: GroupedImports::new(vec![GroupedImport {
+                    import,
+                    target: Address::new("p", ["b", "X"]),
+                    prefix: Some(Address::new("p", ["a"])),
+                }])
+                .unwrap(),
+            }
+        }
+
+        fn span(&self) -> Span {
+            self.imports.entries()[0].import.span
+        }
+        fn outcome(&self, outcome: RegroupedOutcome) -> Regrouped {
+            Regrouped {
+                edits: vec![],
+                outcomes: vec![RegroupedEntry {
+                    span: self.span(),
+                    outcome,
+                }],
+            }
+        }
+    }
+
+    #[test]
+    fn grouped_requests_require_unique_entries_from_one_statement() {
+        let fixture = Fixture::new();
+        assert_eq!(GroupedImports::new(vec![]), Err(RegroupError::Empty));
+        let entry = fixture.imports.entries()[0].clone();
+        assert_eq!(
+            GroupedImports::new(vec![entry.clone(), entry.clone()]),
+            Err(RegroupError::DuplicateEntry(entry.import.span))
+        );
+        let mut other = entry.clone();
+        other.import.group.as_mut().unwrap().statement = Span::new(20, 40);
+        assert_eq!(
+            GroupedImports::new(vec![entry.clone(), other]),
+            Err(RegroupError::DifferentStatement(entry.import.span))
+        );
+        let mut ungrouped = entry;
+        ungrouped.import.group = None;
+        assert_eq!(
+            GroupedImports::new(vec![ungrouped]),
+            Err(RegroupError::NotGrouped(fixture.span()))
+        );
+    }
+
+    #[test]
+    fn regrouped_outcomes_cover_exactly_the_requested_entries() {
+        let fixture = Fixture::new();
+        let mut out = fixture.outcome(RegroupedOutcome::Structural);
+        assert!(out.validate(&fixture.imports).is_ok());
+        out.outcomes.push(out.outcomes[0].clone());
+        assert_eq!(
+            out.validate(&fixture.imports),
+            Err(RegroupError::DuplicateOutcome(fixture.span()))
+        );
+        out.outcomes.pop();
+        out.outcomes[0].span = Span::new(30, 31);
+        assert_eq!(
+            out.validate(&fixture.imports),
+            Err(RegroupError::ForeignOutcome(Span::new(30, 31)))
+        );
+        out.outcomes.clear();
+        assert_eq!(
+            out.validate(&fixture.imports),
+            Err(RegroupError::MissingOutcome(fixture.span()))
+        );
+    }
+
+    #[test]
+    fn in_place_outcomes_report_the_actual_replacement() {
+        let fixture = Fixture::new();
+        let mut out = fixture.outcome(RegroupedOutcome::InPlace {
+            replacement: PathSyntax::Scoped.parse("Y"),
+        });
+        assert_eq!(
+            out.validate(&fixture.imports),
+            Err(RegroupError::InconsistentReplacement(fixture.span()))
+        );
+        out.edits.push(Edit::replace(fixture.span(), "different"));
+        assert_eq!(
+            out.validate(&fixture.imports),
+            Err(RegroupError::InconsistentReplacement(fixture.span()))
+        );
+        out.edits[0].replacement = "Y".into();
+        assert!(out.validate(&fixture.imports).is_ok());
+    }
+
+    #[test]
+    fn default_grouped_outcomes_explicitly_skip_every_target() {
+        let fixture = Fixture::new();
+        let out = Regrouped::skipped(&fixture.imports);
+        let validated = out.validate(&fixture.imports).unwrap();
+        assert_eq!(validated.len(), 1);
+        assert_eq!(validated[0].0.target, Address::new("p", ["b", "X"]));
+        assert!(matches!(validated[0].1, RegroupedOutcome::Skipped));
+        assert!(out.edits.is_empty());
+    }
 }

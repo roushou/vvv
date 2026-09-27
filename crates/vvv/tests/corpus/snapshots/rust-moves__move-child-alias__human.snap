@@ -6,10 +6,11 @@ exit 0
 --- stdout ---
 move src/a/sub.rs → src/b/sub.rs
 
-→ 1   1 file
+→ 2   2 files
 ± 3   3 files
 
-→ src/c.rs:5   alias::sub::Nested → crate::b::sub::Nested
+→ src/c.rs:5         alias::sub::Nested → crate::b::sub::Nested
+→ src/grouped.rs:2   root::a::sub::Nested → b::sub::Nested
 
 ± src/a/sub.rs → src/b/sub.rs
 
@@ -25,5 +26,5 @@ move src/a/sub.rs → src/b/sub.rs
 +pub mod sub;
  // Destination for moved declarations.
 --- stderr ---
-→ 1  ± 3   4 files
+→ 2  ± 3   5 files
 hint: --apply to write · --diff for the full patch

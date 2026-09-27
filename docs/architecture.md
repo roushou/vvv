@@ -547,11 +547,16 @@ overlapping edits as a conflict before producing a plan. Identical extents are
 extracted once; coincident insertions keep their input order.
 
 **Grouped imports go back to the surgery.** An `ImportRef` inside `use a::{…}`
-carries an `ImportGroup` (prefix, item span, list, statement). `Rebase` collects such
-entries per statement and calls `Surgery::regroup`, which rewrites an entry in place
-when its target stays under the group's prefix and otherwise moves it out into its own
-statement. Whatever a surgery returns as `skipped` becomes a `Notice` with the text it
-_would_ have written — reported, never silently dropped.
+carries an `ImportGroup` (prefix, item span, list, statement). `Rebase` builds a
+`GroupedImports` request with unique entries from one statement, their required
+resolved targets, and each prefix's meaning after planned prefix and binding
+changes. A prefix edit covers its entries when their unchanged suffixes already
+name those targets. Otherwise `Surgery::regroup` returns edits and one explicit
+`RegroupedOutcome` per entry: its actual in-place replacement, a structural rewrite,
+or skipped. The engine validates exact outcome coverage and in-place replacement
+agreement before accepting edits. Skipped entries retain their requested targets
+and become notices with the text the surgery would have rendered; no target is
+inferred from edit spans or substituted with empty text.
 
 **Ids are content-derived.** `MatchId = blake3(path, span, text)[..12]`. A selection
 made from one process is valid in the next as long as the file is unchanged, and

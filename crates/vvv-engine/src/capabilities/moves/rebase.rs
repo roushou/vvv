@@ -4,7 +4,10 @@ use std::path::{Path, PathBuf};
 use crate::change::Change;
 use crate::{Notice, NoticeKind, Respelling, SourceFile};
 
-use vvv_core::{Address, Edit, ImportGroup, ImportRef, ModulePath, Span};
+use vvv_core::{
+    Address, Edit, GroupedImport, GroupedImports, ImportGroup, ImportRef, ModulePath,
+    RegroupedOutcome, Span,
+};
 
 use crate::EngineError;
 use crate::graph::{Edge, Namespace, Node};
@@ -114,83 +117,73 @@ impl<'a> Rebase<'a> {
         }
     }
 
-    /// Whether a grouped entry needs the surgery's attention at all: not when
-    /// the group's own prefix is being rewritten (that covers it), and not when
-    /// the prefix keeps its meaning from the new location and the entry itself
-    /// is not under the moved address.
-    fn grouped_needs_change(
-        &self,
-        site: &Site<'_>,
-        node: &Node,
-        group: &ImportGroup,
-        under_old: bool,
-    ) -> bool {
-        let prefix = &group.prefix;
-        let prefix_before = node
+    /// The cached prefix after the standalone prefix or its binding is
+    /// rebased. Prefix spelling is handled by that edge exactly once.
+    fn prefix_after(&self, node: &Node, group: &ImportGroup) -> Option<Address> {
+        let prefix = node
             .fragment
             .edges
             .iter()
-            .find(|e| e.import.path == *prefix && group.statement.contains(&e.import.span))
-            .and_then(Edge::address);
-        if prefix_before.is_some_and(|p| p.starts_with(&self.old)) {
-            return false;
-        }
-        let prefix_now = if site.is_moved {
-            self.ns.resolve(&site.render_from, prefix)
-        } else {
-            prefix_before.cloned()
-        };
-        under_old || prefix_now.as_ref() != prefix_before
+            .find(|e| e.import.path == group.prefix && group.statement.contains(&e.import.span))
+            .and_then(Edge::address)?;
+        Some(
+            prefix
+                .rebase(&self.old, &self.new)
+                .unwrap_or_else(|| prefix.clone()),
+        )
     }
 
-    /// Hand one statement's grouped entries to the surgery; what it cannot
-    /// rewrite becomes a notice carrying the text it would have written.
+    /// An unchanged entry suffix already names its target after prefix edits.
+    fn prefix_covers(&self, edge: &Edge, prefix: Option<&Address>, target: &Address) -> bool {
+        let Some(group) = &edge.import.group else {
+            return false;
+        };
+        let Some(suffix) = edge.import.path.segments.get(group.prefix.segments.len()..) else {
+            return false;
+        };
+        prefix.is_some_and(|p| p.extend(suffix.iter().cloned()) == *target)
+    }
+
     fn regroup(
         &self,
         site: &Site<'_>,
-        entries: &[(ImportRef, Address)],
+        entries: Vec<GroupedImport>,
         out: &mut FileRewrite,
     ) -> Result<(), EngineError> {
+        let imports = GroupedImports::new(entries)?;
         let surgery = self.ns.surgery()?;
-        let regrouped = self.ns.surgery()?.regroup(
+        let regrouped = surgery.regroup(
             self.ns.project(),
             &site.render_from,
             site.file.source(),
-            entries,
+            &imports,
         );
-        // An entry rewritten within its span is a respelling; one the
-        // surgery took out of the group is more than that and stays a hunk.
-        for (import, target) in entries {
-            if regrouped.edits.iter().any(|e| e.span == import.span) {
-                let to = self.ns.surgery()?.render(
-                    self.ns.project(),
-                    &site.render_from,
-                    target,
-                    &import.path,
-                );
-                out.change.respell(self.respelling(site, import, &to));
+        for (entry, outcome) in regrouped.validate(&imports)? {
+            let import = &entry.import;
+            match outcome {
+                RegroupedOutcome::InPlace { replacement } => {
+                    out.change
+                        .respell(self.respelling(site, import, replacement))
+                }
+                RegroupedOutcome::Structural => {}
+                RegroupedOutcome::Skipped => out.change.notice(Notice {
+                    path: site.path().into(),
+                    start: site.file.source().position(import.span.start),
+                    kind: NoticeKind::UnrewritableImport {
+                        import: import.path.to_string(),
+                        replacement: surgery
+                            .render(
+                                self.ns.project(),
+                                &site.render_from,
+                                &entry.target,
+                                &import.path,
+                            )
+                            .to_string(),
+                    },
+                }),
             }
         }
         out.change.edits(site.file.witness(), regrouped.edits)?;
-        for import in regrouped.skipped {
-            let replacement = entries
-                .iter()
-                .find(|(r, _)| r.span == import.span)
-                .map(|(_, t)| {
-                    surgery
-                        .render(self.ns.project(), &site.render_from, t, &import.path)
-                        .to_string()
-                })
-                .unwrap_or_default();
-            out.change.notice(Notice {
-                path: site.path().into(),
-                start: site.file.source().position(import.span.start),
-                kind: NoticeKind::UnrewritableImport {
-                    import: import.path.to_string(),
-                    replacement,
-                },
-            });
-        }
         Ok(())
     }
 
@@ -200,11 +193,11 @@ impl<'a> Rebase<'a> {
         let site = Site::of(node.candidate.file(), render_from);
 
         let mut out = FileRewrite::default();
-        let mut grouped: BTreeMap<Span, Vec<(ImportRef, Address)>> = BTreeMap::new();
+        let mut grouped: BTreeMap<Span, Vec<GroupedImport>> = BTreeMap::new();
         let from = self.ns.address(&site.render_from).ok();
         for edge in &node.fragment.edges {
             let import = &edge.import;
-            let Some((target, under_old)) = self.target(&site, edge) else {
+            let Some((target, _)) = self.target(&site, edge) else {
                 continue;
             };
             if let Some(from) = &from {
@@ -213,14 +206,22 @@ impl<'a> Rebase<'a> {
             match &import.group {
                 None if self.binding_keeps_path(node, edge, &target) => {}
                 None => self.standalone(&site, import, &target, &mut out)?,
-                Some(group) if self.grouped_needs_change(&site, node, group, under_old) => grouped
-                    .entry(group.statement)
-                    .or_default()
-                    .push((import.clone(), target)),
-                Some(_) => {}
+                Some(group) => {
+                    let prefix = self.prefix_after(node, group);
+                    if !self.prefix_covers(edge, prefix.as_ref(), &target) {
+                        grouped
+                            .entry(group.statement)
+                            .or_default()
+                            .push(GroupedImport {
+                                import: import.clone(),
+                                target,
+                                prefix,
+                            });
+                    }
+                }
             }
         }
-        for entries in grouped.values() {
+        for entries in grouped.into_values() {
             self.regroup(&site, entries, &mut out)?;
         }
         Ok(out)

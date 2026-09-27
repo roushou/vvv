@@ -4,3 +4,4 @@ pub mod c;
 pub mod origin;
 pub mod dependency;
 pub mod cleanup;
+pub mod grouped;
