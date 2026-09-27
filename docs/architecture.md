@@ -323,18 +323,28 @@ alone.
 `Address`, `LanguageId`, …) next to the protocol itself, so an interface writes
 `use vvv_engine::…` and only that.
 
-`report/` is the result as a document. `Document` — `Block` is `Title`, `Heading`,
-`Section`, `Line`, `Summary`, `Note`, `Diff` or `Blank` — is built from an `Answer`
-by `Document::of`. The per-command constructors live on `Document`; rename's
-constructor is implemented beside its request, answer, and command in
-`capabilities/rename.rs`. The row builders in `report/lines.rs`
-(`Declaration`, `Sections`, `Verdicts`,
-`OutlineTree`, `DepGroups`, `ImporterRows`, `Respellings`, `NoticeRow`,
-`HistoryLine`, `SiteLine`, `ImportSiteLine`, `PlacedLine`, `SkippedLine`, `Caret`,
-`Diff`, `Tag`, `Verdict`) turn protocol data into `Line`s. The report knows the business
-and names no interface; both the CLI and the picker read it. `--json` is not this —
-it is the `Answer`, the wire contract. The human CLI reporter appends flag advice
-after composition; the picker receives the shared report without CLI instructions.
+`report/` is the result as a document. `Document::of(&Answer)` retains the facts
+needed by every view, without presentation options. Source-bearing blocks retain
+matches or sites; outline and dependency blocks also retain their owning file
+path. Reference verdicts retain a `ReferencePlan` with files and mutation state,
+even when a view hides its patch. Per-capability constructors live on `Document`;
+rename's is implemented beside its request, answer, and execution.
+
+`View::present` turns those blocks into a `Presentation` of rows. `Options` belongs
+to this boundary: the view chooses collapsed or expanded verdicts, reach details,
+and which patches to display. Shared line builders do not carry expansion flags or
+make verbose/diff decisions. The CLI's `TerminalView` delegates detailed layout and
+adds flag advice to the presentation; the picker receives the shared document
+without CLI instructions. A document can be presented again with different options
+without recomposition.
+
+Rows for declarations, outlines, imports, explanations, references, respellings,
+and notices preserve their reported `Source { path, line }`. Summaries, separators,
+and suggested imports carry no source. Diff rows use structured hunk coordinates:
+preview rows refer to old-side context and removed lines; applied rows refer to
+new-side context and added lines, at the moved destination when present. A line
+that does not exist on that side is not actionable. Diff headers are metadata.
+Neither document nor presentation is serialized: `--json` remains the `Answer`.
 
 ### `crates/vvv` — the entrypoint
 

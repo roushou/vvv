@@ -260,7 +260,12 @@ impl Document {
             &result.from,
             &result.to,
         ))));
-        let structural = report.moved(&result.files, &result.respellings, &result.notices);
+        let structural = report.moved(
+            result.state,
+            &result.files,
+            &result.respellings,
+            &result.notices,
+        );
         report.moved_summary(
             result.state,
             MoveCounts {

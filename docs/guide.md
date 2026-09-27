@@ -603,7 +603,11 @@ lists the files that entry touched.
 After an apply the picker returns to search, re-runs the query so the rows show the
 new state, and reports the receipt (`✓ #3  rename Reach → Scope`) in the status bar.
 The apply's report is on screen as a box: `j`/`k` walk its source rows, `e` opens
-the row under the cursor in `$EDITOR`, and any other key closes it.
+the row under the cursor in `$EDITOR`, and any other key closes it. Declaration and
+import rows retain their source locations. Suggested imports, summaries, and
+separators are skipped by the source cursor. In a patch, only lines present in the
+current source can be opened: old-side lines for a preview, new-side lines after
+apply.
 
 ## Driving vvv from a program
 

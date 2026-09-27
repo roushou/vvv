@@ -581,7 +581,7 @@ impl<'a> SearchView<'a> {
         answer: &Answer,
         width: usize,
     ) -> (Vec<Line<'static>>, Vec<usize>) {
-        let document = Document::of(answer, Options::default());
+        let document = Document::of(answer);
         let presentation = view.present(&document, Options::default(), width);
         let rows: Vec<Line> = presentation.body.iter().map(|r| t.line(&r.line)).collect();
         let selectable: Vec<usize> = presentation

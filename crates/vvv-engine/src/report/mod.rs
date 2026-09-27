@@ -74,7 +74,7 @@ impl Document {
     // ------------------------------------------------------------------ entry
 
     /// Compose one answer into the blocks its command prints.
-    pub fn of(answer: &Answer, options: Options) -> Self {
+    pub fn of(answer: &Answer) -> Self {
         match answer {
             Answer::Search(r) => Self::search(&r.matches, &r.skipped),
             Answer::Outline(r) => Self::outline(r),
@@ -89,7 +89,7 @@ impl Document {
             // The file answer is the picker's; no CLI command asks for one.
             Answer::File(_) => Self::new(),
             Answer::Rewrite(r) => Self::rewrite(r),
-            Answer::Rename(r) => Self::rename(r, options),
+            Answer::Rename(r) => Self::rename(r),
             Answer::Move(r) => Self::move_file(r),
             Answer::MoveSymbol(r) => Self::move_symbol(r),
             Answer::Batch(r) => Self::batch(r),
@@ -127,6 +127,7 @@ impl Document {
     /// Answers how many are structural.
     pub(crate) fn moved(
         &mut self,
+        state: crate::MutationState,
         files: &[FileChange],
         respellings: &[Respelling],
         notices: &[Notice],
@@ -136,6 +137,7 @@ impl Document {
             .filter(|f| l::Diff::is_structural(f, respellings))
             .count();
         self.block_body(Block::Moved {
+            state,
             files: files.to_vec(),
             respellings: respellings.to_vec(),
             notices: notices.to_vec(),
@@ -198,7 +200,7 @@ impl Document {
 
     /// The `●` lines a rename or references answer opens with.
     pub(crate) fn declarations(&mut self, declarations: &[Match]) {
-        self.body(declarations.iter().map(|m| l::Declaration::new(m).line()));
+        self.block_body(Block::Declarations(declarations.to_vec()));
         self.block_body(Block::Blank);
     }
 
@@ -295,7 +297,10 @@ impl Document {
             return report;
         }
         report.block_body(Block::Blank);
-        report.block_body(Block::Outline(result.items.clone()));
+        report.block_body(Block::Outline {
+            path: result.path.clone(),
+            items: result.items.clone(),
+        });
         report.block_note(Block::Summary(Self::outline_summary(result)));
         report
     }
@@ -336,7 +341,7 @@ impl Document {
         report.declarations(&result.declarations);
         report.block_body(Block::Verdicts {
             occurrences: result.occurrences.clone(),
-            files: None,
+            plan: None,
         });
         report.block_note(Block::Summary(Self::verdict_counts(&result.occurrences)));
         report
@@ -373,6 +378,7 @@ impl Document {
             .as_ref()
             .map(|m| m.package().as_str().to_owned());
         report.block_body(Block::DepGroups {
+            path: result.path.clone(),
             imports: result.imports.clone(),
             own,
         });
@@ -558,7 +564,10 @@ impl Document {
     fn rewrite(result: &Rewrite) -> Self {
         let mut report = Self::new();
         report.title(IntentLine(&Intent::Rewrite(result.intent.clone())));
-        report.block_body(Block::Changes(result.files.clone()));
+        report.block_body(Block::Changes {
+            state: result.state,
+            files: result.files.clone(),
+        });
         let edits = Self::edits_in(&result.files);
         if edits == 0 {
             report.block_note(Block::Summary(
@@ -583,7 +592,7 @@ impl Document {
         report.block_body(Block::Batch(result.intents.clone()));
         report.block_body(Block::Blank);
         // Steps compose, so no edit is one re-spelled path: every file is a hunk.
-        let structural = report.moved(&result.files, &[], &result.notices);
+        let structural = report.moved(result.state, &result.files, &[], &result.notices);
         report.moved_summary(
             result.state,
             MoveCounts {
@@ -651,6 +660,8 @@ pub enum Block {
     Title(String),
     /// A section label.
     Heading(String),
+    /// The declarations a reference or rename report opens with.
+    Declarations(Vec<Match>),
     /// Found rows — hits — that a view numbers and groups.
     Matches(Vec<Match>),
     /// Occurrences a view judges: a reference, a rename.
@@ -658,7 +669,7 @@ pub enum Block {
         occurrences: Vec<Occurrence>,
         /// The files a plan would change, when there is one, so a view can
         /// mark the rows an edit touches (`±`).
-        files: Option<Vec<FileChange>>,
+        plan: Option<ReferencePlan>,
     },
     /// Import sites worth a look: unresolved, then unused, then redundant.
     Imports {
@@ -668,6 +679,7 @@ pub enum Block {
     },
     /// What a file imports, grouped by package; `own` is its own, to mark.
     DepGroups {
+        path: RelPath,
         imports: Vec<Dep>,
         own: Option<String>,
     },
@@ -676,7 +688,10 @@ pub enum Block {
     /// What is at a position, and how it is reached.
     Explanation(Box<Explanation>),
     /// A file's declarations as a tree, a view aligning the name column.
-    Outline(Vec<OutlineItem>),
+    Outline {
+        path: RelPath,
+        items: Vec<OutlineItem>,
+    },
     /// Where a name is declared: the sites `where` found.
     Sites(Vec<Site>),
     /// Declarations nothing refers to, and the unsure-token count of each.
@@ -701,15 +716,27 @@ pub enum Block {
     /// A hint or a warning.
     Note(Note),
     /// The change a plan would make: one file's edits, laid out as a diff.
-    Changes(Vec<FileChange>),
+    Changes {
+        state: crate::MutationState,
+        files: Vec<FileChange>,
+    },
     /// A move preview: the changes, and what a plan re-spelled or left by hand.
     Moved {
+        state: crate::MutationState,
         files: Vec<FileChange>,
         respellings: Vec<Respelling>,
         notices: Vec<Notice>,
     },
     /// A vertical gap.
     Blank,
+}
+
+/// The mutation attached to reference verdicts, retained even when its patch
+/// is hidden by a view.
+#[derive(Debug, Clone)]
+pub struct ReferencePlan {
+    pub state: crate::MutationState,
+    pub files: Vec<FileChange>,
 }
 
 /// A row: the line to draw, and the source it stands for.

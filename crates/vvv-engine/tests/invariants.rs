@@ -256,7 +256,6 @@ fn apply_preserves_a_destination_created_after_planning() {
 }
 
 #[test]
-#[ignore = "known bug: step 7 — where report rows discard the declaration source site"]
 fn declaration_report_rows_retain_their_source_site() {
     let fixture = Fixture::new(&[("a.p", "def foo\nfoo")]);
     let answer = Answer::Where(
@@ -267,7 +266,7 @@ fn declaration_report_rows_retain_their_source_site() {
         .execute(&fixture.engine)
         .unwrap(),
     );
-    let report = Document::of(&answer, Options::default());
+    let report = Document::of(&answer);
     let presentation = Detailed.present(&report, Options::default(), usize::MAX);
     let sites: Vec<_> = presentation
         .body

@@ -15,7 +15,7 @@ use vvv_engine::protocol::Answer;
 use super::Diagnose;
 use crate::output::Reporter;
 use crate::output::render::{Palette, Renderer, Styled};
-use vvv_engine::report::{Block, Detailed, Document, Note, Options, View};
+use vvv_engine::report::{Block, Detailed, Document, Note, Options, Presentation, View};
 
 pub struct HumanReporter<O: Write = Stdout, E: Write = Stderr> {
     out: O,
@@ -79,10 +79,8 @@ impl<O: Write, E: Write> HumanReporter<O, E> {
     }
 }
 
-impl<O: Write, E: Write> Renderer for HumanReporter<O, E> {
-    /// Render a document, stream for stream: one styled line each.
-    fn render(&mut self, report: &Document) -> io::Result<()> {
-        let presentation = Detailed.present(report, self.options(), usize::MAX);
+impl<O: Write, E: Write> HumanReporter<O, E> {
+    fn render_presentation(&mut self, presentation: &Presentation) -> io::Result<()> {
         for row in &presentation.body {
             writeln!(self.out, "{}", Styled(&self.styles, &row.line))?;
         }
@@ -93,12 +91,20 @@ impl<O: Write, E: Write> Renderer for HumanReporter<O, E> {
     }
 }
 
+impl<O: Write, E: Write> Renderer for HumanReporter<O, E> {
+    /// Render a document, stream for stream: one styled line each.
+    fn render(&mut self, report: &Document) -> io::Result<()> {
+        let presentation = Detailed.present(report, self.options(), usize::MAX);
+        self.render_presentation(&presentation)
+    }
+}
+
 impl<O: Write, E: Write> Reporter for HumanReporter<O, E> {
     fn report(&mut self, answer: &Answer) -> anyhow::Result<()> {
-        let options = self.options();
-        let mut report = Document::of(answer, options);
-        advice::Advice { answer, options }.append_to(&mut report);
-        self.render(&report)?;
+        let report = Document::of(answer);
+        let presentation =
+            advice::TerminalView { answer }.present(&report, self.options(), usize::MAX);
+        self.render_presentation(&presentation)?;
         Ok(())
     }
 

@@ -8,7 +8,7 @@ use crate::change::Change;
 use crate::graph::Evidence;
 use crate::protocol::display::{Line, Role};
 use crate::protocol::vocabulary::{IntentLine, Plural};
-use crate::report::{Block, Document, Options};
+use crate::report::{Block, Document, ReferencePlan};
 use crate::{
     Confidence, EngineError, FileChange, Intent, Match, Mutation, Occurrence, Planned, References,
     ReferencesQuery, Selection,
@@ -170,19 +170,17 @@ impl ReferencesQuery {
 }
 
 impl Document {
-    pub(crate) fn rename(result: &Rename, options: Options) -> Self {
+    pub(crate) fn rename(result: &Rename) -> Self {
         let mut report = Self::new();
         report.title(IntentLine(&Intent::Rename(result.intent.clone())));
         report.declarations(&result.declarations);
         report.block_body(Block::Verdicts {
             occurrences: result.occurrences.clone(),
-            files: Some(result.files.clone()),
+            plan: Some(ReferencePlan {
+                state: result.state,
+                files: result.files.clone(),
+            }),
         });
-        // The plan's patch, when asked for: a rename's rows are the verdicts,
-        // so unlike a rewrite its diff is not the default view.
-        if options.diff {
-            report.block_body(Block::Changes(result.files.clone()));
-        }
         let strip = Self::verdict_counts(&result.occurrences);
         let edits = Self::edits_in(&result.files);
         let plan = Line::of(

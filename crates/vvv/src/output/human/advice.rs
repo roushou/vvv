@@ -1,15 +1,26 @@
-//! CLI flag advice added after the shared report has composed an answer.
+//! The CLI view: detailed rows with flag advice added at presentation time.
 
 use vvv_engine::protocol::{Answer, Confidence};
-use vvv_engine::report::{Block, Document, Note, Options};
+use vvv_engine::report::{Block, Detailed, Document, Note, Options, Presentation, Row, View};
 
-pub(super) struct Advice<'a> {
+pub(super) struct TerminalView<'a> {
     pub(super) answer: &'a Answer,
-    pub(super) options: Options,
 }
 
-impl Advice<'_> {
-    pub(super) fn append_to(&self, report: &mut Document) {
+impl View for TerminalView<'_> {
+    fn rows(&self, block: &Block, options: Options, width: usize) -> Vec<Row> {
+        Detailed.rows(block, options, width)
+    }
+
+    fn present(&self, report: &Document, options: Options, width: usize) -> Presentation {
+        let mut presentation = Detailed.present(report, options, width);
+        let move_hint = || {
+            let mut flags = vec!["--apply to write"];
+            if !options.diff {
+                flags.push("--diff for the full patch");
+            }
+            flags.join(" · ")
+        };
         let hint = match self.answer {
         Answer::Search(result) if !result.skipped.is_empty() => Some(
             "a pattern is written in one language; pass --lang to search that one only (the matches above are complete for the others)"
@@ -50,7 +61,7 @@ impl Advice<'_> {
             if !unsure.is_empty() {
                 flags.push(format!("--select {unsure} for the ? rows alone"));
             }
-            if !self.options.verbose
+            if !options.verbose
                 && result
                     .occurrences
                     .iter()
@@ -60,24 +71,49 @@ impl Advice<'_> {
             }
             Some(flags.join(" · "))
         }
-        Answer::Move(result) if !result.state.is_applied() => Some(self.move_hint()),
-        Answer::MoveSymbol(result) if !result.state.is_applied() => Some(self.move_hint()),
-        Answer::Batch(result) if !result.state.is_applied() => Some(self.move_hint()),
+        Answer::Move(result) if !result.state.is_applied() => Some(move_hint()),
+        Answer::MoveSymbol(result) if !result.state.is_applied() => Some(move_hint()),
+        Answer::Batch(result) if !result.state.is_applied() => Some(move_hint()),
         Answer::History(result) if result.entries.is_empty() => Some(
             "--apply writes a plan and records it here; `vvv undo` reverses the newest".to_owned(),
         ),
         _ => None,
     };
         if let Some(hint) = hint {
-            report.block_note(Block::Note(Note::Hint(hint)));
+            presentation.notes.extend(Detailed.rows(
+                &Block::Note(Note::Hint(hint)),
+                options,
+                width,
+            ));
         }
+        presentation
     }
 
-    fn move_hint(&self) -> String {
-        let mut flags = vec!["--apply to write"];
-        if !self.options.diff {
-            flags.push("--diff for the full patch");
-        }
-        flags.join(" · ")
+    fn occurrence(
+        &self,
+        occurrence: &vvv_engine::Occurrence,
+        ordinal: usize,
+        ticked: bool,
+        width: usize,
+    ) -> Row {
+        Detailed.occurrence(occurrence, ordinal, ticked, width)
+    }
+
+    fn respelling(&self, respelling: &vvv_engine::Respelling, width: usize) -> Row {
+        Detailed.respelling(respelling, width)
+    }
+
+    fn notice(&self, notice: &vvv_engine::Notice, width: usize) -> Row {
+        Detailed.notice(notice, width)
+    }
+
+    fn rewrite(
+        &self,
+        matched: &vvv_engine::Match,
+        ordinal: usize,
+        ticked: bool,
+        width: usize,
+    ) -> Row {
+        Detailed.rewrite(matched, ordinal, ticked, width)
     }
 }

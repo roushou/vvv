@@ -861,10 +861,10 @@ fn snapshot_report_overlay() {
 
 #[test]
 fn shared_move_and_rename_reports_have_no_cli_flag_advice() {
-    use vvv_engine::report::{Block, Document, Note, Options};
+    use vvv_engine::report::{Block, Document, Note};
 
     for answer in [Answer::Rename(fx::rename(1)), Answer::Move(fx::move_file())] {
-        let report = Document::of(&answer, Options::default());
+        let report = Document::of(&answer);
         assert!(
             report
                 .parts()
@@ -1266,4 +1266,54 @@ fn snapshot_help() {
     let mut m = searched();
     m.update(Action::Help);
     insta::assert_snapshot!(render(&m));
+}
+
+#[test]
+fn report_overlay_opens_declaration_sites_and_skips_suggested_imports() {
+    use vvv_engine::report::Document;
+    use vvv_engine::{Locations, Position, Site};
+
+    let first = fx::search().matches[0].clone();
+    let mut second = first.clone();
+    second.path = "another.rs".into();
+    second.start = Position::new(4, 0);
+    let report = Document::of(&Answer::Where(Locations {
+        name: "Language".into(),
+        sites: vec![
+            Site {
+                declaration: first.clone(),
+                address: None,
+                import: Some("use crate::Language;".into()),
+            },
+            Site {
+                declaration: second.clone(),
+                address: None,
+                import: None,
+            },
+        ],
+    }));
+    let mut model = model();
+    model.overlay = Some(Overlay::Report {
+        report: Box::new(report),
+        cursor: 0,
+    });
+    assert_eq!(
+        model.report_site(),
+        Some((first.path.clone(), first.start.line))
+    );
+    assert!(render(&model).contains("Language"));
+    model.update(Action::Move(1));
+    assert_eq!(
+        model.report_site(),
+        Some((second.path.clone(), second.start.line))
+    );
+    assert!(
+        matches!(model.update(Action::Edit).as_slice(), [Effect::Edit { path, line }] if path == &second.path && *line == second.start.line)
+    );
+    model.update(Action::Move(1));
+    assert_eq!(
+        model.report_site(),
+        Some((second.path, second.start.line)),
+        "the summary is not a source row"
+    );
 }

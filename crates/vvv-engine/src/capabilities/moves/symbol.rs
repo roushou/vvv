@@ -482,7 +482,12 @@ impl Document {
     pub(crate) fn move_symbol(result: &MoveSymbol) -> Self {
         let mut report = Self::new();
         report.title(IntentLine(&Intent::MoveSymbol(result.intent.clone())));
-        let structural = report.moved(&result.files, &result.respellings, &result.notices);
+        let structural = report.moved(
+            result.state,
+            &result.files,
+            &result.respellings,
+            &result.notices,
+        );
         report.moved_summary(
             result.state,
             MoveCounts {

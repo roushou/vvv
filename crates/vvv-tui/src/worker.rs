@@ -7,7 +7,7 @@ use std::thread;
 
 use std::error::Error as _;
 
-use vvv_engine::report::{Document, Options};
+use vvv_engine::report::Document;
 use vvv_engine::{
     Answer, Engine, EngineError, FileQuery, Intent, Ledger, MutationAnswer, SearchQuery,
 };
@@ -192,7 +192,7 @@ impl Runner {
                     .into_applied()?;
                 let id = applied.history_id();
                 let answer: Answer = applied.into_inner().into();
-                let report = Document::of(&answer, Options::default());
+                let report = Document::of(&answer);
                 Event::Applied { id, intent, report }
             }
             Effect::History => Event::History(Ledger::new(&self.engine).history()?.entries),
