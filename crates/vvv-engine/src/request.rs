@@ -47,7 +47,9 @@ impl Request {
     fn mutate(intent: Intent, apply: bool, cx: &mut Context<'_>) -> Result<Answer, EngineError> {
         let planned = intent.run(cx)?;
         if apply {
-            Apply(planned).run(cx).map(Answer::from)
+            Apply(planned)
+                .run(cx)
+                .map(|applied| applied.into_inner().into())
         } else {
             Ok(planned.into_inner().into())
         }

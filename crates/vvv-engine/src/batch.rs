@@ -61,8 +61,7 @@ impl Command for BatchIntent {
             Intent::Batch(self.clone()),
             Batch {
                 intents: self.intents,
-                applied: false,
-                history_id: None,
+                state: crate::MutationState::Preview,
                 notices,
                 files,
             },

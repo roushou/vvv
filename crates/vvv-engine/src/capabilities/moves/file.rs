@@ -41,10 +41,9 @@ impl MoveIntent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Move {
     pub intent: MoveIntent,
-    pub applied: bool,
-    /// The history entry the apply made, when `applied`; what `undo` reverses.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub history_id: Option<u64>,
+    /// Preview or successful application with its history entry.
+    #[serde(flatten)]
+    pub state: crate::MutationState,
     /// Normalised, workspace-relative source and destination.
     pub from: RelPath,
     pub to: RelPath,
@@ -69,8 +68,7 @@ impl Mutation for Move {
     }
 
     fn applied(&mut self, id: u64) {
-        self.applied = true;
-        self.history_id = Some(id);
+        self.state = crate::MutationState::Applied { history_id: id };
     }
 }
 
@@ -235,8 +233,7 @@ impl Command for MoveIntent {
             Intent::Move(intent.clone()),
             |bound, files| Move {
                 intent: intent.clone(),
-                applied: false,
-                history_id: None,
+                state: crate::MutationState::Preview,
                 from: from.into(),
                 to: to.into(),
                 from_address: Some(old),
@@ -259,8 +256,7 @@ impl Document {
         ))));
         let structural = report.moved(&result.files, &result.respellings, &result.notices);
         report.moved_summary(
-            result.applied,
-            result.history_id,
+            result.state,
             MoveCounts {
                 respellings: result.respellings.len(),
                 structural,

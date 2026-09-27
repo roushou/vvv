@@ -34,7 +34,7 @@ fn rewrite_all_matches_with_template() {
     let planned = engine
         .run(RewriteIntent::new(Query::pattern("foo"), "bar$NEXT!"))
         .unwrap();
-    assert!(!planned.applied);
+    assert!(!planned.state.is_applied());
     assert_eq!(planned.preview()[0].after, "bar1! bar2!\nbar3!");
     assert_eq!(
         read(&engine),
@@ -43,7 +43,7 @@ fn rewrite_all_matches_with_template() {
     );
 
     let rewrite = engine.run(Apply(planned)).unwrap();
-    assert!(rewrite.applied && rewrite.history_id == Some(1));
+    assert!(rewrite.state == vvv_engine::MutationState::Applied { history_id: 1 });
     assert_eq!(read(&engine), "bar1! bar2!\nbar3!");
 }
 

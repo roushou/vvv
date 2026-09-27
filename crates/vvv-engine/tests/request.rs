@@ -75,7 +75,7 @@ fn a_mutation_previews_unless_it_applies_and_then_records_one_undo() {
     let Answer::Rename(rename) = engine.run(preview).unwrap() else {
         panic!()
     };
-    assert!(!rename.applied);
+    assert!(!rename.state.is_applied());
     assert_eq!(
         read(&engine, "a.p"),
         "def foo\nfoo",
@@ -86,7 +86,7 @@ fn a_mutation_previews_unless_it_applies_and_then_records_one_undo() {
     let Answer::Rename(rename) = engine.run(apply).unwrap() else {
         panic!()
     };
-    assert!(rename.applied && rename.history_id.is_some());
+    assert!(rename.state.is_applied() && rename.state.history_id().is_some());
     assert_eq!(read(&engine, "a.p"), "def bar\nbar");
 
     let Answer::Undo(undo) = engine.run(request(r#"{"command": "undo"}"#)).unwrap() else {

@@ -135,11 +135,11 @@ impl Answer {
     /// The history entry a written answer recorded, if any.
     pub fn history_id(&self) -> Option<u64> {
         match self {
-            Self::Rewrite(r) => r.history_id,
-            Self::Rename(r) => r.history_id,
-            Self::Move(r) => r.history_id,
-            Self::MoveSymbol(r) => r.history_id,
-            Self::Batch(b) => b.history_id,
+            Self::Rewrite(r) => r.state.history_id(),
+            Self::Rename(r) => r.state.history_id(),
+            Self::Move(r) => r.state.history_id(),
+            Self::MoveSymbol(r) => r.state.history_id(),
+            Self::Batch(b) => b.state.history_id(),
             _ => None,
         }
     }

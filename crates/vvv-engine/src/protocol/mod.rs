@@ -46,7 +46,8 @@ pub use references::ReferencesQuery;
 pub use request::{Answer, Call, Reply, Request};
 pub use respelling::Respelling;
 pub use result::{
-    Batch, FileChange, History, HistoryEntry, Mutation, MutationAnswer, Rewrite, Search, Undo,
+    Batch, FileChange, History, HistoryEntry, Mutation, MutationAnswer, MutationState, Rewrite,
+    Search, Undo,
 };
 pub use search::{Confidence, Match, MatchId, Occurrence, Reason, Skipped};
 pub use selection::{Selection, SelectionError};

@@ -276,6 +276,13 @@ vvv could not judge. `imports` sites carry the import's own fields flattened;
 a layout but which it cannot place, so their imports were not judged; `path` at the
 top is the file asked about, absent when every file was.
 
+Mutation results always carry `applied`. A preview has `applied: false` and omits
+`history_id`; a successful apply has `applied: true` and its required `history_id`.
+The Rust result types deserialize these into one preview/applied state and reject
+contradictory pairs. A null `history_id` is accepted for previews, as is an omitted
+one. Query results cannot become executable plans; results received over the wire
+contain no in-process plan to apply.
+
 ## `vvv rewrite`
 
 ```json

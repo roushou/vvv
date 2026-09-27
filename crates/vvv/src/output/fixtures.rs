@@ -113,8 +113,11 @@ pub fn change(path: &str, moved_to: Option<&str>, before: &str, after: &str) -> 
 pub fn rewrite(applied: bool) -> Rewrite {
     Rewrite {
         intent: RewriteIntent::new(Query::pattern("foo($$$A)"), "bar($$$A)"),
-        applied,
-        history_id: applied.then_some(7),
+        state: if applied {
+            vvv_engine::MutationState::Applied { history_id: 7 }
+        } else {
+            vvv_engine::MutationState::Preview
+        },
         files: vec![
             change(
                 "src/a.rs",
@@ -146,8 +149,7 @@ pub fn rename(declarations: usize) -> Rename {
     }
     Rename {
         intent: RenameIntent::new("Language", "Lang").selecting(Selection::All),
-        applied: false,
-        history_id: None,
+        state: vvv_engine::MutationState::Preview,
         declarations: decls,
         occurrences: vec![
             Occurrence::judged(
@@ -209,8 +211,7 @@ pub fn rename(declarations: usize) -> Rename {
 pub fn move_file() -> Move {
     Move {
         intent: MoveIntent::new("./src/util/parse.rs", "src/net/parse.rs"),
-        applied: false,
-        history_id: None,
+        state: vvv_engine::MutationState::Preview,
         from: "src/util/parse.rs".into(),
         to: "src/net/parse.rs".into(),
         from_address: Some(Address::new("cli", ["util", "parse"])),
@@ -545,8 +546,7 @@ pub fn explanation_of_an_import() -> Explanation {
 pub fn move_symbol() -> vvv_engine::protocol::MoveSymbol {
     vvv_engine::protocol::MoveSymbol {
         intent: vvv_engine::MoveSymbolIntent::new("Config", "src/util.rs", "src/config.rs"),
-        applied: false,
-        history_id: None,
+        state: vvv_engine::MutationState::Preview,
         from: Address::new("cli", ["util", "Config"]),
         to: Address::new("cli", ["config", "Config"]),
         respellings: vec![Respelling {

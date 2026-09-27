@@ -82,10 +82,9 @@ impl RenameIntent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Rename {
     pub intent: RenameIntent,
-    pub applied: bool,
-    /// The history entry the apply made, when `applied`; what `undo` reverses.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub history_id: Option<u64>,
+    /// Preview or successful application with its history entry.
+    #[serde(flatten)]
+    pub state: crate::MutationState,
     /// Where `name` is declared; more than one means the rename is ambiguous.
     pub declarations: Vec<Match>,
     /// Every identifier spelling the name, each judged against the target;
@@ -100,8 +99,7 @@ impl Mutation for Rename {
     }
 
     fn applied(&mut self, id: u64) {
-        self.applied = true;
-        self.history_id = Some(id);
+        self.state = crate::MutationState::Applied { history_id: id };
     }
 }
 
@@ -150,8 +148,7 @@ impl Command for RenameIntent {
             Intent::Rename(intent.clone()),
             |_, files| Rename {
                 intent: intent.clone(),
-                applied: false,
-                history_id: None,
+                state: crate::MutationState::Preview,
                 declarations,
                 occurrences,
                 files,
@@ -201,9 +198,9 @@ impl Document {
                 Plural(result.files.len(), "file")
             ),
         );
-        if result.applied {
+        if result.state.is_applied() {
             report.block_note(Block::Summary(strip));
-            report.receipt(true, result.history_id, plan);
+            report.receipt(result.state, plan);
             return report;
         }
         report.block_note(Block::Summary(strip.and(Role::Plain, "   ").and_line(plan)));

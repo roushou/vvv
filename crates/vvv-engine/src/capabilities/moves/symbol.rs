@@ -53,10 +53,9 @@ impl MoveSymbolIntent {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MoveSymbol {
     pub intent: MoveSymbolIntent,
-    pub applied: bool,
-    /// The history entry the apply made, when `applied`; what `undo` reverses.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub history_id: Option<u64>,
+    /// Preview or successful application with its history entry.
+    #[serde(flatten)]
+    pub state: crate::MutationState,
     /// The declaration's address before and after.
     pub from: Address,
     pub to: Address,
@@ -75,8 +74,7 @@ impl Mutation for MoveSymbol {
     }
 
     fn applied(&mut self, id: u64) {
-        self.applied = true;
-        self.history_id = Some(id);
+        self.state = crate::MutationState::Applied { history_id: id };
     }
 }
 
@@ -127,8 +125,7 @@ impl Command for MoveSymbolIntent {
             Intent::MoveSymbol(self.clone()),
             |bound, files| MoveSymbol {
                 intent: self.clone(),
-                applied: false,
-                history_id: None,
+                state: crate::MutationState::Preview,
                 from,
                 to,
                 notices: bound.notices,
@@ -507,8 +504,7 @@ impl Document {
         report.title(IntentLine(&Intent::MoveSymbol(result.intent.clone())));
         let structural = report.moved(&result.files, &result.respellings, &result.notices);
         report.moved_summary(
-            result.applied,
-            result.history_id,
+            result.state,
             MoveCounts {
                 respellings: result.respellings.len(),
                 structural,

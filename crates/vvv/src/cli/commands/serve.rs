@@ -95,4 +95,27 @@ mod tests {
         assert_eq!(v["schema"], 1);
         assert_eq!(v["result"]["entries"], serde_json::json!([]));
     }
+    #[test]
+    fn session_mutations_keep_preview_and_applied_envelopes() {
+        let engine = engine();
+        let preview = Session::answer(&engine, r#"{"id": 7, "command": "batch", "intents": []}"#);
+        assert_eq!(
+            serde_json::to_value(preview).unwrap(),
+            serde_json::json!({
+                "id": 7, "status": "ok", "schema": 1,
+                "result": {"intents": [], "applied": false, "files": []}
+            })
+        );
+        let applied = Session::answer(
+            &engine,
+            r#"{"id": 8, "command": "batch", "intents": [], "apply": true}"#,
+        );
+        assert_eq!(
+            serde_json::to_value(applied).unwrap(),
+            serde_json::json!({
+                "id": 8, "status": "ok", "schema": 1,
+                "result": {"intents": [], "applied": true, "history_id": 1, "files": []}
+            })
+        );
+    }
 }

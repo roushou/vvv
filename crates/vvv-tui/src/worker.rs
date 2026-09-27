@@ -184,13 +184,11 @@ impl Runner {
             }
             Effect::Commit { intent } => {
                 let engine = &self.engine;
-                let answer: Answer = engine.run(Apply(engine.run(intent.clone())?))?.into();
+                let applied = engine.run(Apply(engine.run(intent.clone())?))?;
+                let id = applied.history_id();
+                let answer: Answer = applied.into_inner().into();
                 let report = Document::of(&answer, Options::default());
-                Event::Applied {
-                    id: answer.history_id().unwrap_or_default(),
-                    intent,
-                    report,
-                }
+                Event::Applied { id, intent, report }
             }
             Effect::History => Event::History(self.engine.run(HistoryQuery)?.entries),
             Effect::Undo => Event::Undone(self.engine.run(UndoLast)?.undone),
@@ -228,5 +226,24 @@ mod tests {
             matches!(inbox.recv().unwrap(), Event::PlanFailed { generation: 7, message }
             if message == "the picker plans one command at a time; use `vvv batch`")
         );
+    }
+    #[test]
+    fn an_apply_event_carries_the_committed_history_id() {
+        let (outbox, inbox) = mpsc::channel();
+        let runner = Runner {
+            engine: Engine::new(
+                Workspace::new("/ws", Arc::new(MemoryVfs::new())),
+                Languages::new(),
+            ),
+            outbox,
+        };
+        runner.run(Effect::Commit {
+            intent: Intent::Batch(BatchIntent::new([])),
+        });
+        assert!(matches!(
+            inbox.recv().unwrap(),
+            Event::Applied { id: 1, .. }
+        ));
+        assert_eq!(runner.engine.run(HistoryQuery).unwrap().entries[0].id, 1);
     }
 }

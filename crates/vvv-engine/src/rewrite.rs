@@ -73,8 +73,7 @@ impl RewriteMatches {
             crate::Intent::Rewrite(self.intent.clone()),
             |_, files| Rewrite {
                 intent: self.intent,
-                applied: false,
-                history_id: None,
+                state: crate::MutationState::Preview,
                 files,
             },
         )

@@ -204,8 +204,7 @@ pub fn rename(declarations: usize) -> Rename {
     }
     Rename {
         intent: RenameIntent::new("Language", "Lang").selecting(Selection::All),
-        applied: false,
-        history_id: None,
+        state: vvv_engine::MutationState::Preview,
         declarations: decls,
         occurrences: vec![
             Occurrence::judged(
@@ -264,8 +263,7 @@ pub fn rename(declarations: usize) -> Rename {
 pub fn move_file() -> Move {
     Move {
         intent: MoveIntent::new("./src/util/parse.rs", "src/net/parse.rs"),
-        applied: false,
-        history_id: None,
+        state: vvv_engine::MutationState::Preview,
         from: "src/util/parse.rs".into(),
         to: "src/net/parse.rs".into(),
         from_address: Some(Address::new("cli", ["util", "parse"])),

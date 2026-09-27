@@ -22,11 +22,11 @@ impl Advice<'_> {
             Some("--from <file> for the import to write there".to_owned())
         }
         Answer::Rewrite(result)
-            if !result.applied && result.files.iter().any(|file| !file.edits.is_empty()) =>
+            if !result.state.is_applied() && result.files.iter().any(|file| !file.edits.is_empty()) =>
         {
             Some("--apply to write".to_owned())
         }
-        Answer::Rename(result) if !result.applied => {
+        Answer::Rename(result) if !result.state.is_applied() => {
             let numbers: Vec<usize> = result
                 .occurrences
                 .iter()
@@ -60,9 +60,9 @@ impl Advice<'_> {
             }
             Some(flags.join(" · "))
         }
-        Answer::Move(result) if !result.applied => Some(self.move_hint()),
-        Answer::MoveSymbol(result) if !result.applied => Some(self.move_hint()),
-        Answer::Batch(result) if !result.applied => Some(self.move_hint()),
+        Answer::Move(result) if !result.state.is_applied() => Some(self.move_hint()),
+        Answer::MoveSymbol(result) if !result.state.is_applied() => Some(self.move_hint()),
+        Answer::Batch(result) if !result.state.is_applied() => Some(self.move_hint()),
         Answer::History(result) if result.entries.is_empty() => Some(
             "--apply writes a plan and records it here; `vvv undo` reverses the newest".to_owned(),
         ),

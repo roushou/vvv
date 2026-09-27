@@ -10,6 +10,65 @@ use super::diff::Diff;
 use super::{Intent, Match, Notice, RewriteIntent, Skipped};
 use crate::plan::{FilePreview, Plan};
 
+/// The lifecycle of a mutation result, with a history id exactly when applied.
+/// Its wire shape remains `applied` plus the optional `history_id`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(try_from = "MutationStateFields", into = "MutationStateFields")]
+pub enum MutationState {
+    Preview,
+    Applied { history_id: u64 },
+}
+
+impl MutationState {
+    pub fn is_applied(self) -> bool {
+        matches!(self, Self::Applied { .. })
+    }
+
+    pub fn history_id(self) -> Option<u64> {
+        match self {
+            Self::Preview => None,
+            Self::Applied { history_id } => Some(history_id),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+struct MutationStateFields {
+    applied: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    history_id: Option<u64>,
+}
+
+impl From<MutationState> for MutationStateFields {
+    fn from(state: MutationState) -> Self {
+        Self {
+            applied: state.is_applied(),
+            history_id: state.history_id(),
+        }
+    }
+}
+
+impl TryFrom<MutationStateFields> for MutationState {
+    type Error = MutationStateError;
+
+    fn try_from(fields: MutationStateFields) -> Result<Self, Self::Error> {
+        match (fields.applied, fields.history_id) {
+            (false, None) => Ok(Self::Preview),
+            (true, Some(history_id)) => Ok(Self::Applied { history_id }),
+            (false, Some(_)) => Err(MutationStateError::PreviewWithHistory),
+            (true, None) => Err(MutationStateError::AppliedWithoutHistory),
+        }
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+enum MutationStateError {
+    #[error("a preview cannot have a history_id")]
+    PreviewWithHistory,
+    #[error("an applied mutation requires a history_id")]
+    AppliedWithoutHistory,
+}
+
 /// `vvv search`: what was found, and which languages could not be asked.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Search {
@@ -25,11 +84,9 @@ pub struct Search {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Rewrite {
     pub intent: RewriteIntent,
-    /// `true` when the files were written; otherwise this is a preview.
-    pub applied: bool,
-    /// The history entry the apply made, when `applied`; what `undo` reverses.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub history_id: Option<u64>,
+    /// Preview or successful application with its history entry.
+    #[serde(flatten)]
+    pub state: crate::MutationState,
     pub files: Vec<FileChange>,
 }
 
@@ -37,11 +94,9 @@ pub struct Rewrite {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Batch {
     pub intents: Vec<Intent>,
-    /// `true` when the files were written; otherwise this is a preview.
-    pub applied: bool,
-    /// The history entry the apply made, when `applied`; what `undo` reverses.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub history_id: Option<u64>,
+    /// Preview or successful application with its history entry.
+    #[serde(flatten)]
+    pub state: crate::MutationState,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub notices: Vec<Notice>,
     /// Every file any step touches, before the first step against after the
@@ -145,8 +200,7 @@ macro_rules! mutation {
                 MutationAnswer::$variant(self)
             }
             fn applied(&mut self, id: u64) {
-                self.applied = true;
-                self.history_id = Some(id);
+                self.state = MutationState::Applied { history_id: id };
             }
         }
     };
@@ -159,8 +213,7 @@ impl Mutation for Batch {
         MutationAnswer::Batch(self)
     }
     fn applied(&mut self, id: u64) {
-        self.applied = true;
-        self.history_id = Some(id);
+        self.state = crate::MutationState::Applied { history_id: id };
     }
 }
 
@@ -190,11 +243,11 @@ impl MutationAnswer {
     /// The history entry recorded by an applied mutation.
     pub fn history_id(&self) -> Option<u64> {
         match self {
-            Self::Rewrite(result) => result.history_id,
-            Self::Rename(result) => result.history_id,
-            Self::Move(result) => result.history_id,
-            Self::MoveSymbol(result) => result.history_id,
-            Self::Batch(result) => result.history_id,
+            Self::Rewrite(result) => result.state.history_id(),
+            Self::Rename(result) => result.state.history_id(),
+            Self::Move(result) => result.state.history_id(),
+            Self::MoveSymbol(result) => result.state.history_id(),
+            Self::Batch(result) => result.state.history_id(),
         }
     }
 }
@@ -250,4 +303,61 @@ mod sealed {
     impl Sealed for super::super::MoveSymbol {}
     impl Sealed for super::Batch {}
     impl Sealed for super::MutationAnswer {}
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn mutation_states_keep_the_existing_wire_fields() {
+        for (state, wire) in [
+            (MutationState::Preview, json!({"applied": false})),
+            (
+                MutationState::Applied { history_id: 7 },
+                json!({"applied": true, "history_id": 7}),
+            ),
+        ] {
+            assert_eq!(serde_json::to_value(state).unwrap(), wire);
+            assert_eq!(
+                serde_json::from_value::<MutationState>(wire).unwrap(),
+                state
+            );
+        }
+    }
+
+    #[test]
+    fn previews_accept_an_omitted_or_null_history_id() {
+        for wire in [
+            json!({"applied": false}),
+            json!({"applied": false, "history_id": null}),
+        ] {
+            assert_eq!(
+                serde_json::from_value::<MutationState>(wire).unwrap(),
+                MutationState::Preview
+            );
+        }
+    }
+
+    #[test]
+    fn contradictory_mutation_states_are_rejected() {
+        for (wire, message) in [
+            (
+                json!({"applied": false, "history_id": 7}),
+                "a preview cannot have a history_id",
+            ),
+            (
+                json!({"applied": true}),
+                "an applied mutation requires a history_id",
+            ),
+            (
+                json!({"applied": true, "history_id": null}),
+                "an applied mutation requires a history_id",
+            ),
+        ] {
+            let error = serde_json::from_value::<MutationState>(wire).unwrap_err();
+            assert!(error.to_string().contains(message), "{error}");
+        }
+    }
 }

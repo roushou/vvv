@@ -132,8 +132,7 @@ mod tests {
             captured.clone(),
             Rename {
                 intent,
-                applied: false,
-                history_id: None,
+                state: crate::MutationState::Preview,
                 declarations: Vec::new(),
                 occurrences: Vec::new(),
                 files: Vec::new(),

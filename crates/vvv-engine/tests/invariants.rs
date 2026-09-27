@@ -590,7 +590,7 @@ impl DiskHistoryFixture {
         Self { root, engine }
     }
 
-    fn apply(&self) -> Result<vvv_engine::Rename, EngineError> {
+    fn apply(&self) -> Result<vvv_engine::Applied<vvv_engine::Rename>, EngineError> {
         let planned = self.engine.run(RenameIntent::new("foo", "bar")).unwrap();
         self.engine.run(Apply(planned))
     }
@@ -2782,11 +2782,61 @@ fn every_mutation_intent_keeps_its_result_variant_through_apply() {
         assert!(value.get("history_id").is_none());
         let answer = Answer::from(preview);
         let round_trip = MutationAnswer::try_from(answer).unwrap();
-        assert_eq!(serde_json::to_value(round_trip).unwrap(), value);
+        assert_eq!(serde_json::to_value(&round_trip).unwrap(), value);
+        // Exercise the public payload deserializers, including their flattened state.
+        let decode = |wire| -> Result<serde_json::Value, serde_json::Error> {
+            match &round_trip {
+                MutationAnswer::Rewrite(_) => serde_json::from_value::<vvv_engine::Rewrite>(wire)
+                    .map(|r| serde_json::to_value(r).unwrap()),
+                MutationAnswer::Rename(_) => serde_json::from_value::<vvv_engine::Rename>(wire)
+                    .map(|r| serde_json::to_value(r).unwrap()),
+                MutationAnswer::Move(_) => serde_json::from_value::<vvv_engine::Move>(wire)
+                    .map(|r| serde_json::to_value(r).unwrap()),
+                MutationAnswer::MoveSymbol(_) => {
+                    serde_json::from_value::<vvv_engine::MoveSymbol>(wire)
+                        .map(|r| serde_json::to_value(r).unwrap())
+                }
+                MutationAnswer::Batch(_) => serde_json::from_value::<vvv_engine::Batch>(wire)
+                    .map(|r| serde_json::to_value(r).unwrap()),
+            }
+        };
+        assert_eq!(decode(value.clone()).unwrap(), value);
+        let mut nullable_preview = value.clone();
+        nullable_preview["history_id"] = serde_json::Value::Null;
+        assert_eq!(decode(nullable_preview).unwrap(), value);
+        for (is_applied, id, message) in [
+            (
+                false,
+                Some(serde_json::json!(1)),
+                "a preview cannot have a history_id",
+            ),
+            (true, None, "an applied mutation requires a history_id"),
+            (
+                true,
+                Some(serde_json::Value::Null),
+                "an applied mutation requires a history_id",
+            ),
+        ] {
+            let mut invalid = value.clone();
+            invalid["applied"] = serde_json::json!(is_applied);
+            if let Some(id) = id {
+                invalid["history_id"] = id;
+            }
+            let error = decode(invalid).unwrap_err();
+            assert!(error.to_string().contains(message), "{error}");
+        }
 
         let applied = fixture.engine.run(Apply(planned)).unwrap();
-        assert_eq!(applied.history_id(), Some(1));
-        assert_eq!(serde_json::to_value(&applied).unwrap()["applied"], true);
+        assert_eq!(applied.history_id(), 1);
+        let mut expected_applied = value;
+        expected_applied["applied"] = serde_json::json!(true);
+        expected_applied["history_id"] = serde_json::json!(1);
+        assert_eq!(serde_json::to_value(&applied).unwrap(), expected_applied);
+        assert_eq!(decode(expected_applied.clone()).unwrap(), expected_applied);
+        assert_eq!(
+            applied.history_id(),
+            applied.into_inner().history_id().unwrap()
+        );
         assert_eq!(
             fixture.engine.run(HistoryQuery).unwrap().entries[0].intent,
             intent

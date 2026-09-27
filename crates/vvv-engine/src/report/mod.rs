@@ -144,12 +144,7 @@ impl Document {
     }
 
     /// `→ 12  ± 2  ! 1   12 files` on the note stream, then the verdict.
-    pub(crate) fn moved_summary(
-        &mut self,
-        applied: bool,
-        history_id: Option<u64>,
-        counts: MoveCounts,
-    ) {
+    pub(crate) fn moved_summary(&mut self, state: crate::MutationState, counts: MoveCounts) {
         let MoveCounts {
             respellings,
             structural,
@@ -181,8 +176,8 @@ impl Document {
         let counts = Self::join(counts, "  ")
             .and(Role::Plain, "   ")
             .and(Role::Dim, Plural(files, "file").to_string());
-        if applied {
-            self.receipt(true, history_id, counts);
+        if state.is_applied() {
+            self.receipt(state, counts);
             return;
         }
         self.notes([counts]);
@@ -190,17 +185,14 @@ impl Document {
 
     /// The last line of a mutating command: `counts` then, applied, the
     /// history entry it made (`✓ #3`).
-    pub(crate) fn receipt(&mut self, applied: bool, history_id: Option<u64>, counts: Line) {
-        match (applied, history_id) {
-            (true, Some(id)) => self.notes([Line::mark(Mark::Safe)
+    pub(crate) fn receipt(&mut self, state: crate::MutationState, counts: Line) {
+        match state {
+            crate::MutationState::Applied { history_id } => self.notes([Line::mark(Mark::Safe)
                 .and(Role::Plain, " ")
-                .and(Role::Strong, format!("#{id}"))
+                .and(Role::Strong, format!("#{history_id}"))
                 .and(Role::Plain, "   ")
                 .and_line(counts)]),
-            (true, None) => self.notes([Line::mark(Mark::Safe)
-                .and(Role::Plain, "   ")
-                .and_line(counts)]),
-            (false, _) => self.notes([counts]),
+            crate::MutationState::Preview => self.notes([counts]),
         }
     }
 
@@ -575,8 +567,7 @@ impl Document {
             return report;
         }
         report.receipt(
-            result.applied,
-            result.history_id,
+            result.state,
             Line::mark(Mark::Rewrite)
                 .and(Role::Plain, format!(" {edits}   "))
                 .and(Role::Dim, Plural(result.files.len(), "file").to_string()),
@@ -594,8 +585,7 @@ impl Document {
         // Steps compose, so no edit is one re-spelled path: every file is a hunk.
         let structural = report.moved(&result.files, &[], &result.notices);
         report.moved_summary(
-            result.applied,
-            result.history_id,
+            result.state,
             MoveCounts {
                 respellings: 0,
                 structural,

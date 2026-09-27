@@ -164,7 +164,7 @@ impl HistorySnapshot {
 pub struct Apply<T: Mutation>(pub Planned<T>);
 
 impl<T: Mutation> Command for Apply<T> {
-    type Output = T;
+    type Output = Applied<T>;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
         let workspace = cx.workspace;
@@ -173,7 +173,7 @@ impl<T: Mutation> Command for Apply<T> {
         let id = snapshot.next_id()?;
         // Whatever happens below, the tree is no longer what the graph saw.
         cx.graph.touched();
-        let (intent, mut result, plans) = self.0.into_parts();
+        let (intent, result, plans) = self.0.into_parts();
         let mut transaction = crate::plan::Transaction::new(workspace);
         for plan in plans {
             if let Err(error) = transaction.apply(plan) {
@@ -185,8 +185,53 @@ impl<T: Mutation> Command for Apply<T> {
             Ok(record) => record,
             Err(error) => return Err(transaction.recover(error.into())),
         };
-        result.applied(record.id);
-        Ok(result)
+        Ok(Applied::new(result, record.id))
+    }
+}
+
+/// A successful apply with the required id of its committed history entry.
+/// Construction is private and result access is immutable.
+///
+/// ```compile_fail,E0596
+/// use vvv_engine::{Applied, Rename};
+/// let change_description = |mut applied: Applied<Rename>| {
+///     applied.intent.to.clear();
+/// };
+/// ```
+#[derive(Debug, Clone)]
+pub struct Applied<T: Mutation> {
+    result: T,
+    history_id: u64,
+}
+
+impl<T: Mutation> Applied<T> {
+    fn new(mut result: T, history_id: u64) -> Self {
+        result.applied(history_id);
+        Self { result, history_id }
+    }
+
+    /// The history entry committed by this apply.
+    pub fn history_id(&self) -> u64 {
+        self.history_id
+    }
+
+    /// The applied wire payload without its in-process completion handle.
+    pub fn into_inner(self) -> T {
+        self.result
+    }
+}
+
+impl<T: Mutation> std::ops::Deref for Applied<T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        &self.result
+    }
+}
+
+impl<T: Mutation + Serialize> Serialize for Applied<T> {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        self.result.serialize(serializer)
     }
 }
 

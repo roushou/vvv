@@ -92,12 +92,16 @@ its components (`impl Command for RenameIntent` in `capabilities/rename.rs`, `fo
 the answer as a preview (`applied: false`, `files` filled) with the plan(s) kept
 beside it; `Intent` itself is a command answering `Planned<MutationAnswer>`, so a batch step,
 the picker or `serve` plans any intent without matching its variants. `Apply` writes,
-records history and hands the same answer back marked applied — it needs the
+records history and returns an immutable `Applied<T>` completion with a required
+history id and the result marked applied — it needs the
 `Mutation` capability, sealed to the five mutation payloads and their closed
 `MutationAnswer` sum. Queries cannot carry a `Planned` or reach `Apply`. Typed plans
 wrap their payload with `into_mutation`; there is no arbitrary result mapping or
 mutable result access. `Planned` captures its history `Intent` when constructed,
 independently of its presentation data, and `Apply` records that captured intent.
+Mutation payloads own a `MutationState`: `Preview` or `Applied { history_id }`,
+serialized as the existing `applied` and `history_id` fields. Contradictory states
+are rejected during deserialization.
 `MutationAnswer` becomes an `Answer` only at the reporting boundary; `UndoLast` and
 `HistoryQuery` are commands too. `FileQuery` gives an interface a file with its highlights; `root()` and
 `language_ids()` are the two facts about the session. Nothing about a command lives

@@ -79,7 +79,7 @@ fn a_rename_can_follow_the_move_of_its_file() {
     );
 
     let applied = engine.run(Apply(batch)).unwrap();
-    assert!(applied.applied && applied.history_id == Some(1));
+    assert!(applied.state == vvv_engine::MutationState::Applied { history_id: 1 });
     assert_eq!(read(&engine, "b/y.p"), "def bar\nbar");
     assert_eq!(read(&engine, "lib.p"), "use b/y.p\nbar");
     assert_eq!(
