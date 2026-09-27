@@ -294,6 +294,19 @@ impl<'a> Transaction<'a> {
 
     fn write(&mut self, path: &RelPath, before: &str, after: &str) -> Result<(), ApplyError> {
         self.prepare_parent(path)?;
+        self.write_existing(path, before, after)
+            .map_err(|source| ApplyError::Write {
+                path: path.clone(),
+                source,
+            })
+    }
+
+    fn write_existing(
+        &mut self,
+        path: &RelPath,
+        before: &str,
+        after: &str,
+    ) -> Result<(), VfsError> {
         self.originals
             .entry(path.clone())
             .or_insert_with(|| Original::File(before.to_owned()));
@@ -304,10 +317,27 @@ impl<'a> Transaction<'a> {
         self.workspace
             .vfs()
             .write(&self.workspace.absolute(path), after)
-            .map_err(|source| ApplyError::Write {
-                path: path.clone(),
-                source,
-            })
+    }
+
+    /// Keep the ledger's exact prior contents (or absence) in the same effect log
+    /// as the files, before attempting a potentially partial history write.
+    pub(crate) fn save_file(
+        &mut self,
+        path: &RelPath,
+        before: Option<&str>,
+        after: &str,
+    ) -> Result<(), VfsError> {
+        self.prepare_parent(path)?;
+        if let Some(before) = before {
+            return self.write_existing(path, before, after);
+        }
+        self.originals
+            .entry(path.clone())
+            .or_insert(Original::Absent);
+        self.effects.push(Effect::CreateFile(path.clone()));
+        self.workspace
+            .vfs()
+            .write(&self.workspace.absolute(path), after)
     }
 
     fn move_file(&mut self, from: &RelPath, to: &RelPath, before: &str) -> Result<(), ApplyError> {
@@ -494,6 +524,7 @@ impl Original {
 }
 
 enum Effect {
+    CreateFile(RelPath),
     Write {
         path: RelPath,
         before: String,
@@ -510,7 +541,7 @@ enum Effect {
 impl Effect {
     fn path(&self) -> &RelPath {
         match self {
-            Self::Write { path, .. } | Self::Directory(path) => path,
+            Self::Write { path, .. } | Self::Directory(path) | Self::CreateFile(path) => path,
             Self::Move { from, .. } => from,
         }
     }
@@ -518,6 +549,7 @@ impl Effect {
     fn operation(&self) -> crate::RecoveryOperation {
         match self {
             Self::Write { .. } => crate::RecoveryOperation::RestoreFile,
+            Self::CreateFile(_) => crate::RecoveryOperation::RemoveFile,
             Self::Move { .. } => crate::RecoveryOperation::RestoreMove,
             Self::Directory(_) => crate::RecoveryOperation::RemoveDirectory,
         }
@@ -529,6 +561,11 @@ impl Effect {
         let mut failed_path = self.path();
         let result = (|| -> Result<(), VfsError> {
             match self {
+                Self::CreateFile(path) => match vfs.entry_kind(&workspace.absolute(path))? {
+                    None => Ok(()),
+                    Some(crate::EntryKind::File) => vfs.remove_file(&workspace.absolute(path)),
+                    Some(_) => Err(VfsError::Exists(workspace.absolute(path))),
+                },
                 Self::Write { path, before } => {
                     if Original::observe(workspace, path)? == Original::File(before.clone()) {
                         return Ok(());

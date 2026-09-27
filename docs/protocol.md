@@ -491,5 +491,7 @@ for independent effects after a failure. If the final before-states are all veri
 the initiating error is returned instead, even if a restoration operation returned
 an error after completing its effect.
 
-These are in-memory recovery results, not crash-recovery records. History-save
-compensation and coupled undo are not yet implemented.
+These are in-memory recovery results, not crash-recovery records. Apply and batch
+include ledger-save compensation: an unrestored `.vvv/history.json` is listed
+like any other remaining file, and an unrestored owned ledger directory is listed
+as a directory. Coupled history removal during undo is still pending.

@@ -276,11 +276,15 @@ read it, including a cached source in a session. Files consulted only to resolve
 references are outside this check.
 What you get back is a receipt naming the history entry: `✓ #3   ± 2   2 files`.
 
-A file-write failure triggers restoration, including the file whose write failed
-partway through. If restoration cannot finish or be verified, `recovery_failed`
-names the remaining effects and any paths whose state is unknown. Recovery is
-in memory: interruption or a crash has no automatic recovery. History-save
-compensation is still pending; a failure saving the ledger is not yet rolled back.
+Apply and batch keep their recovery state until the history save succeeds. A file
+operation or history-save failure restores the pre-apply file contents, locations,
+case spelling, ledger bytes (or absence), and owned empty directories, including
+the file or ledger whose write failed partway through. If restoration cannot finish
+or be verified, `recovery_failed` names the remaining effects and any paths whose
+state is unknown. Recovery is in memory: interruption or a crash has no automatic
+recovery. It does not provide isolation from external writers or restore inode
+identity, timestamps, or complete filesystem metadata. Coupled history removal
+during undo is still pending.
 
 Each apply is saved to `.vvv/history.json` (worth adding `.vvv/` to `.gitignore`).
 

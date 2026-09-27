@@ -95,36 +95,6 @@ impl<'a> History<'a> {
         Ok(self.snapshot()?.entries)
     }
 
-    fn save(&self, entries: &[Record]) -> Result<(), HistoryError> {
-        let text =
-            serde_json::to_string(entries).map_err(|e| HistoryError::Corrupt(e.to_string()))?;
-        Ok(self.workspace.vfs().write(&self.file(), &text)?)
-    }
-
-    fn push(
-        &self,
-        snapshot: HistorySnapshot,
-        id: u64,
-        intent: Intent,
-        receipt: Receipt,
-    ) -> Result<Record, HistoryError> {
-        let mut entries = snapshot.entries;
-        let entry = Record {
-            id,
-            at: SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .map_or(0, |d| d.as_secs()),
-            intent,
-            receipt,
-        };
-        entries.push(entry.clone());
-        if entries.len() > LIMIT {
-            entries.drain(..entries.len() - LIMIT);
-        }
-        self.save(&entries)?;
-        Ok(entry)
-    }
-
     /// The newest entry, without removing it.
     pub fn last(&self) -> Result<Record, HistoryError> {
         self.entries()?.pop().ok_or(HistoryError::Empty)
@@ -134,18 +104,48 @@ impl<'a> History<'a> {
     pub fn pop(&self) -> Result<(), HistoryError> {
         let mut entries = self.entries()?;
         entries.pop().ok_or(HistoryError::Empty)?;
-        self.save(&entries)
+        let text = serde_json::to_string(&entries)
+            .map_err(|error| HistoryError::Corrupt(error.to_string()))?;
+        Ok(self.workspace.vfs().write(&self.file(), &text)?)
     }
 }
 
 /// Validated history retained for one mutation, including its exact before-state.
 struct HistorySnapshot {
-    #[expect(dead_code, reason = "Retained for ledger compensation in step 3c")]
     original: Option<String>,
     entries: Vec<Record>,
 }
 
 impl HistorySnapshot {
+    fn save(&self, transaction: &mut crate::plan::Transaction<'_>) -> Result<(), HistoryError> {
+        let text = serde_json::to_string(&self.entries)
+            .map_err(|error| HistoryError::Corrupt(error.to_string()))?;
+        Ok(transaction.save_file(&History::path().into(), self.original.as_deref(), &text)?)
+    }
+
+    fn push(
+        &mut self,
+        id: u64,
+        intent: Intent,
+        receipt: Receipt,
+        transaction: &mut crate::plan::Transaction<'_>,
+    ) -> Result<Record, HistoryError> {
+        let entry = Record {
+            id,
+            at: SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .map_or(0, |d| d.as_secs()),
+            intent,
+            receipt,
+        };
+        self.entries.push(entry.clone());
+        if self.entries.len() > LIMIT {
+            self.entries.drain(..self.entries.len() - LIMIT);
+        }
+        self.save(transaction)?;
+        Ok(entry)
+    }
+
     fn next_id(&self) -> Result<u64, HistoryError> {
         self.entries.last().map_or(Ok(1), |entry| {
             entry
@@ -168,7 +168,7 @@ impl<T: Mutation> Command for Apply<T> {
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
         let workspace = cx.workspace;
         let history = History::new(workspace);
-        let snapshot = history.snapshot()?;
+        let mut snapshot = history.snapshot()?;
         let id = snapshot.next_id()?;
         // Whatever happens below, the tree is no longer what the graph saw.
         cx.graph.touched();
@@ -179,7 +179,11 @@ impl<T: Mutation> Command for Apply<T> {
                 return Err(transaction.recover(error.into()));
             }
         }
-        let record = history.push(snapshot, id, result.intent(), transaction.receipt())?;
+        let receipt = transaction.receipt();
+        let record = match snapshot.push(id, result.intent(), receipt, &mut transaction) {
+            Ok(record) => record,
+            Err(error) => return Err(transaction.recover(error.into())),
+        };
         result.applied(record.id);
         Ok(result)
     }
