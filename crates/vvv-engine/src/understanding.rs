@@ -95,7 +95,8 @@ impl Command for SurfaceQuery {
     type Output = Surface;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.execute_in(&mut cx.graph)
+        let mut graph = cx.engine.graph()?;
+        self.execute_in(&mut graph)
     }
 }
 
@@ -190,7 +191,8 @@ impl Command for ImpactQuery {
     type Output = Impact;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.execute_in(&mut cx.graph)
+        let mut graph = cx.engine.graph()?;
+        self.execute_in(&mut graph)
     }
 }
 
@@ -270,7 +272,8 @@ impl Command for DeadQuery {
     type Output = Dead;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.execute_in(&mut cx.graph)
+        let mut graph = cx.engine.graph()?;
+        self.execute_in(&mut graph)
     }
 }
 
@@ -373,6 +376,7 @@ impl Command for ImportsQuery {
     type Output = ImportsReport;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.execute_in(&mut cx.graph, cx.workspace)
+        let mut graph = cx.engine.graph()?;
+        self.execute_in(&mut graph, cx.workspace)
     }
 }

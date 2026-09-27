@@ -169,17 +169,13 @@ impl<T: Mutation> Apply<T> {
         engine.run(self)
     }
 
-    pub(crate) fn apply_in(
-        self,
-        engine: &crate::Engine,
-        graph: &mut crate::graph::Graph,
-    ) -> Result<Applied<T>, EngineError> {
+    pub(crate) fn apply_in(self, engine: &crate::Engine) -> Result<Applied<T>, EngineError> {
         let workspace = engine.workspace();
         let history = Ledger::new(engine);
         let mut snapshot = history.snapshot()?;
         let id = snapshot.next_id()?;
         // Whatever happens below, the tree is no longer what the graph saw.
-        graph.touched();
+        engine.touched();
         let (intent, result, plans) = self.0.into_parts();
         let mut transaction = crate::plan::Transaction::new(workspace);
         for plan in plans {
@@ -200,7 +196,7 @@ impl<T: Mutation> Command for Apply<T> {
     type Output = Applied<T>;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.apply_in(cx.engine, &mut cx.graph)
+        self.apply_in(cx.engine)
     }
 }
 
@@ -255,7 +251,7 @@ impl Command for UndoLast {
     type Output = Undo;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        Ledger::new(cx.engine).undo_in(&mut cx.graph)
+        Ledger::new(cx.engine).undo_in()
     }
 }
 
@@ -274,11 +270,11 @@ impl Ledger<'_> {
         self.engine.run(UndoLast)
     }
 
-    pub(crate) fn undo_in(&self, graph: &mut crate::graph::Graph) -> Result<Undo, EngineError> {
+    pub(crate) fn undo_in(&self) -> Result<Undo, EngineError> {
         let history = self;
         let mut snapshot = history.snapshot()?;
         let record = snapshot.last()?.clone();
-        graph.touched();
+        self.engine.touched();
         let mut transaction = crate::plan::Transaction::new(self.engine.workspace());
         if let Err(error) = record.receipt.undo_in(&mut transaction) {
             return Err(transaction.recover(error.into()));

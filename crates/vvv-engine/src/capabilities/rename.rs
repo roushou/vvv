@@ -149,7 +149,8 @@ impl Command for RenameIntent {
     type Output = Planned<Rename>;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.plan_in(&mut cx.graph, cx.workspace)
+        let mut graph = cx.engine.graph()?;
+        self.plan_in(&mut graph, cx.workspace)
     }
 }
 
@@ -180,7 +181,8 @@ impl Command for ReferencesQuery {
     type Output = References;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.execute_in(&mut cx.graph)
+        let mut graph = cx.engine.graph()?;
+        self.execute_in(&mut graph)
     }
 }
 

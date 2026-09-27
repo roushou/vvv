@@ -82,8 +82,9 @@ one. With no features the crate is just the searcher and has no tests.
 registry from its composition root (`vvv-rs`'s `languages.rs`), a `MemoryVfs` and a fake
 language for tests; `with_retention`, and `with_oracle(Arc<dyn Oracle>)` for a host that has a
 build or a language server to ask — and one entry point, `Engine::run(command)`. An engine runs commands and
-nothing else: it brings the graph up to date, builds a `Context` (the graph and the
-workspace) and lets the command answer against it. A **`Command`** is a request as
+nothing else: it excludes concurrent operations across clones, builds a temporary
+`Context` (engine and workspace), and lets the capability answer. A capability
+acquires the graph only when its question needs the tree. A **`Command`** is a request as
 data — one of the protocol's intents or queries — with `type Output` and
 `fn run(self, &mut Context) -> Result<Output>`, implemented in the module that holds
 its components (`impl Command for RenameIntent` in `capabilities/rename.rs`, `for MoveIntent` in
@@ -117,8 +118,16 @@ on the engine: a new capability is a request type and its implementation. A
 capability module may own its request and answer data, command implementation,
 and report composition together. `protocol/` keeps shared wire types and the
 central `Request`/`Answer` contract, and re-exports capability-owned wire types.
-The data and serialization code do not access `Workspace`. Every command
-starts by bringing the `Graph` up to date — one walk — and asking it questions. Each
+The data and serialization code do not access `Workspace`. Graph-dependent queries
+and planning bring `Graph` up to date before asking it questions. History, undo,
+retained-plan apply, and file preview do not refresh the tree. One shared operation
+mutex spans planning, application, history save, and recovery; it is acquired before
+the graph mutex. Staging engines have independent operation locks. Apply and undo
+mark shared dirty state before attempting file effects, including unsuccessful
+operations. External `Engine::touched` marks that state without acquiring the graph;
+the next graph access consumes it. This expires the trusted walk without clearing
+cached candidates: a session still reads contents only when stamps changed. A touch
+arriving during refresh remains pending for the next access. Each
 `Candidate` (a file with its language) answers `find`, `references` and `imports` for
 itself, and parses once however many questions it is asked: its `Facts` are computed
 on first use and shared. Per-file work runs in parallel with `rayon` and collects in

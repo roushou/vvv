@@ -611,7 +611,9 @@ the row under the cursor in `$EDITOR`, and any other key closes it.
 For many commands in a row — an agent, an editor — `vvv serve` keeps one session:
 send `{"command": "rename", "name": "Config", "to": "Settings", "apply": true}` on
 a line of stdin, read one line of stdout back, and the tree is not re-read between
-requests where it did not change. Every command has the same fields as its flags;
+requests where it did not change. History, undo, and applying an already retained
+plan do not refresh the source tree. After a write attempt, the next tree query
+checks for changes; a session reuses unchanged file contents. Every command has the same fields as its flags;
 errors come back with a `code` to branch on and a `hint` to show.
 
 ## Building with fewer languages

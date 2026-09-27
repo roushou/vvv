@@ -225,8 +225,9 @@ mod tests {
         type Output = Arc<Fragment>;
 
         fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-            let ns = cx.graph.namespace_of(&self.path)?;
-            cx.graph.file(&self.path)?.fragment(&ns)
+            let mut graph = cx.engine.graph()?;
+            let ns = graph.namespace_of(&self.path)?;
+            graph.file(&self.path)?.fragment(&ns)
         }
     }
 

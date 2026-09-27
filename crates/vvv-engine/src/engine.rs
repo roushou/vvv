@@ -1,6 +1,7 @@
 //! The runtime: what holds the graph and runs commands against it.
 
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use vvv_core::{LanguageRegistry, Oracle};
@@ -18,6 +19,10 @@ pub struct Engine {
     oracle: Option<Arc<dyn Oracle>>,
     /// Shared by clones, so a session's worker and its owner see one graph.
     graph: Arc<Mutex<Graph>>,
+    /// One complete operation, including planning, writes and recovery.
+    operation: Arc<Mutex<()>>,
+    /// Invalidation does not acquire or refresh the graph.
+    dirty: Arc<AtomicBool>,
 }
 
 impl std::fmt::Debug for Engine {
@@ -42,6 +47,8 @@ impl Engine {
             retention: Retention::default(),
             oracle: None,
             graph: Arc::new(Mutex::new(graph)),
+            operation: Arc::new(Mutex::new(())),
+            dirty: Arc::new(AtomicBool::new(false)),
         }
     }
 
@@ -51,11 +58,10 @@ impl Engine {
         Self { retention, ..self }
     }
 
-    /// Run one command: bring the graph up to date with the tree, then let
-    /// the command answer against it.
+    /// Run one operation. Only graph-dependent capabilities refresh the tree.
     pub fn run<C: Command>(&self, command: C) -> Result<C::Output, EngineError> {
-        let graph = self.graph()?;
-        let mut cx = Context::new(self, graph);
+        let _operation = self.operation();
+        let mut cx = Context::new(self);
         command.run(&mut cx)
     }
 
@@ -66,6 +72,7 @@ impl Engine {
     /// knows.
     pub fn with_oracle(mut self, oracle: Arc<dyn Oracle>) -> Self {
         {
+            let _operation = self.operation();
             let mut graph = self
                 .graph
                 .lock()
@@ -80,10 +87,7 @@ impl Engine {
     /// Tell a session the tree changed behind its back — an editor wrote,
     /// say — so its next command walks even within the trusted window.
     pub fn touched(&self) {
-        self.graph
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner)
-            .touched();
+        self.dirty.store(true, Ordering::Release);
     }
 
     /// The workspace root, absolute.
@@ -104,6 +108,13 @@ impl Engine {
         &self.languages
     }
 
+    /// Shared by clones; acquire before the graph or transaction work.
+    pub(crate) fn operation(&self) -> MutexGuard<'_, ()> {
+        self.operation
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+
     /// A fresh staging session for batch composition.
     pub(crate) fn staged(&self) -> (Engine, Workspace) {
         let staging = self.workspace.staged();
@@ -114,11 +125,14 @@ impl Engine {
 
     /// The graph, brought up to date with the tree. Held for the command;
     /// per-file work happens on the candidates it hands out.
-    fn graph(&self) -> Result<MutexGuard<'_, Graph>, EngineError> {
+    pub(crate) fn graph(&self) -> Result<MutexGuard<'_, Graph>, EngineError> {
         let mut graph = self
             .graph
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
+        if self.dirty.swap(false, Ordering::AcqRel) {
+            graph.touched();
+        }
         if self.retention == Retention::PerCall {
             let fresh = Graph::new(self.workspace.clone(), self.languages.clone());
             *graph = match &self.oracle {
@@ -128,5 +142,34 @@ impl Engine {
         }
         graph.refresh(self.retention)?;
         Ok(graph)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn engine_clones_exclude_whole_operations_even_without_a_graph() {
+        let engine = Engine::new(
+            Workspace::new("/ws", Arc::new(crate::MemoryVfs::new())),
+            LanguageRegistry::new(),
+        );
+        let guard = engine.operation();
+        let clone = engine.clone();
+        let (started, ready) = std::sync::mpsc::channel();
+        let (finished, result) = std::sync::mpsc::channel();
+        let worker = std::thread::spawn(move || {
+            started.send(()).unwrap();
+            finished.send(crate::Ledger::new(&clone).history()).unwrap();
+        });
+        ready.recv().unwrap();
+        assert!(matches!(
+            result.recv_timeout(std::time::Duration::from_millis(50)),
+            Err(std::sync::mpsc::RecvTimeoutError::Timeout)
+        ));
+        drop(guard);
+        assert!(result.recv().unwrap().unwrap().entries.is_empty());
+        worker.join().unwrap();
     }
 }

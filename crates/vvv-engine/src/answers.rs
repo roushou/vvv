@@ -54,7 +54,8 @@ impl Command for OutlineQuery {
     type Output = Outline;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.execute_in(&mut cx.graph, cx.workspace)
+        let mut graph = cx.engine.graph()?;
+        self.execute_in(&mut graph, cx.workspace)
     }
 }
 
@@ -111,7 +112,8 @@ impl Command for WhereQuery {
     type Output = Locations;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.execute_in(&mut cx.graph, cx.workspace)
+        let mut graph = cx.engine.graph()?;
+        self.execute_in(&mut graph, cx.workspace)
     }
 }
 
@@ -163,7 +165,8 @@ impl Command for DepsQuery {
     type Output = Deps;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.execute_in(&mut cx.graph, cx.workspace)
+        let mut graph = cx.engine.graph()?;
+        self.execute_in(&mut graph, cx.workspace)
     }
 }
 
@@ -252,7 +255,8 @@ impl Command for ExplainQuery {
     type Output = Explanation;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.execute_in(&mut cx.graph, cx.workspace)
+        let mut graph = cx.engine.graph()?;
+        self.execute_in(&mut graph, cx.workspace)
     }
 }
 
@@ -317,7 +321,8 @@ impl Command for crate::SearchQuery {
     type Output = Search;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.execute_in(&mut cx.graph)
+        let mut graph = cx.engine.graph()?;
+        self.execute_in(&mut graph)
     }
 }
 
@@ -325,6 +330,7 @@ impl Command for Query {
     type Output = Search;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        crate::SearchQuery::from(self).execute_in(&mut cx.graph)
+        let mut graph = cx.engine.graph()?;
+        crate::SearchQuery::from(self).execute_in(&mut graph)
     }
 }

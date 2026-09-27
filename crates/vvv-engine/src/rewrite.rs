@@ -31,7 +31,8 @@ impl Command for RewriteIntent {
     type Output = Planned<Rewrite>;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.plan_in(&mut cx.graph, cx.workspace)
+        let mut graph = cx.engine.graph()?;
+        self.plan_in(&mut graph, cx.workspace)
     }
 }
 
@@ -62,7 +63,8 @@ impl Command for RewriteOf {
     type Output = Planned<Rewrite>;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.plan_in(&mut cx.graph, cx.workspace)
+        let mut graph = cx.engine.graph()?;
+        self.plan_in(&mut graph, cx.workspace)
     }
 }
 

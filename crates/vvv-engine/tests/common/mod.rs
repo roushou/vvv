@@ -557,6 +557,7 @@ pub struct FaultVfs {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum FaultOperation {
     Read,
+    Walk,
     Write,
     Rename,
     RenameDestination,
@@ -811,6 +812,9 @@ impl vvv_engine::Vfs for FaultVfs {
     }
 
     fn walk(&self, root: &Path) -> Result<Vec<PathBuf>, vvv_engine::VfsError> {
+        if let Some(action) = self.action(FaultOperation::Walk, root) {
+            return Err(action.error(root));
+        }
         self.base.walk(root)
     }
 }

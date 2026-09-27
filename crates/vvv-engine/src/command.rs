@@ -4,9 +4,6 @@
 //! and for a mutation bind the answer to a plan. Nothing about a command
 //! lives on the engine.
 
-use std::sync::MutexGuard;
-
-use crate::graph::Graph;
 use crate::{Engine, EngineError, Workspace};
 
 /// One request and its answer. Implemented by the protocol's intents and
@@ -19,18 +16,15 @@ pub trait Command {
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError>;
 }
 
-/// What a command runs against: the graph, brought up to date, and the
-/// workspace it was built from.
+/// Temporary adapter context. Capabilities acquire the graph only when needed.
 pub struct Context<'a> {
-    pub(crate) graph: MutexGuard<'a, Graph>,
     pub(crate) workspace: &'a Workspace,
     pub(crate) engine: &'a Engine,
 }
 
 impl<'a> Context<'a> {
-    pub(crate) fn new(engine: &'a Engine, graph: MutexGuard<'a, Graph>) -> Self {
+    pub(crate) fn new(engine: &'a Engine) -> Self {
         Self {
-            graph,
             workspace: engine.workspace(),
             engine,
         }

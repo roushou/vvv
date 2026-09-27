@@ -146,7 +146,8 @@ impl Command for MoveSymbolIntent {
     type Output = Planned<MoveSymbol>;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.plan_in(&mut cx.graph, cx.workspace)
+        let mut graph = cx.engine.graph()?;
+        self.plan_in(&mut graph, cx.workspace)
     }
 }
 
