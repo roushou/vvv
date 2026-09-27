@@ -5,7 +5,7 @@
 
 use std::sync::Arc;
 
-use vvv_core::{Address, ImportRef, Name, PathHead, Span, Symbol};
+use vvv_core::{Address, ImportRef, PathHead, Span, Symbol};
 
 use super::{Candidate, Graph, Namespace};
 use crate::{EngineError, Reach};
@@ -49,6 +49,26 @@ impl Edge {
             _ => None,
         }
     }
+
+    /// Continue a named path from the imported binding that supplies its head.
+    /// The immediate binding's span links to its own resolution, retaining the
+    /// provenance of every hop rather than flattening an alias into a raw path.
+    fn through_binding(&self, edges: &[Edge]) -> Option<Resolution> {
+        let path = &self.import.path;
+        if path.head != PathHead::Named {
+            return None;
+        }
+        let head = path.first()?;
+        let binding = edges.iter().find(|edge| {
+            edge.import.declares && edge.import.binding() == Some(head) && edge.address().is_some()
+        })?;
+        Some(Resolution::Bound {
+            address: binding
+                .address()?
+                .extend(path.segments[1..].iter().cloned()),
+            binding: binding.import.span,
+        })
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -81,7 +101,7 @@ impl Fragment {
                     .collect()
             })
             .unwrap_or_default();
-        let mut edges: Vec<Edge> = facts
+        let edges: Vec<Edge> = facts
             .imports
             .iter()
             .map(|import| Edge {
@@ -89,40 +109,37 @@ impl Fragment {
                 import: import.clone(),
             })
             .collect();
-        // A path whose head is a name another import binds continues that
-        // import: `SymbolKind::*` after `use vvv_core::SymbolKind`.
-        let bound: Vec<(Name, Address, Span)> = edges
-            .iter()
-            .filter(|e| e.import.declares)
-            .filter_map(|e| {
-                Some((
-                    e.import.binding()?.clone(),
-                    e.address()?.clone(),
-                    e.import.span,
-                ))
-            })
-            .collect();
-        for edge in edges.iter_mut().filter(|e| e.address().is_none()) {
-            let path = &edge.import.path;
-            if path.head != PathHead::Named {
-                continue;
-            }
-            let Some((_, base, binding)) = path
-                .first()
-                .and_then(|head| bound.iter().find(|(name, _, _)| name == head))
-            else {
-                continue;
-            };
-            edge.resolution = Some(Resolution::Bound {
-                address: base.extend(path.segments[1..].iter().cloned()),
-                binding: *binding,
-            });
-        }
-        Ok(Self {
+        let mut fragment = Self {
             module,
             declarations,
             edges,
-        })
+        };
+        fragment.propagate_bindings();
+        Ok(fragment)
+    }
+
+    /// Newly placed imports can supply other bindings, irrespective of source
+    /// order. Only unresolved edges change; a cycle without a placed seed makes
+    /// no progress and stays unresolved.
+    fn propagate_bindings(&mut self) {
+        loop {
+            let resolved: Vec<_> = self
+                .edges
+                .iter()
+                .enumerate()
+                .filter(|(_, edge)| edge.address().is_none())
+                .filter_map(|(index, edge)| {
+                    edge.through_binding(&self.edges)
+                        .map(|resolution| (index, resolution))
+                })
+                .collect();
+            if resolved.is_empty() {
+                break;
+            }
+            for (index, resolution) in resolved {
+                self.edges[index].resolution = Some(resolution);
+            }
+        }
     }
 
     /// The declared imports: statements, not paths in expressions.
@@ -198,7 +215,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "known bug: Fragment stops before newly resolved aliases can supply other bindings"]
     fn fragment_propagates_alias_chains_with_binding_provenance() {
         let source = "use a.p as root\nuse root::child as parent\nuse parent::nested as leaf\nparent::Foo leaf::Child";
         let engine = Engine::new(
@@ -245,5 +261,57 @@ mod tests {
             assert_eq!(edge.address(), Some(&address), "{path}");
             assert_eq!(edge.binding(), Some(binding.import.span), "{path}");
         }
+    }
+
+    #[test]
+    fn fragment_binding_resolution_is_independent_of_import_order() {
+        let source = "use leaf::Inner as tip\nuse parent::nested as leaf\nuse root::child as parent\nuse a.p as root\ntip::Item";
+        let engine = Engine::new(
+            Workspace::new(
+                "/ws",
+                Arc::new(MemoryVfs::new().with_file("/ws/consumer.p", source)),
+            ),
+            Languages::new()
+                .with(Fake::default().with_unresolved_heads(&["root", "parent", "leaf", "tip"])),
+        );
+        let fragment = engine
+            .run(FragmentQuery {
+                path: "consumer.p".into(),
+            })
+            .unwrap();
+        assert_eq!(
+            fragment.edges.last().unwrap().address(),
+            Some(&Address::new(
+                "ws",
+                ["a.p", "child", "nested", "Inner", "Item"]
+            ))
+        );
+        assert!(fragment.edges.iter().all(|edge| edge.address().is_some()));
+        for index in 0..3 {
+            assert_eq!(
+                fragment.edges[index].binding(),
+                Some(fragment.edges[index + 1].import.span)
+            );
+        }
+    }
+
+    #[test]
+    fn unseeded_alias_cycles_remain_unresolved() {
+        let engine = Engine::new(
+            Workspace::new(
+                "/ws",
+                Arc::new(MemoryVfs::new().with_file(
+                    "/ws/consumer.p",
+                    "use left::a as right\nuse right::b as left\nleft::Item",
+                )),
+            ),
+            Languages::new().with(Fake::default().with_unresolved_heads(&["left", "right"])),
+        );
+        let fragment = engine
+            .run(FragmentQuery {
+                path: "consumer.p".into(),
+            })
+            .unwrap();
+        assert!(fragment.edges.iter().all(|edge| edge.address().is_none()));
     }
 }

@@ -400,6 +400,9 @@ enough for functions, structs, enums, traits, type aliases, constants and module
 isn't enough for methods and fields, which you reach through a type: their occurrences
 are all `? ∅ by name`, and `--select` is how you narrow them down.
 
+Same-file imported aliases are followed through chains, irrespective of import
+order. Dependencies and explanations use the same resolved paths as references.
+
 A known Rust limitation is a private module alias imported from another file.
 If a parent has `use crate::a as parent`, a child that writes
 `use super::parent as local` is not followed through to `crate::a`. Dependencies

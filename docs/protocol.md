@@ -192,7 +192,9 @@ empty. Pass `language` to ask one language only.
 
 ## `vvv outline`, `references`, `where`, `deps`, `explain`
 
-Read-only answers built from the same declarations and imports a rename uses. Each is
+Read-only answers built from the same declarations and imports a rename uses. Same-file
+imported alias chains resolve to the same addresses in dependencies, explanations
+and references. Each is
 a plain structure of the shared types; `Symbol` fields are flattened into an outline
 item.
 

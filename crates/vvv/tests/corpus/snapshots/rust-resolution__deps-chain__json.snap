@@ -65,7 +65,15 @@ exit 0
         "start": {
           "line": 2,
           "column": 4
-        }
+        },
+        "address": {
+          "package": "resolution_probe",
+          "path": [
+            "a",
+            "child"
+          ]
+        },
+        "file": "src/a/child.rs"
       }
     ],
     "importers": []

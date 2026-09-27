@@ -989,7 +989,6 @@ fn explain_selects_exact_entries_in_nested_groups() {
 
 #[cfg(feature = "rust")]
 #[test]
-#[ignore = "known bug: Fragment under-resolves alias chains that references already follows"]
 fn same_file_alias_chains_agree_across_references_deps_and_explain() {
     use vvv_engine::{Address, Confidence, DepsQuery, Position, ReferencesQuery};
 

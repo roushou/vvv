@@ -134,6 +134,29 @@ exit 0
         "reason": "imported"
       },
       {
+        "id": "21ffb05e42c5",
+        "path": "src/chained.rs",
+        "language": "rust",
+        "span": {
+          "start": 133,
+          "end": 138
+        },
+        "start": {
+          "line": 5,
+          "column": 26
+        },
+        "end": {
+          "line": 5,
+          "column": 31
+        },
+        "kind": "type_identifier",
+        "text": "Child",
+        "line": "pub fn via_child(_: leaf::Child) {}",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "path"
+      },
+      {
         "id": "ba39459205c7",
         "path": "src/consumer.rs",
         "language": "rust",
@@ -201,29 +224,6 @@ exit 0
         "role": "use",
         "confidence": "resolved",
         "reason": "path"
-      },
-      {
-        "id": "21ffb05e42c5",
-        "path": "src/chained.rs",
-        "language": "rust",
-        "span": {
-          "start": 133,
-          "end": 138
-        },
-        "start": {
-          "line": 5,
-          "column": 26
-        },
-        "end": {
-          "line": 5,
-          "column": 31
-        },
-        "kind": "type_identifier",
-        "text": "Child",
-        "line": "pub fn via_child(_: leaf::Child) {}",
-        "role": "use",
-        "confidence": "unresolved",
-        "reason": "unresolved"
       }
     ]
   }

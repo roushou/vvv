@@ -157,7 +157,10 @@ reach) and every import statement and qualified path resolved (`Edge`: the `Impo
 and the address the layout gave it, or the address another import's binding leads to
 when the path's head is a name the file imports). An edge retains whether that
 address came directly from the layout or through a particular imported binding;
-this does not change resolution decisions. Move planners consume these edges,
+the immediate binding links back to its edge, retaining provenance across an alias
+chain. Same-file bindings propagate to a fixed point, independent of import order;
+unseeded cycles stay unresolved. Scope consumes those completed resolutions rather
+than following an additional alias hop. Move planners consume these edges,
 including for import provisioning and destination cleanup. `Rebase` transforms
 resolved addresses and preserves an alias spelling when rebasing its binding
 already supplies the required target; it does not resolve raw source paths again. A candidate builds it once per

@@ -10,8 +10,7 @@ src/chained.rs
   resolution_probe
      1  crate           → src/lib.rs
      2  root::a         → src/a.rs
-  ?
-     3  parent::child
+     3  parent::child   → src/a/child.rs
 
 ← 0   0 files
   ∅
