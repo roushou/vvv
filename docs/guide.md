@@ -272,8 +272,8 @@ flag to go on with (`± 2   2 files` / `hint: --apply to write`). When you add
 `--apply`, the plan is checked and written — and if any of the files changed between
 the preview and the apply, vvv stops and tells you instead of writing over the changes.
 The same check rejects a plan whose edited or moved source changed after the engine
-read it, including a cached source in a session. Files consulted only to resolve
-references are outside this check.
+read it, including a cached source in a session. Plans witness the files they edit
+or move; files consulted only during resolution are not re-checked at apply.
 What you get back is a receipt naming the history entry: `✓ #3   ± 2   2 files`.
 
 Apply and batch keep their recovery state until the history save succeeds. A file
@@ -310,8 +310,9 @@ restoration, directory cleanup, or that history save returns an error, undo rest
 the pre-undo file and ledger state, including directories it removed, or returns
 `recovery_failed` naming confirmed remaining effects and unverified paths.
 Apply, batch, and undo are failure-correct for returned I/O errors; they are not
-crash-consistent and do not isolate concurrent writers. They do not restore inode
-identity, timestamps, or complete filesystem metadata.
+crash-consistent and do not isolate concurrent writers. The recovery guarantee covers
+returned errors, not panics. They do not restore inode identity, timestamps, or
+complete filesystem metadata.
 
 Errors start with `✗` and are followed by `hint:` lines when there is an obvious next
 thing to try; an empty answer is `∅`.
