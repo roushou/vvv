@@ -104,6 +104,14 @@ impl Engine {
         &self.languages
     }
 
+    /// A fresh staging session for batch composition.
+    pub(crate) fn staged(&self) -> (Engine, Workspace) {
+        let staging = self.workspace.staged();
+        let engine =
+            Engine::new(staging.clone(), self.languages.clone()).with_retention(Retention::PerCall);
+        (engine, staging)
+    }
+
     /// The graph, brought up to date with the tree. Held for the command;
     /// per-file work happens on the candidates it hands out.
     fn graph(&self) -> Result<MutexGuard<'_, Graph>, EngineError> {

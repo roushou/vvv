@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::command::{Command, Context};
 use crate::{
     EngineError, History as HistoryResult, HistoryEntry, HistoryQuery, Intent, Mutation, Planned,
-    Receipt, Undo, UndoLast, VfsError, Workspace,
+    Receipt, Undo, UndoLast, VfsError,
 };
 
 const FILE: &str = ".vvv/history.json";
@@ -59,13 +59,13 @@ impl Record {
     }
 }
 
-pub(crate) struct History<'a> {
-    workspace: &'a Workspace,
+pub struct Ledger<'a> {
+    engine: &'a crate::Engine,
 }
 
-impl<'a> History<'a> {
-    pub fn new(workspace: &'a Workspace) -> Self {
-        Self { workspace }
+impl<'a> Ledger<'a> {
+    pub fn new(engine: &'a crate::Engine) -> Self {
+        Self { engine }
     }
 
     pub fn path() -> &'static Path {
@@ -73,11 +73,11 @@ impl<'a> History<'a> {
     }
 
     fn file(&self) -> PathBuf {
-        self.workspace.absolute(Self::path())
+        self.engine.workspace().absolute(Self::path())
     }
 
     fn snapshot(&self) -> Result<HistorySnapshot, HistoryError> {
-        let original = match self.workspace.vfs().read(&self.file()) {
+        let original = match self.engine.workspace().vfs().read(&self.file()) {
             Ok(text) => Some(text),
             Err(VfsError::NotFound(_)) => None,
             Err(error) => return Err(error.into()),
@@ -91,7 +91,7 @@ impl<'a> History<'a> {
         Ok(HistorySnapshot { original, entries })
     }
 
-    pub fn entries(&self) -> Result<Vec<Record>, HistoryError> {
+    fn entries(&self) -> Result<Vec<Record>, HistoryError> {
         Ok(self.snapshot()?.entries)
     }
 }
@@ -106,7 +106,7 @@ impl HistorySnapshot {
     fn save(&self, transaction: &mut crate::plan::Transaction<'_>) -> Result<(), HistoryError> {
         let text = serde_json::to_string(&self.entries)
             .map_err(|error| HistoryError::Corrupt(error.to_string()))?;
-        Ok(transaction.save_file(&History::path().into(), self.original.as_deref(), &text)?)
+        Ok(transaction.save_file(&Ledger::path().into(), self.original.as_deref(), &text)?)
     }
 
     fn push(
@@ -163,16 +163,23 @@ impl HistorySnapshot {
 /// ```
 pub struct Apply<T: Mutation>(pub Planned<T>);
 
-impl<T: Mutation> Command for Apply<T> {
-    type Output = Applied<T>;
+impl<T: Mutation> Apply<T> {
+    /// Apply a retained typed plan and commit its history entry.
+    pub fn apply(self, engine: &crate::Engine) -> Result<Applied<T>, EngineError> {
+        engine.run(self)
+    }
 
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let workspace = cx.workspace;
-        let history = History::new(workspace);
+    pub(crate) fn apply_in(
+        self,
+        engine: &crate::Engine,
+        graph: &mut crate::graph::Graph,
+    ) -> Result<Applied<T>, EngineError> {
+        let workspace = engine.workspace();
+        let history = Ledger::new(engine);
         let mut snapshot = history.snapshot()?;
         let id = snapshot.next_id()?;
         // Whatever happens below, the tree is no longer what the graph saw.
-        cx.graph.touched();
+        graph.touched();
         let (intent, result, plans) = self.0.into_parts();
         let mut transaction = crate::plan::Transaction::new(workspace);
         for plan in plans {
@@ -186,6 +193,14 @@ impl<T: Mutation> Command for Apply<T> {
             Err(error) => return Err(transaction.recover(error.into())),
         };
         Ok(Applied::new(result, record.id))
+    }
+}
+
+impl<T: Mutation> Command for Apply<T> {
+    type Output = Applied<T>;
+
+    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+        self.apply_in(cx.engine, &mut cx.graph)
     }
 }
 
@@ -240,11 +255,31 @@ impl Command for UndoLast {
     type Output = Undo;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let history = History::new(cx.workspace);
+        Ledger::new(cx.engine).undo_in(&mut cx.graph)
+    }
+}
+
+/// Applies that can still be undone, oldest first.
+impl Command for HistoryQuery {
+    type Output = HistoryResult;
+
+    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+        Ledger::new(cx.engine).history_in()
+    }
+}
+
+impl Ledger<'_> {
+    /// Undo the latest committed entry.
+    pub fn undo(&self) -> Result<Undo, EngineError> {
+        self.engine.run(UndoLast)
+    }
+
+    pub(crate) fn undo_in(&self, graph: &mut crate::graph::Graph) -> Result<Undo, EngineError> {
+        let history = self;
         let mut snapshot = history.snapshot()?;
         let record = snapshot.last()?.clone();
-        cx.graph.touched();
-        let mut transaction = crate::plan::Transaction::new(cx.workspace);
+        graph.touched();
+        let mut transaction = crate::plan::Transaction::new(self.engine.workspace());
         if let Err(error) = record.receipt.undo_in(&mut transaction) {
             return Err(transaction.recover(error.into()));
         }
@@ -262,14 +297,13 @@ impl Command for UndoLast {
                 .collect(),
         })
     }
-}
+    /// Read the committed history entries.
+    pub fn history(&self) -> Result<HistoryResult, EngineError> {
+        self.engine.run(HistoryQuery)
+    }
 
-/// Applies that can still be undone, oldest first.
-impl Command for HistoryQuery {
-    type Output = HistoryResult;
-
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let records = History::new(cx.workspace).entries()?;
+    pub(crate) fn history_in(&self) -> Result<HistoryResult, EngineError> {
+        let records = self.entries()?;
         Ok(HistoryResult {
             entries: records.iter().map(Record::entry).collect(),
         })

@@ -10,27 +10,59 @@ use crate::graph::Graph;
 use crate::{Candidate, EngineError, Match, Planned, Rewrite, RewriteIntent, RewriteOf, Workspace};
 
 /// Plan a rewrite. Nothing is written; see [`Apply`](crate::Apply).
+impl RewriteIntent {
+    /// Plan without writing files.
+    pub fn plan(self, engine: &crate::Engine) -> Result<Planned<Rewrite>, EngineError> {
+        engine.run(self)
+    }
+
+    pub(crate) fn plan_in(
+        self,
+        graph: &mut crate::graph::Graph,
+        workspace: &crate::Workspace,
+    ) -> Result<Planned<Rewrite>, EngineError> {
+        let matches = graph.search(&self.query)?.matches;
+        RewriteMatches::new(self, matches, graph)?.plan(workspace)
+    }
+}
+
+// Temporary adapter while callers migrate to typed capability methods.
 impl Command for RewriteIntent {
     type Output = Planned<Rewrite>;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let matches = cx.graph.search(&self.query)?.matches;
-        RewriteMatches::new(self, matches, &cx.graph)?.plan(cx.workspace)
+        self.plan_in(&mut cx.graph, cx.workspace)
     }
 }
 
 /// Retained matches are revalidated against their candidate snapshots before
 /// expansion. The intent's selection still narrows them.
-impl Command for RewriteOf {
-    type Output = Planned<Rewrite>;
+impl RewriteOf {
+    /// Plan without writing files.
+    pub fn plan(self, engine: &crate::Engine) -> Result<Planned<Rewrite>, EngineError> {
+        engine.run(self)
+    }
 
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let matched = RewriteMatches::new(self.intent, self.matches, &cx.graph)?;
+    pub(crate) fn plan_in(
+        self,
+        graph: &mut crate::graph::Graph,
+        workspace: &crate::Workspace,
+    ) -> Result<Planned<Rewrite>, EngineError> {
+        let matched = RewriteMatches::new(self.intent, self.matches, graph)?;
         for file in matched.files.values() {
             file.candidate
                 .validate_matches(&matched.intent.query, &file.matches)?;
         }
-        matched.plan(cx.workspace)
+        matched.plan(workspace)
+    }
+}
+
+// Temporary adapter while callers migrate to typed capability methods.
+impl Command for RewriteOf {
+    type Output = Planned<Rewrite>;
+
+    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+        self.plan_in(&mut cx.graph, cx.workspace)
     }
 }
 

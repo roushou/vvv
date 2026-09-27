@@ -80,13 +80,19 @@ impl Mutation for MoveSymbol {
 
 /// Plan moving one declaration to another file of its language. Nothing is
 /// written; see [`Apply`](crate::Apply).
-impl Command for MoveSymbolIntent {
-    type Output = Planned<MoveSymbol>;
+impl MoveSymbolIntent {
+    /// Plan without writing files.
+    pub fn plan(self, engine: &crate::Engine) -> Result<Planned<MoveSymbol>, EngineError> {
+        engine.run(self)
+    }
 
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let from_path = cx.workspace.normalize(&self.from);
-        let to_path = cx.workspace.normalize(&self.to);
-        let graph = &mut *cx.graph;
+    pub(crate) fn plan_in(
+        self,
+        graph: &mut crate::graph::Graph,
+        workspace: &crate::Workspace,
+    ) -> Result<Planned<MoveSymbol>, EngineError> {
+        let from_path = workspace.normalize(&self.from);
+        let to_path = workspace.normalize(&self.to);
         let source = graph.file(&from_path)?;
         let dest = graph
             .candidate(&to_path)
@@ -119,7 +125,7 @@ impl Command for MoveSymbolIntent {
         mv.cut_and_paste()?;
         let (change, from, to) = mv.finish();
         Planned::of(
-            cx.workspace,
+            workspace,
             change,
             Intent::MoveSymbol(self.clone()),
             |bound, files| MoveSymbol {
@@ -132,6 +138,15 @@ impl Command for MoveSymbolIntent {
                 files,
             },
         )
+    }
+}
+
+// Temporary adapter while callers migrate to typed capability methods.
+impl Command for MoveSymbolIntent {
+    type Output = Planned<MoveSymbol>;
+
+    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+        self.plan_in(&mut cx.graph, cx.workspace)
     }
 }
 

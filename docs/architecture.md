@@ -99,6 +99,14 @@ history id and the result marked applied — it needs the
 wrap their payload with `into_mutation`; there is no arbitrary result mapping or
 mutable result access. `Planned` captures its history `Intent` when constructed,
 independently of its presentation data, and `Apply` records that captured intent.
+Capabilities also expose typed methods: mutation intents and `RewriteOf` have
+`plan(&Engine)`, queries have `execute(&Engine)`, and `Apply<T>` has
+`apply(&Engine)`. `SearchQuery` wraps the plugin's `Query` without changing its
+serialization. `Ledger::new(&Engine)` owns access to history and undo. These
+entry points keep concrete outputs (`Planned<Rename>`, `Search`, `Applied<T>`)
+without passing through `Answer`; temporary `Command` adapters retain the current
+runner lifecycle while clients migrate.
+
 Mutation payloads own a `MutationState`: `Preview` or `Applied { history_id }`,
 serialized as the existing `applied` and `history_id` fields. Contradictory states
 are rejected during deserialization.

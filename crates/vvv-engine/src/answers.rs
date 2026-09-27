@@ -12,12 +12,18 @@ use crate::{
 
 /// What a file declares, in order, with where a path reaches each item and
 /// who may name it.
-impl Command for OutlineQuery {
-    type Output = Outline;
+impl OutlineQuery {
+    /// Answer with the concrete result of this query.
+    pub fn execute(self, engine: &crate::Engine) -> Result<Outline, EngineError> {
+        engine.run(self)
+    }
 
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let path = cx.workspace.normalize(&self.path);
-        let graph = &mut *cx.graph;
+    pub(crate) fn execute_in(
+        self,
+        graph: &mut crate::graph::Graph,
+        workspace: &crate::Workspace,
+    ) -> Result<Outline, EngineError> {
+        let path = workspace.normalize(&self.path);
         let candidate = graph.file(&path)?;
         let ns = graph.namespace(&candidate.language());
         let module = ns.as_ref().and_then(|ns| ns.address(&path).ok());
@@ -43,16 +49,31 @@ impl Command for OutlineQuery {
     }
 }
 
-/// Where `name` is declared, and the import that reaches each site from
-/// `from`, spelled as that language writes it.
-impl Command for WhereQuery {
-    type Output = Locations;
+// Temporary adapter while callers migrate to typed capability methods.
+impl Command for OutlineQuery {
+    type Output = Outline;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+        self.execute_in(&mut cx.graph, cx.workspace)
+    }
+}
+
+/// Where `name` is declared, and the import that reaches each site from
+/// `from`, spelled as that language writes it.
+impl WhereQuery {
+    /// Answer with the concrete result of this query.
+    pub fn execute(self, engine: &crate::Engine) -> Result<Locations, EngineError> {
+        engine.run(self)
+    }
+
+    pub(crate) fn execute_in(
+        self,
+        graph: &mut crate::graph::Graph,
+        workspace: &crate::Workspace,
+    ) -> Result<Locations, EngineError> {
         let name = self.name.as_str();
-        let graph = &mut *cx.graph;
         let declarations = graph.declarations(&ReferencesQuery::new(name))?;
-        let from = self.from.as_deref().map(|f| cx.workspace.normalize(f));
+        let from = self.from.as_deref().map(|f| workspace.normalize(f));
         let mut sites = Vec::new();
         for declaration in declarations {
             let placed = graph.namespace(&declaration.language).and_then(|ns| {
@@ -85,16 +106,31 @@ impl Command for WhereQuery {
     }
 }
 
+// Temporary adapter while callers migrate to typed capability methods.
+impl Command for WhereQuery {
+    type Output = Locations;
+
+    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+        self.execute_in(&mut cx.graph, cx.workspace)
+    }
+}
+
 /// What a file imports and, across its language, who imports it — through
 /// re-exports both ways: an import is followed to the declaration it
 /// reaches, and a file importing one of this file's declarations under an
 /// address a `pub use` offers it at is an importer.
-impl Command for DepsQuery {
-    type Output = Deps;
+impl DepsQuery {
+    /// Answer with the concrete result of this query.
+    pub fn execute(self, engine: &crate::Engine) -> Result<Deps, EngineError> {
+        engine.run(self)
+    }
 
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let path = cx.workspace.normalize(&self.path);
-        let graph = &mut *cx.graph;
+    pub(crate) fn execute_in(
+        self,
+        graph: &mut crate::graph::Graph,
+        workspace: &crate::Workspace,
+    ) -> Result<Deps, EngineError> {
+        let path = workspace.normalize(&self.path);
         let ns = graph.namespace_of(&path)?;
         let imports = graph.imports_of(&path)?;
         let own = ns.address(&path).ok();
@@ -122,15 +158,30 @@ impl Command for DepsQuery {
     }
 }
 
-/// What is at a position: the enclosing declaration, its address and reach,
-/// and the files whose imports lead to it.
-impl Command for ExplainQuery {
-    type Output = Explanation;
+// Temporary adapter while callers migrate to typed capability methods.
+impl Command for DepsQuery {
+    type Output = Deps;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+        self.execute_in(&mut cx.graph, cx.workspace)
+    }
+}
+
+/// What is at a position: the enclosing declaration, its address and reach,
+/// and the files whose imports lead to it.
+impl ExplainQuery {
+    /// Answer with the concrete result of this query.
+    pub fn execute(self, engine: &crate::Engine) -> Result<Explanation, EngineError> {
+        engine.run(self)
+    }
+
+    pub(crate) fn execute_in(
+        self,
+        graph: &mut crate::graph::Graph,
+        workspace: &crate::Workspace,
+    ) -> Result<Explanation, EngineError> {
         let position = self.position;
-        let path = cx.workspace.normalize(&self.path);
-        let graph = &mut *cx.graph;
+        let path = workspace.normalize(&self.path);
         let candidate = graph.file(&path)?;
         let source = candidate.file().source();
         let offset = source
@@ -196,14 +247,30 @@ impl Command for ExplainQuery {
     }
 }
 
-/// One file as it is now, coloured by its language when one claims it.
-impl Command for FileQuery {
-    type Output = File;
+// Temporary adapter while callers migrate to typed capability methods.
+impl Command for ExplainQuery {
+    type Output = Explanation;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+        self.execute_in(&mut cx.graph, cx.workspace)
+    }
+}
+
+/// One file as it is now, coloured by its language when one claims it.
+impl FileQuery {
+    /// Answer with the concrete result of this query.
+    pub fn execute(self, engine: &crate::Engine) -> Result<File, EngineError> {
+        engine.run(self)
+    }
+
+    pub(crate) fn execute_in(
+        self,
+        workspace: &crate::Workspace,
+        languages: &vvv_core::LanguageRegistry,
+    ) -> Result<File, EngineError> {
         let path = self.path.as_path();
-        let file = cx.workspace.load(path)?;
-        let highlights = match cx.graph.language_of(path) {
+        let file = workspace.load(path)?;
+        let highlights = match languages.for_path(path) {
             Some(language) => {
                 language
                     .highlights(file.text())
@@ -222,13 +289,42 @@ impl Command for FileQuery {
     }
 }
 
+// Temporary adapter while callers migrate to typed capability methods.
+impl Command for FileQuery {
+    type Output = File;
+
+    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+        self.execute_in(cx.workspace, cx.engine.languages())
+    }
+}
+
 /// Structural or symbolic search across the workspace: only files spelling
 /// the query's literal words are parsed.
+impl crate::SearchQuery {
+    /// Answer with the concrete result of this query.
+    pub fn execute(self, engine: &crate::Engine) -> Result<Search, EngineError> {
+        engine.run(self)
+    }
+
+    pub(crate) fn execute_in(self, graph: &mut crate::graph::Graph) -> Result<Search, EngineError> {
+        self.0.check()?;
+        graph.search(&self.0)
+    }
+}
+
+// Temporary adapter while callers migrate to typed capability methods.
+impl Command for crate::SearchQuery {
+    type Output = Search;
+
+    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+        self.execute_in(&mut cx.graph)
+    }
+}
+
 impl Command for Query {
     type Output = Search;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.check()?;
-        cx.graph.search(&self)
+        crate::SearchQuery::from(self).execute_in(&mut cx.graph)
     }
 }

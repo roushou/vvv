@@ -39,7 +39,7 @@ pub use intent::{BatchIntent, Intent, RewriteIntent, RewriteOf};
 pub use notice::{Notice, NoticeKind};
 pub use question::{
     DeadQuery, DepsQuery, ExplainQuery, FileQuery, HistoryQuery, ImpactQuery, ImportsQuery,
-    OutlineQuery, SurfaceQuery, UndoLast, WhereQuery,
+    OutlineQuery, SearchQuery, SurfaceQuery, UndoLast, WhereQuery,
 };
 pub use reach::Reach;
 pub use references::ReferencesQuery;

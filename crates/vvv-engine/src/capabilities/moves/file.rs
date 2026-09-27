@@ -75,13 +75,20 @@ impl Mutation for Move {
 /// Plan moving a file or a directory. Nothing is written; see
 /// [`Apply`](crate::Apply). A directory moves with everything under it; a
 /// Rust module moves with its `a.rs` + `a/` pair either way.
-impl Command for MoveIntent {
-    type Output = Planned<Move>;
+impl MoveIntent {
+    /// Plan without writing files.
+    pub fn plan(self, engine: &crate::Engine) -> Result<Planned<Move>, EngineError> {
+        engine.run(self)
+    }
 
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+    pub(crate) fn plan_in(
+        self,
+        graph: &mut crate::graph::Graph,
+        workspace: &crate::Workspace,
+    ) -> Result<Planned<Move>, EngineError> {
         let intent = &self;
-        let from = cx.workspace.normalize(&intent.from);
-        let to = cx.workspace.normalize(&intent.to);
+        let from = workspace.normalize(&intent.from);
+        let to = workspace.normalize(&intent.to);
         if to.starts_with(&from) {
             return Err(ResolveError::IntoItself {
                 from: from.into(),
@@ -89,7 +96,6 @@ impl Command for MoveIntent {
             }
             .into());
         }
-        let graph = &mut *cx.graph;
         let language = graph
             .language_of(&from)
             .or_else(|| graph.language_of_directory(&from))
@@ -100,7 +106,7 @@ impl Command for MoveIntent {
         let (layout, surgery) = (ns.layout(), ns.surgery()?);
         let project = ns.project().clone();
         let nodes = graph.fragments(&ns)?;
-        let moves = MoveSet::compute(cx.workspace, layout, &project, &from, &to)?;
+        let moves = MoveSet::compute(workspace, layout, &project, &from, &to)?;
         if moves.is_empty() {
             return Err(VfsError::NotFound(from).into());
         }
@@ -116,15 +122,13 @@ impl Command for MoveIntent {
             if !same_language(t) {
                 return Err(EngineError::NoLanguage(t.into()));
             }
-            if cx
-                .workspace
+            if workspace
                 .vfs()
-                .entry_kind(&cx.workspace.absolute(t))?
+                .entry_kind(&workspace.absolute(t))?
                 .is_some()
-                && !cx
-                    .workspace
+                && !workspace
                     .vfs()
-                    .same_entry(&cx.workspace.absolute(f), &cx.workspace.absolute(t))?
+                    .same_entry(&workspace.absolute(f), &workspace.absolute(t))?
             {
                 return Err(EngineError::Exists(t.into()));
             }
@@ -199,7 +203,7 @@ impl Command for MoveIntent {
             .map(|path| {
                 let file = match graph.candidate(&path) {
                     Some(candidate) => candidate.file().clone(),
-                    None => cx.workspace.load(&path)?,
+                    None => workspace.load(&path)?,
                 };
                 let facts = language
                     .facts(file.text())
@@ -229,7 +233,7 @@ impl Command for MoveIntent {
             change.move_file(graph.file(f)?.file().witness(), t)?;
         }
         Planned::of(
-            cx.workspace,
+            workspace,
             change,
             Intent::Move(intent.clone()),
             |bound, files| Move {
@@ -244,6 +248,15 @@ impl Command for MoveIntent {
                 files,
             },
         )
+    }
+}
+
+// Temporary adapter while callers migrate to typed capability methods.
+impl Command for MoveIntent {
+    type Output = Planned<Move>;
+
+    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+        self.plan_in(&mut cx.graph, cx.workspace)
     }
 }
 

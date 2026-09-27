@@ -36,13 +36,19 @@ impl Placed {
 /// What a package offers to everyone: its `pub` declarations — a re-export
 /// never widens what it re-exports — plus every address a re-export offers
 /// them at, with how many files take them.
-impl Command for SurfaceQuery {
-    type Output = Surface;
+impl SurfaceQuery {
+    /// Answer with the concrete result of this query.
+    pub fn execute(self, engine: &crate::Engine) -> Result<Surface, EngineError> {
+        engine.run(self)
+    }
 
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+    pub(crate) fn execute_in(
+        self,
+        graph: &mut crate::graph::Graph,
+    ) -> Result<Surface, EngineError> {
         let package = self.package.as_deref().map(PackageId::new);
         let mut items: Vec<Exposed> = Vec::new();
-        let structure = Structure::of(&mut cx.graph)?;
+        let structure = Structure::of(graph)?;
         for (ns, fragments) in structure.iter() {
             for Node {
                 candidate,
@@ -61,8 +67,7 @@ impl Command for SurfaceQuery {
                     }
                     // Every address a re-export chain offers it at, itself first.
                     let addresses =
-                        cx.graph
-                            .aliases_of(ns, &declared.address, &declared.symbol.name)?;
+                        graph.aliases_of(ns, &declared.address, &declared.symbol.name)?;
                     let importers = fragments
                         .iter()
                         .filter(|n| n.path() != candidate.path())
@@ -85,14 +90,25 @@ impl Command for SurfaceQuery {
     }
 }
 
+// Temporary adapter while callers migrate to typed capability methods.
+impl Command for SurfaceQuery {
+    type Output = Surface;
+
+    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+        self.execute_in(&mut cx.graph)
+    }
+}
+
 /// Who would feel a change to a declaration: the modules importing it (or
 /// an address that re-exports it), then the modules importing those,
 /// outward, each module once at the depth it is first reached.
-impl Command for ImpactQuery {
-    type Output = Impact;
+impl ImpactQuery {
+    /// Answer with the concrete result of this query.
+    pub fn execute(self, engine: &crate::Engine) -> Result<Impact, EngineError> {
+        engine.run(self)
+    }
 
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let graph = &mut *cx.graph;
+    pub(crate) fn execute_in(self, graph: &mut crate::graph::Graph) -> Result<Impact, EngineError> {
         let query = ReferencesQuery::new(self.name.as_str());
         let query = match &self.declared_in {
             Some(file) => query.declared_in(file),
@@ -169,14 +185,25 @@ impl Command for ImpactQuery {
     }
 }
 
+// Temporary adapter while callers migrate to typed capability methods.
+impl Command for ImpactQuery {
+    type Output = Impact;
+
+    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+        self.execute_in(&mut cx.graph)
+    }
+}
+
 /// Declarations nothing in the workspace refers to — no resolved token
 /// other than the declaration's own name — with how many tokens vvv could
 /// not judge and so might be a use after all.
-impl Command for DeadQuery {
-    type Output = Dead;
+impl DeadQuery {
+    /// Answer with the concrete result of this query.
+    pub fn execute(self, engine: &crate::Engine) -> Result<Dead, EngineError> {
+        engine.run(self)
+    }
 
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let graph = &mut *cx.graph;
+    pub(crate) fn execute_in(self, graph: &mut crate::graph::Graph) -> Result<Dead, EngineError> {
         let mut items = Vec::new();
         let languages: Vec<LanguageId> = graph
             .language_ids()
@@ -238,12 +265,28 @@ impl Command for DeadQuery {
     }
 }
 
-/// Import statements worth a look, per file or across the tree.
-impl Command for ImportsQuery {
-    type Output = ImportsReport;
+// Temporary adapter while callers migrate to typed capability methods.
+impl Command for DeadQuery {
+    type Output = Dead;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let path = self.path.as_deref().map(|p| cx.workspace.normalize(p));
+        self.execute_in(&mut cx.graph)
+    }
+}
+
+/// Import statements worth a look, per file or across the tree.
+impl ImportsQuery {
+    /// Answer with the concrete result of this query.
+    pub fn execute(self, engine: &crate::Engine) -> Result<ImportsReport, EngineError> {
+        engine.run(self)
+    }
+
+    pub(crate) fn execute_in(
+        self,
+        graph: &mut crate::graph::Graph,
+        workspace: &crate::Workspace,
+    ) -> Result<ImportsReport, EngineError> {
+        let path = self.path.as_deref().map(|p| workspace.normalize(p));
         let mut report = ImportsReport {
             path: path.clone().map(Into::into),
             unused: Vec::new(),
@@ -251,7 +294,7 @@ impl Command for ImportsQuery {
             redundant: Vec::new(),
             unplaced: Vec::new(),
         };
-        let structure = Structure::of(&mut cx.graph)?;
+        let structure = Structure::of(graph)?;
         for (ns, fragments) in structure.iter() {
             for Node {
                 candidate,
@@ -322,5 +365,14 @@ impl Command for ImportsQuery {
             }
         }
         Ok(report)
+    }
+}
+
+// Temporary adapter while callers migrate to typed capability methods.
+impl Command for ImportsQuery {
+    type Output = ImportsReport;
+
+    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+        self.execute_in(&mut cx.graph, cx.workspace)
     }
 }

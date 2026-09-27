@@ -88,12 +88,18 @@ impl Mutation for Rename {
 ///
 /// Occurrences are gathered only from the languages in which a matching
 /// declaration exists, so a Rust `foo` never touches a TypeScript `foo`.
-impl Command for RenameIntent {
-    type Output = Planned<Rename>;
+impl RenameIntent {
+    /// Plan without writing files.
+    pub fn plan(self, engine: &crate::Engine) -> Result<Planned<Rename>, EngineError> {
+        engine.run(self)
+    }
 
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+    pub(crate) fn plan_in(
+        self,
+        graph: &mut crate::graph::Graph,
+        workspace: &crate::Workspace,
+    ) -> Result<Planned<Rename>, EngineError> {
         let intent = &self;
-        let graph = &mut *cx.graph;
         let Evidence {
             declarations,
             occurrences,
@@ -124,7 +130,7 @@ impl Command for RenameIntent {
             )?;
         }
         Planned::of(
-            cx.workspace,
+            workspace,
             change,
             Intent::Rename(intent.clone()),
             |_, files| Rename {
@@ -138,20 +144,43 @@ impl Command for RenameIntent {
     }
 }
 
-/// The declarations called `name` and every token spelling it, judged:
-/// what `rename` acts on, answered without a plan.
-impl Command for ReferencesQuery {
-    type Output = References;
+// Temporary adapter while callers migrate to typed capability methods.
+impl Command for RenameIntent {
+    type Output = Planned<Rename>;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+        self.plan_in(&mut cx.graph, cx.workspace)
+    }
+}
+
+/// The declarations called `name` and every token spelling it, judged:
+/// what `rename` acts on, answered without a plan.
+impl ReferencesQuery {
+    /// Answer with the concrete result of this query.
+    pub fn execute(self, engine: &crate::Engine) -> Result<References, EngineError> {
+        engine.run(self)
+    }
+
+    pub(crate) fn execute_in(
+        self,
+        graph: &mut crate::graph::Graph,
+    ) -> Result<References, EngineError> {
         let query = &self;
-        let graph = &mut *cx.graph;
         let evidence = graph.references(query)?;
         Ok(References {
             name: query.name.clone(),
             declarations: evidence.declarations,
             occurrences: evidence.occurrences,
         })
+    }
+}
+
+// Temporary adapter while callers migrate to typed capability methods.
+impl Command for ReferencesQuery {
+    type Output = References;
+
+    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+        self.execute_in(&mut cx.graph)
     }
 }
 

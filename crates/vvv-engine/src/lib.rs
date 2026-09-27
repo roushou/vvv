@@ -36,7 +36,7 @@ pub use command::{Command, Context};
 pub use engine::Engine;
 pub use error::{EngineError, RecoveryError};
 pub use graph::Retention;
-pub use history::{Applied, Apply, HistoryError};
+pub use history::{Applied, Apply, HistoryError, Ledger};
 pub use plan::{ApplyError, FilePreview, Planned};
 pub use protocol::{
     Answer, Batch, BatchIntent, Call, Confidence, Consumer, Dead, DeadQuery, Dep, Deps, DepsQuery,
@@ -47,8 +47,8 @@ pub use protocol::{
     Outline, OutlineItem, OutlineQuery, Placed, Reach, Reason, Recovery, RecoveryEffect,
     RecoveryIssue, RecoveryOperation, RecoveryState, RecoveryUnverified, References,
     ReferencesQuery, Rename, RenameIntent, Reply, Request, Respelling, Rewrite, RewriteIntent,
-    RewriteOf, Search, Selection, SelectionError, Site, Skipped, Surface, SurfaceQuery, Template,
-    TemplateError, Undo, UndoLast, Unreferenced, WhereQuery,
+    RewriteOf, Search, SearchQuery, Selection, SelectionError, Site, Skipped, Surface,
+    SurfaceQuery, Template, TemplateError, Undo, UndoLast, Unreferenced, WhereQuery,
 };
 pub use vfs::{
     DiskVfs, EntryKind, MemoryVfs, MoveError, MoveState, ParentCreation, Stamp, Vfs, VfsError,

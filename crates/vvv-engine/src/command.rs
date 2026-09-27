@@ -7,7 +7,7 @@
 use std::sync::MutexGuard;
 
 use crate::graph::Graph;
-use crate::{Engine, EngineError, Retention, Workspace};
+use crate::{Engine, EngineError, Workspace};
 
 /// One request and its answer. Implemented by the protocol's intents and
 /// queries, each in the module that holds its components.
@@ -24,7 +24,7 @@ pub trait Command {
 pub struct Context<'a> {
     pub(crate) graph: MutexGuard<'a, Graph>,
     pub(crate) workspace: &'a Workspace,
-    engine: &'a Engine,
+    pub(crate) engine: &'a Engine,
 }
 
 impl<'a> Context<'a> {
@@ -34,15 +34,5 @@ impl<'a> Context<'a> {
             workspace: engine.workspace(),
             engine,
         }
-    }
-
-    /// An engine over a staging copy of the workspace — an overlay the real
-    /// files never see — reading it afresh: how a batch plans each step
-    /// against the state the previous one leaves.
-    pub(crate) fn staged(&self) -> (Engine, Workspace) {
-        let staging = self.workspace.staged();
-        let engine = Engine::new(staging.clone(), self.engine.languages().clone())
-            .with_retention(Retention::PerCall);
-        (engine, staging)
     }
 }

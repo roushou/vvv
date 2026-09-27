@@ -12,11 +12,15 @@ use crate::{
 /// the workspace onto which the previous steps have been applied, so a
 /// rename may follow a move of the file it touches. Nothing real is
 /// written; see [`Apply`](crate::Apply).
-impl Command for BatchIntent {
-    type Output = Planned<Batch>;
+impl BatchIntent {
+    /// Plan without writing files.
+    pub fn plan(self, engine: &crate::Engine) -> Result<Planned<Batch>, EngineError> {
+        engine.run(self)
+    }
 
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let (engine, staging) = cx.staged();
+    pub(crate) fn plan_in(self, engine: &crate::Engine) -> Result<Planned<Batch>, EngineError> {
+        let workspace = engine.workspace();
+        let (engine, staging) = engine.staged();
         let mut steps = Vec::new();
         let mut notices = Vec::new();
         let mut receipt: Option<Receipt> = None;
@@ -44,7 +48,7 @@ impl Command for BatchIntent {
                             final_path = to.clone();
                         }
                     }
-                    let before = cx.workspace.vfs().read(&cx.workspace.absolute(path))?;
+                    let before = workspace.vfs().read(&workspace.absolute(path))?;
                     let after = staging.vfs().read(&staging.absolute(&final_path))?;
                     Ok(FilePreview {
                         path: path.into(),
@@ -68,5 +72,14 @@ impl Command for BatchIntent {
             steps,
             preview,
         ))
+    }
+}
+
+// Temporary adapter while callers migrate to typed capability methods.
+impl Command for BatchIntent {
+    type Output = Planned<Batch>;
+
+    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
+        self.plan_in(cx.engine)
     }
 }

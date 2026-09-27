@@ -78,3 +78,15 @@ pub struct ImportsQuery {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub path: Option<RelPath>,
 }
+
+/// A structural or symbolic search with a typed engine answer.
+/// The wrapped query retains the existing wire shape.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct SearchQuery(pub vvv_core::Query);
+
+impl From<vvv_core::Query> for SearchQuery {
+    fn from(query: vvv_core::Query) -> Self {
+        Self(query)
+    }
+}
