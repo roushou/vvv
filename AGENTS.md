@@ -81,8 +81,9 @@ docs/          architecture, guide, protocol, report
   data in `protocol/`; put data specific to one capability beside its execution,
   with no tree access in the data or serialization code.
 - **The report is the result; the view is how it is shown.** `vvv-engine::report`
-  composes an `Answer` into a `Document` — the facts every interface can read, with
-  no layout — and a `View` lays it out as a `Presentation` of rows (`Detailed` is
+  owns shared `Document`/`Block`/row/view vocabulary and delegates `Answer`
+  composition to its capability owner (see the command ownership index). The
+  document holds the facts every interface can read, with no layout; a `View` lays it out as a `Presentation` of rows (`Detailed` is
   the terminal's; the picker holds `Compact`). `crates/vvv/src/output/render/` only
   styles what a view produced, so it names no command:
   `grep -rn "Answer\|Match\|Occurrence\|Search\|Rename\|Move"

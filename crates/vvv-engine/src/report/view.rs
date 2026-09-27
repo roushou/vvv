@@ -6,10 +6,19 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::path::Path;
 
 use super::lines;
-use super::{Block, Document, Note, Options, Row};
+use super::{Block, Document, Note, Row};
 use crate::protocol::display::{Line, Role};
 use crate::protocol::vocabulary::{Ago, Files, IntentLine, Mark, Plural};
 use crate::{Confidence, FileChange, ImportSite, Match, Notice, Occurrence, Reason, Respelling};
+
+/// The presentation choices a view needs beyond the answer.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Options {
+    /// Expand what is collapsed by default.
+    pub verbose: bool,
+    /// Show every file's full patch, not only structural edits.
+    pub diff: bool,
+}
 
 /// A report laid out for a screen: the result stream and the note stream.
 #[derive(Debug, Clone, Default)]

@@ -3,6 +3,9 @@
 //! all are applied in order as one transaction with one receipt — one
 //! preview, one apply, one undo.
 
+use crate::protocol::vocabulary::IntentLine;
+use crate::report::{Block, Document, MoveCounts};
+
 use crate::{
     Batch, BatchIntent, EngineError, FileChange, FilePreview, Intent, Planned, Receipt, VfsError,
 };
@@ -74,5 +77,28 @@ impl BatchIntent {
             steps,
             preview,
         ))
+    }
+}
+
+impl Document {
+    pub(crate) fn batch(result: &Batch) -> Self {
+        let mut report = Self::new();
+        report.title(IntentLine(&Intent::Batch(BatchIntent {
+            intents: result.intents.clone(),
+        })));
+        report.block_body(Block::Batch(result.intents.clone()));
+        report.block_body(Block::Blank);
+        // Steps compose, so no edit is one re-spelled path: every file is a hunk.
+        let structural = report.moved(result.state, &result.files, &[], &result.notices);
+        report.moved_summary(
+            result.state,
+            MoveCounts {
+                respellings: 0,
+                structural,
+                notices: result.notices.len(),
+                files: result.files.len(),
+            },
+        );
+        report
     }
 }

@@ -3,6 +3,11 @@
 //! of the most recent applies, newest last — [`Ledger::undo`] reverses the newest,
 //! [`Ledger::history`] lists them.
 
+use crate::History;
+use crate::protocol::display::{Line, Role};
+use crate::protocol::vocabulary::{IntentLine, Mark, Plural};
+use crate::report::{Block, Document};
+
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -287,6 +292,51 @@ impl Ledger<'_> {
         Ok(HistoryResult {
             entries: records.iter().map(Record::entry).collect(),
         })
+    }
+}
+
+impl Document {
+    pub(crate) fn undo(result: &Undo) -> Self {
+        let mut report = Self::new();
+        report.title(format!(
+            "{} #{}  {}",
+            Mark::Undo.glyph(),
+            result.undone.id,
+            IntentLine(&result.undone.intent)
+        ));
+        report.block_body(Block::Undo {
+            moves: result.moves_reverted.clone(),
+            restored: result.restored.clone(),
+        });
+        report.block_note(Block::Summary(
+            Line::mark(Mark::Undo)
+                .and(Role::Plain, " ")
+                .and(Role::Plain, format!("#{}   ", result.undone.id))
+                .and(Role::Dim, Plural(result.restored.len(), "file").to_string()),
+        ));
+        report
+    }
+
+    pub(crate) fn history(result: &History) -> Self {
+        let mut report = Self::new();
+        if result.entries.is_empty() {
+            report.block_note(Block::Summary(
+                Line::mark(Mark::Nothing).and(Role::Plain, " no history"),
+            ));
+            return report;
+        }
+        let last = result.entries.len() - 1;
+        report.block_body(Block::History(result.entries.clone()));
+        report.block_note(Block::Summary(
+            Line::of(
+                Role::Plain,
+                Plural(result.entries.len(), "entry").to_string(),
+            )
+            .and(Role::Plain, "   ")
+            .and_line(Line::mark(Mark::Undo))
+            .and(Role::Plain, format!(" #{}", result.entries[last].id)),
+        ));
+        report
     }
 }
 

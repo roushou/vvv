@@ -342,9 +342,17 @@ alone.
 needed by every view, without presentation options. Source-bearing blocks retain
 matches or sites; outline and dependency blocks also retain their owning file
 path. Reference verdicts retain a `ReferencePlan` with files and mutation state,
-even when a view hides its patch. Per-capability constructors live on `Document`;
-query composition and rename's constructor are implemented beside their requests,
-answers, and execution. File preview still has no rendered document.
+even when a view hides its patch. Per-answer constructors live on `Document`,
+implemented beside execution in the capability's owner (see the command ownership
+index). References shares rename's module; rewrite, batch, history, and undo
+composition live in their existing execution modules. File preview still has no
+rendered document.
+
+The shared report modules are `document.rs` (construction, shared helpers, and
+`of`/`error` delegation), `block.rs` (structured blocks, notes, and reference plan
+data), `row.rs` (rows and source sites), `view.rs` (View, Options, Presentation, and
+Detailed), and `lines.rs` (shared line builders). `report/mod.rs` re-exports the
+same public vocabulary; capability-specific summaries stay with composition.
 
 `View::present` turns those blocks into a `Presentation` of rows. `Options` belongs
 to this boundary: the view chooses collapsed or expanded verdicts, reach details,

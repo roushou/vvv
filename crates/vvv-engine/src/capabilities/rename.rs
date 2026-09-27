@@ -200,3 +200,16 @@ impl Document {
         report
     }
 }
+
+impl Document {
+    pub(crate) fn references(result: &References) -> Self {
+        let mut report = Self::new();
+        report.declarations(&result.declarations);
+        report.block_body(Block::Verdicts {
+            occurrences: result.occurrences.clone(),
+            plan: None,
+        });
+        report.block_note(Block::Summary(Self::verdict_counts(&result.occurrences)));
+        report
+    }
+}

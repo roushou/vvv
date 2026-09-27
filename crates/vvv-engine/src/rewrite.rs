@@ -1,6 +1,11 @@
 //! `rewrite`: one edit per selected match, the template expanded with the
 //! match's captures from the same immutable source snapshot.
 
+use crate::Intent;
+use crate::protocol::display::{Line, Role};
+use crate::protocol::vocabulary::{IntentLine, Mark, Plural};
+use crate::report::{Block, Document};
+
 use std::collections::{BTreeMap, btree_map::Entry};
 use vvv_core::{Edit, RelPath};
 
@@ -111,5 +116,30 @@ impl FileMatches {
             change.edit(file.witness(), Edit::replace(m.span, replacement))?;
         }
         Ok(())
+    }
+}
+
+impl Document {
+    pub(crate) fn rewrite(result: &Rewrite) -> Self {
+        let mut report = Self::new();
+        report.title(IntentLine(&Intent::Rewrite(result.intent.clone())));
+        report.block_body(Block::Changes {
+            state: result.state,
+            files: result.files.clone(),
+        });
+        let edits = Self::edits_in(&result.files);
+        if edits == 0 {
+            report.block_note(Block::Summary(
+                Line::mark(Mark::Nothing).and(Role::Plain, " no matches"),
+            ));
+            return report;
+        }
+        report.receipt(
+            result.state,
+            Line::mark(Mark::Rewrite)
+                .and(Role::Plain, format!(" {edits}   "))
+                .and(Role::Dim, Plural(result.files.len(), "file").to_string()),
+        );
+        report
     }
 }
