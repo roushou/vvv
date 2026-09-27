@@ -2,3 +2,4 @@
 pub(crate) mod context;
 pub(crate) mod moves;
 pub(crate) mod rename;
+pub(crate) mod rewrite;

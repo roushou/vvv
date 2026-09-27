@@ -4,15 +4,13 @@
 //! testable with plain assertions.
 
 use ratatui::crossterm::event::KeyEvent;
-use vvv_engine::{
-    Answer, DepsQuery, ExplainQuery, ImpactQuery, Intent, Request, Selection, SymbolKind,
-};
+use vvv_engine::{Answer, DepsQuery, ExplainQuery, ImpactQuery, Intent, Request, SymbolKind};
 
 use super::action::{Action, Effect, Event, Planned};
 use super::keymap::{Dispatch, Key};
 use super::model::{
     Confirm, Confirmed, FilePreview, HistoryMode, HistoryPanel, Menu, MenuTarget, Mode, Model,
-    MoveMode, Overlay, Panels, Relation, RenameMode, RewriteMode, RewritePanel, SearchPanel,
+    MoveMode, Overlay, Panels, Relation, RenameMode, RewriteMode, SearchPanel,
 };
 use super::query::Filter;
 use crate::modes::context::ModeContext;
@@ -190,11 +188,7 @@ impl Model {
                 match &mut self.mode {
                     Mode::Rename(r) => r.plan_failed(message),
                     Mode::Move(mv) => mv.plan_failed(message),
-                    Mode::Rewrite(rw) => {
-                        rw.busy = false;
-                        rw.changes.clear();
-                        rw.error = Some(message);
-                    }
+                    Mode::Rewrite(rw) => rw.plan_failed(message),
                     Mode::Search | Mode::History(_) => self.status.error(message),
                 }
                 Vec::new()
@@ -236,7 +230,7 @@ impl Model {
                 match &mut self.mode {
                     Mode::Rename(r) => r.failed(),
                     Mode::Move(mv) => mv.failed(),
-                    Mode::Rewrite(rw) => rw.busy = false,
+                    Mode::Rewrite(rw) => rw.failed(),
                     Mode::Search | Mode::History(_) => {}
                 }
                 self.status.error(message);
@@ -266,12 +260,7 @@ impl Model {
                     files,
                 },
             ) => mv.planned(intent, respellings, notices, files),
-            (Mode::Rewrite(rw), Planned::Rewrite { files }) => {
-                rw.changes = files;
-                rw.error = None;
-                rw.busy = false;
-                Vec::new()
-            }
+            (Mode::Rewrite(rw), Planned::Rewrite { files }) => rw.planned(files),
             _ => Vec::new(),
         }
     }
@@ -283,7 +272,7 @@ impl Model {
             Mode::Search => self.search.focus = self.search.focus.step(by),
             Mode::Rename(r) => r.focus_by(by),
             Mode::Move(mv) => mv.focus_by(by),
-            Mode::Rewrite(rw) => rw.focus = rw.focus.step(by),
+            Mode::Rewrite(rw) => rw.focus_by(by),
             Mode::History(h) => h.focus = h.focus.step(by),
         }
         self.preview_effect()
@@ -298,11 +287,7 @@ impl Model {
             }
             Mode::Rename(r) => r.focus_nth(n),
             Mode::Move(mv) => mv.focus_nth(n),
-            Mode::Rewrite(rw) => {
-                if let Some(p) = RewritePanel::nth(n) {
-                    rw.focus = p;
-                }
-            }
+            Mode::Rewrite(rw) => rw.focus_nth(n),
             Mode::History(h) => {
                 if let Some(p) = HistoryPanel::nth(n) {
                     h.focus = p;
@@ -327,11 +312,7 @@ impl Model {
             }
             Mode::Rename(r) => r.moved(by),
             Mode::Move(mv) => mv.moved(by),
-            Mode::Rewrite(rw) => {
-                let len = rw.matches.len();
-                rw.cursor.move_by(by, len);
-                rw.detail_scroll = 0;
-            }
+            Mode::Rewrite(rw) => rw.moved(by),
             Mode::History(h) => {
                 let len = h.entries.len();
                 h.cursor.move_by(by, len);
@@ -363,7 +344,7 @@ impl Model {
             Mode::Search => self.search.focus == SearchPanel::Context,
             Mode::Rename(r) => r.scroll_focused(),
             Mode::Move(mv) => mv.scroll_focused(),
-            Mode::Rewrite(rw) => rw.focus == RewritePanel::Detail,
+            Mode::Rewrite(rw) => rw.scroll_focused(),
             Mode::History(h) => h.focus == HistoryPanel::Files,
         }
     }
@@ -393,7 +374,7 @@ impl Model {
             }
             Mode::Rename(r) => r.scrolled(by),
             Mode::Move(mv) => mv.scrolled(by),
-            Mode::Rewrite(rw) => bump(&mut rw.detail_scroll),
+            Mode::Rewrite(rw) => rw.scrolled(by),
             Mode::History(h) => bump(&mut h.files_scroll),
         }
         Vec::new()
@@ -432,14 +413,7 @@ impl Model {
     fn toggled(&mut self, all: bool) -> Vec<Effect> {
         match &mut self.mode {
             Mode::Rename(r) => return r.toggled(all),
-            Mode::Rewrite(rw) => {
-                if all {
-                    rw.toggle_all();
-                } else {
-                    rw.toggle();
-                    return self.moved(1);
-                }
-            }
+            Mode::Rewrite(rw) => return rw.toggled(all),
             Mode::Search | Mode::Move(_) | Mode::History(_) => {}
         }
         Vec::new()
@@ -466,7 +440,7 @@ impl Model {
                 self.plan_move(true)
             }
             Mode::Rewrite(rw) => {
-                crate::input::TextInput::new(&mut rw.template).edit(c);
+                rw.input(c);
                 self.plan_rewrite()
             }
             Mode::History(_) => Vec::new(),
@@ -513,24 +487,9 @@ impl Model {
 
     fn plan_rewrite(&mut self) -> Vec<Effect> {
         let generation = self.next_generation();
-        let Mode::Rewrite(rw) = &mut self.mode else {
-            return Vec::new();
-        };
-        match rw.intent() {
-            Some(intent) => {
-                rw.busy = true;
-                vec![Effect::Plan {
-                    generation,
-                    intent: Intent::Rewrite(intent),
-                    debounce: true,
-                }]
-            }
-            None => {
-                rw.changes.clear();
-                rw.error = None;
-                rw.busy = false;
-                Vec::new()
-            }
+        match &mut self.mode {
+            Mode::Rewrite(rw) => rw.plan(generation),
+            _ => Vec::new(),
         }
     }
 
@@ -562,22 +521,9 @@ impl Model {
             Mode::Move(mv) => mv.commit(&mut ModeContext {
                 status: &mut self.status,
             }),
-            Mode::Rewrite(rw) => {
-                if rw.busy || rw.changes.is_empty() {
-                    return self.fail("type a template first");
-                }
-                if rw.ticks.is_empty() {
-                    return self.fail("nothing ticked");
-                }
-                let Some(intent) = rw.intent() else {
-                    return Vec::new();
-                };
-                rw.busy = true;
-                self.status.busy = true;
-                vec![Effect::Commit {
-                    intent: Intent::Rewrite(intent.selecting(Selection::Ids(rw.ticks.clone()))),
-                }]
-            }
+            Mode::Rewrite(rw) => rw.commit(&mut ModeContext {
+                status: &mut self.status,
+            }),
             Mode::History(_) => self.undo_requested(),
         }
     }
@@ -717,16 +663,11 @@ impl Model {
     }
 
     fn enter_rewrite(&mut self) -> Vec<Effect> {
-        let Some(query) = self.search.results.query.clone() else {
-            return self.fail("search for the pattern to rewrite first");
+        let rw = match RewriteMode::from_results(&self.search.results) {
+            Ok(rw) => rw,
+            Err(message) => return self.fail(message),
         };
-        // Rewrite is query-scoped: its ticks must be a subset of what the
-        // query searches for, not the (possibly wider) anchored occurrences.
-        let matches = self.search.results.matches.clone();
-        if matches.is_empty() {
-            return self.fail("nothing matched; a rewrite acts on the matches");
-        }
-        self.mode = Mode::Rewrite(Box::new(RewriteMode::new(query, matches)));
+        self.mode = Mode::Rewrite(Box::new(rw));
         self.preview_effect()
     }
 
@@ -810,7 +751,7 @@ impl Model {
             Mode::Search => self.search.results.current_site(),
             Mode::Rename(r) => r.site(),
             Mode::Move(mv) => mv.site(),
-            Mode::Rewrite(rw) => rw.current().map(|m| (m.path.clone(), m.start.line)),
+            Mode::Rewrite(rw) => rw.site(),
             Mode::History(_) => None,
         };
         match site {

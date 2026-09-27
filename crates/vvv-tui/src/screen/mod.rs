@@ -7,7 +7,7 @@ pub(crate) mod history;
 use crate::modes::moves::screen as moving;
 pub(crate) mod overlay;
 use crate::modes::rename::screen as rename;
-pub(crate) mod rewrite;
+use crate::modes::rewrite::screen as rewrite;
 pub(crate) mod search;
 mod status;
 
@@ -224,7 +224,9 @@ impl Widget for App<'_> {
             crate::model::Mode::Move(mv) => moving::MoveView::new(mv, t, m.split, m.view)
                 .screen()
                 .render(body, buf),
-            crate::model::Mode::Rewrite(_) => rewrite::REWRITE_RENDER.render(m, t, body, buf),
+            crate::model::Mode::Rewrite(rw) => rewrite::RewriteView::new(rw, t, m.split, m.view)
+                .screen()
+                .render(body, buf),
             crate::model::Mode::History(_) => history::HISTORY_RENDER.render(m, t, body, buf),
         }
         StatusBar::new(m, t).render(bottom, buf);

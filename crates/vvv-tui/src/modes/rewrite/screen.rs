@@ -8,12 +8,13 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::Widget;
 use vvv_engine::{CaptureValue, Match};
 
-use super::{LegacyScreen, Panel, Screen};
+use super::{RewriteMode, RewritePanel};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
-use crate::model::{Mode, Model, PanelKind, RewriteMode, RewritePanel};
+use crate::model::{PanelKind, ReportView};
 use crate::render::Pane;
 use crate::render::{Header, Painter, Region};
+use crate::screen::{BoundScreen, Panel, Screen};
 use vvv_engine::protocol::vocabulary::{Mark, Plural};
 
 use Action as A;
@@ -145,56 +146,45 @@ pub(crate) static REWRITE: Screen = Screen {
     panels: &[TEMPLATE_PANEL, MATCHES_PANEL, DETAIL_PANEL],
 };
 
-pub(crate) static REWRITE_RENDER: LegacyScreen = LegacyScreen {
-    screen: &REWRITE,
-    content: &[draw_template, draw_matches, draw_detail],
-    layout,
-};
-
-fn layout(model: &Model, painter: Painter, area: Region) -> Vec<Region> {
-    let Mode::Rewrite(rw) = &model.mode else {
-        return Vec::new();
-    };
-    let (top, body) = RewriteView::new(model, rw, painter).header().areas(area);
-    let (left, right) = body.columns(model.split);
-    vec![top, left, right]
-}
-
-fn draw_template(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    if let Mode::Rewrite(rw) = &model.mode {
-        RewriteView::new(model, rw, painter)
-            .header()
-            .render(area, buf);
-    }
-}
-
-fn draw_matches(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    if let Mode::Rewrite(rw) = &model.mode {
-        RewriteView::new(model, rw, painter).matches(area, buf);
-    }
-}
-
-fn draw_detail(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    if let Mode::Rewrite(rw) = &model.mode {
-        RewriteView::new(model, rw, painter).detail(area, buf);
-    }
-}
-
 pub struct RewriteView<'a> {
-    model: &'a Model,
+    split: u16,
+    view: ReportView,
     mode: &'a RewriteMode,
     painter: Painter,
 }
 
 impl<'a> RewriteView<'a> {
-    pub fn new(model: &'a Model, mode: &'a RewriteMode, painter: Painter) -> Self {
+    pub fn new(mode: &'a RewriteMode, painter: Painter, split: u16, view: ReportView) -> Self {
         Self {
-            model,
+            split,
+            view,
             mode,
             painter,
         }
     }
 
+    pub fn screen(self) -> BoundScreen<Self, 3> {
+        BoundScreen::new(
+            self,
+            &REWRITE,
+            Self::layout,
+            [Self::draw_template, Self::draw_matches, Self::draw_detail],
+        )
+    }
+    fn layout(&self, area: Region) -> Vec<Region> {
+        let (top, body) = self.header().areas(area);
+        let (left, right) = body.columns(self.split);
+        vec![top, left, right]
+    }
+    fn draw_template(&self, area: Rect, buf: &mut Buffer) {
+        self.header().render(area, buf);
+    }
+    fn draw_matches(&self, area: Rect, buf: &mut Buffer) {
+        self.matches(area, buf);
+    }
+    fn draw_detail(&self, area: Rect, buf: &mut Buffer) {
+        self.detail(area, buf);
+    }
     fn header(&self) -> Header<'a> {
         let (rw, t) = (self.mode, self.painter);
         let focused = rw.focus == RewritePanel::Template;
@@ -240,7 +230,6 @@ impl<'a> RewriteView<'a> {
     /// preview, the detailed one the terminal's numbered match.
     fn row(&self, m: &Match, ordinal: usize, width: usize) -> Line<'static> {
         let row = self
-            .model
             .view
             .view()
             .rewrite(m, ordinal, self.mode.is_ticked(m), width);

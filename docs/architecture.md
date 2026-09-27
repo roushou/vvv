@@ -462,8 +462,9 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
 - `screen/` — shared key, focus, and help metadata (`Screen`, `Panel`) and
   the application frame. `BoundScreen<V>` owns a typed view and its layout and panel
   callbacks; panels render from that view without inspecting `Mode`.
-  `screen/defaults.rs` holds the shared key layers. Rename and moves now own their state,
-  transitions, metadata, and typed views under `modes/rename/` and `modes/moves/`;
+  `screen/defaults.rs` holds the shared key layers. Rename, moves, and rewrite now own their state,
+  transitions, metadata, and typed views under `modes/rename/`, `modes/moves/`,
+  and `modes/rewrite/`;
   other modes use a
   temporary `LegacyScreen` renderer until their individual migrations.
 - `modes/context.rs` — shared status borrowed by a mode transition, without access
