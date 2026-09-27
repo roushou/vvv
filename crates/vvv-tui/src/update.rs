@@ -12,8 +12,7 @@ use super::action::{Action, Effect, Event, Planned};
 use super::keymap::{Dispatch, Key};
 use super::model::{
     Confirm, Confirmed, FilePreview, HistoryMode, HistoryPanel, Menu, MenuTarget, Mode, Model,
-    MoveMode, MovePanel, MovePlan, Overlay, Panels, Relation, RenameMode, RewriteMode,
-    RewritePanel, SearchPanel,
+    MoveMode, Overlay, Panels, Relation, RenameMode, RewriteMode, RewritePanel, SearchPanel,
 };
 use super::query::Filter;
 use crate::modes::context::ModeContext;
@@ -104,8 +103,7 @@ impl Model {
             }
             Action::Diff => {
                 if let Mode::Move(mv) = &mut self.mode {
-                    mv.diff = !mv.diff;
-                    mv.detail_scroll = 0;
+                    mv.toggle_diff();
                 }
                 Vec::new()
             }
@@ -164,10 +162,7 @@ impl Model {
                         self.search.preview_scroll = None;
                     }
                     Mode::Rename(r) => r.previewed(preview),
-                    Mode::Move(mv) => {
-                        mv.preview = Some(preview);
-                        mv.detail_scroll = 0;
-                    }
+                    Mode::Move(mv) => mv.previewed(preview),
                     // Rewrite's pane draws the plan's diff, not a source file.
                     Mode::Rewrite(_) => {}
                     Mode::History(_) => {}
@@ -194,11 +189,7 @@ impl Model {
                 self.arriving = false;
                 match &mut self.mode {
                     Mode::Rename(r) => r.plan_failed(message),
-                    Mode::Move(mv) => {
-                        mv.busy = false;
-                        mv.plan = None;
-                        mv.error = Some(message);
-                    }
+                    Mode::Move(mv) => mv.plan_failed(message),
                     Mode::Rewrite(rw) => {
                         rw.busy = false;
                         rw.changes.clear();
@@ -244,7 +235,7 @@ impl Model {
                 self.arriving = false;
                 match &mut self.mode {
                     Mode::Rename(r) => r.failed(),
-                    Mode::Move(mv) => mv.busy = false,
+                    Mode::Move(mv) => mv.failed(),
                     Mode::Rewrite(rw) => rw.busy = false,
                     Mode::Search | Mode::History(_) => {}
                 }
@@ -274,27 +265,7 @@ impl Model {
                     notices,
                     files,
                 },
-            ) => {
-                mv.plan = Some(MovePlan::new(intent, files, respellings, notices));
-                mv.error = None;
-                mv.busy = false;
-                for panel in [
-                    MovePanel::Respellings,
-                    MovePanel::Structural,
-                    MovePanel::Notices,
-                ] {
-                    let len = mv.len(panel);
-                    if let Some(cursor) = mv.cursor_mut(panel) {
-                        cursor.clamp(len);
-                    }
-                }
-                mv.last_list = if mv.len(MovePanel::Respellings) > 0 {
-                    MovePanel::Respellings
-                } else {
-                    MovePanel::Structural
-                };
-                self.preview_effect()
-            }
+            ) => mv.planned(intent, respellings, notices, files),
             (Mode::Rewrite(rw), Planned::Rewrite { files }) => {
                 rw.changes = files;
                 rw.error = None;
@@ -311,7 +282,7 @@ impl Model {
         match &mut self.mode {
             Mode::Search => self.search.focus = self.search.focus.step(by),
             Mode::Rename(r) => r.focus_by(by),
-            Mode::Move(mv) => mv.focus = mv.focus.step(by),
+            Mode::Move(mv) => mv.focus_by(by),
             Mode::Rewrite(rw) => rw.focus = rw.focus.step(by),
             Mode::History(h) => h.focus = h.focus.step(by),
         }
@@ -326,11 +297,7 @@ impl Model {
                 }
             }
             Mode::Rename(r) => r.focus_nth(n),
-            Mode::Move(mv) => {
-                if let Some(p) = MovePanel::nth(n) {
-                    mv.focus = p;
-                }
-            }
+            Mode::Move(mv) => mv.focus_nth(n),
             Mode::Rewrite(rw) => {
                 if let Some(p) = RewritePanel::nth(n) {
                     rw.focus = p;
@@ -359,14 +326,7 @@ impl Model {
                 self.search.preview_scroll = None;
             }
             Mode::Rename(r) => r.moved(by),
-            Mode::Move(mv) => {
-                let panel = mv.list();
-                let len = mv.len(panel);
-                if let Some(cursor) = mv.cursor_mut(panel) {
-                    cursor.move_by(by, len);
-                }
-                mv.detail_scroll = 0;
-            }
+            Mode::Move(mv) => mv.moved(by),
             Mode::Rewrite(rw) => {
                 let len = rw.matches.len();
                 rw.cursor.move_by(by, len);
@@ -402,7 +362,7 @@ impl Model {
         match &self.mode {
             Mode::Search => self.search.focus == SearchPanel::Context,
             Mode::Rename(r) => r.scroll_focused(),
-            Mode::Move(mv) => mv.focus == MovePanel::Detail,
+            Mode::Move(mv) => mv.scroll_focused(),
             Mode::Rewrite(rw) => rw.focus == RewritePanel::Detail,
             Mode::History(h) => h.focus == HistoryPanel::Files,
         }
@@ -432,7 +392,7 @@ impl Model {
                     Some((current as i32 + by).clamp(0, max as i32) as usize);
             }
             Mode::Rename(r) => r.scrolled(by),
-            Mode::Move(mv) => bump(&mut mv.detail_scroll),
+            Mode::Move(mv) => mv.scrolled(by),
             Mode::Rewrite(rw) => bump(&mut rw.detail_scroll),
             Mode::History(h) => bump(&mut h.files_scroll),
         }
@@ -456,10 +416,7 @@ impl Model {
                 self.search.preview.as_ref().map(|p| p.path.clone()),
             ),
             Mode::Rename(r) => return r.preview_effect(),
-            Mode::Move(mv) => (
-                mv.current().map(|row| row.path().into()),
-                mv.preview.as_ref().map(|p| p.path.clone()),
-            ),
+            Mode::Move(mv) => return mv.preview_effect(),
             // Rewrite's preview is the plan's diff, not a source file.
             Mode::Rewrite(_) => (None, None),
             Mode::History(_) => (None, None),
@@ -505,7 +462,7 @@ impl Model {
                 self.plan_rename(true)
             }
             Mode::Move(mv) => {
-                crate::input::TextInput::new(&mut mv.to).edit(c);
+                mv.input(c);
                 self.plan_move(true)
             }
             Mode::Rewrite(rw) => {
@@ -548,24 +505,9 @@ impl Model {
 
     fn plan_move(&mut self, debounce: bool) -> Vec<Effect> {
         let generation = self.next_generation();
-        let Mode::Move(mv) = &mut self.mode else {
-            return Vec::new();
-        };
-        match mv.intent() {
-            Some(intent) => {
-                mv.busy = true;
-                vec![Effect::Plan {
-                    generation,
-                    intent,
-                    debounce,
-                }]
-            }
-            None => {
-                mv.plan = None;
-                mv.error = None;
-                mv.busy = false;
-                Vec::new()
-            }
+        match &mut self.mode {
+            Mode::Move(mv) => mv.plan(generation, debounce),
+            _ => Vec::new(),
         }
     }
 
@@ -617,16 +559,9 @@ impl Model {
             Mode::Rename(r) => r.commit(&mut ModeContext {
                 status: &mut self.status,
             }),
-            Mode::Move(mv) => match &mv.plan {
-                Some(plan) if !mv.busy => {
-                    mv.busy = true;
-                    self.status.busy = true;
-                    vec![Effect::Commit {
-                        intent: plan.intent.clone(),
-                    }]
-                }
-                _ => Vec::new(),
-            },
+            Mode::Move(mv) => mv.commit(&mut ModeContext {
+                status: &mut self.status,
+            }),
             Mode::Rewrite(rw) => {
                 if rw.busy || rw.changes.is_empty() {
                     return self.fail("type a template first");
@@ -771,37 +706,11 @@ impl Model {
     }
 
     fn enter_move(&mut self, symbol: bool) -> Vec<Effect> {
-        let (from, name) = match &self.search.results.subject {
-            Some(s) => {
-                let Some(from) = s.declared_in.clone() else {
-                    return self.fail("the declaration has no file to move");
-                };
-                let name = if symbol {
-                    match s.symbol.filter(|k| *k != SymbolKind::Impl) {
-                        Some(_) => Some(s.name.clone()),
-                        None => return self.fail("put the cursor on a declaration to move it"),
-                    }
-                } else {
-                    None
-                };
-                (from, name)
-            }
-            None => {
-                let Some(m) = self.search.results.current() else {
-                    return self.fail("put the cursor on a match in the file to move");
-                };
-                let name = if symbol {
-                    match m.symbol.as_ref().filter(|s| s.kind != SymbolKind::Impl) {
-                        Some(s) => Some(s.name.clone()),
-                        None => return self.fail("put the cursor on a declaration to move it"),
-                    }
-                } else {
-                    None
-                };
-                (m.path.clone(), name)
-            }
+        let mv = match MoveMode::from_results(&self.search.results, symbol) {
+            Ok(mv) => mv,
+            Err(message) => return self.fail(message),
         };
-        self.mode = Mode::Move(Box::new(MoveMode::new(from, name)));
+        self.mode = Mode::Move(Box::new(mv));
         let effects = self.plan_move(false);
         self.arriving = !effects.is_empty();
         effects
@@ -900,7 +809,7 @@ impl Model {
         let site = match &self.mode {
             Mode::Search => self.search.results.current_site(),
             Mode::Rename(r) => r.site(),
-            Mode::Move(mv) => mv.current().map(|row| (row.path().into(), row.line())),
+            Mode::Move(mv) => mv.site(),
             Mode::Rewrite(rw) => rw.current().map(|m| (m.path.clone(), m.start.line)),
             Mode::History(_) => None,
         };

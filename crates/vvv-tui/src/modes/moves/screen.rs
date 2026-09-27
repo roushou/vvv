@@ -9,12 +9,13 @@ use ratatui::widgets::Widget;
 use vvv_engine::NoticeKind;
 use vvv_engine::protocol::FileChange;
 
-use super::{LegacyScreen, Panel, Screen};
+use super::{MoveMode, MovePanel, MoveRow};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
-use crate::model::{Mode, Model, MoveMode, MovePanel, MoveRow, PanelKind};
+use crate::model::{PanelKind, ReportView};
 use crate::render::Pane;
 use crate::render::{Fit, Header, Painter, Region};
+use crate::screen::{BoundScreen, Panel, Screen};
 use vvv_engine::protocol::vocabulary::Mark;
 
 use Action as A;
@@ -157,80 +158,65 @@ pub(crate) static MOVE: Screen = Screen {
     ],
 };
 
-pub(crate) static MOVE_RENDER: LegacyScreen = LegacyScreen {
-    screen: &MOVE,
-    content: &[
-        draw_to,
-        draw_respellings,
-        draw_structural,
-        draw_notices,
-        draw_detail,
-    ],
-    layout,
-};
-
-fn layout(model: &Model, painter: Painter, area: Region) -> Vec<Region> {
-    let Mode::Move(mv) = &model.mode else {
-        return Vec::new();
-    };
-    let (top, body) = MoveView::new(model, mv, painter).header().areas(area);
-    let (left, right) = body.columns(model.split);
-    let sizes = [
-        (mv.len(MovePanel::Respellings), 3u16),
-        (mv.len(MovePanel::Structural), 2),
-        (mv.len(MovePanel::Notices), 1),
-    ];
-    let mut regions = vec![top];
-    regions.extend(left.rows(&sizes));
-    regions.push(right);
-    regions
-}
-
-fn draw_to(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    if let Mode::Move(mv) = &model.mode {
-        MoveView::new(model, mv, painter).header().render(area, buf);
-    }
-}
-
-fn draw_respellings(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    if let Mode::Move(mv) = &model.mode {
-        MoveView::new(model, mv, painter).list_panel(MovePanel::Respellings, area, buf);
-    }
-}
-
-fn draw_structural(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    if let Mode::Move(mv) = &model.mode {
-        MoveView::new(model, mv, painter).list_panel(MovePanel::Structural, area, buf);
-    }
-}
-
-fn draw_notices(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    if let Mode::Move(mv) = &model.mode {
-        MoveView::new(model, mv, painter).list_panel(MovePanel::Notices, area, buf);
-    }
-}
-
-fn draw_detail(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    if let Mode::Move(mv) = &model.mode {
-        MoveView::new(model, mv, painter).detail(area, buf);
-    }
-}
-
 pub struct MoveView<'a> {
-    model: &'a Model,
+    split: u16,
+    view: ReportView,
     mode: &'a MoveMode,
     painter: Painter,
 }
 
 impl<'a> MoveView<'a> {
-    pub fn new(model: &'a Model, mode: &'a MoveMode, painter: Painter) -> Self {
+    pub fn new(mode: &'a MoveMode, painter: Painter, split: u16, view: ReportView) -> Self {
         Self {
-            model,
+            split,
+            view,
             mode,
             painter,
         }
     }
 
+    pub fn screen(self) -> BoundScreen<Self, 5> {
+        BoundScreen::new(
+            self,
+            &MOVE,
+            Self::layout,
+            [
+                Self::draw_to,
+                Self::draw_respellings,
+                Self::draw_structural,
+                Self::draw_notices,
+                Self::draw_detail,
+            ],
+        )
+    }
+    fn layout(&self, area: Region) -> Vec<Region> {
+        let (top, body) = self.header().areas(area);
+        let (left, right) = body.columns(self.split);
+        let sizes = [
+            (self.mode.len(MovePanel::Respellings), 3u16),
+            (self.mode.len(MovePanel::Structural), 2),
+            (self.mode.len(MovePanel::Notices), 1),
+        ];
+        let mut regions = vec![top];
+        regions.extend(left.rows(&sizes));
+        regions.push(right);
+        regions
+    }
+    fn draw_to(&self, area: Rect, buf: &mut Buffer) {
+        self.header().render(area, buf);
+    }
+    fn draw_respellings(&self, area: Rect, buf: &mut Buffer) {
+        self.list_panel(MovePanel::Respellings, area, buf);
+    }
+    fn draw_structural(&self, area: Rect, buf: &mut Buffer) {
+        self.list_panel(MovePanel::Structural, area, buf);
+    }
+    fn draw_notices(&self, area: Rect, buf: &mut Buffer) {
+        self.list_panel(MovePanel::Notices, area, buf);
+    }
+    fn draw_detail(&self, area: Rect, buf: &mut Buffer) {
+        self.detail(area, buf);
+    }
     fn header(&self) -> Header<'a> {
         let (mv, t) = (self.mode, self.painter);
         let focused = mv.focus == MovePanel::To;
@@ -267,7 +253,7 @@ impl<'a> MoveView<'a> {
         let Some(plan) = &self.mode.plan else {
             return Vec::new();
         };
-        let view = self.model.view.view();
+        let view = self.view.view();
         plan.respellings
             .iter()
             .map(|r| self.painter.line(&view.respelling(r, width).line))
@@ -294,7 +280,7 @@ impl<'a> MoveView<'a> {
         let Some(plan) = &self.mode.plan else {
             return Vec::new();
         };
-        let view = self.model.view.view();
+        let view = self.view.view();
         plan.notices
             .iter()
             .map(|n| self.painter.line(&view.notice(n, width).line))

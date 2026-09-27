@@ -4,7 +4,7 @@
 
 pub(crate) mod defaults;
 pub(crate) mod history;
-pub(crate) mod moving;
+use crate::modes::moves::screen as moving;
 pub(crate) mod overlay;
 use crate::modes::rename::screen as rename;
 pub(crate) mod rewrite;
@@ -221,7 +221,9 @@ impl Widget for App<'_> {
                 .screen()
                 .render(body, buf),
             crate::model::Mode::Search => search::SEARCH_RENDER.render(m, t, body, buf),
-            crate::model::Mode::Move(_) => moving::MOVE_RENDER.render(m, t, body, buf),
+            crate::model::Mode::Move(mv) => moving::MoveView::new(mv, t, m.split, m.view)
+                .screen()
+                .render(body, buf),
             crate::model::Mode::Rewrite(_) => rewrite::REWRITE_RENDER.render(m, t, body, buf),
             crate::model::Mode::History(_) => history::HISTORY_RENDER.render(m, t, body, buf),
         }
