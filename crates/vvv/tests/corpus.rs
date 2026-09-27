@@ -153,6 +153,30 @@ const RUST_MOVES: Corpus = Corpus {
     name: "rust-moves",
     cases: &[
         (
+            "move-self",
+            &["move", "src/a.rs", "src/b.rs", "--symbol", "foo"],
+        ),
+        (
+            "move-self-sibling",
+            &[
+                "move",
+                "src/selfrefs.rs",
+                "src/b.rs",
+                "--symbol",
+                "recursive",
+            ],
+        ),
+        (
+            "move-companion",
+            &[
+                "move",
+                "src/companions.rs",
+                "src/b.rs",
+                "--symbol",
+                "Bundle",
+            ],
+        ),
+        (
             "move-symbol-alias",
             &["move", "src/a.rs", "src/b.rs", "--symbol", "Foo"],
         ),
@@ -178,6 +202,18 @@ const RUST_MOVES: Corpus = Corpus {
     ],
     mutations: || {
         vec![
+            Request::MoveSymbol {
+                intent: MoveSymbolIntent::new("foo", "src/a.rs", "src/b.rs"),
+                apply: false,
+            },
+            Request::MoveSymbol {
+                intent: MoveSymbolIntent::new("recursive", "src/selfrefs.rs", "src/b.rs"),
+                apply: false,
+            },
+            Request::MoveSymbol {
+                intent: MoveSymbolIntent::new("Bundle", "src/companions.rs", "src/b.rs"),
+                apply: false,
+            },
             Request::MoveSymbol {
                 intent: MoveSymbolIntent::new("Foo", "src/a.rs", "src/b.rs"),
                 apply: false,
@@ -583,7 +619,6 @@ fn symbol_moves_preserve_references_through_module_aliases() {
 
 #[cfg(feature = "rust")]
 #[test]
-#[ignore = "known bug: moved self references receive overlapping edits during extraction"]
 fn symbol_moves_preserve_self_references() {
     use vvv_engine::{Confidence, ReferencesQuery};
 
@@ -770,5 +805,80 @@ fn grouped_alias_prefixes_keep_their_resolved_meaning() {
         references.occurrences.iter().any(
             |o| o.m.path == Path::new("src/grouped.rs") && o.confidence == Confidence::Resolved
         )
+    );
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn moving_and_staying_paths_use_their_own_render_contexts() {
+    use vvv_engine::{Confidence, ReferencesQuery};
+    let (vfs, engine) = RUST_MOVES.engine();
+    engine
+        .run(vvv_engine::Apply(
+            engine
+                .run(MoveSymbolIntent::new(
+                    "recursive",
+                    "src/selfrefs.rs",
+                    "src/b.rs",
+                ))
+                .unwrap(),
+        ))
+        .unwrap();
+    let moved = vfs.read(Path::new("/ws/src/b.rs")).unwrap();
+    assert!(moved.contains("self::recursive();"), "{moved}");
+    assert!(moved.contains("crate::selfrefs::sibling();"), "{moved}");
+    let source = vfs.read(Path::new("/ws/src/selfrefs.rs")).unwrap();
+    assert!(source.contains("pub fn sibling() {}"));
+    assert!(
+        source.contains("pub fn outside() { crate::b::recursive(); }"),
+        "{source}"
+    );
+    let references = engine
+        .run(ReferencesQuery::new("recursive").declared_in("src/b.rs"))
+        .unwrap();
+    assert!(
+        references
+            .occurrences
+            .iter()
+            .all(|o| o.confidence == Confidence::Resolved),
+        "{:?}",
+        references.occurrences
+    );
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn companion_paths_travel_with_the_declaration_and_keep_their_targets() {
+    use vvv_engine::{Confidence, ReferencesQuery};
+    let (vfs, engine) = RUST_MOVES.engine();
+    engine
+        .run(vvv_engine::Apply(
+            engine
+                .run(MoveSymbolIntent::new(
+                    "Bundle",
+                    "src/companions.rs",
+                    "src/b.rs",
+                ))
+                .unwrap(),
+        ))
+        .unwrap();
+    let moved = vfs.read(Path::new("/ws/src/b.rs")).unwrap();
+    assert!(moved.contains("pub struct Bundle;"));
+    assert!(moved.contains("impl Bundle"));
+    assert!(moved.contains("-> self::Bundle"));
+    assert!(moved.contains("crate::companions::helper();"));
+    let source = vfs.read(Path::new("/ws/src/companions.rs")).unwrap();
+    assert_eq!(source.trim(), "pub fn helper() {}");
+    let references = engine
+        .run(ReferencesQuery::new("Bundle").declared_in("src/b.rs"))
+        .unwrap();
+    assert!(references.occurrences.len() >= 3);
+    assert!(
+        references
+            .occurrences
+            .iter()
+            .all(|o| o.confidence == Confidence::Resolved),
+        "{:?}",
+        references.occurrences
     );
 }

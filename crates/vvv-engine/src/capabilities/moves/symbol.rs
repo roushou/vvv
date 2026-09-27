@@ -16,7 +16,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use vvv_core::{Address, Edit, Name, Parsed, Span, Surgery};
 
-use super::{Extraction, Rebase, Widen};
+use super::{Extraction, Rebase, Site, Widen};
 use crate::change::Change;
 use crate::command::{Command, Context};
 use crate::graph::{Candidate, Fragment, Namespace, Node};
@@ -111,7 +111,6 @@ impl Command for MoveSymbolIntent {
 
         let mut mv = SymbolMove::new(&ns, &self.name, &source, &dest, extraction, consumers)?;
         mv.notice_resolved_uses(&evidence.occurrences);
-        mv.respell_inner_paths();
         mv.provision()?;
         mv.rebase_consumers(&nodes)?;
         mv.keep_old_file_working()?;
@@ -240,27 +239,6 @@ impl<'a> SymbolMove<'a> {
         }
     }
 
-    /// Qualified paths inside the moved text, re-rendered from the new file.
-    fn respell_inner_paths(&mut self) {
-        for edge in self
-            .source_fragment
-            .edges
-            .iter()
-            .filter(|e| !e.import.declares && self.extraction.contains(e.import.span))
-        {
-            let import = &edge.import;
-            if let Some(resolved) = edge.address() {
-                let rendered =
-                    self.surgery
-                        .render(self.ns.project(), self.to_path, resolved, &import.path);
-                if rendered != import.path {
-                    self.text_edits
-                        .push(Edit::replace(import.span, rendered.to_string()));
-                }
-            }
-        }
-    }
-
     /// What the moved text uses: imports of the old file it relied on, and
     /// siblings declared beside it. Both become imports in the new file;
     /// siblings must also stay visible from there.
@@ -360,21 +338,19 @@ impl<'a> SymbolMove<'a> {
     fn rebase_consumers(&mut self, nodes: &[Node]) -> Result<(), EngineError> {
         let rebase = Rebase::new(self.ns, self.old.clone(), self.new.clone());
         for node in nodes.iter().filter(|c| c.path() != self.to_path) {
-            let mut rewrite = rebase.rewrite(node, node.path())?;
-            if node.path() == self.from_path {
-                let (moving, staying): (Vec<Edit>, Vec<Edit>) = rewrite
-                    .change
-                    .take_edits(self.from_path)
-                    .into_iter()
-                    .partition(|e| self.extraction.contains(e.span));
-                self.text_edits.extend(moving);
-                rewrite.change.edits(self.source_witness, staying)?;
-                let extraction = &self.extraction;
-                rewrite
-                    .change
-                    .retain_respellings(|r| !extraction.contains(r.span));
-            }
-            self.change.merge(rewrite.change)?;
+            let site = if node.path() == self.from_path {
+                let (moving, staying) = Site::partition(node, self.to_path, &self.extraction);
+                let rewritten = rebase.rewrite(&moving)?;
+                self.text_edits.extend(rewritten.edits);
+                for notice in rewritten.notices {
+                    self.change.notice(notice);
+                }
+                staying
+            } else {
+                Site::of(node, node.path())
+            };
+            let (contribution, _) = rebase.rewrite(&site)?.into_change()?;
+            self.change.merge(contribution)?;
         }
         Ok(())
     }

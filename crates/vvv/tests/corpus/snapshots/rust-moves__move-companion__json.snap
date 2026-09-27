@@ -1,0 +1,75 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "intent": {
+      "name": "Bundle",
+      "from": "src/companions.rs",
+      "to": "src/b.rs"
+    },
+    "applied": false,
+    "from": {
+      "package": "corpus_moves",
+      "path": [
+        "companions",
+        "Bundle"
+      ]
+    },
+    "to": {
+      "package": "corpus_moves",
+      "path": [
+        "b",
+        "Bundle"
+      ]
+    },
+    "files": [
+      {
+        "path": "src/b.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 0,
+              "end": 0
+            },
+            "replacement": "use crate::companions::helper;\n"
+          },
+          {
+            "span": {
+              "start": 39,
+              "end": 39
+            },
+            "replacement": "\npub struct Bundle;\n\nimpl Bundle {\n    pub fn make() -> self::Bundle {\n        crate::companions::helper();\n        self::Bundle\n    }\n}\n"
+          }
+        ],
+        "diff": "--- a/src/b.rs\n+++ b/src/b.rs\n@@ -1 +1,11 @@\n+use crate::companions::helper;\n // Destination for moved declarations.\n+\n+pub struct Bundle;\n+\n+impl Bundle {\n+    pub fn make() -> self::Bundle {\n+        crate::companions::helper();\n+        self::Bundle\n+    }\n+}\n"
+      },
+      {
+        "path": "src/companions.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 0,
+              "end": 20
+            },
+            "replacement": ""
+          },
+          {
+            "span": {
+              "start": 20,
+              "end": 124
+            },
+            "replacement": ""
+          }
+        ],
+        "diff": "--- a/src/companions.rs\n+++ b/src/companions.rs\n@@ -1,10 +1 @@\n-pub struct Bundle;\n-\n-impl Bundle {\n-    pub fn make() -> self::Bundle {\n-        self::helper();\n-        self::Bundle\n-    }\n-}\n-\n pub fn helper() {}\n"
+      }
+    ]
+  }
+}
+--- stderr ---

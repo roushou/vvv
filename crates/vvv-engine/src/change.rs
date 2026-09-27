@@ -7,7 +7,9 @@
 //! [`ChangeSet`], so an operation never has to know what another one did.
 
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+#[cfg(test)]
+use std::path::Path;
+use std::path::PathBuf;
 
 use vvv_core::{ChangeSet, Edit, EditConflict};
 
@@ -73,11 +75,6 @@ impl Change {
         self.respellings.push(respelling);
     }
 
-    /// Keep only the respellings `keep` accepts.
-    pub fn retain_respellings(&mut self, keep: impl FnMut(&Respelling) -> bool) {
-        self.respellings.retain(keep);
-    }
-
     /// Everything `other` proposes, after what this one already does.
     pub fn merge(&mut self, other: Change) -> Result<(), ApplyError> {
         // Check before merging anything, so a rejected contribution changes nothing.
@@ -97,6 +94,7 @@ impl Change {
 
     /// Take the edits proposed for `path` out of the change: an operation
     /// that relocates text takes the edits inside it along.
+    #[cfg(test)]
     pub fn take_edits(&mut self, path: &Path) -> Vec<Edit> {
         self.files
             .get_mut(path)

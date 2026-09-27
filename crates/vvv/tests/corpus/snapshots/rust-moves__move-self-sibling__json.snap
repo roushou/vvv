@@ -1,0 +1,90 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "intent": {
+      "name": "recursive",
+      "from": "src/selfrefs.rs",
+      "to": "src/b.rs"
+    },
+    "applied": false,
+    "from": {
+      "package": "corpus_moves",
+      "path": [
+        "selfrefs",
+        "recursive"
+      ]
+    },
+    "to": {
+      "package": "corpus_moves",
+      "path": [
+        "b",
+        "recursive"
+      ]
+    },
+    "respellings": [
+      {
+        "path": "src/selfrefs.rs",
+        "span": {
+          "start": 108,
+          "end": 123
+        },
+        "start": {
+          "line": 7,
+          "column": 19
+        },
+        "from": "self::recursive",
+        "to": "crate::b::recursive"
+      }
+    ],
+    "files": [
+      {
+        "path": "src/b.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 0,
+              "end": 0
+            },
+            "replacement": "use crate::selfrefs::sibling;\n"
+          },
+          {
+            "span": {
+              "start": 39,
+              "end": 39
+            },
+            "replacement": "\npub fn recursive() {\n    self::recursive();\n    crate::selfrefs::sibling();\n}\n"
+          }
+        ],
+        "diff": "--- a/src/b.rs\n+++ b/src/b.rs\n@@ -1 +1,7 @@\n+use crate::selfrefs::sibling;\n // Destination for moved declarations.\n+\n+pub fn recursive() {\n+    self::recursive();\n+    crate::selfrefs::sibling();\n+}\n"
+      },
+      {
+        "path": "src/selfrefs.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 0,
+              "end": 68
+            },
+            "replacement": ""
+          },
+          {
+            "span": {
+              "start": 108,
+              "end": 123
+            },
+            "replacement": "crate::b::recursive"
+          }
+        ],
+        "diff": "--- a/src/selfrefs.rs\n+++ b/src/selfrefs.rs\n@@ -1,8 +1,3 @@\n-pub fn recursive() {\n-    self::recursive();\n-    self::sibling();\n-}\n-\n pub fn sibling() {}\n \n-pub fn outside() { self::recursive(); }\n+pub fn outside() { crate::b::recursive(); }\n"
+      }
+    ]
+  }
+}
+--- stderr ---

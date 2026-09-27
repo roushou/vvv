@@ -292,7 +292,10 @@ group when its resolved prefix still covers the target, including module aliases
 declaration and redundant destination imports use the same resolved edges.
 
 Invalid declaration extents or overlapping edits in a symbol move are rejected as
-a conflict before any write.
+a conflict before any write. Paths inside moving declarations and their companion
+pieces are transformed once and spelled from their destination; self references
+continue to name the moved declaration, while references to siblings left behind
+continue to name those siblings.
 
 Each apply is saved to `.vvv/history.json` (worth adding `.vvv/` to `.gitignore`).
 

@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use vvv_core::{Address, Facts, Parsed, ReachKind, RelPath, ResolveError};
 
-use super::{MoveSet, Reachability, Rebase, Widen};
+use super::{MoveSet, Reachability, Rebase, Site, Widen};
 use crate::change::Change;
 use crate::command::{Command, Context};
 use crate::protocol::vocabulary::IntentLine;
@@ -136,10 +136,10 @@ impl Command for MoveIntent {
         let mut change = Change::new();
         let mut references: Vec<(Address, Address)> = Vec::new();
         for node in &nodes {
-            let rewrite =
-                rebase.rewrite(node, moves.destination(node.path()).unwrap_or(node.path()))?;
-            change.merge(rewrite.change)?;
-            references.extend(rewrite.references);
+            let site = Site::of(node, moves.destination(node.path()).unwrap_or(node.path()));
+            let (contribution, affected) = rebase.rewrite(&site)?.into_change()?;
+            change.merge(contribution)?;
+            references.extend(affected);
         }
         references.sort();
         references.dedup();

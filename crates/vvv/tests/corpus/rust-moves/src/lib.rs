@@ -5,3 +5,5 @@ pub mod origin;
 pub mod dependency;
 pub mod cleanup;
 pub mod grouped;
+pub mod selfrefs;
+pub mod companions;

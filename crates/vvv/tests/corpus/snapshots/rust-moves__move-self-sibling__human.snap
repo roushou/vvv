@@ -1,0 +1,37 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+move recursive from src/selfrefs.rs → src/b.rs
+
+→ 1   1 file
+± 2   2 files
+
+→ src/selfrefs.rs:8   self::recursive → crate::b::recursive
+
+± src/b.rs
+@@ -1 +1,7 @@
++use crate::selfrefs::sibling;
+ // Destination for moved declarations.
++
++pub fn recursive() {
++    self::recursive();
++    crate::selfrefs::sibling();
++}
+
+± src/selfrefs.rs
+@@ -1,8 +1,3 @@
+-pub fn recursive() {
+-    self::recursive();
+-    self::sibling();
+-}
+-
+ pub fn sibling() {}
+ 
+-pub fn outside() { self::recursive(); }
++pub fn outside() { crate::b::recursive(); }
+--- stderr ---
+→ 1  ± 2   2 files
+hint: --apply to write · --diff for the full patch

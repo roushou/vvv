@@ -1,0 +1,39 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+move Bundle from src/companions.rs → src/b.rs
+
+± 2   2 files
+
+± src/b.rs
+@@ -1 +1,11 @@
++use crate::companions::helper;
+ // Destination for moved declarations.
++
++pub struct Bundle;
++
++impl Bundle {
++    pub fn make() -> self::Bundle {
++        crate::companions::helper();
++        self::Bundle
++    }
++}
+
+± src/companions.rs
+@@ -1,10 +1 @@
+-pub struct Bundle;
+-
+-impl Bundle {
+-    pub fn make() -> self::Bundle {
+-        self::helper();
+-        self::Bundle
+-    }
+-}
+-
+ pub fn helper() {}
+--- stderr ---
+± 2   2 files
+hint: --apply to write · --diff for the full patch
