@@ -37,9 +37,9 @@ pub struct RenameCmd {
 impl RenameCmd {
     pub fn run(self, ctx: &Context) -> anyhow::Result<()> {
         let mut intent = RenameIntent::new(self.name, self.to);
-        intent.symbol = self.symbol;
-        intent.language = self.lang.map(LanguageId::from);
-        intent.declared_in = self.declared_in.clone().map(Into::into);
+        intent.references.symbol = self.symbol;
+        intent.references.language = self.lang.map(LanguageId::from);
+        intent.references.declared_in = self.declared_in.clone().map(Into::into);
         intent.selection = Select::new(&self.select).selection()?;
 
         ctx.run(Request::Rename {

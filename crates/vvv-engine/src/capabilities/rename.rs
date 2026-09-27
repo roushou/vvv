@@ -22,15 +22,9 @@ use crate::{
 /// agent excludes the ones that are not the same symbol.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct RenameIntent {
-    pub name: String,
+    #[serde(flatten)]
+    pub references: ReferencesQuery,
     pub to: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub symbol: Option<SymbolKind>,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub language: Option<LanguageId>,
-    /// The file declaring the symbol meant, when several share the name.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub declared_in: Option<RelPath>,
     #[serde(default, skip_serializing_if = "Selection::is_all")]
     pub selection: Selection,
 }
@@ -38,43 +32,30 @@ pub struct RenameIntent {
 impl RenameIntent {
     pub fn new(name: impl Into<String>, to: impl Into<String>) -> Self {
         Self {
-            name: name.into(),
+            references: ReferencesQuery::new(name),
             to: to.into(),
-            symbol: None,
-            language: None,
-            declared_in: None,
             selection: Selection::All,
         }
     }
 
     pub fn declared_in(mut self, path: impl Into<RelPath>) -> Self {
-        self.declared_in = Some(path.into());
+        self.references.declared_in = Some(path.into());
         self
     }
 
     pub fn of_symbol(mut self, symbol: SymbolKind) -> Self {
-        self.symbol = Some(symbol);
+        self.references.symbol = Some(symbol);
         self
     }
 
     pub fn in_language(mut self, language: impl Into<LanguageId>) -> Self {
-        self.language = Some(language.into());
+        self.references.language = Some(language.into());
         self
     }
 
     pub fn selecting(mut self, selection: Selection) -> Self {
         self.selection = selection;
         self
-    }
-
-    /// The question a rename asks before it plans.
-    pub fn references(&self) -> ReferencesQuery {
-        ReferencesQuery {
-            name: self.name.clone(),
-            symbol: self.symbol,
-            language: self.language.clone(),
-            declared_in: self.declared_in.clone(),
-        }
     }
 }
 
@@ -117,7 +98,7 @@ impl Command for RenameIntent {
             declarations,
             occurrences,
             ambiguous,
-        } = graph.references(&intent.references())?;
+        } = graph.references(&intent.references)?;
 
         // What `Selection::All` means: never an occurrence of another
         // declaration; unresolved ones only when nothing else could be meant.

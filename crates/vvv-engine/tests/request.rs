@@ -132,3 +132,45 @@ fn errors_have_codes_and_hints() {
     let undo = engine.run(request(r#"{"command": "undo"}"#)).unwrap_err();
     assert_eq!(Failure::from(&undo).code, ErrorCode::NoHistory);
 }
+
+#[test]
+fn rename_composes_a_flat_references_query_on_the_wire() {
+    use vvv_engine::{RenameIntent, Selection, SymbolKind};
+
+    for fields in 0..8 {
+        for selection in [
+            Selection::All,
+            Selection::ids([]),
+            Selection::ordinals([1, 3]),
+        ] {
+            let mut intent = RenameIntent::new("foo", "bar").selecting(selection);
+            if fields & 1 != 0 {
+                intent = intent.of_symbol(SymbolKind::Function);
+            }
+            if fields & 2 != 0 {
+                intent = intent.in_language("fake");
+            }
+            if fields & 4 != 0 {
+                intent = intent.declared_in("a.p");
+            }
+            let value = serde_json::to_value(&intent).unwrap();
+            assert_eq!(value["name"], "foo");
+            assert_eq!(value["to"], "bar");
+            assert!(value.get("references").is_none());
+            assert_eq!(value.get("symbol").is_some(), fields & 1 != 0);
+            assert_eq!(value.get("language").is_some(), fields & 2 != 0);
+            assert_eq!(value.get("declared_in").is_some(), fields & 4 != 0);
+            assert_eq!(
+                serde_json::from_value::<RenameIntent>(value).unwrap(),
+                intent
+            );
+            let request = Request::Rename {
+                intent,
+                apply: true,
+            };
+            let value = serde_json::to_value(&request).unwrap();
+            let decoded: Request = serde_json::from_value(value.clone()).unwrap();
+            assert_eq!(serde_json::to_value(decoded).unwrap(), value);
+        }
+    }
+}

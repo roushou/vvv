@@ -595,9 +595,12 @@ fn rename_judges_with_the_name_unchanged_and_starts_where_judgment_is_needed() {
                 ..
             },
         ] => {
-            assert_eq!((i.name.as_str(), i.to.as_str()), ("Language", "Language"));
             assert_eq!(
-                i.declared_in.as_deref(),
+                (i.references.name.as_str(), i.to.as_str()),
+                ("Language", "Language")
+            );
+            assert_eq!(
+                i.references.declared_in.as_deref(),
                 Some(std::path::Path::new("src/lang/mod.rs"))
             );
         }

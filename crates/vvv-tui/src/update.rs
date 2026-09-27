@@ -619,9 +619,9 @@ impl Model {
             return Vec::new();
         }
         let mut intent = RenameIntent::new(&r.target.name, r.name.trim());
-        intent.symbol = r.target.symbol;
-        intent.language = r.language.clone();
-        intent.declared_in = r.target.declared_in.clone();
+        intent.references.symbol = r.target.symbol;
+        intent.references.language = r.language.clone();
+        intent.references.declared_in = r.target.declared_in.clone();
         r.busy = true;
         vec![Effect::Plan {
             generation,
@@ -711,9 +711,9 @@ impl Model {
                 }
                 let mut intent = RenameIntent::new(&r.target.name, to)
                     .selecting(Selection::Ids(r.ticks.clone()));
-                intent.symbol = r.target.symbol;
-                intent.language = r.language.clone();
-                intent.declared_in = r.target.declared_in.clone();
+                intent.references.symbol = r.target.symbol;
+                intent.references.language = r.language.clone();
+                intent.references.declared_in = r.target.declared_in.clone();
                 r.busy = true;
                 self.status.busy = true;
                 vec![Effect::Commit {
@@ -882,9 +882,9 @@ impl Model {
         };
         // Judge with the name unchanged: verdicts do not depend on the new one.
         let mut intent = RenameIntent::new(&target.name, &target.name);
-        intent.symbol = target.symbol;
-        intent.language = language.clone();
-        intent.declared_in = target.declared_in.clone();
+        intent.references.symbol = target.symbol;
+        intent.references.language = language.clone();
+        intent.references.declared_in = target.declared_in.clone();
         self.mode = Mode::Rename(Box::new(RenameMode::new(target, language)));
         self.arriving = true;
         let generation = self.next_generation();
