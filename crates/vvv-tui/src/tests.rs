@@ -296,7 +296,14 @@ fn render(model: &Model) -> String {
     let backend = TestBackend::new(90, 20);
     let mut terminal = Terminal::new(backend).unwrap();
     terminal
-        .draw(|f| App::new(model, Painter::plain()).render(f.area(), f.buffer_mut()))
+        .draw(|f| {
+            App::new(
+                model,
+                Painter::plain(),
+                vvv_engine::protocol::vocabulary::Ago::now(),
+            )
+            .render(f.area(), f.buffer_mut())
+        })
         .unwrap();
     let buffer = terminal.backend().buffer();
     (0..buffer.area.height)
@@ -428,7 +435,14 @@ fn the_results_cursor_stays_emphasised_while_the_query_has_the_focus() {
     let backend = TestBackend::new(90, 20);
     let mut terminal = Terminal::new(backend).unwrap();
     terminal
-        .draw(|f| App::new(&m, Painter::plain()).render(f.area(), f.buffer_mut()))
+        .draw(|f| {
+            App::new(
+                &m,
+                Painter::plain(),
+                vvv_engine::protocol::vocabulary::Ago::now(),
+            )
+            .render(f.area(), f.buffer_mut())
+        })
         .unwrap();
     // The results pane's cursor row, wherever the report's rows put it.
     let buffer = terminal.backend().buffer();

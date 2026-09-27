@@ -462,10 +462,10 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
 - `screen/` — shared key, focus, and help metadata (`Screen`, `Panel`) and
   the application frame. `BoundScreen<V>` owns a typed view and its layout and panel
   callbacks; panels render from that view without inspecting `Mode`.
-  `screen/defaults.rs` holds the shared key layers. Rename, moves, and rewrite now own their state,
+  `screen/defaults.rs` holds the shared key layers. Rename, moves, rewrite, and history now own their state,
   transitions, metadata, and typed views under `modes/rename/`, `modes/moves/`,
-  and `modes/rewrite/`;
-  other modes use a
+  `modes/rewrite/`, and `modes/history/`;
+  search and overlays use a
   temporary `LegacyScreen` renderer until their individual migrations.
 - `modes/context.rs` — shared status borrowed by a mode transition, without access
   to `Model` or another mode. `input.rs` holds `TextInput`, which edits a borrowed
@@ -493,7 +493,8 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
 - `worker.rs` — the engine on its own thread; effects in, events out; bursts of
   searches or plans are coalesced. `Commit` plans and applies in one step.
 - `tui.rs` — `Tui` and the only I/O: terminal setup, the event loop with
-  debounced searches and plans, the editor hand-off, teardown.
+  debounced searches and plans, the editor hand-off, teardown. It supplies the frame
+  timestamp used by `HistoryView`; views do not read the clock.
 - `fixtures.rs` + `tests.rs` — `update` with plain assertions; every mode rendered into
   ratatui's `TestBackend` and snapshotted with `insta` (`INSTA_UPDATE=always cargo test
   -p vvv-tui` to accept).

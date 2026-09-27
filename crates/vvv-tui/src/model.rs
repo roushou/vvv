@@ -5,7 +5,6 @@
 
 use vvv_engine::RelPath;
 
-use vvv_engine::HistoryEntry;
 use vvv_engine::report::{Detailed, Document, Options, View};
 use vvv_engine::{
     Confidence, Consumer, Deps, Explanation, Highlight, Impact, Match, Occurrence, Query,
@@ -15,7 +14,9 @@ use vvv_engine::{
 use super::action::Action;
 use super::keymap::{Dispatch, Layer, When};
 use super::query::QueryBar;
-use super::screen::{Screen, history, overlay, search};
+use super::screen::{Screen, overlay, search};
+pub(crate) use crate::modes::history::HistoryMode;
+use crate::modes::history::screen as history;
 pub(crate) use crate::modes::moves::MoveMode;
 use crate::modes::moves::screen as moving;
 use crate::modes::rename::screen as rename;
@@ -695,48 +696,6 @@ impl Results {
             symbol: None,
             declared_in: None,
         })
-    }
-}
-
-// ---------------------------------------------------------------- history
-
-#[derive(Debug)]
-pub struct HistoryMode {
-    pub entries: Vec<HistoryEntry>,
-    pub cursor: Cursor,
-    pub focus: HistoryPanel,
-    pub files_scroll: usize,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum HistoryPanel {
-    Entries,
-    Files,
-}
-
-impl Panels for HistoryPanel {
-    const ALL: &'static [Self] = &[Self::Entries, Self::Files];
-}
-
-impl HistoryMode {
-    pub fn new(entries: Vec<HistoryEntry>) -> Self {
-        let cursor = Cursor {
-            index: entries.len().saturating_sub(1),
-        };
-        Self {
-            entries,
-            cursor,
-            focus: HistoryPanel::Entries,
-            files_scroll: 0,
-        }
-    }
-
-    pub fn current(&self) -> Option<&HistoryEntry> {
-        self.entries.get(self.cursor.index)
-    }
-
-    pub fn is_newest(&self) -> bool {
-        self.cursor.index + 1 == self.entries.len()
     }
 }
 

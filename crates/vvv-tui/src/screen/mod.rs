@@ -3,7 +3,7 @@
 //! Drawing primitives live in [`crate::render`].
 
 pub(crate) mod defaults;
-pub(crate) mod history;
+use crate::modes::history::screen as history;
 use crate::modes::moves::screen as moving;
 pub(crate) mod overlay;
 use crate::modes::rename::screen as rename;
@@ -203,11 +203,16 @@ impl Sections {
 pub struct App<'a> {
     model: &'a Model,
     painter: Painter,
+    now: u64,
 }
 
 impl<'a> App<'a> {
-    pub fn new(model: &'a Model, painter: Painter) -> Self {
-        Self { model, painter }
+    pub fn new(model: &'a Model, painter: Painter, now: u64) -> Self {
+        Self {
+            model,
+            painter,
+            now,
+        }
     }
 }
 
@@ -227,7 +232,9 @@ impl Widget for App<'_> {
             crate::model::Mode::Rewrite(rw) => rewrite::RewriteView::new(rw, t, m.split, m.view)
                 .screen()
                 .render(body, buf),
-            crate::model::Mode::History(_) => history::HISTORY_RENDER.render(m, t, body, buf),
+            crate::model::Mode::History(h) => history::HistoryView::new(h, t, m.split, self.now)
+                .screen()
+                .render(body, buf),
         }
         StatusBar::new(m, t).render(bottom, buf);
         if let Some(o) = &m.overlay {

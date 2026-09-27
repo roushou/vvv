@@ -9,8 +9,8 @@ use vvv_engine::{Answer, DepsQuery, ExplainQuery, ImpactQuery, Intent, Request, 
 use super::action::{Action, Effect, Event, Planned};
 use super::keymap::{Dispatch, Key};
 use super::model::{
-    Confirm, Confirmed, FilePreview, HistoryMode, HistoryPanel, Menu, MenuTarget, Mode, Model,
-    MoveMode, Overlay, Panels, Relation, RenameMode, RewriteMode, SearchPanel,
+    Confirmed, FilePreview, HistoryMode, Menu, MenuTarget, Mode, Model, MoveMode, Overlay, Panels,
+    Relation, RenameMode, RewriteMode, SearchPanel,
 };
 use super::query::Filter;
 use crate::modes::context::ModeContext;
@@ -273,7 +273,7 @@ impl Model {
             Mode::Rename(r) => r.focus_by(by),
             Mode::Move(mv) => mv.focus_by(by),
             Mode::Rewrite(rw) => rw.focus_by(by),
-            Mode::History(h) => h.focus = h.focus.step(by),
+            Mode::History(h) => h.focus_by(by),
         }
         self.preview_effect()
     }
@@ -288,11 +288,7 @@ impl Model {
             Mode::Rename(r) => r.focus_nth(n),
             Mode::Move(mv) => mv.focus_nth(n),
             Mode::Rewrite(rw) => rw.focus_nth(n),
-            Mode::History(h) => {
-                if let Some(p) = HistoryPanel::nth(n) {
-                    h.focus = p;
-                }
-            }
+            Mode::History(h) => h.focus_nth(n),
         }
         self.preview_effect()
     }
@@ -313,11 +309,7 @@ impl Model {
             Mode::Rename(r) => r.moved(by),
             Mode::Move(mv) => mv.moved(by),
             Mode::Rewrite(rw) => rw.moved(by),
-            Mode::History(h) => {
-                let len = h.entries.len();
-                h.cursor.move_by(by, len);
-                h.files_scroll = 0;
-            }
+            Mode::History(h) => h.moved(by),
         }
         self.preview_effect()
     }
@@ -345,7 +337,7 @@ impl Model {
             Mode::Rename(r) => r.scroll_focused(),
             Mode::Move(mv) => mv.scroll_focused(),
             Mode::Rewrite(rw) => rw.scroll_focused(),
-            Mode::History(h) => h.focus == HistoryPanel::Files,
+            Mode::History(h) => h.scroll_focused(),
         }
     }
 
@@ -375,7 +367,7 @@ impl Model {
             Mode::Rename(r) => r.scrolled(by),
             Mode::Move(mv) => mv.scrolled(by),
             Mode::Rewrite(rw) => rw.scrolled(by),
-            Mode::History(h) => bump(&mut h.files_scroll),
+            Mode::History(h) => h.scrolled(by),
         }
         Vec::new()
     }
@@ -721,16 +713,12 @@ impl Model {
 
     fn undo_requested(&mut self) -> Vec<Effect> {
         match &self.mode {
-            Mode::History(h) => match h.current() {
-                Some(entry) if h.is_newest() => {
-                    self.overlay = Some(Overlay::Confirm(Confirm {
-                        question: format!("↩ #{}  {}?", entry.id, IntentLine(&entry.intent)),
-                        then: Confirmed::Undo,
-                    }));
+            Mode::History(h) => match h.confirmation() {
+                Ok(confirm) => {
+                    self.overlay = Some(Overlay::Confirm(confirm));
                     Vec::new()
                 }
-                Some(_) => self.fail("only the newest entry can be undone"),
-                None => self.fail("nothing to undo"),
+                Err(message) => self.fail(message),
             },
             _ => {
                 self.status.busy = true;
