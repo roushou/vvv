@@ -285,6 +285,9 @@ state is unknown. Recovery is in memory: interruption or a crash has no automati
 recovery. It does not provide isolation from external writers or restore inode
 identity, timestamps, or complete filesystem metadata.
 
+Invalid declaration extents or overlapping edits in a symbol move are rejected as
+a conflict before any write.
+
 Each apply is saved to `.vvv/history.json` (worth adding `.vvv/` to `.gitignore`).
 
 ```console

@@ -28,6 +28,7 @@ mod understanding;
 mod vfs;
 mod workspace;
 
+pub use capabilities::moves::ExtractionError;
 pub use command::{Command, Context};
 pub use engine::Engine;
 pub use error::{EngineError, RecoveryError};

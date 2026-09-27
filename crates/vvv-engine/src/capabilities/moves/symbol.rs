@@ -95,9 +95,9 @@ impl Command for MoveSymbolIntent {
             return Err(EngineError::NoLanguage(to_path.clone().into()));
         }
         let ns = graph.namespace_of(&from_path)?;
-        let extraction = Extraction::of(source.facts()?, source.text(), &self.name, |kind| {
+        let extraction = Extraction::of(source.facts()?, source.file(), &self.name, |kind| {
             ns.is_addressable(kind)
-        })
+        })?
         .ok_or_else(|| EngineError::NoSuchSymbol {
             name: self.name.clone(),
             kind: None,
@@ -467,7 +467,7 @@ impl<'a> SymbolMove<'a> {
     /// Cut the pieces out of the old file; paste them, with their edits,
     /// where the destination keeps items, its new imports above.
     fn cut_and_paste(&mut self) -> Result<(), EngineError> {
-        let moved = self.extraction.assemble(&self.text_edits);
+        let moved = self.extraction.assemble(&self.text_edits)?;
         for cut in self.extraction.cuts() {
             self.change.edit(self.source_witness, Edit::delete(cut))?;
         }

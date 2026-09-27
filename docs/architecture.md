@@ -535,6 +535,12 @@ it. A consumer in another package would need `pub`, which is never inferred — 
 need is handed to `Surgery::relocate` instead of edited in place. Nothing is ever
 narrowed, and a move that nobody outside needs changes no modifier.
 
+**Extraction validates before slicing.** A symbol move retains the source snapshot
+and checks its declaration extents for valid UTF-8 ranges and overlapping pieces.
+Assembly assigns every edit to one piece and rejects invalid, outside, or
+overlapping edits as a conflict before producing a plan. Identical extents are
+extracted once; coincident insertions keep their input order.
+
 **Grouped imports go back to the surgery.** An `ImportRef` inside `use a::{…}`
 carries an `ImportGroup` (prefix, item span, list, statement). `Rebase` collects such
 entries per statement and calls `Surgery::regroup`, which rewrites an entry in place
