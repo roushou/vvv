@@ -6,7 +6,7 @@ the rules that keep the crates apart.
 ## Commands
 
 ```console
-cargo build                                   # default features: rust, typescript
+cargo build                                   # default features: rust, typescript, tui
 cargo test --workspace --all-features --no-fail-fast    # the corpus gate is in here
 cargo clippy --workspace --all-targets --all-features
 cargo fmt --all
@@ -41,12 +41,13 @@ crates/
                 they take and return; no parser, no I/O, no lifecycle
   vvv-lang      syntax/ (the only code that touches ast-grep nodes) + one module per
                 language behind a feature: grammar + semantics tables, a Layout, a Surgery
-  vvv-engine    the façade: Engine, the plan lifecycle, the workspace and its Vfs,
-                history, and protocol/ — every type --json prints, the contract for AI
-                tools. Takes a LanguageRegistry; names no language
+  vvv-engine    the façade: Engine, capability modules, the plan lifecycle, the
+                workspace and its Vfs, history, and protocol/ — the shared wire
+                types and re-exports that AI tools consume. Takes a
+                LanguageRegistry; names no language
   vvv-tui       the picker: Tui::new(engine).editor(..).color(..).run(); links the engine only
   vvv           the entrypoint: clap consumer of vvv-engine (+ vvv-tui behind `tui`);
-                cli/commands/ map 1:1 to intents; languages.rs is the composition root
+                cli/commands/ build requests; languages.rs is the composition root
                 that names vvv-lang and picks the plugins the build ships
                 (package `vvv-rs` — `vvv` is taken on crates.io — binary `vvv`)
 docs/          architecture, guide, protocol, report
@@ -55,11 +56,17 @@ docs/          architecture, guide, protocol, report
 ## Rules
 
 - **An engine runs commands.** `Engine` has `new`, `run`, `root` and
-  `language_ids`; every capability is a request type in `protocol/` with an
-  `impl Command` next to its components. A new method on `Engine` is the wrong place
-  for anything.
-- **Library first.** Behaviour lives in `vvv-engine`. `crates/vvv` builds an intent,
-  runs it, runs `Apply` if asked, hands the result to a `Reporter`. Nothing else —
+  `language_ids`. Capability-specific request and answer data, typed execution,
+  and report composition belong together; related queries may share a private
+  capability module. The [command ownership index](crates/vvv-engine/src/capabilities/mod.rs)
+  maps every command to its owner; update it when adding or moving a command.
+  `protocol/` owns shared wire types and the central `Request`/`Answer` contract,
+  and re-exports query types. Keep data and serialization independent of
+  `Workspace`; only execution may read the tree. A new method on `Engine` is the wrong place for
+  a capability.
+- **Library first.** Behaviour lives in `vvv-engine`. `crates/vvv` builds a
+  `Request` (including apply policy), runs it, and hands the answer to a `Reporter`.
+  Interface code handles argument parsing and reporting —
   no `format!` of user-facing text outside `output/`. What crosses a boundary is data
   (`Intent`, `NoticeKind`, error variants, protocol types); words are the display
   layer's job. An error or notice that only exists as a `String` is a bug.
@@ -70,18 +77,20 @@ docs/          architecture, guide, protocol, report
   `grep -rn "use vvv_core\|use vvv_lang" crates/vvv/src crates/vvv-tui/src`, excluding
   `languages.rs`, must find nothing. An interface that wants the workspace has found a
   missing engine method; one that wants a language plugin has found the composition
-  root. One membership test per crate: core — does a plugin need it to be one?; engine —
-  does it act on a tree, or cross to a client as data (then `protocol/`, which takes no
-  `Workspace`)?
+  root. One membership test per crate: core — does a plugin need it to be one?;
+  engine — does it act on a tree or cross to a client as data? Put shared client
+  data in `protocol/`; put data specific to one capability beside its execution,
+  with no tree access in the data or serialization code.
 - **The report is the result; the view is how it is shown.** `vvv-engine::report`
-  composes an `Answer` into a `Document` — the facts every interface can read, with
-  no layout — and a `View` lays it out as a `Presentation` of rows (`Detailed` is
+  owns shared `Document`/`Block`/row/view vocabulary and delegates `Answer`
+  composition to its capability owner (see the command ownership index). The
+  document holds the facts every interface can read, with no layout; a `View` lays it out as a `Presentation` of rows (`Detailed` is
   the terminal's; the picker holds `Compact`). `crates/vvv/src/output/render/` only
   styles what a view produced, so it names no command:
   `grep -rn "Answer\|Match\|Occurrence\|Search\|Rename\|Move"
   crates/vvv/src/output/render/` must find nothing. The report is never serialized:
   `--json` is the `Answer`. A row an interface can act on carries a
-  `Site { path, line }`.
+  `Source { path: RelPath, line }`.
 - **The plugin boundary is data.** `Language` methods take `&str` and return plain
   serializable values (`RawMatch`, `Symbol`). Only `vvv-lang/src/syntax/` imports
   `ast_grep_core`; language modules contribute `Grammar`/`Semantics` tables, a pure
@@ -94,15 +103,24 @@ docs/          architecture, guide, protocol, report
   it is and what it can answer — `Graph`, `Namespace`, `Candidate`, `Scope`, `Target`, `Rebase`,
   `Extraction`, `Widen`, `SymbolMove`,
   `Plan` — never for the step it performs. Behaviour hangs off the type that owns the
-  data; sequences live in the `Engine` method as plain code short enough to read as a
-  sentence. A trait exists once two real implementations answer its question; with one
-  it is a struct. A struct named with a verb, or a method whose only input is the
+  data; capability execution sequences stay with their owning type; `Engine::run`
+  only routes requests and coordinates lifecycle access. A trait exists once two
+  real implementations answer its question; with one it is a struct. A struct named with a verb, or a method whose only input is the
   previous step's output, is the smell. A helper with no natural owner is a sign the
   type is missing.
+- **Colocate types and implementations.** Keep a struct or enum and its inherent
+  methods and trait implementations in the same file by default. Multiple `impl`
+  blocks are fine; distributing them across files requires a strong, concrete
+  benefit that outweighs the additional navigation. Enforcing a dependency boundary
+  or keeping capability-specific composition with its answer can justify a split.
+  Method categories, file length, or separating data from behavior alone do not.
+- **No free functions.** Behavior lives as a method on the type that owns the
+  data it uses, or in a trait impl. Do not add a unit struct solely to namespace
+  an associated function. `#[test]` functions, `main`, and closures are exempt.
 - **Nothing writes without a `Plan`.** Planners emit a `ChangeSet`; `Plan::preview` is
   read-only; `Plan::apply(self)` consumes the plan, checks fingerprints, and returns a
   `Receipt`. `ChangeSet` has no write method on purpose. A command returns
-  `Planned<T>` — its wire result with the plan beside it — and only the `Apply` command
+  `Planned<T>` — its wire result with the plan beside it — and only `Apply`
   turns that into writes and a history entry.
 - **Every engine feature is testable with a fake language.** `vvv-engine/tests/` must
   keep passing with `--no-default-features`. If a test needs a real grammar it belongs
@@ -127,6 +145,9 @@ docs/          architecture, guide, protocol, report
 
 ## When you change something
 
+- Docs and comments describe current contracts, invariants, and implementation
+  constraints. Keep migration status, audit chronology, and completed-work notes
+  out of technical documentation; `docs/backlog.md` contains unresolved issues.
 - User-visible behaviour changed (a flag, a key, what a command rewrites) → update
   `docs/guide.md`; the README stays a front door and only changes for headline features.
 - JSON output changed → update `docs/protocol.md` in the same change.
@@ -136,7 +157,7 @@ docs/          architecture, guide, protocol, report
   `INSTA_UPDATE=always cargo test -p vvv-rs` (or `-p vvv-tui`) to accept. Never
   `println!` in a reporter: write to its `out`/`err` so tests can capture it.
 - What a command _means_ changed (a verdict, an address, an edit) → the corpus gate
-  changes: `crates/vvv/tests/corpus.rs` runs every command over the two workspaces
+  changes: `crates/vvv/tests/corpus.rs` runs command cases over the registered workspaces
   under `crates/vvv/tests/corpus/` and keeps the exact output in
   `crates/vvv/tests/corpus/snapshots/`. Read the diff as the review of the change —
   every line that moved is a behaviour that moved — then accept with
@@ -144,6 +165,10 @@ docs/          architecture, guide, protocol, report
   should handle goes into the corpus first, with a case that shows it. The same file
   checks three properties every mutation must keep (apply is the preview, undo is the
   identity, a batch is composition); those never get accepted, only fixed.
+- TUI ownership → each mode keeps state, transitions, and a typed view
+  under `modes/<name>/`. Shared screens own key/focus/help metadata; rendering
+  callbacks take the bound view, never an arbitrary `Model`. Overlays keep their
+  state, transitions, and typed boxes under `overlays/`.
 - TUI change → `update`/`on_event` stay pure (no I/O, no time); views stay pure
   functions of the model; the engine is only ever called from `worker.rs`; the terminal
   and the editor only from `tui.rs`; the surface stays `Tui`'s four methods. Test with

@@ -4,7 +4,7 @@
 //! of. Styling happens later, when an interface maps a [`Role`] to a colour;
 //! this module never sees a palette, a writer, or a terminal.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use std::path::Path;
 
 use super::Row;
@@ -15,7 +15,7 @@ use crate::protocol::{
     Dep, FileChange, HistoryEntry, ImportSite, Importer, Notice, NoticeKind, OutlineItem, Placed,
     Respelling, Site, Skipped,
 };
-use crate::{Confidence, Match, Occurrence, Reach, ReachKind, Reason, Span, Symbol, SymbolKind};
+use crate::{Confidence, Match, Reach, ReachKind, Reason, Span, Symbol, SymbolKind};
 
 /// A declaration as `● kind name   path:line`.
 pub struct Declaration<'a> {
@@ -77,16 +77,20 @@ impl<'a> SiteLine<'a> {
         Self { site }
     }
 
-    pub fn lines(&self) -> Vec<Line> {
+    pub fn rows(&self) -> Vec<Row> {
         let s = self.site;
-        let mut lines = vec![Declaration::new(&s.declaration).line()];
+        let mut lines = vec![Row::at(
+            Declaration::new(&s.declaration).line(),
+            s.declaration.path.clone(),
+            s.declaration.start.line,
+        )];
         if let Some(import) = &s.import {
-            lines.push(
+            lines.push(Row::new(
                 Line::of(Role::Plain, "  ")
                     .and_line(Line::mark(Mark::Import))
                     .and(Role::Plain, " ")
                     .and(Role::Strong, import.clone()),
-            );
+            ));
         }
         lines
     }
@@ -211,6 +215,10 @@ pub(crate) struct MatchRow<'a> {
 }
 
 impl MatchRow<'_> {
+    pub fn new(m: &Match, ordinal: usize, width: usize) -> MatchRow<'_> {
+        MatchRow { m, ordinal, width }
+    }
+
     /// One match as a numbered row, for a view that lists matches one at a
     /// time (the picker).
     pub fn numbered(m: &Match, ordinal: usize) -> Line {
@@ -224,7 +232,7 @@ impl MatchRow<'_> {
 
     /// The glyph is the role (`●` declaration, `→` import, blank use); the
     /// source line follows, with the hit marked.
-    fn line(&self) -> Line {
+    pub fn line(&self) -> Line {
         let m = self.m;
         let mut line = Line::of(Role::Plain, "  ")
             .and(
@@ -343,185 +351,16 @@ impl<'a> Sections<'a> {
     }
 }
 
-/// Occurrences as three sections — `✓`, `?`, `✗` — each a count, its files
-/// and its reason as a tag. `✓` collapses to per-file counts unless expanded;
-/// `?` and `✗` list every row, numbered as `--select` counts them.
-pub struct Verdicts<'a> {
-    occurrences: &'a [Occurrence],
-    expanded: bool,
-    planned: Option<&'a [FileChange]>,
-}
-
-impl<'a> Verdicts<'a> {
-    pub fn new(occurrences: &'a [Occurrence]) -> Self {
-        Self {
-            occurrences,
-            expanded: false,
-            planned: None,
-        }
-    }
-
-    pub fn expanded(mut self, expanded: bool) -> Self {
-        self.expanded = expanded;
-        self
-    }
-
-    pub fn planned(mut self, planned: Option<&'a [FileChange]>) -> Self {
-        self.planned = planned;
-        self
-    }
-
-    /// The row numbers of one verdict, as `--select` would take them: `27-33`
-    /// when contiguous, else a list.
-    pub fn selection(occurrences: &[Occurrence], confidence: Confidence) -> String {
-        let numbers: Vec<usize> = occurrences
-            .iter()
-            .enumerate()
-            .filter(|(_, o)| o.confidence == confidence)
-            .map(|(i, _)| i + 1)
-            .collect();
-        match (numbers.first(), numbers.last()) {
-            (Some(first), Some(last)) if last - first + 1 == numbers.len() && first != last => {
-                format!("{first}-{last}")
-            }
-            _ => numbers
-                .iter()
-                .map(ToString::to_string)
-                .collect::<Vec<_>>()
-                .join(","),
-        }
-    }
-
-    pub fn lines(&self) -> Vec<Row> {
-        let width = self.occurrences.len().to_string().len();
-        let mut rows = Vec::new();
-        self.section(&mut rows, Confidence::Resolved, !self.expanded, width);
-        rows.push(Row::new(Line::new()));
-        self.section(&mut rows, Confidence::Unresolved, false, width);
-        rows.push(Row::new(Line::new()));
-        self.section(&mut rows, Confidence::Other, false, width);
-        rows
-    }
-
-    /// One occurrence as a numbered row, for a view that lists them one at a
-    /// time (the picker).
-    pub fn row(occurrence: &Occurrence, ordinal: usize) -> Line {
-        MatchRow::numbered(&occurrence.m, ordinal)
-    }
-
-    fn section(&self, lines: &mut Vec<Row>, confidence: Confidence, collapsed: bool, width: usize) {
-        let rows: Vec<(usize, &Occurrence)> = self
-            .occurrences
-            .iter()
-            .enumerate()
-            .filter(|(_, o)| o.confidence == confidence)
-            .collect();
-        let mut head = Verdict::new(confidence)
-            .line()
-            .and(Role::Plain, " ")
-            .and(Role::Strong, rows.len().to_string());
-        if rows.is_empty() {
-            lines.push(Row::new(head));
-            return;
-        }
-        head = head.and(Role::Plain, "  ").and(
-            Role::Dim,
-            Files::among(rows.iter().map(|(_, o)| o.m.path.as_path())).to_string(),
-        );
-        let reasons: BTreeSet<Reason> = rows.iter().map(|(_, o)| o.reason).collect();
-        let shared = (reasons.len() == 1 && confidence != Confidence::Resolved)
-            .then(|| *reasons.iter().next().expect("one"));
-        if let Some(reason) = shared {
-            head = head
-                .and(Role::Plain, "   ")
-                .and_line(Tag::new(reason).line());
-        }
-        if confidence == Confidence::Unresolved
-            && let Some(files) = self.planned
-        {
-            let planned = rows.iter().any(|(_, o)| {
-                files
-                    .iter()
-                    .any(|c| c.path == o.m.path && c.edits.iter().any(|e| e.span == o.m.span))
-            });
-            let word = if planned { "in the plan" } else { "left out" };
-            head = head.and(Role::Plain, "   ").and(Role::Dim, word);
-        }
-        lines.push(Row::new(head));
-
-        if collapsed {
-            // Rows are grouped by reason, so a file may recur; one line per file.
-            let mut per_file: BTreeMap<&Path, usize> = BTreeMap::new();
-            for (_, o) in &rows {
-                *per_file.entry(o.m.path.as_path()).or_default() += 1;
-            }
-            for (path, count) in per_file {
-                lines.push(Row::new(
-                    Line::of(Role::Plain, "  ")
-                        .and(Role::Ordinal, format!("{count:>width$}"))
-                        .and(Role::Plain, "  ")
-                        .and(Role::Path, path.display().to_string()),
-                ));
-            }
-            return;
-        }
-
-        // Rows come grouped by reason; when a section has several, each run
-        // gets a tag line of its own instead of a tag per row.
-        let mut current: Option<&Path> = None;
-        let mut reason: Option<Reason> = None;
-        for (i, o) in &rows {
-            if shared.is_none() && reason != Some(o.reason) {
-                let run = rows.iter().filter(|(_, r)| r.reason == o.reason).count();
-                lines.push(Row::new(
-                    Tag::new(o.reason)
-                        .line()
-                        .and(Role::Plain, "  ")
-                        .and(Role::Dim, run.to_string()),
-                ));
-                reason = Some(o.reason);
-                current = None;
-            }
-            if current != Some(o.m.path.as_path()) {
-                lines.push(Row::new(Line::of(
-                    Role::Path,
-                    o.m.path.display().to_string(),
-                )));
-                current = Some(&o.m.path);
-            }
-            lines.push(Row::at(
-                MatchRow {
-                    ordinal: i + 1,
-                    width,
-                    m: &o.m,
-                }
-                .line(),
-                o.m.path.clone(),
-                o.m.start.line,
-            ));
-        }
-    }
-}
-
 /// A file's declarations as a tree: nesting by span containment, the name
 /// column aligned, the modifier after it. With `reach`, who may name each
 /// item follows.
 pub struct OutlineTree<'a> {
     items: &'a [OutlineItem],
-    reach: bool,
 }
 
 impl<'a> OutlineTree<'a> {
     pub fn new(items: &'a [OutlineItem]) -> Self {
-        Self {
-            items,
-            reach: false,
-        }
-    }
-
-    pub fn with_reach(mut self, reach: bool) -> Self {
-        self.reach = reach;
-        self
+        Self { items }
     }
 
     pub fn lines(&self) -> Vec<Line> {
@@ -547,13 +386,6 @@ impl<'a> OutlineTree<'a> {
                         .and(Role::Declaration, format!("{label:<width$}"))
                         .and(Role::Plain, "   ")
                         .and(role, text);
-                }
-                if self.reach
-                    && let Some(reach) = &item.reach
-                {
-                    line = line
-                        .and(Role::Plain, "   ")
-                        .and(Role::Dim, reach.to_string());
                 }
                 line
             })
@@ -606,13 +438,14 @@ impl<'a> OutlineTree<'a> {
 /// statement: `line  path{a, b}   → file`. The file's own package comes
 /// first, unresolved (`?`) last.
 pub struct DepGroups<'a> {
+    path: &'a vvv_core::RelPath,
     deps: &'a [Dep],
     own: Option<&'a str>,
 }
 
 impl<'a> DepGroups<'a> {
-    pub fn new(deps: &'a [Dep], own: Option<&'a str>) -> Self {
-        Self { deps, own }
+    pub fn new(path: &'a vvv_core::RelPath, deps: &'a [Dep], own: Option<&'a str>) -> Self {
+        Self { path, deps, own }
     }
 
     /// How many import statements the entries come from.
@@ -623,7 +456,7 @@ impl<'a> DepGroups<'a> {
             .len()
     }
 
-    pub fn lines(&self) -> Vec<Line> {
+    pub fn rows(&self) -> Vec<Row> {
         let deps = self.deps;
         let mut lines = Vec::new();
         // Statements in source order, each its entries.
@@ -658,7 +491,9 @@ impl<'a> DepGroups<'a> {
         for key in &packages {
             let head = key.as_deref().unwrap_or("?");
             if !head.is_empty() {
-                lines.push(Line::of(Role::Plain, "  ").and(Role::Strong, head.to_owned()));
+                lines.push(Row::new(
+                    Line::of(Role::Plain, "  ").and(Role::Strong, head.to_owned()),
+                ));
             }
             for (_, entries) in statements.iter().filter(|(_, e)| package(e) == *key) {
                 // A group's prefix is not an import of its own.
@@ -693,7 +528,7 @@ impl<'a> DepGroups<'a> {
                                 .join(", "),
                         );
                 }
-                lines.push(line);
+                lines.push(Row::at(line, self.path.clone(), entries[0].start.line));
             }
         }
         lines
@@ -797,7 +632,7 @@ impl<'a> ImporterRows<'a> {
         rows
     }
 
-    pub fn lines(&self) -> Vec<Line> {
+    pub fn rows(&self) -> Vec<Row> {
         let rows = Self::sites(self.importers);
         let width = rows
             .iter()
@@ -806,13 +641,17 @@ impl<'a> ImporterRows<'a> {
             .unwrap_or(0);
         rows.into_iter()
             .map(|(path, line, names)| {
-                Line::of(Role::Plain, "  ")
-                    .and(
-                        Role::Path,
-                        format!("{:<width$}", Respellings::site(path, line)),
-                    )
-                    .and(Role::Plain, "   ")
-                    .and(Role::Plain, names.join(" "))
+                Row::at(
+                    Line::of(Role::Plain, "  ")
+                        .and(
+                            Role::Path,
+                            format!("{:<width$}", Respellings::site(path, line)),
+                        )
+                        .and(Role::Plain, "   ")
+                        .and(Role::Plain, names.join(" ")),
+                    path.into(),
+                    line,
+                )
             })
             .collect()
     }
@@ -834,8 +673,11 @@ impl<'a> Respellings<'a> {
         format!("{}:{}", path.display(), line + 1)
     }
 
-    pub fn lines(&self) -> Vec<Line> {
-        self.rows.iter().map(|r| Self::row(r, self.width)).collect()
+    pub fn rows(&self) -> Vec<Row> {
+        self.rows
+            .iter()
+            .map(|r| Row::at(Self::row(r, self.width), r.path.clone(), r.start.line))
+            .collect()
     }
 
     /// One re-spelling as a row: `→ path:line   from → to`.
@@ -989,7 +831,7 @@ impl<'a> Diff<'a> {
             }))
     }
 
-    pub fn lines(&self) -> Vec<Line> {
+    fn header(&self) -> Line {
         let file = self.file;
         let header = match &file.moved_to {
             Some(to) => format!("{} → {}", file.path.display(), to.display()),
@@ -1001,9 +843,51 @@ impl<'a> Diff<'a> {
             Line::new()
         };
         head = head.and(Role::Path, header);
-        let mut lines = vec![head];
-        lines.extend(file.diff.lines());
-        lines
+        head
+    }
+
+    pub fn rows(&self, state: crate::MutationState) -> Vec<Row> {
+        let file = self.file;
+        let path = if state.is_applied() {
+            file.moved_to.as_ref().unwrap_or(&file.path)
+        } else {
+            &file.path
+        };
+        let mut rows = vec![Row::new(self.header())];
+        for hunk in file.diff.hunks() {
+            rows.push(Row::new(Line::of(Role::Hunk, hunk.header())));
+            let (mut old, mut new) = (
+                hunk.old.start.saturating_sub(1),
+                hunk.new.start.saturating_sub(1),
+            );
+            for changed in &hunk.lines {
+                let role = match changed.kind {
+                    crate::protocol::DiffKind::Context => Role::Plain,
+                    crate::protocol::DiffKind::Added => Role::Added,
+                    crate::protocol::DiffKind::Removed => Role::Removed,
+                };
+                let line = Line::of(role, format!("{}{}", changed.kind.marker(), changed.text));
+                let at = match (state.is_applied(), changed.kind) {
+                    (_, crate::protocol::DiffKind::Context) => {
+                        Some(if state.is_applied() { new } else { old })
+                    }
+                    (false, crate::protocol::DiffKind::Removed) => Some(old),
+                    (true, crate::protocol::DiffKind::Added) => Some(new),
+                    _ => None,
+                };
+                rows.push(match at {
+                    Some(at) => Row::at(line, path.clone(), at),
+                    None => Row::new(line),
+                });
+                if changed.kind != crate::protocol::DiffKind::Added {
+                    old += 1;
+                }
+                if changed.kind != crate::protocol::DiffKind::Removed {
+                    new += 1;
+                }
+            }
+        }
+        rows
     }
 }
 
@@ -1026,10 +910,10 @@ mod snapshots {
             diff: ProtocolDiff::between(Path::new("a.rs"), Path::new("b/a.rs"), "x\n", "y\n"),
         };
         let rendered: String = Diff::new(&moved, false)
-            .lines()
+            .rows(crate::MutationState::Preview)
             .iter()
-            .map(|line| {
-                let text: String = line.pieces().iter().map(|p| p.text.as_str()).collect();
+            .map(|row| {
+                let text: String = row.line.pieces().iter().map(|p| p.text.as_str()).collect();
                 format!("{text}\n")
             })
             .collect();

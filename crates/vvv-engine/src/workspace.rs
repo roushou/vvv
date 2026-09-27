@@ -1,10 +1,12 @@
 //! A root directory viewed through a [`Vfs`].
 
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
+use std::sync::{Arc, OnceLock};
 
 use crate::{DiskVfs, Overlay, Vfs, VfsError};
-use vvv_core::SourceText;
+use vvv_core::{RelPath, SourceText};
+
+use crate::plan::{ApplyError, Fingerprint};
 
 #[derive(Clone)]
 pub struct Workspace {
@@ -100,6 +102,7 @@ impl std::fmt::Debug for Workspace {
 pub struct SourceFile {
     path: PathBuf,
     source: SourceText,
+    witness: OnceLock<SourceWitness>,
 }
 
 impl SourceFile {
@@ -107,11 +110,20 @@ impl SourceFile {
         Self {
             path: path.into(),
             source: text.into(),
+            witness: OnceLock::new(),
         }
     }
 
     pub fn path(&self) -> &Path {
         &self.path
+    }
+
+    /// The identity of the immutable text from which edits are computed.
+    pub(crate) fn witness(&self) -> &SourceWitness {
+        self.witness.get_or_init(|| SourceWitness {
+            path: self.path().into(),
+            fingerprint: Fingerprint::of(self.text()),
+        })
     }
 
     pub fn source(&self) -> &SourceText {
@@ -120,5 +132,31 @@ impl SourceFile {
 
     pub fn text(&self) -> &str {
         self.source.as_str()
+    }
+}
+
+/// A file path paired with the content identity of one observed snapshot.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub(crate) struct SourceWitness {
+    path: RelPath,
+    fingerprint: Fingerprint,
+}
+
+impl SourceWitness {
+    pub fn path(&self) -> &Path {
+        &self.path
+    }
+
+    pub fn fingerprint(&self) -> &Fingerprint {
+        &self.fingerprint
+    }
+
+    pub fn check(&self, other: &Self) -> Result<(), ApplyError> {
+        if self != other {
+            return Err(ApplyError::Stale {
+                path: self.path.clone(),
+            });
+        }
+        Ok(())
     }
 }

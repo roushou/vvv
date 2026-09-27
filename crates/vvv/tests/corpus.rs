@@ -1,8 +1,7 @@
-//! The corpus gate: two small workspaces under `tests/corpus/` — one Rust
-//! workspace of two crates, one TypeScript project — with every command's
-//! exact output kept as a snapshot, and three properties every mutation must
-//! keep: what is applied is what was previewed, an apply undone leaves the
-//! tree as it was, and a batch of two is the second applied after the first.
+//! Corpus workspaces under `tests/corpus/` cover Rust, TypeScript, moves, and
+//! import resolution. Command cases retain exact human and JSON snapshots.
+//! Mutation cases check three properties: apply equals preview, undo restores
+//! the original tree, and batch equals sequential application.
 //! Changing what a command means changes a snapshot; review it, then
 //! `INSTA_UPDATE=always cargo test -p vvv-rs --test corpus` to accept.
 
@@ -25,6 +24,36 @@ struct Corpus {
     /// Mutations the properties hold over, as requests without `apply`.
     mutations: fn() -> Vec<Request>,
 }
+
+/// Import resolution: same-file alias chains, grouped entries, and nested groups.
+#[cfg(feature = "rust")]
+const RUST_RESOLUTION: Corpus = Corpus {
+    name: "rust-resolution",
+    cases: &[
+        (
+            "references-parent",
+            &["references", "Foo", "--in", "src/a.rs"],
+        ),
+        (
+            "references-child-module",
+            &["references", "child", "--in", "src/a.rs"],
+        ),
+        (
+            "references-leaf",
+            &["references", "Child", "--in", "src/a/child.rs"],
+        ),
+        ("deps-chain", &["deps", "src/chained.rs"]),
+        ("explain-chain", &["explain", "src/chained.rs:3:6"]),
+        ("explain-grouped", &["explain", "src/consumer.rs:3:31"]),
+        ("explain-nested-child", &["explain", "src/nested.rs:2:28"]),
+        (
+            "explain-nested-function",
+            &["explain", "src/nested.rs:2:35"],
+        ),
+        ("explain-nested-sibling", &["explain", "src/nested.rs:2:46"]),
+    ],
+    mutations: Vec::new,
+};
 
 const RUST: Corpus = Corpus {
     name: "rust",
@@ -146,6 +175,98 @@ const TS: Corpus = Corpus {
     },
 };
 
+/// Rust forms whose move invariants need a real grammar. These cases are
+/// kept separate so adding move cases cannot alter query golden outputs.
+#[cfg(feature = "rust")]
+const RUST_MOVES: Corpus = Corpus {
+    name: "rust-moves",
+    cases: &[
+        (
+            "move-self",
+            &["move", "src/a.rs", "src/b.rs", "--symbol", "foo"],
+        ),
+        (
+            "move-self-sibling",
+            &[
+                "move",
+                "src/selfrefs.rs",
+                "src/b.rs",
+                "--symbol",
+                "recursive",
+            ],
+        ),
+        (
+            "move-companion",
+            &[
+                "move",
+                "src/companions.rs",
+                "src/b.rs",
+                "--symbol",
+                "Bundle",
+            ],
+        ),
+        (
+            "move-symbol-alias",
+            &["move", "src/a.rs", "src/b.rs", "--symbol", "Foo"],
+        ),
+        (
+            "move-child-alias",
+            &["move", "src/a/sub.rs", "src/b/sub.rs"],
+        ),
+        ("move-module-alias", &["move", "src/a.rs", "src/d.rs"]),
+        (
+            "move-provision-alias",
+            &["move", "src/origin.rs", "src/b.rs", "--symbol", "moved"],
+        ),
+        (
+            "move-cleanup-alias",
+            &[
+                "move",
+                "src/origin.rs",
+                "src/cleanup.rs",
+                "--symbol",
+                "needed",
+            ],
+        ),
+    ],
+    mutations: || {
+        vec![
+            Request::MoveSymbol {
+                intent: MoveSymbolIntent::new("foo", "src/a.rs", "src/b.rs"),
+                apply: false,
+            },
+            Request::MoveSymbol {
+                intent: MoveSymbolIntent::new("recursive", "src/selfrefs.rs", "src/b.rs"),
+                apply: false,
+            },
+            Request::MoveSymbol {
+                intent: MoveSymbolIntent::new("Bundle", "src/companions.rs", "src/b.rs"),
+                apply: false,
+            },
+            Request::MoveSymbol {
+                intent: MoveSymbolIntent::new("Foo", "src/a.rs", "src/b.rs"),
+                apply: false,
+            },
+            Request::Move {
+                intent: MoveIntent::new("src/a/sub.rs", "src/b/sub.rs"),
+                apply: false,
+            },
+            Request::Move {
+                intent: MoveIntent::new("src/a.rs", "src/d.rs"),
+                apply: false,
+            },
+            Request::MoveSymbol {
+                intent: MoveSymbolIntent::new("moved", "src/origin.rs", "src/b.rs"),
+                apply: false,
+            },
+            Request::MoveSymbol {
+                intent: MoveSymbolIntent::new("needed", "src/origin.rs", "src/cleanup.rs"),
+                apply: false,
+            },
+        ]
+    },
+};
+
 impl Corpus {
     fn dir(&self) -> PathBuf {
         Path::new(env!("CARGO_MANIFEST_DIR"))
@@ -238,15 +359,24 @@ fn snapshot(vfs: &MemoryVfs) -> BTreeMap<PathBuf, String> {
         .collect()
 }
 
-/// `text` with `edits` made, whatever order they came in.
-fn edited(text: &str, edits: &[Edit]) -> String {
-    let mut edits: Vec<&Edit> = edits.iter().collect();
-    edits.sort_by_key(|e| std::cmp::Reverse(e.span.start));
-    let mut out = text.to_owned();
-    for edit in edits {
-        out.replace_range(edit.span.start..edit.span.end, &edit.replacement);
+/// The preview's edit sequence interpreted independently of the engine.
+struct Edited<'a> {
+    text: &'a str,
+    edits: &'a [Edit],
+}
+
+impl Edited<'_> {
+    fn apply(&self) -> String {
+        let mut edits: Vec<_> = self.edits.iter().enumerate().collect();
+        // Applying backwards also reverses coincident insertions, so their
+        // final text preserves the order carried by the preview.
+        edits.sort_by_key(|(index, edit)| std::cmp::Reverse((edit.span.start, *index)));
+        let mut out = self.text.to_owned();
+        for (_, edit) in edits {
+            out.replace_range(edit.span.start..edit.span.end, &edit.replacement);
+        }
+        out
     }
-    out
 }
 
 fn files(answer: &Answer) -> &[FileChange] {
@@ -321,7 +451,7 @@ fn apply_is_preview(corpus: &Corpus) {
     for request in (corpus.mutations)() {
         let (vfs, engine) = corpus.engine();
         let before = snapshot(&vfs);
-        let preview = engine.run(request.clone()).unwrap();
+        let preview = engine.run(request.clone()).unwrap().into_answer();
         assert!(
             !files(&preview).is_empty(),
             "{request:?}: previews something"
@@ -342,7 +472,14 @@ fn apply_is_preview(corpus: &Corpus) {
             if to != from {
                 expected.remove(&from);
             }
-            expected.insert(to, edited(&original, &change.edits));
+            expected.insert(
+                to,
+                Edited {
+                    text: &original,
+                    edits: &change.edits,
+                }
+                .apply(),
+            );
         }
         engine.run(applying(&request)).unwrap();
         let after = snapshot(&vfs);
@@ -460,4 +597,491 @@ fn rust_batch_is_composition() {
 #[test]
 fn ts_batch_is_composition() {
     batch_is_composition(&TS);
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn symbol_moves_preserve_references_through_module_aliases() {
+    use vvv_engine::{Confidence, ReferencesQuery};
+
+    let (vfs, engine) = RUST_MOVES.engine();
+    let before = ReferencesQuery::new("Foo")
+        .declared_in("src/a.rs")
+        .execute(&engine)
+        .unwrap();
+    assert!(before.occurrences.iter().any(|occurrence| {
+        occurrence.m.path == Path::new("src/c.rs") && occurrence.confidence == Confidence::Resolved
+    }));
+
+    let planned = MoveSymbolIntent::new("Foo", "src/a.rs", "src/b.rs")
+        .plan(&engine)
+        .unwrap();
+    vvv_engine::Apply(planned).apply(&engine).unwrap();
+    let after = ReferencesQuery::new("Foo")
+        .declared_in("src/b.rs")
+        .execute(&engine)
+        .unwrap();
+    let consumers: Vec<_> = after
+        .occurrences
+        .iter()
+        .filter(|occurrence| occurrence.m.path == Path::new("src/c.rs"))
+        .collect();
+    assert!(
+        !consumers.is_empty(),
+        "the consumer must retain its reference"
+    );
+    assert!(
+        consumers
+            .iter()
+            .all(|occurrence| occurrence.confidence == Confidence::Resolved),
+        "the module-alias consumer must resolve to the moved declaration: {consumers:?}"
+    );
+    assert!(
+        !vfs.read(Path::new("/ws/src/a.rs"))
+            .unwrap()
+            .contains("struct Foo")
+    );
+    assert!(
+        vfs.read(Path::new("/ws/src/b.rs"))
+            .unwrap()
+            .contains("pub struct Foo;")
+    );
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn symbol_moves_preserve_self_references() {
+    use vvv_engine::{Confidence, ReferencesQuery};
+
+    let (vfs, engine) = RUST_MOVES.engine();
+    let planned = MoveSymbolIntent::new("foo", "src/a.rs", "src/b.rs")
+        .plan(&engine)
+        .expect("a self-reference must be movable without conflicting edits");
+    vvv_engine::Apply(planned).apply(&engine).unwrap();
+
+    let references = ReferencesQuery::new("foo")
+        .declared_in("src/b.rs")
+        .execute(&engine)
+        .unwrap();
+    let moved: Vec<_> = references
+        .occurrences
+        .iter()
+        .filter(|occurrence| occurrence.m.path == Path::new("src/b.rs"))
+        .collect();
+    assert_eq!(
+        moved.len(),
+        2,
+        "the declaration and its self-reference must travel together"
+    );
+    assert!(
+        moved
+            .iter()
+            .all(|occurrence| occurrence.confidence == Confidence::Resolved)
+    );
+    let source = vfs.read(Path::new("/ws/src/a.rs")).unwrap();
+    assert!(!source.contains("fn foo"));
+    assert!(
+        source.contains("pub struct Foo;"),
+        "the sibling declaration must stay behind"
+    );
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_moves_golden() {
+    golden(&RUST_MOVES);
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_moves_apply_is_preview() {
+    apply_is_preview(&RUST_MOVES);
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_moves_undo_is_identity() {
+    undo_is_identity(&RUST_MOVES);
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_moves_batch_is_composition() {
+    batch_is_composition(&RUST_MOVES);
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn file_moves_preserve_references_through_module_aliases() {
+    use vvv_engine::{Confidence, ReferencesQuery};
+    let (vfs, engine) = RUST_MOVES.engine();
+    vvv_engine::Apply(
+        MoveIntent::new("src/a/sub.rs", "src/b/sub.rs")
+            .plan(&engine)
+            .unwrap(),
+    )
+    .apply(&engine)
+    .unwrap();
+    let after = ReferencesQuery::new("Nested")
+        .declared_in("src/b/sub.rs")
+        .execute(&engine)
+        .unwrap();
+    assert!(
+        after
+            .occurrences
+            .iter()
+            .any(|o| o.m.path == Path::new("src/c.rs") && o.confidence == Confidence::Resolved)
+    );
+    assert!(
+        vfs.read(Path::new("/ws/src/c.rs"))
+            .unwrap()
+            .contains("crate::b::sub::Nested")
+    );
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn module_moves_keep_alias_spellings_when_the_binding_is_rebased() {
+    let (vfs, engine) = RUST_MOVES.engine();
+    vvv_engine::Apply(
+        MoveIntent::new("src/a.rs", "src/d.rs")
+            .plan(&engine)
+            .unwrap(),
+    )
+    .apply(&engine)
+    .unwrap();
+    let consumer = vfs.read(Path::new("/ws/src/c.rs")).unwrap();
+    assert!(consumer.contains("use crate::d as alias;"));
+    assert!(consumer.contains("alias::Foo"));
+    assert!(consumer.contains("alias::sub::Nested"));
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn moved_declarations_provision_imports_from_resolved_edges() {
+    use vvv_engine::{Confidence, ReferencesQuery};
+    let (vfs, engine) = RUST_MOVES.engine();
+    vvv_engine::Apply(
+        MoveSymbolIntent::new("moved", "src/origin.rs", "src/b.rs")
+            .plan(&engine)
+            .unwrap(),
+    )
+    .apply(&engine)
+    .unwrap();
+    let dest = vfs.read(Path::new("/ws/src/b.rs")).unwrap();
+    assert!(dest.contains("use crate::dependency::Dep;"));
+    assert!(!dest.contains("use alias::Dep;"));
+    let after = ReferencesQuery::new("Dep")
+        .declared_in("src/dependency.rs")
+        .execute(&engine)
+        .unwrap();
+    assert!(
+        after
+            .occurrences
+            .iter()
+            .any(|o| o.m.path == Path::new("src/b.rs") && o.confidence == Confidence::Resolved)
+    );
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn destination_cleanup_recognizes_imports_through_module_aliases() {
+    let (vfs, engine) = RUST_MOVES.engine();
+    vvv_engine::Apply(
+        MoveSymbolIntent::new("needed", "src/origin.rs", "src/cleanup.rs")
+            .plan(&engine)
+            .unwrap(),
+    )
+    .apply(&engine)
+    .unwrap();
+    let dest = vfs.read(Path::new("/ws/src/cleanup.rs")).unwrap();
+    assert!(!dest.contains("use alias::needed;"));
+    assert!(dest.contains("pub fn needed() {}"));
+    assert!(dest.contains("needed();"));
+}
+
+#[test]
+fn preview_insertions_keep_their_wire_order() {
+    let edits = [Edit::insert(0, "import\n"), Edit::insert(0, "item\n")];
+    assert_eq!(
+        Edited {
+            text: "",
+            edits: &edits
+        }
+        .apply(),
+        "import\nitem\n"
+    );
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn grouped_alias_prefixes_keep_their_resolved_meaning() {
+    use vvv_engine::{Confidence, ReferencesQuery};
+    let (vfs, engine) = RUST_MOVES.engine();
+    vvv_engine::Apply(
+        MoveIntent::new("src/a/sub.rs", "src/b/sub.rs")
+            .plan(&engine)
+            .unwrap(),
+    )
+    .apply(&engine)
+    .unwrap();
+    let text = vfs.read(Path::new("/ws/src/grouped.rs")).unwrap();
+    assert!(
+        text.contains("use root::{b::sub::Nested, a::Foo};"),
+        "{text}"
+    );
+    let references = ReferencesQuery::new("Nested")
+        .declared_in("src/b/sub.rs")
+        .execute(&engine)
+        .unwrap();
+    assert!(
+        references.occurrences.iter().any(
+            |o| o.m.path == Path::new("src/grouped.rs") && o.confidence == Confidence::Resolved
+        )
+    );
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn moving_and_staying_paths_use_their_own_render_contexts() {
+    use vvv_engine::{Confidence, ReferencesQuery};
+    let (vfs, engine) = RUST_MOVES.engine();
+    vvv_engine::Apply(
+        MoveSymbolIntent::new("recursive", "src/selfrefs.rs", "src/b.rs")
+            .plan(&engine)
+            .unwrap(),
+    )
+    .apply(&engine)
+    .unwrap();
+    let moved = vfs.read(Path::new("/ws/src/b.rs")).unwrap();
+    assert!(moved.contains("self::recursive();"), "{moved}");
+    assert!(moved.contains("crate::selfrefs::sibling();"), "{moved}");
+    let source = vfs.read(Path::new("/ws/src/selfrefs.rs")).unwrap();
+    assert!(source.contains("pub fn sibling() {}"));
+    assert!(
+        source.contains("pub fn outside() { crate::b::recursive(); }"),
+        "{source}"
+    );
+    let references = ReferencesQuery::new("recursive")
+        .declared_in("src/b.rs")
+        .execute(&engine)
+        .unwrap();
+    assert!(
+        references
+            .occurrences
+            .iter()
+            .all(|o| o.confidence == Confidence::Resolved),
+        "{:?}",
+        references.occurrences
+    );
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn companion_paths_travel_with_the_declaration_and_keep_their_targets() {
+    use vvv_engine::{Confidence, ReferencesQuery};
+    let (vfs, engine) = RUST_MOVES.engine();
+    vvv_engine::Apply(
+        MoveSymbolIntent::new("Bundle", "src/companions.rs", "src/b.rs")
+            .plan(&engine)
+            .unwrap(),
+    )
+    .apply(&engine)
+    .unwrap();
+    let moved = vfs.read(Path::new("/ws/src/b.rs")).unwrap();
+    assert!(moved.contains("pub struct Bundle;"));
+    assert!(moved.contains("impl Bundle"));
+    assert!(moved.contains("-> self::Bundle"));
+    assert!(moved.contains("crate::companions::helper();"));
+    let source = vfs.read(Path::new("/ws/src/companions.rs")).unwrap();
+    assert_eq!(source.trim(), "pub fn helper() {}");
+    let references = ReferencesQuery::new("Bundle")
+        .declared_in("src/b.rs")
+        .execute(&engine)
+        .unwrap();
+    assert!(references.occurrences.len() >= 3);
+    assert!(
+        references
+            .occurrences
+            .iter()
+            .all(|o| o.confidence == Confidence::Resolved),
+        "{:?}",
+        references.occurrences
+    );
+}
+
+#[cfg(feature = "rust")]
+struct ResolutionFixture {
+    engine: Engine,
+}
+
+#[cfg(feature = "rust")]
+impl ResolutionFixture {
+    fn new() -> Self {
+        Self {
+            engine: RUST_RESOLUTION.engine().1,
+        }
+    }
+
+    fn import_at(&self, path: &str, position: vvv_engine::Position) -> vvv_engine::Dep {
+        vvv_engine::ExplainQuery {
+            path: path.into(),
+            position,
+        }
+        .execute(&self.engine)
+        .unwrap()
+        .import
+        .expect("the position is inside an import")
+    }
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_resolution_golden() {
+    golden(&RUST_RESOLUTION);
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn explain_selects_the_grouped_entry_under_the_cursor() {
+    let fixture = ResolutionFixture::new();
+    let import = fixture.import_at("src/consumer.rs", vvv_engine::Position::new(2, 30));
+    assert_eq!(import.import.path.to_string(), "module_alias::child::Child");
+    assert_eq!(
+        import.address,
+        Some(vvv_engine::Address::new(
+            "resolution_probe",
+            ["a", "child", "Child"]
+        ))
+    );
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn explain_selects_exact_entries_in_nested_groups() {
+    let fixture = ResolutionFixture::new();
+    for (column, path, address) in [
+        (
+            27,
+            "module_alias::child::Child",
+            vec!["a", "child", "Child"],
+        ),
+        (
+            34,
+            "module_alias::child::child_fn",
+            vec!["a", "child", "child_fn"],
+        ),
+        (45, "module_alias::Foo", vec!["a", "Foo"]),
+    ] {
+        let import = fixture.import_at("src/nested.rs", vvv_engine::Position::new(1, column));
+        assert_eq!(import.import.path.to_string(), path, "column {column}");
+        assert_eq!(
+            import.address,
+            Some(vvv_engine::Address::new("resolution_probe", address))
+        );
+    }
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn explain_retains_a_statement_fallback_outside_import_entry_spans() {
+    let fixture = ResolutionFixture::new();
+    for (column, path) in [
+        (0, "module_alias::Foo"),
+        (4, "module_alias"),
+        (23, "module_alias::Foo"),
+    ] {
+        let import = fixture.import_at("src/consumer.rs", vvv_engine::Position::new(2, column));
+        assert_eq!(import.import.path.to_string(), path, "column {column}");
+    }
+    let prefix = fixture.import_at("src/nested.rs", vvv_engine::Position::new(1, 19));
+    assert_eq!(prefix.import.path.to_string(), "module_alias::child");
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn same_file_alias_chains_agree_across_references_deps_and_explain() {
+    use vvv_engine::{Address, Confidence, DepsQuery, Position, ReferencesQuery};
+
+    let fixture = ResolutionFixture::new();
+    for (name, line) in [("Foo", 4), ("child", 2)] {
+        let references = ReferencesQuery::new(name)
+            .declared_in("src/a.rs")
+            .execute(&fixture.engine)
+            .unwrap();
+        let occurrence = references
+            .occurrences
+            .iter()
+            .find(|o| o.m.path == Path::new("src/chained.rs") && o.m.start.line == line)
+            .unwrap();
+        assert_eq!(
+            occurrence.confidence,
+            Confidence::Resolved,
+            "{name} already resolves correctly"
+        );
+    }
+    let deps = DepsQuery {
+        path: "src/chained.rs".into(),
+    }
+    .execute(&fixture.engine)
+    .unwrap();
+    let leaf = deps
+        .imports
+        .iter()
+        .find(|dep| dep.import.alias.as_deref() == Some("leaf"))
+        .unwrap();
+    let expected = Address::new("resolution_probe", ["a", "child"]);
+    assert_eq!(
+        leaf.address.as_ref(),
+        Some(&expected),
+        "deps must follow the same binding as references"
+    );
+    let explained = fixture.import_at("src/chained.rs", Position::new(2, 5));
+    assert_eq!(explained.address, Some(expected));
+    let references = ReferencesQuery::new("Child")
+        .declared_in("src/a/child.rs")
+        .execute(&fixture.engine)
+        .unwrap();
+    let occurrence = references
+        .occurrences
+        .iter()
+        .find(|o| o.m.path == Path::new("src/chained.rs") && o.m.start.line == 5)
+        .unwrap();
+    assert_eq!(
+        occurrence.confidence,
+        Confidence::Resolved,
+        "the next alias hop must resolve too"
+    );
+}
+
+#[cfg(feature = "rust")]
+#[test]
+#[ignore = "known limitation: cross-file private parent-module aliases are not followed"]
+fn child_modules_follow_private_module_aliases_imported_from_their_parent() {
+    use vvv_engine::{Address, Confidence, DepsQuery, Position, ReferencesQuery};
+
+    let fixture = ResolutionFixture::new();
+    let deps = DepsQuery {
+        path: "src/parent_context/nested.rs".into(),
+    }
+    .execute(&fixture.engine)
+    .unwrap();
+    let expected = Address::new("resolution_probe", ["a"]);
+    assert_eq!(deps.imports[0].address, Some(expected.clone()));
+    assert_eq!(
+        fixture
+            .import_at("src/parent_context/nested.rs", Position::new(0, 10))
+            .address,
+        Some(expected)
+    );
+    let references = ReferencesQuery::new("Foo")
+        .declared_in("src/a.rs")
+        .execute(&fixture.engine)
+        .unwrap();
+    let occurrence = references
+        .occurrences
+        .iter()
+        .find(|o| o.m.path == Path::new("src/parent_context/nested.rs"))
+        .unwrap();
+    assert_eq!(occurrence.confidence, Confidence::Resolved);
 }

@@ -1,0 +1,24 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: render(&m)
+---
+┌ vvv ~/dev/nx ────────────────────────────────────────── ● trait Language  ← 3  3 files ┐
+│> Language                                                                              │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+┌ ●  trait Language ────────────────────────┐┌ lang/registry.rs ─────────────────────────┐
+│← imported by 2   depth 1                  ││←  depth 1  vvv_core::lang::registry       │
+│  lang/registry.rs                         ││                                           │
+│  src/lib.rs                               ││    1 │ use super::{Language, LanguageId}; │
+│← imported by 1   depth 2                  ││    2 │ // line 2                          │
+│  src/main.rs   via vvv_core::lib          ││    3 │ // line 3                          │
+│                                           ││    4 │ // line 4                          │
+│                                           ││    5 │ // line 5                          │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+└───────────────────────────────────────────┘└───────────────────────────────────────────┘
+ search r rename  m/M move file/symbol  w rewrite  o declaration  R relation  s kind  L la

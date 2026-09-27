@@ -1,278 +1,129 @@
-# The report and its views
+# Reports and views
 
-A command's result is data. `vvv-engine::report` composes it into a `Document`
-— the report — and an interface lays that document out through a `View`. The
-CLI and the picker share the document and the seam; each holds the views it
-draws.
+The engine returns typed capability results or an `Execution` from
+`Engine::run(Request)`. At an interface boundary, `Execution::into_answer()`
+produces the wire `Answer`. Human interfaces compose that answer into a `Document`,
+then use a `View` to produce display rows. JSON interfaces serialize the answer.
 
-## The shape
-
-```
-Engine::run ──▶ Answer                  the wire result (what --json prints)
-                  │
-      Document::of(a, options) ──▶ Document   the report: facts, no layout
-                                       │
-                                    View ──▶ Presentation   the rows to draw
-                                       │
-                             ┌─────────┴─────────┐
-                           CLI render/         TUI render/
-                         (ANSI to stdout)   (ratatui Buffer)
+```text
+Answer ──▶ Document::of(&answer) ──▶ Document
+                                      │
+                           View::present(document, options, width)
+                                      │
+                                 Presentation
+                                      │
+                        CLI styling or TUI drawing
 ```
 
-- **`Answer`** — the engine's per-command result; the JSON contract. It does
-  not change.
-- **`Document`** — the report as data: a `Vec<Block>` of facts per stream. No
-  line a command chose, no colour, no width. `Document::of` builds it.
-- **`View`** — how a document is shown: a document plus the room it has and the
-  flags it was asked for, rows out. `Detailed` is the terminal's, `Compact` the
-  picker's.
-- **`Presentation`** — the rows, each with the source it stands for, split into
-  the result stream and the note stream.
+## Ownership
 
-## Where things live
+[report/](../crates/vvv-engine/src/report/mod.rs) owns shared vocabulary:
 
-```
-crates/vvv-engine/src/
-  protocol/                 the wire: Answer, its parts, display::Line, vocabulary
-  report/
-    mod.rs                  Document, Block, Row, Site, Note, Options, the composition
-    lines.rs                the row builders over protocol data
-    view.rs                 the View trait, Presentation, the Detailed view
-crates/vvv/src/output/
-  mod.rs                    Reporter, OutputFormat
-  human/mod.rs              HumanReporter: Renderer + Reporter
-  render/                   the Renderer trait, Palette, Styled
-  json.rs                   the --json reporter (the Answer, not the report)
-  diagnosis.rs              Diagnose
-crates/vvv-tui/src/
-  render/                   Painter and the widgets a screen draws with
-  view.rs                   Compact, the picker's view
-  screen/                   one module per screen; the report overlay in
-                            overlay.rs
-```
+| Module        | Responsibility                                                         |
+| ------------- | ---------------------------------------------------------------------- |
+| `document.rs` | `Document`, shared construction methods, and answer/failure delegation |
+| `block.rs`    | `Block`, `Note`, and `ReferencePlan`: facts retained for views         |
+| `row.rs`      | `Row` and `Source`: displayed lines with optional source coordinates   |
+| `view.rs`     | `View`, `Options`, `Presentation`, and `Detailed`                      |
+| `lines.rs`    | Shared builders for styled lines and source-bearing rows               |
 
-`report/` is pure: no `Workspace`, no I/O, no interface. It is data crossing to
-a client, which is the test `protocol/` passes.
+Per-answer composition is implemented as methods on `Document` beside each
+capability's request, answer, and execution. The
+[command ownership index](../crates/vvv-engine/src/capabilities/mod.rs) identifies
+these owners. Shared wire data and styled-line vocabulary live in `protocol/`.
 
-## The report
+The CLI's [HumanReporter](../crates/vvv/src/output/human/mod.rs) composes a
+`Document`, presents it through `TerminalView`, and styles the rows with `Palette`.
+`TerminalView` delegates layout to `Detailed` and appends CLI flag advice.
+The [JSON reporter](../crates/vvv/src/output/json.rs) serializes the wire result.
+The TUI's [Compact view](../crates/vvv-tui/src/view.rs) produces list rows;
+[mode screens](../crates/vvv-tui/src/modes/mod.rs) draw those rows with `Painter`.
+The [report overlay](../crates/vvv-tui/src/overlays/screen.rs) presents a shared
+`Document` through `Compact` or `Detailed`.
 
-```rust
-// vvv-engine/src/report/mod.rs
+## Document composition
 
-/// A command's result as data, in two streams.
-#[derive(Debug, Default)]
-pub struct Document {
-    body: Vec<Block>,
-    notes: Vec<Block>,
-}
+`Document` contains two ordered sequences of `Block`: `body` for results and
+`notes` for summaries, hints, and warnings. Composition is pure: it reads answer
+data without filesystem access or interface state. `Document::of(&Answer)`
+delegates to the corresponding composition method. File preview has no rendered
+document; its answer supplies the TUI's syntax-colored source pane.
 
-/// One fact, named for what it is so a view can place it.
-#[derive(Debug, Clone)]
-pub enum Block {
-    /// The command and its intent: its own line, then a blank.
-    Title(String),
-    /// A section label.
-    Heading(String),
-    /// Found rows — hits — that a view numbers and groups.
-    Matches(Vec<Match>),
-    /// Occurrences a view judges: a reference, a rename. `files` is the plan,
-    /// when there is one, so a view can mark the rows an edit touches (`±`).
-    Verdicts { occurrences: Vec<Occurrence>, files: Option<Vec<FileChange>> },
-    /// Import sites worth a look: unresolved, then unused, then redundant.
-    Imports { unresolved: Vec<ImportSite>, unused: Vec<ImportSite>, redundant: Vec<ImportSite> },
-    /// What a file imports, grouped by package; `own` is its own, to mark.
-    DepGroups { imports: Vec<Dep>, own: Option<String> },
-    /// Who imports a file.
-    Importers(Vec<Importer>),
-    /// What is at a position, and how it is reached.
-    Explanation(Box<Explanation>),
-    /// A file's declarations as a tree.
-    Outline(Vec<OutlineItem>),
-    /// Where a name is declared: the sites `where` found.
-    Sites(Vec<protocol::Site>),
-    /// Declarations nothing refers to, and the unsure-token count of each.
-    Dead(Vec<Unreferenced>),
-    /// A package's exposed names, and how many import each.
-    Exposed(Vec<Exposed>),
-    /// The modules that import a declaration, nearest first.
-    Consumers(Vec<Consumer>),
-    /// The ledger, oldest first.
-    History(Vec<HistoryEntry>),
-    /// A batch's steps, in order.
-    Batch(Vec<Intent>),
-    /// What `undo` reversed: moves, then restored files.
-    Undo { moves: Vec<(PathBuf, PathBuf)>, restored: Vec<PathBuf> },
-    /// A bare line.
-    Line(Line),
-    /// The closing summary: what happened, and what to do next.
-    Summary(Line),
-    /// A hint or a warning.
-    Note(Note),
-    /// The change a plan would make: one file's edits, laid out as a diff.
-    Changes(Vec<FileChange>),
-    /// A move preview: the changes, and what a plan re-spelled or left by hand.
-    Moved { files: Vec<FileChange>, respellings: Vec<Respelling>, notices: Vec<Notice> },
-    /// A vertical gap.
-    Blank,
-}
-```
+Blocks retain the facts needed by every view. For example:
 
-Every variant is a fact; none carries a row a command laid out. A view turns
-each block into rows through the builder for it (`Sections`, `Verdicts`,
-`OutlineTree`, `DepGroups`, `ImporterRows`, `Respellings`, `NoticeRow`,
-`HistoryLine`, `PlacedLine`, `ImportSiteLine`, `Caret`, `Diff`, …). `Line`, `Role`, `Mark`, `Plural`, `Files` and `Ago` stay
-in `protocol::{display, vocabulary}`: they are the row vocabulary the views
-share.
+- `Declarations` retains matches, including their source coordinates.
+- `Outline` retains its owning `RelPath` and declaration tree.
+- `DepGroups` retains the source file, imports, and package grouping information.
+- `Verdicts` retains occurrences and an optional `ReferencePlan` containing
+  file changes and mutation state.
+- `Changes` and `Moved` retain mutation state and file changes; `Moved` also
+  retains respellings and notices.
 
-A composition still builds a few `Line`s by hand — a file header, declaration
-`●` rows, the `deps` counts, `impact`'s title — and pushes them into `body`.
-Those are the lines every view agrees on, so they need no block.
+A composition can emit shared styled `Line` values for titles, counts, and
+summaries. It must retain structured source-bearing facts when a view needs their
+coordinates. It does not select column widths, colors, expanded verdicts, or
+patch visibility. `Document::of` takes no presentation options, and composition
+and shared line builders do not branch on `verbose` or `diff`.
 
-### A row and its source
+`Document::error(&Failure)` produces an error line in the note stream. Interfaces
+choose how to display `Failure.hint` and structured recovery details.
 
-```rust
-/// A row: the line to draw, and the source it stands for.
-#[derive(Debug, Clone)]
-pub struct Row {
-    pub line: Line,
-    /// Where the row is, when an interface can act on it.
-    pub source: Option<Source>,
-}
+## View selection
 
-/// A source site: the file and the line in it.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Source {
-    pub path: PathBuf,
-    pub line: u32,
-}
-```
+`View::rows(&Block, Options, width)` lays out one block.
+`View::present(&Document, Options, width)` collects both streams into a
+`Presentation`. An interface can specialize this presentation boundary to append
+advice. `Options.verbose` controls expansion and reach details;
+`Options.diff` controls full patches. The same document can be presented with
+different options without recomposition.
 
-`Row::new` is a row nothing can act on; `Row::at` carries a source. The picker
-uses the source to put a cursor on the row and open it; the CLI ignores it.
+`Detailed` produces file headers, grouped verdicts, summaries, and patch rows.
+`Compact` produces short list rows and delegates blocks it does not specialize to
+`Detailed`. The trait also supports rows for individual occurrences, relations,
+respellings, notices, and rewrite matches so TUI panels can display facts without
+constructing a complete command report. Views consume those fact types; renderers
+only style or draw the rows they receive.
 
-### `body` and `notes`, not `out` and `err`
+The CLI maps `Presentation.body` to stdout and `Presentation.notes` to stderr.
+The TUI assigns the rows to panels, status, or an overlay. These stream names
+represent result and note semantics, independent of either interface.
 
-The two streams are _result_ and _note_ — semantics, not streams. The CLI maps
-`body` to stdout and `notes` to stderr; the picker maps `body` to panels and
-`notes` to its status line. Nothing in `report/` is named for a CLI stream.
+## Source coordinates
 
-## The view
+A `Row` contains a styled `Line` and an optional `Source { path: RelPath, line:
+u32 }`. Source lines are zero-based. `Row::at` retains an actionable source;
+`Row::new` has none. Declarations, outlines, imports, explanations, references,
+respellings, and notices preserve their reported source sites. Summaries,
+separators, and suggested imports have no source.
 
-A pure capability: a document, the room it has, and the flags it was asked for,
-in; rows out. It names no command, so both interfaces hold one.
+Diff rows use structured hunk coordinates. Preview rows refer to old-side context
+and removed lines; applied rows refer to new-side context and added lines, using
+the moved destination where present. A line absent from that side is not
+actionable, and diff headers carry no source. The TUI uses these sites to select
+report rows and open an editor at the selected line.
 
-```rust
-// vvv-engine/src/report/view.rs
+## TUI integration
 
-/// The rows to draw: the result stream and the note stream.
-pub struct Presentation {
-    pub body: Vec<Row>,
-    pub notes: Vec<Row>,
-}
+Each mode owns its state, transitions, and typed view under `modes/<name>/`.
+`BoundScreen<V>` binds the view to layout and panel callbacks once; callbacks read
+the mode's own data without inspecting `Model` or `Mode`. `Model::update` routes
+actions, and `worker.rs` calls the engine.
 
-/// How a report is shown. One per way of seeing it.
-pub trait View {
-    /// Lay one block out: `width` columns (`usize::MAX` when the terminal
-    /// clips), and the flags the command was asked for.
-    fn rows(&self, block: &Block, options: Options, width: usize) -> Vec<Row>;
+Mutation previews supply occurrences, respellings, matches, and file changes to
+their mode panels. The `v` action switches compact and detailed row layouts.
+Detail panes show the selected file's diff, including the hunk containing a rewrite
+match. After apply, the worker composes a `Document` and returns it in
+`Event::Applied`. `Overlay::Report` selects rows with source coordinates;
+`j`/`k` navigate them and `e` opens the selected site.
 
-    /// Lay a whole report out, block by block. The default; no view overrides it.
-    fn present(&self, report: &Document, options: Options, width: usize) -> Presentation { … }
+## Boundary rules
 
-    /// Lay one occurrence out as the picker's list row, ticked or not.
-    fn occurrence(&self, occurrence: &Occurrence, ordinal: usize, ticked: bool, width: usize) -> Row;
-    /// Lay one re-spelling out as the picker's list row.
-    fn respelling(&self, respelling: &Respelling, width: usize) -> Row;
-    /// Lay one notice out as the picker's list row.
-    fn notice(&self, notice: &Notice, width: usize) -> Row;
-    /// Lay one rewrite match out as the picker's list row.
-    fn rewrite(&self, m: &Match, ordinal: usize, ticked: bool, width: usize) -> Row;
-}
-```
-
-Two views:
-
-- **`Detailed`** (`vvv-engine::report`) — the terminal's: a block per line,
-  notes prefixed, exactly what a command prints. The CLI styles its
-  `Presentation` with `Palette` and writes it; the picker draws it into a
-  ratatui `Buffer`.
-- **`Compact`** (`crates/vvv-tui/src/view.rs`) — the picker's: one tight row per
-  hit, no file headers, and per-fact rows for a rename's verdicts and a move's
-  paths. It delegates every block it does not specialise to `Detailed`.
-
-`View` takes `Options` because folding is a view decision: `-v` expands a
-rename's verdicts and an outline's reach at draw time, not composition.
-
-`--json` is _not_ a view: it serializes the `Answer`, a different contract, so
-the CLI keeps a separate `Json` reporter.
-
-## The composition
-
-`Document::of(&Answer, Options)` dispatches over the variants; each is a private
-method on `Document` in `report/mod.rs` (`Document::search`, `Document::rename`,
-`Document::moved`, …). A composition names the facts and nothing else:
-
-```rust
-// vvv-engine/src/report/mod.rs
-
-fn references(result: &References) -> Self {
-    let mut report = Self::new();
-    report.declarations(&result.declarations);
-    report.block_body(Block::Verdicts {
-        occurrences: result.occurrences.clone(),
-        files: None,
-    });
-    report.block_note(Block::Summary(Self::verdict_counts(&result.occurrences)));
-    report
-}
-```
-
-No composition decides a column, a glyph or a colour. The rows a command prints
-come from the same builder every view calls
-(`Verdicts::new(..).expanded(options.verbose).planned(..)`).
-
-`Document::error(&Failure)` is the other entry: a failure as `✗ message` and its
-hints, which both reporters print.
-
-## JSON stays the protocol
-
-`--json` is a documented contract consumed by agents (`docs/protocol.md`). It
-serializes the `Answer`, not the `Document`. A report-shaped JSON would be a
-presentation document (rows, marks, columns) — a different, weaker contract. So
-the CLI keeps two reporters: `Human` (compose the `Document`, lay it out, style
-it) and `Json` (serialize the `Answer`).
-
-## What the picker does
-
-The picker shares the `View`, not the `Document`. A mode is sent the facts it
-draws (`Planned::Rename`, `Planned::Move`) and calls `View::occurrence` /
-`respelling` / `notice` / `rewrite` per fact, because its panels (per confidence,
-per kind) are not the CLI's single document. A panel that holds one row per fact
-— a move's `±` structural files, a rewrite's matches — has no `Detailed`
-variant; its detail pane carries the hunk or the diff.
-
-- `v` switches `Compact`/`Detailed`; the model holds the choice.
-- Rewrite's matches panel is the hit per row; its detail pane draws the current
-  match's file diff from the plan's files, scrolled to the hunk holding the
-  match, so a multi-line rewrite and a file with several hunks need no special
-  case.
-- After an apply the worker composes the `Document` and sends it as
-  `Event::Applied`; `Overlay::Report` draws it and walks its source rows —
-  `j`/`k` move the cursor over the rows that carry a `Source`, `e` opens one.
-
-## Rules
-
-- **The report is the result, the view is how it is shown.** `report/` knows
-  `Answer` and the row vocabulary; it names no interface. A `View` impl names
-  its interface and no command.
-- **A view names only `Document`, `Block`, `Row`, `Source`, `Note`, `Line`,
-  `Role`, `Mark`.** It does not import `Answer`, `Match`, `Occurrence`, or any
-  command type.
-- **A block is command-shaped, not content-shaped.** It holds its command's
-  result type (`Exposed`, `Consumers`, `Dead`, `Imports`) or the fact the
-  command found (`Matches`, `Verdicts`, `Changes`). Sharing between commands
-  lives in the `lines.rs` builders (`PlacedLine`, `ImportSiteLine`, …), not in
-  shared block types; `Verdicts` is shared because `references` and `rename`
-  hold the same `Occurrence`s.
-- **`--json` is the `Answer`.** The report is never serialized.
-- **A builder is a type with a method, not a free function.**
+- Capability-owned `Document` methods compose answer facts; shared report types
+  define the vocabulary.
+- View options affect presentation only. Source sites survive both composition
+  and row generation.
+- Line builders are methods on data-bearing types. Free functions and
+  namespace-only unit structs are not valid owners.
+- CLI renderers style `Presentation` without inspecting command answers.
+- `Document` and `Presentation` are never serialized. `--json` remains the
+  `Answer` contract documented in [protocol.md](protocol.md).

@@ -1,6 +1,7 @@
 //! What went wrong, as data: a code a client can branch on, the message a
 //! person reads, and the hint that says what to try instead.
 
+use crate::EngineError;
 use serde::{Deserialize, Serialize};
 
 /// The kind of failure, stable across releases; the message is not.
@@ -41,6 +42,8 @@ pub enum ErrorCode {
     NoHistory,
     /// Reading or writing the tree failed.
     Io,
+    /// Recovery could not restore or verify every attempted effect.
+    RecoveryFailed,
 }
 
 /// A failed request, as the wire carries it.
@@ -51,6 +54,9 @@ pub struct Failure {
     /// What to try instead, when there is something.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub hint: Option<String>,
+    /// Effects that could not be restored after a failed mutation.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recovery: Option<Recovery>,
 }
 
 impl Failure {
@@ -59,13 +65,87 @@ impl Failure {
             code,
             message: message.into(),
             hint: None,
+            recovery: None,
         }
+    }
+
+    pub fn with_recovery(mut self, recovery: Recovery) -> Self {
+        self.recovery = Some(recovery);
+        self
     }
 
     pub fn with_hint(mut self, hint: impl Into<String>) -> Self {
         self.hint = Some(hint.into());
         self
     }
+}
+
+impl From<&EngineError> for Failure {
+    fn from(error: &EngineError) -> Self {
+        let mut failure = Failure::new(error.code(), format!("{error:#}"));
+        if let EngineError::Recovery(recovery) = error {
+            failure = failure.with_recovery(recovery.details.clone());
+        }
+        match error.hint() {
+            Some(hint) => failure.with_hint(hint),
+            None => failure,
+        }
+    }
+}
+
+/// A recovery result; unknown states are separate from confirmed residual effects.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Recovery {
+    pub cause: Box<Failure>,
+    pub failures: Vec<RecoveryIssue>,
+    pub remaining: Vec<RecoveryEffect>,
+    pub unverified: Vec<RecoveryUnverified>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RecoveryIssue {
+    pub operation: RecoveryOperation,
+    pub path: crate::RelPath,
+    pub code: ErrorCode,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RecoveryUnverified {
+    pub path: crate::RelPath,
+    pub expected: RecoveryState,
+    pub code: ErrorCode,
+    pub message: String,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum RecoveryOperation {
+    RestoreFile,
+    RestoreMove,
+    RestoreDirectory,
+    RemoveFile,
+    RemoveDirectory,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RecoveryEffect {
+    pub path: crate::RelPath,
+    pub expected: RecoveryState,
+    pub observed: RecoveryState,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum RecoveryState {
+    Absent,
+    File {
+        fingerprint: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        spelling: Option<crate::RelPath>,
+    },
+    Directory,
+    Other,
 }
 
 impl std::fmt::Display for Failure {
@@ -101,6 +181,7 @@ mod tests {
             ErrorCode::Stale,
             ErrorCode::NoHistory,
             ErrorCode::Io,
+            ErrorCode::RecoveryFailed,
         ] {
             let documented = match code {
                 ErrorCode::BadRequest => "bad_request",
@@ -120,6 +201,7 @@ mod tests {
                 ErrorCode::Stale => "stale",
                 ErrorCode::NoHistory => "no_history",
                 ErrorCode::Io => "io",
+                ErrorCode::RecoveryFailed => "recovery_failed",
             };
             assert_eq!(
                 serde_json::to_value(code).unwrap(),

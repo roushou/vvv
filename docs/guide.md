@@ -168,7 +168,9 @@ crates/vvv-core/src/semantics.rs:40:12
 ```
 
 On an import statement it says where the thing really comes from — what the path
-spells, then `↗` the declaration a re-export chain leads to and its file:
+spells, then `↗` the declaration a re-export chain leads to and its file. Inside a
+grouped import, the entry under the column takes precedence over the enclosing
+statement, including in nested groups:
 
 ```console
 crates/vvv-engine/src/change.rs:12:20
@@ -257,21 +259,49 @@ vvv search 'foo($$$A)'                                  # look at the rows
 vvv rewrite 'foo($$$A)' 'bar($$$A)' --select 2,5-7 --apply
 ```
 
-The numbers are positions in the same search run again, so they mean the same thing as
-long as the code hasn't changed in between; if it has, the plan's fingerprint refuses
-to apply rather than acting on whatever is there now. `--json` output carries a
-content-derived `id` per match instead (`827aff1a882c`, computed from the file, the
-position and the text), and `--select` accepts those too — for scripts and agents that
-keep results across runs. Without `--select`, a command acts on all of its matches.
+Numbers select positions in the current search result order. Separate CLI
+invocations repeat the search; source changes can change which match an ordinal
+selects. `--json` carries a content-derived `id` per match (`827aff1a882c`, computed
+from its path, byte span, and matched text). `--select` also accepts these IDs and
+rejects IDs absent from the current results. Use IDs when retaining selections
+across invocations. A plan's fingerprint protects its witnessed source snapshots
+between planning and writing. Without `--select`, a command uses its default
+selection: rename uses the confidence rules described below, and rewrite selects
+all matches.
 
 ## Previewing, applying and undoing
 
 None of `rewrite`, `rename` or `move` writes anything on its own. Each one works out a
 plan, prints it, and stops; the last line on standard error is the plan's size and the
 flag to go on with (`± 2   2 files` / `hint: --apply to write`). When you add
-`--apply`, the plan is written all at once — and if any of the files changed between
-the preview and the apply, vvv stops and tells you instead of writing over the changes.
+`--apply`, that invocation computes a plan, checks it, and writes it. A separate
+preview invocation does not retain a plan for the next CLI invocation. Rust clients
+can retain a `Planned<T>` and pass it to `Apply`; apply rejects it if a witnessed
+source has changed. The same check rejects a source changed after the engine read
+it during planning, including a cached source in a session. Plans witness the files they edit
+or move; files consulted only during resolution are not re-checked at apply.
 What you get back is a receipt naming the history entry: `✓ #3   ± 2   2 files`.
+
+Apply and batch keep their recovery state until the history save succeeds. A file
+operation or history-save failure restores the pre-apply file contents, locations,
+case spelling, ledger bytes (or absence), and owned empty directories, including
+the file or ledger whose write failed partway through. If restoration cannot finish
+or be verified, `recovery_failed` names the remaining effects and any paths whose
+state is unknown. Recovery is in memory: interruption or a crash has no automatic
+recovery. It does not provide isolation from external writers or restore inode
+identity, timestamps, or complete filesystem metadata.
+
+File and symbol moves follow resolved qualified paths through imported module
+aliases. An alias path keeps its spelling when changing the alias import is enough;
+otherwise the path is rewritten to the moved target. Grouped entries retain their
+group when its resolved prefix still covers the target, including module aliases. Imports needed by a moved
+declaration and redundant destination imports use the same resolved edges.
+
+Invalid declaration extents or overlapping edits in a symbol move are rejected as
+a conflict before any write. Paths inside moving declarations and their companion
+pieces are transformed once and spelled from their destination; self references
+continue to name the moved declaration, while references to siblings left behind
+continue to name those siblings.
 
 Each apply is saved to `.vvv/history.json` (worth adding `.vvv/` to `.gitignore`).
 
@@ -286,9 +316,23 @@ $ vvv undo
   src/util.rs
 ```
 
-Undo restores files to exactly what they were, moves included (a moved file shows as
-`src/b.rs → src/a.rs`). If you've edited one of those files since the apply, undo
-refuses and leaves the history entry in place, so you can sort it out and try again.
+Successful undo restores the receipt's file contents, locations, and case spelling,
+removes its history entry, and removes owned empty directories (a moved file shows
+as `src/b.rs → src/a.rs`). Pre-existing directories, directories containing other
+files, and directories without receipt ownership evidence are retained.
+If you've edited one of those files since the apply, undo refuses before restoration
+and leaves the history entry in place.
+
+Undo keeps its recovery state until the updated history ledger is saved. If file
+restoration, directory cleanup, or that history save returns an error, undo restores
+the pre-undo file and ledger state, including directories it removed, or returns
+`recovery_failed` naming confirmed remaining effects and unverified paths.
+Apply, batch, and undo retain recovery state for returned file-operation,
+directory-cleanup, and history-save errors. The guarantee covers returned errors,
+not panics. There is no durable journal or crash recovery, and commands do not
+isolate concurrent writers. Restoration covers file contents, locations, case
+spelling, ledger bytes, and owned empty directories; it excludes inode identity,
+timestamps, and complete filesystem metadata.
 
 Errors start with `✗` and are followed by `hint:` lines when there is an obvious next
 thing to try; an empty answer is `∅`.
@@ -364,6 +408,16 @@ enough for functions, structs, enums, traits, type aliases, constants and module
 isn't enough for methods and fields, which you reach through a type: their occurrences
 are all `? ∅ by name`, and `--select` is how you narrow them down.
 
+Same-file imported aliases are followed through chains, irrespective of import
+order. Dependencies and explanations use the same resolved paths as references.
+
+A known Rust limitation is a private module alias imported from another file.
+If a parent has `use crate::a as parent`, a child that writes
+`use super::parent as local` is not followed through to `crate::a`. Dependencies
+and explanations can retain an address through the alias instead of its underlying
+module, and references such as `local::Foo` remain unresolved. Using the underlying
+module path avoids this limitation.
+
 In a Cargo workspace, paths into another crate resolve — `use fff::Config` where
 `fff` is a member, under whatever name the manifest gives it — so a rename crosses
 crates.
@@ -377,6 +431,24 @@ vvv move <from> <to>
 Moves a file or a directory, then rewrites every import that pointed at anything inside
 it, along with the moved files' own imports. Renaming as you go is fine: `vvv move
 src/util src/core/tools` both relocates and renames the module.
+
+Every destination must be absent, except a case-only file rename on a
+case-insensitive filesystem: `config.rs` → `Config.rs` addresses the same entry
+and is allowed. Distinct hard links still count as occupied destinations.
+Apply checks all move destinations again before
+writing, so a file created after planning is preserved and the move is refused.
+The move itself also refuses to replace a destination created after that check,
+and recovery moves protect occupied destinations too. Disk moves use native
+no-replace renames where supported; the unsupported-operation fallback links then
+removes the source. That fallback is destination-preserving but not atomic: if
+source removal fails, recovery removes the acquired link or reports it as remaining.
+Neither path falls back to copying across filesystems.
+Case-only renames use a unique temporary name and two destination-preserving moves;
+they are not atomic as a whole. Recovery and undo restore the original stored
+filename as well as its contents. A recovery failure names any temporary file left
+behind. A file created between the two legs is preserved.
+Preflight does not reserve the paths; destination-preserving move operations enforce
+the no-replacement requirement at each move.
 
 The preview separates what is mechanical from what you should read:
 
@@ -496,8 +568,19 @@ where you act: `↓` or `⏎` from the query (from the context, `esc` or `←`),
 letters — `r` renames what is under the cursor, `m` moves its file, `M` moves the
 declaration, `w` rewrites the search's matches, `h` opens history, `u` undoes the
 newest apply. `v`
-switches the rows between the compact list and the full report the CLI prints —
-search results, a rename's verdict rows, a move's paths and notices.
+switches the rows between the compact list and the full report's result rows —
+search results, a rename's verdict rows, a move's paths and notices. CLI flag
+hints stay in the CLI; the picker shows its own actions.
+
+`⏎` on a declaration — or on a use that resolves to exactly one — _enters its scope_:
+the rows become that declaration's judged references, grouped by verdict (`✓ safe`,
+`? unverified`, `✗ another declaration's`), each with the reason's glyph. A name
+search becomes the symbol's impact and context. `r`, `m` and `M` then act on the
+entered declaration from any row, `o` jumps the cursor from a use to the declaration
+it names, and `esc` leaves the scope, then the query. `R` opens the relation menu:
+all references, one verdict, `impact` (the modules importing it, depth by depth),
+`definition` (its address, reach and importers) or `deps` (the declaring file's
+imports and who imports it). Each answer is written by the engine, not guessed.
 
 **Rename** shows the new name in the title — the field starts empty with a `new name`
 placeholder, and the plan is re-made as you type — and a panel per verdict: `? unverified`
@@ -526,7 +609,11 @@ lists the files that entry touched.
 After an apply the picker returns to search, re-runs the query so the rows show the
 new state, and reports the receipt (`✓ #3  rename Reach → Scope`) in the status bar.
 The apply's report is on screen as a box: `j`/`k` walk its source rows, `e` opens
-the row under the cursor in `$EDITOR`, and any other key closes it.
+the row under the cursor in `$EDITOR`, and any other key closes it. Declaration and
+import rows retain their source locations. Suggested imports, summaries, and
+separators are skipped by the source cursor. In a patch, only lines present in the
+current source can be opened: old-side lines for a preview, new-side lines after
+apply.
 
 ## Driving vvv from a program
 
@@ -534,7 +621,9 @@ the row under the cursor in `$EDITOR`, and any other key closes it.
 For many commands in a row — an agent, an editor — `vvv serve` keeps one session:
 send `{"command": "rename", "name": "Config", "to": "Settings", "apply": true}` on
 a line of stdin, read one line of stdout back, and the tree is not re-read between
-requests where it did not change. Every command has the same fields as its flags;
+requests where it did not change. History, undo, and applying an already retained
+plan do not refresh the source tree. After a write attempt, the next tree query
+checks for changes; a session reuses unchanged file contents. Every command has the same fields as its flags;
 errors come back with a `code` to branch on and a `hint` to show.
 
 ## Building with fewer languages

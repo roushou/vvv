@@ -1,0 +1,24 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: render(&m)
+---
+┌ vvv ~/dev/nx ──────────────────────────────── ● trait Language  ✓ 3  ? 1  ✗ 0  3 files ┐
+│> Language                                                                              │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+┌ ●  trait Language ────────────────────────┐┌ lang/mod.rs ──────────────────────────────┐
+│✓ safe 3  3 files                          ││   59 │ // line 59                         │
+│  1 ●   64:1    pub trait Language: Send + ││   60 │ // line 60                         │
+│  2 →    4:13   use super::{Language, Langu││   61 │ // line 61                         │
+│  3 →   26:16   pub use lang::{Language, La││   62 │ // line 62                         │
+│? unverified 1  1 file                     ││   63 │ // line 63                         │
+│  4     41:5    Language::new()            ││   64 │ pub trait Language: Send + Sync {  │
+│                                           ││   65 │ // line 65                         │
+│                                           ││   66 │ // line 66                         │
+│                                           ││   67 │ // line 67                         │
+│                                           ││   68 │ // line 68                         │
+│                                           ││   69 │ // line 69                         │
+│                                           ││   70 │ // line 70                         │
+│                                           ││                                           │
+│                                           ││                                           │
+└───────────────────────────────────────────┘└───────────────────────────────────────────┘
+ search r rename  m/M move file/symbol  w rewrite  o declaration  R relation  s kind  L la

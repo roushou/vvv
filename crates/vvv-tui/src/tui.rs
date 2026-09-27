@@ -122,7 +122,9 @@ impl Tui {
                 worker.send(effect);
             }
 
-            terminal.draw(|frame| frame.render_widget(App::new(model, painter), frame.area()))?;
+            let now = vvv_engine::protocol::vocabulary::Ago::now();
+            terminal
+                .draw(|frame| frame.render_widget(App::new(model, painter, now), frame.area()))?;
             if model.quit {
                 return Ok(());
             }

@@ -7,8 +7,10 @@ use std::thread;
 
 use std::error::Error as _;
 
-use vvv_engine::report::{Document, Options};
-use vvv_engine::{Answer, Apply, Engine, EngineError, FileQuery, HistoryQuery, Intent, UndoLast};
+use vvv_engine::report::Document;
+use vvv_engine::{
+    Answer, Engine, EngineError, FileQuery, Intent, Ledger, MutationAnswer, SearchQuery,
+};
 
 use super::action::{Effect, Event, Planned};
 
@@ -119,27 +121,30 @@ impl Runner {
 
     fn plan(&self, intent: Intent) -> Result<Planned, Failure> {
         let engine = &self.engine;
-        let answer = engine.run(intent.clone())?.into_inner();
+        let answer = engine
+            .run(intent.clone().into_request(false))?
+            .into_preview()?
+            .into_inner();
         Ok(match answer {
-            Answer::Rename(r) => Planned::Rename {
+            MutationAnswer::Rename(r) => Planned::Rename {
                 files: r.files,
                 declarations: r.declarations,
                 occurrences: r.occurrences,
             },
-            Answer::Move(mv) => Planned::Move {
+            MutationAnswer::Move(mv) => Planned::Move {
                 files: mv.files,
                 intent,
                 respellings: mv.respellings,
                 notices: mv.notices,
             },
-            Answer::MoveSymbol(mv) => Planned::Move {
+            MutationAnswer::MoveSymbol(mv) => Planned::Move {
                 files: mv.files,
                 intent,
                 respellings: mv.respellings,
                 notices: mv.notices,
             },
-            Answer::Rewrite(rw) => Planned::Rewrite { files: rw.files },
-            _ => {
+            MutationAnswer::Rewrite(rw) => Planned::Rewrite { files: rw.files },
+            MutationAnswer::Batch(_) => {
                 return Err(Failure::Unsupported(
                     "the picker plans one command at a time; use `vvv batch`",
                 ));
@@ -150,15 +155,30 @@ impl Runner {
     fn execute(&self, effect: Effect) -> Result<Event, Failure> {
         Ok(match effect {
             Effect::Search { generation, query } => {
-                let search = self.engine.run(query.clone())?;
+                let search = SearchQuery::from(query.clone()).execute(&self.engine)?;
                 Event::Searched {
                     generation,
                     matches: search.matches,
                     skipped: search.skipped,
                 }
             }
+            Effect::Query {
+                generation,
+                request,
+            } => {
+                if !request.is_read_only() {
+                    return Err(Failure::Unsupported(
+                        "the hub asks read-only questions; a mutation is planned",
+                    ));
+                }
+                let answer = self.engine.run(request)?.into_answer();
+                Event::Answered {
+                    generation,
+                    answer: Box::new(answer),
+                }
+            }
             Effect::Preview { path } => {
-                let file = self.engine.run(FileQuery { path: path.clone() })?;
+                let file = FileQuery { path: path.clone() }.execute(&self.engine)?;
                 Event::Previewed {
                     text: file.text,
                     highlights: file.highlights,
@@ -167,21 +187,71 @@ impl Runner {
             }
             Effect::Commit { intent } => {
                 let engine = &self.engine;
-                let answer = engine.run(Apply(engine.run(intent.clone())?))?;
-                let report = Document::of(&answer, Options::default());
-                Event::Applied {
-                    id: answer.history_id().unwrap_or_default(),
-                    intent,
-                    report,
-                }
+                let applied = engine
+                    .run(intent.clone().into_request(true))?
+                    .into_applied()?;
+                let id = applied.history_id();
+                let answer: Answer = applied.into_inner().into();
+                let report = Document::of(&answer);
+                Event::Applied { id, intent, report }
             }
-            Effect::History => Event::History(self.engine.run(HistoryQuery)?.entries),
-            Effect::Undo => Event::Undone(self.engine.run(UndoLast)?.undone),
+            Effect::History => Event::History(Ledger::new(&self.engine).history()?.entries),
+            Effect::Undo => Event::Undone(Ledger::new(&self.engine).undo()?.undone),
             // Planned above; the loop runs `Edit` itself; `Touched` is
             // handled before anything is answered.
             Effect::Plan { .. } | Effect::Edit { .. } | Effect::Touched => {
                 return Err(Failure::Unsupported("not a worker effect"));
             }
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc;
+    use vvv_engine::{BatchIntent, Languages, MemoryVfs, Workspace};
+
+    #[test]
+    fn a_batch_plan_is_rejected_as_a_user_visible_outcome() {
+        let (outbox, inbox) = mpsc::channel();
+        let runner = Runner {
+            engine: Engine::new(
+                Workspace::new("/ws", Arc::new(MemoryVfs::new())),
+                Languages::new(),
+            ),
+            outbox,
+        };
+        runner.run(Effect::Plan {
+            generation: 7,
+            intent: Intent::Batch(BatchIntent::new([])),
+            debounce: false,
+        });
+        assert!(
+            matches!(inbox.recv().unwrap(), Event::PlanFailed { generation: 7, message }
+            if message == "the picker plans one command at a time; use `vvv batch`")
+        );
+    }
+    #[test]
+    fn an_apply_event_carries_the_committed_history_id() {
+        let (outbox, inbox) = mpsc::channel();
+        let runner = Runner {
+            engine: Engine::new(
+                Workspace::new("/ws", Arc::new(MemoryVfs::new())),
+                Languages::new(),
+            ),
+            outbox,
+        };
+        runner.run(Effect::Commit {
+            intent: Intent::Batch(BatchIntent::new([])),
+        });
+        assert!(matches!(
+            inbox.recv().unwrap(),
+            Event::Applied { id: 1, .. }
+        ));
+        assert_eq!(
+            Ledger::new(&runner.engine).history().unwrap().entries[0].id,
+            1
+        );
     }
 }

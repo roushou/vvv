@@ -40,11 +40,11 @@ fn module(parts: &[&str]) -> Address {
 
 #[test]
 fn surface_lists_what_reexports_offer_and_who_takes_it() {
-    let surface = engine()
-        .run(SurfaceQuery {
-            package: Some("ws".to_owned()),
-        })
-        .unwrap();
+    let surface = SurfaceQuery {
+        package: Some("ws".to_owned()),
+    }
+    .execute(&engine())
+    .unwrap();
     // Only `foo` is `pub`; a re-export never widens what it re-exports.
     let items: Vec<(&str, &Address, &[Address], usize)> = surface
         .items
@@ -72,12 +72,12 @@ fn surface_lists_what_reexports_offer_and_who_takes_it() {
 
 #[test]
 fn impact_walks_importers_outward_by_depth() {
-    let impact = engine()
-        .run(ImpactQuery {
-            name: "foo".to_owned(),
-            declared_in: None,
-        })
-        .unwrap();
+    let impact = ImpactQuery {
+        name: "foo".to_owned(),
+        declared_in: None,
+    }
+    .execute(&engine())
+    .unwrap();
     assert_eq!(impact.address, module(&["a", "x.p", "foo"]));
     let rings: Vec<(String, u32, &Address)> = impact
         .consumers
@@ -96,7 +96,7 @@ fn impact_walks_importers_outward_by_depth() {
 
 #[test]
 fn dead_lists_what_nothing_refers_to_and_counts_the_unsure() {
-    let dead = engine().run(DeadQuery::default()).unwrap();
+    let dead = DeadQuery::default().execute(&engine()).unwrap();
     let items: Vec<(&str, &Path, usize)> = dead
         .items
         .iter()
@@ -114,7 +114,7 @@ fn dead_lists_what_nothing_refers_to_and_counts_the_unsure() {
 
 #[test]
 fn imports_flag_unresolved_unused_and_redundant() {
-    let report = engine().run(ImportsQuery::default()).unwrap();
+    let report = ImportsQuery::default().execute(&engine()).unwrap();
     let paths = |sites: &[vvv_engine::ImportSite]| -> Vec<(RelPath, String)> {
         sites
             .iter()
@@ -137,11 +137,11 @@ fn imports_flag_unresolved_unused_and_redundant() {
             (RelPath::from("c/w.p"), "b/y.p".to_owned()),
         ]
     );
-    let one = engine()
-        .run(ImportsQuery {
-            path: Some(RelPath::from("c/w.p")),
-        })
-        .unwrap();
+    let one = ImportsQuery {
+        path: Some(RelPath::from("c/w.p")),
+    }
+    .execute(&engine())
+    .unwrap();
     assert_eq!(one.path, Some(RelPath::from("c/w.p")));
     assert_eq!(one.unused.len(), 1);
     assert!(one.unresolved.is_empty() && one.redundant.is_empty());
@@ -163,14 +163,14 @@ fn a_fragment_is_built_once_per_stamp() {
             .with(common::Counting::new(Default::default()).resolving(resolves.clone())),
     )
     .with_retention(Retention::session());
-    engine.run(DeadQuery::default()).unwrap();
+    DeadQuery::default().execute(&engine).unwrap();
     let first = resolves.load(Ordering::SeqCst);
     assert!(first >= 2, "both imports of b.p were placed");
-    engine.run(ImportsQuery::default()).unwrap();
-    engine.run(SurfaceQuery { package: None }).unwrap();
+    ImportsQuery::default().execute(&engine).unwrap();
+    SurfaceQuery { package: None }.execute(&engine).unwrap();
     // A rename judges through the file's scope, read off the same fragment.
-    engine
-        .run(vvv_engine::RenameIntent::new("foo", "bar"))
+    vvv_engine::RenameIntent::new("foo", "bar")
+        .plan(&engine)
         .unwrap();
     assert_eq!(
         resolves.load(Ordering::SeqCst),
@@ -178,7 +178,7 @@ fn a_fragment_is_built_once_per_stamp() {
         "nothing changed, nothing re-resolved"
     );
     vfs.write(Path::new("/ws/b.p"), "use a.p/foo\nfoo").unwrap();
-    engine.run(ImportsQuery::default()).unwrap();
+    ImportsQuery::default().execute(&engine).unwrap();
     assert!(
         resolves.load(Ordering::SeqCst) > first,
         "the changed file is placed again"

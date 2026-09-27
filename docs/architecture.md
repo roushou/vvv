@@ -5,23 +5,47 @@ knows about anything above, and the interfaces know only the engine — with one
 exception: the CLI's composition root names the plugins the engine is built with.
 
 ```
-crates/vvv   vvv-tui     the interfaces: CLI, picker
-      │        │             the CLI's composition root (`languages.rs`) also names plugins
-    vvv-engine            Engine: one entry point, `run`; protocol/ is what --json prints
-         │
-     vvv-lang             syntax/ (ast-grep adapter) + rust/, typescript/ behind features
-         │
-     vvv-core             the plugin contract: nouns + traits (no parser, no I/O)
+crates/vvv ──▶ vvv-tui             CLI and picker
+     │             │
+     ├─────────────┴──▶ vvv-engine ──▶ vvv-core
+     │                  capabilities,    plugin contract:
+     │                  lifecycle, wire  data and traits
+     └──▶ vvv-lang ──────────────────────▶ vvv-core
+          languages.rs composes syntax/ and language plugins
 ```
 
 One membership test per crate: core — _does a language plugin need it
 to be one?_; lang — _is it a grammar or the ast-grep adapter?_; engine — _does it do
 something to a tree, or cross to a client as data?_; the interfaces — _is it a
-rendering or a keystroke?_ A type lives in the lowest crate whose test it passes,
-never lower because a consumer could not otherwise reach it.
+rendering or a keystroke?_ Within the engine, shared wire data lives in `protocol/`;
+capability-specific wire data may live beside the command and report that use it.
+The data and serialization code do not access `Workspace`. A type lives in the
+lowest crate whose test it passes, never lower because a consumer could not
+otherwise reach it.
 
 Each crate's `//!` doc is the authority on what it does; this file explains how they
 fit and the rules that keep them apart.
+
+## Type and implementation locality
+
+A struct or enum, its constructors, invariant-preserving methods, and trait
+implementations belong in the same file by default. Multiple `impl` blocks can
+express different traits or bounds without requiring additional files. A reader
+should be able to understand a type's state and behavior together.
+
+Splitting implementations across files requires a strong, concrete benefit that
+outweighs the extra navigation. A dependency boundary can require a separate
+implementation; capability-specific report composition can stay beside the answer
+it consumes so they change together. Neither method categories nor file length
+alone justify a split. Separating serialization from tree access is a code ownership
+constraint, not a requirement to separate a type from its execution methods.
+
+The shared `Document` has capability-specific composition methods beside each
+answer; its construction and shared methods live with its definition. The closed
+mutation payload allowlist stays with `MutationAnswer` and its sealed trait so
+executable result membership can be reviewed in one place. Cross-crate adapters
+stay at the client boundary rather than adding interface dependencies to engine
+or core types.
 
 ## Crates
 
@@ -44,7 +68,7 @@ parent) or `within(kind)` (an ancestor).
 | `semantics` | `Semantics`: what syntax means — path separator, import scoping, addressable kinds, visibility modifier → `ReachKind`                                                                                                                                             |
 | `highlight` | `HighlightKind`, `Highlight`, `HighlightRule`: syntax colouring as data                                                                                                                                                                                           |
 | `import`    | `ImportRef` (a `ModulePath` at a span, grouped or not, declaring or a reference), `ImportRule`/`ImportGrammar` (where a grammar keeps import paths, which `PathSyntax` parses them, what re-exports and aliases look like, the text every glob spells)            |
-| `resolve`   | `Address` (a `PackageId` + path; nothing holds across packages), `Packages` (members and their dependencies, renames included); `Resolver` (a module system: `address`, `resolve`, `render`) and `MoveRules` (`companions`, `relocate`, `regroup`); `SideEdit`    |
+| `resolve`   | `Address` (a `PackageId` + path; nothing holds across packages), `Packages` (members and their dependencies, renames included), `Project`, `Layout` (addresses and path resolution), `Surgery` (edit spelling), `SideEdit`                                        |
 | `query`     | `Query` + `QueryBuilder`: structural (`pattern`, `kind`) and symbolic (`symbol`, `name`) halves                                                                                                                                                                   |
 | `search`    | `RawMatch` (a match within one text, before it is tied to a file), `Capture`, `Role` (declaration / import / use, set by the searcher), `SearchError`                                                                                                             |
 | `edit`      | `Edit`, `ChangeSet` (sorted, overlap-checked edits + file moves, no write method)                                                                                                                                                                                 |
@@ -78,27 +102,76 @@ one. With no features the crate is just the searcher and has no tests.
 `Engine::new(workspace, languages)` — `Workspace::disk(root)` for the binary and the
 registry from its composition root (`vvv-rs`'s `languages.rs`), a `MemoryVfs` and a fake
 language for tests; `with_retention`, and `with_oracle(Arc<dyn Oracle>)` for a host that has a
-build or a language server to ask — and one entry point, `Engine::run(command)`. An engine runs commands and
-nothing else: it brings the graph up to date, builds a `Context` (the graph and the
-workspace) and lets the command answer against it. A **`Command`** is a request as
-data — one of the protocol's intents or queries — with `type Output` and
-`fn run(self, &mut Context) -> Result<Output>`, implemented in the module that holds
-its components (`impl Command for RenameIntent` in `rename/`, `for MoveIntent` in
-`move_file/`, the per-file queries in `answers.rs`, the whole-tree ones in
-`understanding.rs`). A mutation answers with `Planned<T>` —
-the answer as a preview (`applied: false`, `files` filled) with the plan(s) kept
-beside it; `Intent` itself is a command answering `Planned<Answer>`, so a batch step,
-the picker or `serve` plans any intent without matching its variants. `Apply` writes,
-records history and hands the same answer back marked applied — it needs the
-`Mutation` capability, which `Answer` has for its mutating variants; `UndoLast` and
-`HistoryQuery` are commands too. `FileQuery` gives an interface a file with its highlights; `root()` and
-`language_ids()` are the two facts about the session. Nothing about a command lives
-on the engine: a new capability is a new request type and one `impl`. Every command
-starts by bringing the `Graph` up to date — one walk — and asking it questions. Each
-`Candidate` (a file with its language) answers `find`, `references` and `imports` for
-itself, and parses once however many questions it is asked: its `Facts` are computed
-on first use and shared. Per-file work runs in parallel with `rayon` and collects in
-path order.
+build or a language server to ask — and one wire dispatcher, `Engine::run(Request)`.
+The dispatcher holds a shared operation guard and delegates to capability-owned
+execution bodies. It acquires the graph only for source-tree questions and
+planning. History, undo, retained-plan apply, and file preview do not refresh the
+tree. The engine owns orchestration, not capability behavior.
+
+Typed clients call `SearchQuery::execute(&Engine)`, the other queries' `execute`,
+mutation intents' and `RewriteOf`'s `plan`, `Apply<T>::apply`, or
+`Ledger::new(&Engine).history()` / `.undo()`. These keep concrete outputs such as
+`Search`, `Planned<Rename>`, and `Applied<Rename>`. `SearchQuery` wraps the plugin's
+`Query` without changing its serialization. Execution bodies take the graph,
+workspace, or registry they use explicitly. Public typed methods acquire the
+same operation guard as the dispatcher; internal bodies do not reacquire it.
+
+`Engine::run` returns an in-process `Execution`: `Completed(Answer)`,
+`Preview(Planned<MutationAnswer>)`, or `Applied(Applied<MutationAnswer>)`. Only
+mutation previews retain executable plans. `into_preview` and `into_applied`
+reject a mismatched kind with a structured error; `into_answer` consumes the handle
+at a reporting or wire boundary. `Execution` is not serialized. The CLI and serve
+convert it to the wire `Answer`; the picker retains previews and applied
+completions until it has extracted what its view needs.
+
+A mutation answers with `Planned<T>`: immutable presentation data beside plans
+and the captured history intent. `Apply` requires the sealed `Mutation` capability,
+writes the plans, records history, and returns `Applied<T>` with a required history
+id. Queries cannot carry `Planned` or reach `Apply`. Typed plans and completions can
+widen to the closed `MutationAnswer` sum without losing their handles; they become
+`Answer` only at the reporting boundary. `Planned` exposes its result through
+immutable access and retains its captured intent independently of presentation.
+Mutation payloads own a `MutationState`: `Preview` or `Applied { history_id }`,
+serialized as the wire `applied` and `history_id` fields. Contradictory states
+are rejected during deserialization.
+
+`Intent` is a mutation description recorded by history and composed by batch.
+Its `into_request(apply)` conversion adds execution policy as data; Intent does not
+execute or dispatch capabilities. A batch runs preview requests on an independent
+staging engine, extracts their executable previews, and applies the retained plans
+to the overlay. Real writes and history still belong to one outer apply. Rename
+contains the `ReferencesQuery` it asks, flattened on the wire.
+
+One operation mutex spans planning, application, history save, and recovery; it is
+acquired before the graph mutex. Engine clones share both locks and dirty state.
+Apply and undo mark dirty state before attempting file effects, including
+unsuccessful operations. External `Engine::touched` marks it without acquiring the
+graph; the next graph access consumes it. This expires the trusted walk without
+clearing cached candidates: a session reads contents only when stamps changed. A
+touch arriving during refresh remains pending for the next access.
+
+A capability module owns its request and answer data, typed execution, and report
+composition. Related queries share a module when they describe the same concepts:
+declarations (outline and where), imports (deps, explain, and diagnostics), and
+usage (impact and dead); search, file preview, and surface have their own modules.
+The [command ownership index](../crates/vvv-engine/src/capabilities/mod.rs) maps
+every command to its owner. Keep it current when a command is added or moved. `protocol/` keeps shared wire types and the central `Request`/`Answer`
+contract. Capability modules are private; the canonical public paths for the
+mutation types are `vvv_engine::Rename`, `vvv_engine::RenameIntent`,
+`vvv_engine::Move`, `vvv_engine::MoveIntent`, `vvv_engine::MoveSymbol`, and
+`vvv_engine::MoveSymbolIntent`. The crate root re-exports these directly from their
+owning modules; `protocol` provides no aliases for them. Data and serialization
+code do not access `Workspace`.
+
+Query types are available at both crate-root and `protocol::` public paths,
+while the six mutation types above are root-only. This public-path inconsistency
+is tracked in [backlog.md](backlog.md#api-path-unification); Rust import paths are
+independent of the serialized request and answer contract.
+
+Each `Candidate` (a file with its language) answers
+`find`, `references`, and `imports` for itself, and parses once however many
+questions it is asked: its `Facts` are computed on first use and shared. Per-file
+work runs in parallel with `rayon` and collects in path order.
 
 The `Graph` (`graph/`) is what vvv knows about the tree and the questions commands ask
 of it. The store: every walked file, the loaded text and facts of every claimed one,
@@ -128,9 +201,10 @@ compared. `Session { trust }` (the TUI) keeps files and facts between commands,
 stamps what it loads (`Vfs::stamp`: mtime and size on disk, a version counter in
 memory) and on the next command re-reads only what changed; it still walks, so new and
 deleted files are seen — except within `trust` of the last walk, when it does not look
-at all: a burst of keystrokes walks a large tree once (the walk is the floor on a
-76k-file tree, ~230 ms), and the engine's own writes (`Apply`, `UndoLast`) or
-`Engine::touched()` (the TUI after an editor hand-off) end the trust at once.
+at all. Repeated requests within the trust interval reuse the walk. The engine's
+own writes (`Apply`, `Ledger::undo`) or `Engine::touched()` (the TUI after an editor
+hand-off) expire that interval; the next graph access checks file stamps and reads
+only changed contents.
 One command uses one graph however many questions it asks — a
 rename's declarations, its other declarations, its occurrences and its project all come
 from the same walk.
@@ -139,51 +213,155 @@ A file's **`Fragment`** (`graph/fragment.rs`) is its structural edges held as da
 its module address, every addressable declaration placed (`Declared`: symbol, address,
 reach) and every import statement and qualified path resolved (`Edge`: the `ImportRef`
 and the address the layout gave it, or the address another import's binding leads to
-when the path's head is a name the file imports). A candidate builds it once per
+when the path's head is a name the file imports). An edge retains whether that
+address came directly from the layout or through a particular imported binding;
+the immediate binding links back to its edge, retaining provenance across an alias
+chain. Same-file bindings propagate to a fixed point, independent of import order;
+unseeded cycles stay unresolved. Scope consumes the fragment's completed
+resolutions. Move planners consume these edges,
+including for import provisioning and destination cleanup. `Rebase` transforms
+resolved addresses and preserves an alias spelling when rebasing its binding
+already supplies the required target; it does not resolve raw source paths again. A candidate builds it once per
 (file stamp, project build) and keeps it, so a session that asks ten whole-tree
-questions resolves each file once; the project's build generation is what makes a
-manifest change invalidate every fragment at once. A file's **`Scope`** — what it
+questions resolves each file once. The retained `Arc<Project>` identifies the build:
+equal projects reuse it, even across refreshes that ask no project questions;
+a changed project gets a new identity and invalidates every fragment and scope.
+A file's **`Scope`** — what it
 sees: bound names, opened modules, resolved and unresolved paths — is read off the
 fragment and kept beside it, so `references` judges tokens per name through a lookup;
 only a token in the middle of a path costs a resolution of its prefix. `aliases_of`
 reads only files spelling one of the names found so far, or — for glob re-exports —
 the language's `glob_marker` (`::*` in Rust) in the alias's own package or naming it.
 
-| command            | what it asks                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Query`            | `Graph::search`: `containing(literals)`, then each `Candidate::find(query)`, in parallel; declarations get their address from the namespace and move to the front                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| `RewriteIntent`    | `search`, `Selection::narrow`, one `Edit` per match from the `Template`, `Plan::new`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `RenameIntent`     | declarations by name (narrowed by `declared_in`); per declaring language: a `Target` (module address + name, via the language's `Resolver`) when one path-addressable declaration is meant — two refuse and ask for `declared_in` — then `Graph::containing(name)` and `Target::judge` on each file (each token judged by a `Scope` built from the file's imports; a token ending a path is judged by the path, or `?` when its head is unknown); default selection by confidence; `Selection::narrow`, one `Edit` per occurrence, `Plan::new`                                                                                                                                                                                                                                                                                                                                                                                                                                          |
-| `MoveIntent`       | validate paths and language, `Graph::namespace_of` (layout, surgery, project in one), compute the `MoveSet` (a file, or every file under a directory, plus the layout's companions such as Rust's `a.rs` ↔ `a/`), then `Rebase::rewrite` on every `Graph::files(language)` (re-render every import resolving under the old address, moved files' own imports from their new locations — each a `Change`), `Reachability::check` on the references it touched, a `Widen` per violation (an edit, or a notice across a package boundary), the surgery's side edits (`relocate`, told what the moved `mod` line needs), record every move, `Planned::of`                                                                                                                                                                                                                                                                                                                                   |
-| `MoveSymbolIntent` | the graph establishes the situation — the `Extraction` (the declaration and its pieces; `impl` blocks are `Impl` symbols named after their type), both files parsed, `Graph::consumers` of the old address, `Graph::references` for the old file's remaining uses — then `SymbolMove` runs its operations over it, each appending to one `Change`: qualified paths inside the moved text re-rendered from the new file; the old file's imports and siblings the text names become imports in the new file (siblings `Widen`ed if needed); `Rebase::of_addresses` rewrites every consumer; a bare use left in the old file imports it back; an import of it in the new file is deleted; the declaration is `Widen`ed for consumers its reach at the new module no longer admits; last, the cut (`Extraction::cuts`) and the paste (`Extraction::assemble`, which carries the edits that fell inside the moved text) at `Surgery::item_insertion`, imports at `Surgery::import_insertion` |
-| `BatchIntent`      | `Workspace::staged()` (an `Overlay` the real files never see); each intent planned by an engine over it and applied to it, receipts chained with `Receipt::then`; the preview is every touched file now against the staging tree at its final path                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| `Request`          | the command it names, run against the same context, its result as the `Answer` of that name; a mutation with `apply` runs the intent then `Apply` on what it planned (`request.rs`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| `Apply(planned)`   | each plan's `Plan::apply` in order (one for a command, the steps for a batch); a failure rolls the earlier receipts back; one `History::push` of `T::intent()`; the result comes back with `applied` and `history_id` set                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `UndoLast`         | `History::last` → `Receipt::undo` (fingerprint check, then rollback) → `History::pop`; answers `Undo` with what was restored                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `HistoryQuery`     | `History::entries`, each record's entry                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| `SurfaceQuery`     | every fragment's declarations in the package; each public one, or one `aliases_of` offers elsewhere, listed with its aliases and how many other fragments import any of its addresses                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `ImpactQuery`      | `references` for the declaration, `aliases_of` for its addresses, then breadth first over fragments: a module whose imports lead under a frontier address joins the next ring, once, at the depth it is first reached                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `DeadQuery`        | for each placed declaration (a type and its impls once), `references(name declared_in file)`: no `Resolved` token beyond its own name spans means unreferenced, `Unresolved` tokens are counted as `unsure`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| `ImportsQuery`     | each fragment's declared imports: no address is unresolved; the same (address, glob) twice is redundant; a binding (`ImportRef::binding`, alias or last segment) no token outside the statement spells is unused, skipped for re-exports and for languages whose imports hide which names they take; files with no module address are `unplaced`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| `FileQuery`        | the file loaded, `Language::highlights` from the language claiming it                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
+Capability execution uses these components:
+
+- `SearchQuery` asks `Graph::search` to filter candidates by literals and execute
+  `Candidate::find` in parallel. Addressed declarations precede other matches.
+- `RewriteIntent` narrows search matches and expands `Template` against each
+  matched source snapshot. `RewriteOf` validates retained matches and captures.
+- `RenameIntent` contains a `ReferencesQuery`. `Target` selects an addressable
+  declaration per language, and `Scope` judges occurrences. Ambiguous declarations
+  require `declared_in`; confidence and `Selection` determine the edits.
+- `MoveIntent` builds a `MoveSet`, including layout-defined companions such as
+  Rust's `a.rs` and `a/`. `Rebase` transforms resolved fragment edges;
+  `Reachability` checks visibility and `Widen` supplies allowed modifier edits.
+  Surgery supplies relocation edits from witnessed source snapshots.
+- `MoveSymbolIntent` builds an `Extraction` and `SymbolMove` from the source,
+  destination, and consumers. `Site::partition` assigns moving and staying edges
+  before rebasing. Import provisioning, destination cleanup, and visibility edits
+  contribute to one `Change`; validated extraction edits determine the cut and
+  insertion. Rust `impl` pieces move with their type.
+- `BatchIntent` plans and applies intents in order on a staged `Overlay`.
+  `Receipt::then` composes their before-states; the preview compares the real
+  before-state with the final staged contents and locations.
+- `SurfaceQuery` lists public declarations and re-export aliases with importer
+  counts. `ImpactQuery` follows importing modules breadth first.
+  `DeadQuery` counts resolved references and unverified tokens per declaration.
+- `ImportsQuery` classifies unresolved, repeated, and unused bindings from
+  fragments. Re-exports and imports with hidden binding names are excluded from
+  unused checks; files without a module address are reported as unplaced.
+- `FileQuery` loads source text and asks the claiming language for highlights.
+- `Ledger::history` reads validated entries. `Ledger::undo` checks receipt
+  fingerprints, restores files, cleans owned directories, and saves the ledger
+  through one transaction.
+
+Mutation producers merge witnessed `Change` values. `Planned::of` binds the
+result to a `ChangeSet`, rejects edit conflicts, previews it, and retains plans
+and intent beside the typed result. `Apply` commits those retained plans and their
+history entry through one `Transaction`.
 
 The engine's supporting modules:
 
-| module                                                                                          | holds                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `vfs`                                                                                           | `Vfs` trait (read, write, walk, `stamp`); `MemoryVfs` for tests, `DiskVfs` (`.gitignore`-aware parallel walk), `Overlay` (writes over a base that is never touched — how plans compose)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-| `workspace`                                                                                     | `Workspace` = root + `Arc<dyn Vfs>`; `SourceFile`; relative/absolute path handling                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `change`                                                                                        | `Change`: what an operation proposes before it is bound to the tree — edits by file, files moved, notices, respellings. Every step of a mutation (a `Rebase` rewrite, a widening, a relocation) answers with one; the command merges them and `Engine::planned` binds the result to a `ChangeSet` (overlaps refused there, once), previews it and keeps notices and respellings for the answer                                                                                                                                                                                                                                                                                                                                                                       |
-| `plan`                                                                                          | `Plan` (change set + fingerprints) → `preview` / `apply` → `Receipt` (with post-apply fingerprints) → `rollback` / `undo`; `Planned<T>`, a result with its plans and preview, `Deref` to the result                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| `protocol`                                                                                      | everything `--json` prints and nothing that touches a tree: intents, `Match`/`MatchId`/`Occurrence` with `Confidence` and `Reason`, `Selection`, the answers (`Outline`, `Deps`, `Explanation`, `References`, `Locations`, `File`), `Notice`, `Respelling`, `Reach`, `Template`, one result per command, `HistoryEntry`, `FileChange` with a `Diff` (its `Hunk`s read from `similar`, rendered to the wire string), `SCHEMA` and the `Response` envelope, `Request`/`Answer` (every command as one value and every result as one), `Call`/`Reply` (a request with an `id` and its reply, what `vvv serve` speaks), `Failure` with its `ErrorCode` (what an error is on the wire; `EngineError::code()` and `::hint()` say which), `display` — the shared styled-line |
-| IR (`Role`/`Piece`/`Line`, `hit`, `diff`, `counts`) each interface renders in its own colours — |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
-| and `vocabulary` — how the answers are read (below). Documented in [protocol.md](protocol.md)   |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Module      | Responsibility                                                                                  |
+| ----------- | ----------------------------------------------------------------------------------------------- |
+| `vfs`       | Filesystem operations and stamps; disk, memory, and staged overlay backends                     |
+| `workspace` | Root and Vfs ownership, immutable `SourceFile` snapshots, source witnesses, and path conversion |
+| `change`    | Witnessed edits and moves, notices, respellings, and conflict-checked binding                   |
+| `plan`      | Preconditions, preview, transactions, receipts, immutable planned results, and fingerprints     |
+| `protocol`  | Shared wire data, `Request`/`Answer`, envelopes, errors, styled lines, and vocabulary           |
+
+Capability-specific wire types live with their execution and composition, as
+listed in the command ownership index. [protocol.md](protocol.md) specifies the
+serialized contract.
+
+`Apply` validates and retains the history ledger before attempting any file write,
+and computes its next id with checked arithmetic. An unreadable ledger prevents
+apply without changing files. Its validated `HistorySnapshot` owns the entries and
+the ledger's exact pre-apply contents (or absence). Saving the new ledger is a file
+effect in the same transaction as the edits and moves; receipts and recovery effects
+remain live until that save succeeds. A failed or partial ledger write restores
+the original ledger bytes, or removes a newly created ledger, as well as recovering
+the files and owned empty directories. Ledger restoration failures use the same
+structured recovery result and name `.vvv/history.json` explicitly.
+
+`Vfs::move_if_absent` never replaces an occupied destination, including during
+recovery. The caller prepares parents explicitly so their creation stays in the
+transaction's effect log. A failed move returns a `MoveError` with a `MoveState`:
+unchanged, moved, destination linked with source removal incomplete, or unknown.
+An unchanged failure does not acquire the destination; recovery preserves a racing
+creator even if its contents equal the source. Recovery never acquires or removes a
+destination whose acquisition is unknown; it reports any differences that remain.
+Disk errors can confirm a completed move by the retained source file handle at
+the destination, rather than guessing from equal contents.
+
+Disk moves use atomic no-replace renames: rustix's `renameat2(RENAME_NOREPLACE)`
+on Linux and `renamex_np(RENAME_EXCL)` on macOS. Windows uses the safe
+`atomicwrites::move_atomic` wrapper over `MoveFileExW` without replacement or
+cross-volume copy flags. Occupied destinations, including distinct hard links,
+are refused before invoking the native move. After native success, the source
+must be absent: a successful no-op against a racing hard link is an unchanged
+failure. The native operation still enforces destination preservation after the
+initial check. Same-volume local renames are a single native operation;
+remote filesystem errors can leave an uncertain outcome. There is no cross-volume
+copy fallback. Linux/macOS fall back to `hard_link` then `remove_file` only for
+`ENOSYS`, `EOPNOTSUPP`/`ENOTSUP`, or `EINVAL` (unsupported rename flags).
+Other platforms fall back only on an unsupported-operation error. The fallback
+preserves the destination but is not atomic: an unlink failure leaves both names
+and reports that effect. Filesystems without hard links fail without replacing
+the destination. Memory and overlay moves acquire their state lock for the
+destination check and mutation; overlay moves never write through to the base.
+The overlay isolates its own mutations, not independent changes to its base.
+
+Case-only file moves admit a destination only when `Vfs::same_entry` proves
+that both names address one directory entry. Separate hard links are occupied
+destinations even when their inode identity matches. `entry_path` returns stored
+spelling, and `names_alias` lets the overlay apply the base's naming policy to
+new staged files too. Disk entry lookup compares actual directory entries and
+file handles; for absent staged names it observes an existing cased entry in the
+directory (or nearest existing ancestor), without writing a probe.
+
+The transaction routes a case-only move through a unique hidden name in the source
+directory. Both destination-preserving legs enter the effect log before I/O,
+including retry attempts whose temporary destination was occupied. It retains the
+initial stored spelling and observes it during recovery, so equal contents alone
+cannot hide a failed restoration of case. Temporary files that cannot be restored
+appear explicitly in `Recovery.remaining`. This logical two-leg operation is not
+atomic, even when each primitive rename is atomic. Receipts record the logical
+source and destination, and receipt rollback uses the same transaction and case
+handling. Undo retains its transaction through saving the ledger without the newest entry.
+A failed file restoration, directory cleanup, or history save compensates toward
+the pre-undo file and ledger state, with structured recovery failures if that state
+cannot be restored or verified.
+
+CI tests run on Linux, macOS, and Windows; formatting, documentation, lint and
+feature-matrix gates run on Linux. Local validation is on the host platform.
 
 `history.rs` is the undo stack: `.vvv/history.json`, newest last, capped at 20 because a
 receipt carries full pre-apply file contents. Each record stores the `Intent` that was
 applied — data, never a sentence — and its receipt; the receipt never leaves the engine,
 a client sees the `HistoryEntry` (id, time, intent, what was written). It goes through the
 `Vfs` like everything else, so engine tests exercise it in memory.
+
+Receipts also retain the directories actually created by the file plans, in
+creation order; `Receipt::then` keeps that ownership across batch steps. Ledger-only
+parent directories are excluded from the receipt. Undo removes owned directories
+in reverse creation order only when empty. Pre-existing directories and directories
+containing other files are retained. Receipts without directory ownership
+evidence retain their directories. A removed directory has a
+before-state in the undo transaction; recovery recreates parents before children
+through `Vfs::create_dir`, which does not replace an occupied entry.
+The directory-capable disk backend implements this recovery primitive; file-only
+backends return an explicit unsupported-operation error if asked to create one.
 
 `protocol::vocabulary` sits with the shapes so a
 client reads them the way the CLI prints them: `Mark`, every glyph any interface
@@ -207,15 +385,37 @@ alone.
 `Address`, `LanguageId`, …) next to the protocol itself, so an interface writes
 `use vvv_engine::…` and only that.
 
-`report/` is the result as a document. `Document` — `Block` is `Title`, `Heading`,
-`Section`, `Line`, `Summary`, `Note`, `Diff` or `Blank` — is built from an `Answer`
-by `Document::of`, the per-command constructors living on `Document` itself, with the
-row builders in `report/lines.rs` (`Declaration`, `Sections`, `Verdicts`,
-`OutlineTree`, `DepGroups`, `ImporterRows`, `Respellings`, `NoticeRow`,
-`HistoryLine`, `SiteLine`, `ImportSiteLine`, `PlacedLine`, `SkippedLine`, `Caret`,
-`Diff`, `Tag`, `Verdict`) turning protocol data into `Line`s. It knows the business
-and names no interface; both the CLI and the picker read it. `--json` is not this —
-it is the `Answer`, the wire contract.
+`report/` is the result as a document. `Document::of(&Answer)` retains the facts
+needed by every view, without presentation options. Source-bearing blocks retain
+matches or sites; outline and dependency blocks also retain their owning file
+path. Reference verdicts retain a `ReferencePlan` with files and mutation state,
+even when a view hides its patch. Per-answer constructors live on `Document`,
+implemented beside execution in the capability's owner (see the command ownership
+index). References shares rename's module; rewrite, batch, history, and undo
+composition live beside their execution, requests, and results. Their types keep
+crate-root and `protocol::` exports. File preview has no rendered document.
+
+The shared report modules are `document.rs` (construction, shared helpers, and
+`of`/`error` delegation), `block.rs` (structured blocks, notes, and reference plan
+data), `row.rs` (rows and source sites), `view.rs` (View, Options, Presentation, and
+Detailed), and `lines.rs` (shared line builders). `report/mod.rs` re-exports the
+public vocabulary; capability-specific summaries stay with composition.
+
+`View::present` turns those blocks into a `Presentation` of rows. `Options` belongs
+to this boundary: the view chooses collapsed or expanded verdicts, reach details,
+and which patches to display. Shared line builders do not carry expansion flags or
+make verbose/diff decisions. The CLI's `TerminalView` delegates detailed layout and
+adds flag advice to the presentation; the picker receives the shared document
+without CLI instructions. A document can be presented again with different options
+without recomposition.
+
+Rows for declarations, outlines, imports, explanations, references, respellings,
+and notices preserve their reported `Source { path, line }`. Summaries, separators,
+and suggested imports carry no source. Diff rows use structured hunk coordinates:
+preview rows refer to old-side context and removed lines; applied rows refer to
+new-side context and added lines, at the moved destination when present. A line
+that does not exist on that side is not actionable. Diff headers are metadata.
+Neither document nor presentation is serialized: `--json` remains the `Answer`.
 
 ### `crates/vvv` — the entrypoint
 
@@ -224,7 +424,7 @@ Package `vvv-rs` (the bare name is taken on crates.io), binary `vvv`.
 `Cli` (global `-C`, `--json`, `--color`) → `Context { engine, format }` (`Engine::new`)
 → `cli::commands::*Cmd` (`clap::Args`; fields are the command's own inputs;
 `run(self, &Context)`) → a `Reporter` (`Human` or `Json`). A command builds a
-`Request`; `Context::run` runs it and hands the `Answer` to the reporter: three lines,
+`Request`; `Context::run` runs it, consumes `Execution` into `Answer`, and hands it to the reporter: three lines,
 no logic. Applying is the `Request`'s job (`apply: true`), the same path `serve` uses
 — the per-command `--apply` dance is not repeated. `vvv serve`
 is the exception that has none of its own: it reads a `Call` per line of stdin, runs
@@ -241,6 +441,8 @@ how results look. Two renderers implement it, and they share only `Diagnose`:
   pipeline `Answer → Document → View → Presentation → Styled → text`. It builds
   the report (`vvv_engine::report::Document::of`) and draws it
   (`Renderer::render`), writing results to `O` (stdout), notes to `E` (stderr).
+- `human/advice.rs` — `TerminalView` adds the CLI's flag hints to the presentation
+  after delegating layout to `Detailed`; no engine report composition names a CLI flag.
 - `json.rs` — `JsonReporter<W: Write>`, one `Response` envelope per invocation.
   It serializes the `Answer` itself: no document, no view, no colour.
 - `render/` — the drawing side, which names no command:
@@ -287,27 +489,48 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
 `Overlay::Report` draws it and walks its source rows (`j`/`k`, `e`).
 
 - `error.rs` — the crate's public `Error`: terminal I/O, the engine, the editor.
-- `model.rs` — all state as data: the `Search` hub (query, results, context), the
-  current `Mode` (`Rename`, `Move`, `Rewrite`, `History`, each with its input, its
-  rows, its panel cursors and a focus enum implementing `Panels`), an optional
-  `Overlay` (menu, confirm, help), status.
+- `model.rs` — application state and its transitions: the retained `Search` hub,
+  current `Mode`, optional overlay, status, report-view choice, and split size.
+  Common cursor, panel-focus, and file-preview types keep their methods here.
+  `Model::mode_screen()`/`overlay_screen()` select screen metadata;
+  `Model::focus()` returns the focused panel's index.
+  `Model::action_for(event)` resolves through the global, focused-panel, screen,
+  panel-default, and navigation key layers. `Model::update` routes application
+  actions to the selected mode; `Model::on_event` checks generations before
+  delivering answers. Both are pure and return effects. Entering a mode sends its
+  first plan without debounce and sets `arriving`; `Model::shown` retains the
+  search screen until that plan answers.
+- `modes/<name>/mod.rs` — each mode's state and methods, including action and event
+  transitions (`rename`, `moves`, `rewrite`, `history`, `search`). Its `screen.rs`
+  defines a separate view type with its rendering methods. Search's `query.rs`
+  owns the query bar; its state includes read-only references, impact, definition,
+  and dependency relations. Mode inputs drive plans; queries drive searches, with
+  generations preventing stale answers from replacing retained data.
 - `action.rs` — `Action` (what the user did, generic across modes: `Input`, `Enter`,
-  `Toggle`, `FocusNth`…), `Effect` (what to ask the engine: `Search`, `Plan`,
-  `Commit`, `Preview`, `History`, `Undo`; `Edit` for the loop itself), `Event` (what
-  came back; `Planned` carries what a mode shows about its intent). Plain enums.
+  `Toggle`, `FocusNth`…), `Effect` (what to ask the engine: `Search`, `Query` for a
+  read-only request, `Plan`, `Commit`, `Preview`, `History`, `Undo`; `Edit` for the
+  loop itself), `Event` (what came back; `Planned` carries what a mode shows about its
+  intent). Plain enums.
 - `keymap/` — the key vocabulary, pure. `keys.rs`: `Key` (a `Code` and
   `Modifiers`) and its constructors. `mod.rs`: `Trigger` is what a
   `Keybinding` listens for (`Key`, `Text`, `Any`), `Dispatch` is what it does
   (`Run(A)`, `Type`), `Legend`/`Bar` say how it reads, and `Layer` is a named
-  set of bindings with `resolve` and `rows`. `input.rs`: the one place a
-  crossterm event becomes a `Key`, shift folded into the character.
-- `screen/` — a `Screen` is the keys that work from any of its panels (`layer`),
-  the `Panel`s it is made of, and a `layout` function. A `Panel` is one region:
-  its own `layer`, the `PanelKind` that selects the shared defaults, and a
-  `content` function. `screen/defaults.rs` holds the shared `Layer`s — `GLOBAL`,
-  `NAVIGATE`, `DIGITS`, `LIST`, `TEXT` — and `default_for(PanelKind)`. Each mode
-  file owns its layers and its panels: `search.rs` defines `SEARCH`, `rename.rs`
-  `RENAME`, and so on; `overlay.rs` defines the three overlay screens.
+  set of bindings with `resolve` and `rows`. `Key::from_event` in `keys.rs`
+  turns a crossterm event into a `Key`, folding shift into the character.
+- `screen/` — shared key, focus, and help metadata (`Screen`, `Panel`) and
+  the application frame. `BoundScreen<V>` owns a typed view and its layout and panel
+  callbacks; panels render from that view without inspecting `Mode`.
+  `screen/defaults.rs` holds the shared key layers. Each mode binds its view once;
+  the application chooses the shown mode before panel rendering. Panels never
+  receive `Model` or inspect `Mode`.
+- `overlays/mod.rs` — menu, confirmation, help, and report state with selection,
+  transition, and view-binding methods. `screen.rs` owns metadata and typed box
+  views, each with its rendering methods. `Overlay` owns report-source selection
+  and help scrolling. Help retains static screen metadata independently of a
+  renderer.
+- `modes/context.rs` — shared status and generation borrowed by a mode transition,
+  without access to `Model` or another mode. `input.rs` holds `TextInput`, which
+  edits a borrowed string buffer for name, destination, and template inputs.
 - `render/` — the drawing primitives the screens compose. `Painter` owns the
   palette `Theme` and answers the drawing questions with one receiver (`caret`,
   `site`, `hit`, `line`, `source_window`); the colour policy is reachable through
@@ -316,22 +539,11 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
   (the title card); a screen's `layout` splits a `Region` into panel regions
   (`columns`, `split`, `rows`), and `Fit` is a text helper. Words come from
   `protocol::vocabulary`.
-- `model.rs` — `Model::mode_screen()`/`overlay_screen()` pick the active
-  `Screen`, `Model::focus()` the focused panel's index, and `Overlay::Help`
-  keeps the screen and focus it was opened over so the key list stays about them.
-- `update.rs` — `Model::action_for(event)` resolves through
-  `Model::screen().resolve(focus, key, holds)`: the globals first, then the
-  focused panel's layer, the screen's, the panel kind's defaults, then navigation.
-  `Model::update` and `Model::on_event` are pure and return effects. Searches and plans carry a
-  generation so stale answers are dropped; a mode's input (name, destination,
-  template) drives a plan the way the query bar drives a search. Entering a mode
-  sends its first plan at once (no debounce) and sets `arriving`: keys already go
-  to the mode, but `Model::shown` keeps the screen on search until the plan answers,
-  so the new layout appears filled rather than empty and then filled.
 - `worker.rs` — the engine on its own thread; effects in, events out; bursts of
   searches or plans are coalesced. `Commit` plans and applies in one step.
 - `tui.rs` — `Tui` and the only I/O: terminal setup, the event loop with
-  debounced searches and plans, the editor hand-off, teardown.
+  debounced searches and plans, the editor hand-off, teardown. It supplies the frame
+  timestamp used by `HistoryView`; views do not read the clock.
 - `fixtures.rs` + `tests.rs` — `update` with plain assertions; every mode rendered into
   ratatui's `TestBackend` and snapshotted with `insta` (`INSTA_UPDATE=always cargo test
   -p vvv-tui` to accept).
@@ -356,29 +568,92 @@ is in its graph.
 declares a `Method` when inside `impl_item`"_ as a `SymbolRule`; the traversal that
 applies it lives once, in `vvv-lang/src/syntax/`. Adding a language is adding a table.
 
-**Writes happen in exactly one place.** `Plan::apply`. It stages every file first
-(read, fingerprint check, compute), then writes — renaming first when a file moves —
-and restores on failure. `Receipt::rollback` undoes moves in reverse before restoring
-contents. `ChangeSet` has no `apply` method.
+**Plans authorize file writes.** `plan/mod.rs` holds Plan's preconditions,
+staging, preview, and its thin apply entry point. `plan/transaction.rs` owns
+attempted effects, before-states, and recovery; `plan/receipt.rs` owns applied
+receipts, their composition, and undo validation/restoration. `planned.rs` and
+`fingerprint.rs` own immutable mutation handles and content fingerprints,
+respectively. Internal re-exports expose these components within the lifecycle.
+
+`Plan` stages every file first (read, fingerprint
+check, compute), then writes through a `Transaction`. Before a write or move is
+attempted, the transaction retains its before-state and appends the effect to an
+ordered recovery log. One transaction spans all plans of an apply, including a batch.
+A successful `Receipt` describes the applied changes; it is not the recovery log
+for a partially attempted operation. `ChangeSet` has no write method.
+
+When a file operation or history save returns an error, recovery reverses the effect
+log, continues restoring independent effects after an error, and checks every
+retained before-state. Complete
+verified restoration returns the initiating error. Otherwise `EngineError::Recovery`
+reports the cause, failed restoration operations, confirmed remaining effects, and
+paths whose state could not be verified. Recovery also removes owned empty parent
+directories; `Vfs::prepare_parent` identifies the directories it actually created,
+even when preparation fails partway through.
+
+This is in-memory failure recovery, not crash consistency: there is no durable
+journal, restart recovery, or isolation from external writers. Restoration concerns
+file contents and locations and owned directories, not inode identity, timestamps,
+or complete filesystem metadata. Apply and batch keep recovery effects and receipts
+until their history entry is saved. Undo keeps its recovery effects until the entry is removed from the saved
+ledger. On any returned file-operation, directory-cleanup, or history-save error,
+the outcome is either verified restoration of the state before that command or a
+structured recovery failure naming confirmed remaining effects and unverified
+paths. Successful undo restores the receipt's file contents, locations, and case
+spelling, removes its history entry, and removes owned empty directories.
+Directories containing other files and directories without ownership evidence
+are retained. These guarantees cover returned errors, not panics, and exclude
+crashes and concurrent-writer isolation. They do not promise to restore inode
+identity, timestamps, or complete metadata.
+
+**Plan provenance covers edited and moved files.** An immutable `SourceFile` gives
+an edit producer a `SourceWitness` (relative path and content fingerprint). `Change`
+requires that witness for edits and moves and refuses contributions from different
+snapshots of the same file. Binding carries those observed fingerprints into `Plan`;
+it never substitutes a fresh read for the source used to compute an edit. Preview and
+apply compare the current contents with the observed snapshots before writing.
+Relocation side edits use the snapshots handed to the surgery.
+
+Rewrite expands captures from the candidate that supplied the matches. `RewriteOf`
+revalidates selected retained matches and captures against a candidate before using
+them; a resolved address added for reporting is not part of this source comparison.
+
+Files only consulted during resolution are not witnessed by the plan. A manifest,
+an unedited declaration, or another resolution input can change without making the
+plan stale. Provenance protects the coordinates and contents of edited and moved
+files; it is not a snapshot transaction over all resolution dependencies, nor does
+it prevent external writes between staging and writing.
+
+**Move destinations are preconditions.** A plan retains an absence requirement
+for each destination, or a same-entry requirement for a case-only rename. Preview
+and apply check every destination before any file write; an occupied destination
+returns `exists`. Preflight does not reserve a path. Forward and recovery moves
+also use `Vfs::move_if_absent`, which preserves a destination created after that
+check. Case-only moves use two destination-preserving legs through a unique
+name, with stored spelling retained for recovery and undo. The native operations,
+fallbacks, and partial outcomes are specified in the lifecycle section above.
 
 **Errors and notices are variants, not sentences.** `ResolveError` has one variant per
-situation a layout can refuse (`Root`, `HasChildren`, `CrossProject`, `NoParentFile`
+situation a layout can refuse (`Root`, `IntoItself`, `CrossProject`, `NoParentFile`
 with the candidate files, …) and `Notice` carries a `NoticeKind`. `thiserror` gives
-errors a canonical message; the CLI layers hints on top by matching variants, and JSON
-clients get the fields, not the prose.
+errors a canonical message. `EngineError::code()` maps failures to stable wire
+codes; conversion to `Failure` includes a display message, an optional string hint,
+and structured recovery details when restoration cannot be verified. Hints can
+contain CLI syntax; structured hint actions and distinct Layout/Surgery errors are
+open contracts tracked in [backlog.md](backlog.md).
 
-**Rename resolves through imports, not types.** `rename/scope.rs` builds, per file,
+**Rename resolves through imports, not types.** `graph/scope.rs` builds, per file,
 what its imports bring in: names (`use a::b::X`, grouped entries), opened modules
 (globs, or any file import where the grammar hides the names), and qualified paths.
 A token is `Resolved` if the file is the declaring module, imports the name, opens
 the module, or spells a path resolving to the target; `Other` if any of those point
 at a different same-named declaration; `Unresolved` otherwise. Methods, fields and
-variants (`SymbolKind::is_path_item() == false`) get no target and stay syntactic.
+variants (`Semantics::is_addressable(kind) == false`) get no target and stay syntactic.
 Ambiguity is per language: a Rust and a TypeScript `foo` never compete.
 
 **Visibility is computed, never guessed**. After
 `Rebase` has rewritten a move's paths it reports every reference it touched as (the
-module it is read from afterwards, what it names afterwards). `move_file/reachability.rs`
+module it is read from afterwards, what it names afterwards). `capabilities/moves/reachability.rs`
 walks each target's address from the package root down: every `mod` on the way and the
 item itself is looked up in the facts of its declaring file — as the tree is now, so a
 moved address is rebased back to find it — and its `Reach` (modifier × declaring module,
@@ -390,12 +665,30 @@ it. A consumer in another package would need `pub`, which is never inferred — 
 need is handed to `Surgery::relocate` instead of edited in place. Nothing is ever
 narrowed, and a move that nobody outside needs changes no modifier.
 
+**Extraction validates before slicing.** A symbol move retains the source snapshot
+and checks its declaration extents for valid UTF-8 ranges and overlapping pieces.
+Before rendering, `Site` partitions a symbol move's source edges: moving pieces
+render from the destination, remaining source text from the source, and other
+consumers from their own files. One `Rebase` transforms each selected resolved
+address and renders it once. `FileRewrite` retains the observed source snapshot;
+its conversion to a `Change` uses that snapshot's witness. Moving edits go directly
+to extraction, without a second rewrite or a later partition of edits.
+
+Assembly assigns every edit to one piece and rejects invalid, outside, or
+overlapping edits as a conflict before producing a plan. Identical extents are
+extracted once; coincident insertions keep their input order.
+
 **Grouped imports go back to the surgery.** An `ImportRef` inside `use a::{…}`
-carries an `ImportGroup` (prefix, item span, list, statement). `Rebase` collects such
-entries per statement and calls `Surgery::regroup`, which rewrites an entry in place
-when its target stays under the group's prefix and otherwise moves it out into its own
-statement. Whatever a surgery returns as `skipped` becomes a `Notice` with the text it
-_would_ have written — reported, never silently dropped.
+carries an `ImportGroup` (prefix, item span, list, statement). `Rebase` builds a
+`GroupedImports` request with unique entries from one statement, their required
+resolved targets, and each prefix's meaning after planned prefix and binding
+changes. A prefix edit covers its entries when their unchanged suffixes already
+name those targets. Otherwise `Surgery::regroup` returns edits and one explicit
+`RegroupedOutcome` per entry: its actual in-place replacement, a structural rewrite,
+or skipped. The engine validates exact outcome coverage and in-place replacement
+agreement before accepting edits. Skipped entries retain their requested targets
+and become notices with the text the surgery would have rendered; no target is
+inferred from edit spans or substituted with empty text.
 
 **Ids are content-derived.** `MatchId = blake3(path, span, text)[..12]`. A selection
 made from one process is valid in the next as long as the file is unchanged, and
@@ -433,18 +726,18 @@ and position) so the numbers a preview prints are the numbers `--select` reads.
 
 ### Add a mutating command
 
-1. `vvv-engine/src/protocol/intent/<cmd>.rs`: the intent as serde data with builder
-   methods; `protocol/result.rs`: the answer (`intent`, `applied`, `history_id`,
-   `files`, whatever else the command explains), `impl Mutation` for it; add the
-   `Request` and `Answer` variants in `protocol/request.rs`.
-2. `vvv-engine/src/<cmd>/`: the components the command needs (a noun with state that
-   answers questions — see `Rebase`, `Target`), and `impl Command for <Cmd>Intent`
-   whose `run` asks the graph, builds a `Change` and ends in
-   `Planned::of(cx.workspace, change, |bound, files| Cmd { … })`. Test with a fake
-   language in `vvv-engine/tests/<cmd>.rs`.
+1. Put the intent, answer, `impl Mutation`, typed `plan`, and report composition
+   together in one engine capability module. Keep the data and serialization code
+   independent of `Workspace`. Put reusable data in `protocol/`; re-export the
+   capability's types at the crate root and add its variants to `Request` and `Answer`.
+2. Keep the capability's components beside it (a noun with state that answers
+   questions — see `Rebase`, `Target`). Its execution body asks the graph, builds a `Change`,
+   and ends in `Planned::of(workspace, change, intent, |bound, files| Cmd { … })`.
+   Add its Request routing to `Engine::run`; keep its behavior on its owning type.
+   Test with the fake language in `vvv-engine/tests/`.
 3. `crates/vvv/src/cli/commands/<cmd>.rs`: `clap::Args` struct, `run(self, &Context)`
    (build a `Request` and `ctx.run(request)`); add it to `Commands`. The answer's
-   blocks go in `output/view/` — a builder in `lines.rs` if it is a row, a function
-   in `read.rs`/`change.rs` and an arm in `view::of` otherwise. A mutation's `apply`
-   flag rides on the `Request`.
+   report composition goes in the capability module; shared rows stay in
+   `vvv-engine/src/report/lines.rs`, and `Document::of` delegates to it. A
+   mutation's `apply` flag rides on the `Request`.
 4. Update `protocol.md`.

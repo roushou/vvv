@@ -26,6 +26,7 @@ impl<'a> StatusBar<'a> {
         m.screen()
             .rows(m.focus())
             .into_iter()
+            .filter(|row| m.holds(row.binding.when))
             .filter_map(|row| row.legend.bar.map(|bar| (row, bar)))
             .map(|(row, bar)| {
                 // An empty word means the meaning depends on the state.

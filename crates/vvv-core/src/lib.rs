@@ -38,7 +38,8 @@ pub use oracle::{Oracle, Referent};
 pub use paths::{ModulePath, Name, PathHead, PathSyntax, RelPath};
 pub use query::{Query, QueryBuilder, QueryError};
 pub use resolve::{
-    Address, Dependency, FileSet, Layout, Package, PackageId, Packages, Parsed, Project, Regrouped,
+    Address, Dependency, FileSet, GroupedImport, GroupedImports, Layout, Package, PackageId,
+    Packages, Parsed, Project, RegroupError, Regrouped, RegroupedEntry, RegroupedOutcome,
     ResolveError, SideEdit, Surgery,
 };
 pub use search::{Capture, CaptureValue, RawMatch, Role, SearchError};

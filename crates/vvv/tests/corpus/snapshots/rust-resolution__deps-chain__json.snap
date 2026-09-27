@@ -1,0 +1,82 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "path": "src/chained.rs",
+    "module": {
+      "package": "resolution_probe",
+      "path": [
+        "chained"
+      ]
+    },
+    "imports": [
+      {
+        "span": {
+          "start": 4,
+          "end": 9
+        },
+        "path": "crate",
+        "declares": true,
+        "alias": "root",
+        "start": {
+          "line": 0,
+          "column": 4
+        },
+        "address": {
+          "package": "resolution_probe",
+          "path": []
+        },
+        "file": "src/lib.rs"
+      },
+      {
+        "span": {
+          "start": 23,
+          "end": 30
+        },
+        "path": "root::a",
+        "declares": true,
+        "alias": "parent",
+        "start": {
+          "line": 1,
+          "column": 4
+        },
+        "address": {
+          "package": "resolution_probe",
+          "path": [
+            "a"
+          ]
+        },
+        "file": "src/a.rs"
+      },
+      {
+        "span": {
+          "start": 46,
+          "end": 59
+        },
+        "path": "parent::child",
+        "declares": true,
+        "alias": "leaf",
+        "start": {
+          "line": 2,
+          "column": 4
+        },
+        "address": {
+          "package": "resolution_probe",
+          "path": [
+            "a",
+            "child"
+          ]
+        },
+        "file": "src/a/child.rs"
+      }
+    ],
+    "importers": []
+  }
+}
+--- stderr ---

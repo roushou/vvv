@@ -4,9 +4,10 @@ Pass `--json` to any command. Output is a single JSON document on stdout, includ
 errors, so a client never needs stderr. Exit code is `0` for `ok`, `1` for `error`.
 Or run `vvv serve` and send the same commands as JSON, one per line (below).
 
-The types are defined in `vvv_engine::protocol` (`crates/vvv-engine/src/protocol/`); a
-Rust client depends on `vvv-engine` alone and gets them alone. This
-page is the human-readable contract. Field order is not significant. Absent optional
+The wire types are exported by `vvv-engine`. Shared types live in `protocol/`;
+capability-specific requests and answers live with their implementations and are
+exported at the crate root. See [architecture.md](architecture.md) for Rust import
+paths. A Rust client needs only `vvv-engine`. This page specifies serialization. Field order is not significant. Absent optional
 fields are omitted, not `null`.
 
 ## Envelope
@@ -192,9 +193,13 @@ empty. Pass `language` to ask one language only.
 
 ## `vvv outline`, `references`, `where`, `deps`, `explain`
 
-Read-only answers built from the same declarations and imports a rename uses. Each is
-a plain structure of the shared types; `Symbol` fields are flattened into an outline
-item.
+Read-only answers built from the same declarations and imports a rename uses. Same-file
+imported alias chains resolve to the same addresses in dependencies, explanations
+and references. Each is a plain structure of the shared types; `Symbol` fields are
+flattened into an outline item. On `explain`, an exact import path under `position`
+takes precedence over grouped-statement containment, including nested groups.
+Outside entry spans, the containing statement's first grouped entry remains the
+fallback.
 
 ```json
 { "path": "src/plan/mod.rs", "module": Address,
@@ -275,6 +280,13 @@ vvv could not judge. `imports` sites carry the import's own fields flattened;
 `address` is absent for an unresolved site; `unplaced` is the files whose language has
 a layout but which it cannot place, so their imports were not judged; `path` at the
 top is the file asked about, absent when every file was.
+
+Mutation results always carry `applied`. A preview has `applied: false` and omits
+`history_id`; a successful apply has `applied: true` and its required `history_id`.
+The Rust result types deserialize these into one preview/applied state and reject
+contradictory pairs. A null `history_id` is accepted for previews, as is an omitted
+one. Query results cannot become executable plans; results received over the wire
+contain no in-process plan to apply.
 
 ## `vvv rewrite`
 
@@ -381,7 +393,9 @@ touches.
 `files` shows every touched file before the first step against after the last, at its
 final path; `edits` is empty there, since each step's edits are in the coordinates of
 the state before it. Applying is one transaction: if a step no longer holds against the
-real tree, the steps before it are rolled back and nothing is recorded. History records
+real tree, recovery restores earlier effects or returns `recovery_failed` naming
+remaining effects and unverified paths. Recovery also compensates failed history
+saves (see [Errors](#errors)). History records
 one entry, `{ "command": "batch", "intents": [ … ] }`, and one `undo` reverses it all.
 
 ## Intent
@@ -425,13 +439,22 @@ the history entry so the situation can be fixed by hand and retried.
 1. Run the command without `--apply`. Inspect `files[].diff` and the ids.
 2. Re-run with `--select id,id,…` (optional) and `--apply`.
 
-Between the two runs the engine recomputes everything; ids are the only state
-carried. If a file changed in between, an id no longer resolves and the command
-errors with `no match with id(s) …` rather than acting on a different span. Row
-numbers work the same way for a human at a terminal; a program should prefer ids,
-which do not depend on the result order.
-Likewise a plan refuses to apply to a file whose contents differ from when it was
-previewed (`… changed since the plan was made`).
+Separate CLI invocations recompute the search and plan. An ID includes the
+match's path, byte span, and text; an ID absent from the recomputed results returns
+`no match with id(s) …`. Edits elsewhere in the file do not necessarily change that
+ID. Ordinals select the current result order and can identify different matches
+after source changes; a client retaining selections should prefer IDs.
+
+A Rust client can retain `Planned<T>` and apply it without replanning. Apply
+refuses a witnessed source whose contents differ from its planning snapshot
+(`… changed since the plan was made`).
+Source fingerprints come from the snapshots used by edit and move producers, so
+changes before the initial preview are refused too. Resolution-only inputs are not
+included. A move checks destination absence before writing, with a same-entry
+exception for case-only renames; other occupied destinations return `exists`.
+Preflight does not reserve paths. Forward and recovery moves also preserve
+any destination created after the check. Case-only moves use two such operations
+through a unique name and are not atomic as a whole.
 
 ## Errors
 
@@ -457,3 +480,48 @@ happened in words and `hint` (when present) what to try, and neither is for pars
 | `stale`            | a file changed since the plan (or the apply to undo) was made                     |
 | `no_history`       | nothing to undo, or a history file that cannot be read                            |
 | `io`               | reading or writing the tree failed                                                |
+| `recovery_failed`  | recovery could not restore or verify all attempted effects                        |
+
+A failed file mutation whose recovery cannot restore or verify every attempted
+effect returns `recovery_failed` with an additional `recovery` object. Other errors
+omit this field. The envelope schema is 1.
+
+`recovery` contains:
+
+- `cause`: the initiating `Failure` (`code`, `message`, and optional `hint`).
+- `failures`: failed recovery operations, each with `operation`, project-relative
+  `path`, `code`, and `message`. Operations are `restore_file`, `restore_move`,
+  `restore_directory`, `remove_file`, and `remove_directory`.
+- `remaining`: confirmed differences from the before-state, each with `path`,
+  `expected`, and `observed`.
+- `unverified`: paths whose final state could not be read, each with `path`,
+  `expected`, `code`, and `message`. An unverified path is never claimed restored.
+
+A state is `{ "kind": "absent" }`, `{ "kind": "file", "fingerprint": "…" }`,
+`{ "kind": "directory" }`, or `{ "kind": "other" }` (for example, a symlink).
+File fingerprints are full hexadecimal BLAKE3 content hashes, not file contents.
+For a case-only move, a file state also carries an optional `spelling` relative
+path: the directory entry's stored filename. Expected and observed spellings can
+differ even when the fingerprints match. Unrestored temporary files appear as
+their own paths in `remaining`; they are never hidden inside an error message.
+The lists are in deterministic recovery or path order. Recovery attempts continue
+for independent effects after a failure. If the final before-states are all verified,
+the initiating error is returned instead, even if a restoration operation returned
+an error after completing its effect.
+
+These results describe recovery from returned errors, not panics or crashes.
+There is no durable recovery journal or isolation from concurrent writers.
+Apply, batch, and undo include ledger-save compensation: an unrestored `.vvv/history.json` is
+listed like any other remaining file. An unrestored owned directory is listed
+as a directory; `restore_directory` identifies a failed attempt to recreate one
+removed during undo. During failed undo, expected states describe the pre-undo
+(applied) state, including the original ledger with the entry still present.
+Directory ownership is stored in internal history receipts and is absent from
+client answers. A receipt without this field defaults to no owned directories,
+so undo retains directories without ownership evidence.
+
+The Rust library dispatcher returns an in-process `Execution` so a mutation preview
+can retain its executable plan and an applied completion can retain its committed
+history id. Interfaces consume `Execution::into_answer()` before serializing the
+wire `Answer`. Executable plans and committed completion handles are not
+serialized.

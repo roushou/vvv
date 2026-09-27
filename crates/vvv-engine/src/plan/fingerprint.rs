@@ -8,6 +8,10 @@ use serde::{Deserialize, Serialize};
 pub struct Fingerprint(String);
 
 impl Fingerprint {
+    pub fn as_str(&self) -> &str {
+        &self.0
+    }
+
     pub fn of(text: &str) -> Self {
         Self(blake3::hash(text.as_bytes()).to_hex().to_string())
     }

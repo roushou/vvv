@@ -1,0 +1,63 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "path": "src/nested.rs",
+    "position": {
+      "line": 1,
+      "column": 27
+    },
+    "module": {
+      "package": "resolution_probe",
+      "path": [
+        "nested"
+      ]
+    },
+    "import": {
+      "span": {
+        "start": 57,
+        "end": 62
+      },
+      "path": "module_alias::child::Child",
+      "group": {
+        "prefix": "module_alias::child",
+        "item": {
+          "start": 57,
+          "end": 62
+        },
+        "list": {
+          "start": 56,
+          "end": 73
+        },
+        "items": 2,
+        "statement": {
+          "start": 30,
+          "end": 80
+        },
+        "top_level": false
+      },
+      "declares": true,
+      "start": {
+        "line": 1,
+        "column": 27
+      },
+      "address": {
+        "package": "resolution_probe",
+        "path": [
+          "a",
+          "child",
+          "Child"
+        ]
+      },
+      "file": "src/a/child.rs"
+    },
+    "importers": []
+  }
+}
+--- stderr ---

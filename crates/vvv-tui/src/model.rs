@@ -1,25 +1,28 @@
-//! All TUI state as plain data: the search hub, the mode in front of it,
-//! and an overlay when a small question is open. Nothing here does I/O or
-//! knows about terminals; see `update.rs` for how it changes and `render/`
-//! for how it looks.
-
-use std::collections::BTreeSet;
-use std::path::Path;
+//! Application state, shared panel vocabulary, and retained mode selection.
+//! Each mode owns its data and transitions under `crate::modes`.
 
 use vvv_engine::RelPath;
 
-use vvv_engine::HistoryEntry;
-use vvv_engine::protocol::FileChange;
-use vvv_engine::report::{Detailed, Document, Options, View};
-use vvv_engine::{
-    Confidence, Highlight, Intent, Match, MatchId, Notice, Occurrence, Query, Respelling, Role,
-    SymbolKind,
-};
+use crate::modes::context::ModeContext;
+use crate::overlays::{Confirmed, Menu};
+use ratatui::crossterm::event::KeyEvent;
+use vvv_engine::protocol::vocabulary::IntentLine;
+use vvv_engine::{Highlight, Intent};
 
-use super::action::Action;
-use super::keymap::{Dispatch, Layer, When};
-use super::query::QueryBar;
-use super::screen::{Screen, history, moving, overlay, rename, rewrite, search};
+use super::action::{Action, Effect, Event, Planned};
+use super::keymap::{Dispatch, Key, Layer, When};
+use super::screen::Screen;
+use crate::modes::history::HistoryMode;
+use crate::modes::history::screen as history;
+use crate::modes::moves::MoveMode;
+use crate::modes::moves::screen as moving;
+use crate::modes::rename::RenameMode;
+use crate::modes::rename::screen as rename;
+use crate::modes::rewrite::RewriteMode;
+use crate::modes::rewrite::screen as rewrite;
+use crate::modes::search::screen as search;
+use crate::modes::search::{Navigation, Search, SearchPanel};
+pub(crate) use crate::overlays::{MenuTarget, Overlay};
 
 #[derive(Debug)]
 pub struct Model {
@@ -47,7 +50,7 @@ pub struct Model {
 /// How the picker lays a report's rows out.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum ReportView {
-    /// One tight row per hit, as the modes have always shown them.
+    /// One compact row per hit.
     #[default]
     Compact,
     /// The terminal's layout: file headers, ordinals, source, addresses.
@@ -88,35 +91,13 @@ impl Model {
             When::Always => true,
             When::QueryEmpty => self.search.query.is_empty(),
             When::QueryNotEmpty => !self.search.query.is_empty(),
+            When::Anchored => self.search.results.is_anchored(),
         }
     }
 
-    /// The sources a report's rows stand for, in the order it draws them.
-    fn report_sites(report: &Document) -> Vec<vvv_engine::report::Source> {
-        Detailed
-            .present(report, Options::default(), usize::MAX)
-            .body
-            .into_iter()
-            .filter_map(|row| row.source)
-            .collect()
-    }
-
-    /// Move the report overlay's cursor by `by` source rows.
-    pub fn report_moved(&mut self, by: i32) {
-        if let Some(Overlay::Report { report, cursor }) = &mut self.overlay {
-            let last = Self::report_sites(report).len().saturating_sub(1) as i32;
-            *cursor = (*cursor as i32 + by).clamp(0, last) as usize;
-        }
-    }
-
-    /// The source the report overlay's cursor stands on, when it is a report.
+    /// The selected report source, when the active overlay is a report.
     pub fn report_site(&self) -> Option<(RelPath, u32)> {
-        let Some(Overlay::Report { report, cursor }) = &self.overlay else {
-            return None;
-        };
-        Self::report_sites(report)
-            .get(*cursor)
-            .map(|site| (site.path.clone(), site.line))
+        self.overlay.as_ref()?.report_site()
     }
 
     /// The view of the mode on screen.
@@ -132,13 +113,7 @@ impl Model {
 
     /// The overlay's view, when one is open.
     pub fn overlay_screen(&self) -> Option<&'static Screen> {
-        match &self.overlay {
-            Some(Overlay::Menu(_)) => Some(&overlay::MENU_SCREEN),
-            Some(Overlay::Confirm(_)) => Some(&overlay::CONFIRM_SCREEN),
-            Some(Overlay::Help { .. }) => Some(&overlay::HELP_SCREEN),
-            Some(Overlay::Report { .. }) => Some(&overlay::REPORT_SCREEN),
-            None => None,
-        }
+        self.overlay.as_ref().map(Overlay::screen)
     }
 
     /// The view the keys go to: the overlay when one is open, the mode otherwise.
@@ -204,6 +179,474 @@ impl Model {
         self.generation += 1;
         self.generation
     }
+
+    /// Map a key to an action for the current view and focus. `None` =
+    /// ignored.
+    pub fn action_for(&self, event: KeyEvent) -> Option<Action> {
+        let key = Key::from_event(event)?;
+        match self
+            .screen()
+            .resolve(self.focus(), key, |when| self.holds(when))?
+        {
+            Dispatch::Run(action) => Some(action),
+            Dispatch::Type => key.text().map(Action::Input),
+        }
+    }
+
+    pub fn on_key(&mut self, key: KeyEvent) -> Vec<Effect> {
+        match self.action_for(key) {
+            Some(action) => self.update(action),
+            None => Vec::new(),
+        }
+    }
+
+    pub fn update(&mut self, action: Action) -> Vec<Effect> {
+        match action {
+            Action::Start => Vec::new(),
+            Action::Quit => {
+                self.quit = true;
+                Vec::new()
+            }
+            Action::Move(n) => {
+                if matches!(self.overlay, Some(Overlay::Report { .. })) {
+                    if let Some(overlay) = &mut self.overlay {
+                        overlay.report_moved(n);
+                    }
+                    Vec::new()
+                } else {
+                    self.moved(n)
+                }
+            }
+            Action::Page(n) => self.moved(n * 10),
+            Action::Top => self.jump(true),
+            Action::Bottom => self.jump(false),
+            Action::Scroll(n) => self.scrolled(n),
+            Action::Resize(by) => {
+                self.split = (i32::from(self.split) + i32::from(by)).clamp(20, 80) as u16;
+                Vec::new()
+            }
+            Action::View => {
+                self.view = self.view.toggled();
+                Vec::new()
+            }
+            Action::Enter => self.entered(),
+            Action::Back => self.back(),
+            Action::Rename => self.enter_rename(),
+            Action::MoveFile => self.enter_move(false),
+            Action::MoveSymbol => self.enter_move(true),
+            Action::Rewrite => self.enter_rewrite(),
+            Action::History => {
+                self.status.busy = true;
+                vec![Effect::History]
+            }
+            Action::OpenMenu(target) => self.open_menu(target),
+            Action::MenuChoose => self.choose_menu(),
+            Action::Undo => self.undo_requested(),
+            Action::Help => {
+                self.overlay = Some(Overlay::Help {
+                    screen: self.mode_screen(),
+                    focus: self.focus(),
+                    scroll: 0,
+                });
+                Vec::new()
+            }
+            Action::Edit => self.edit(),
+            Action::Jump => self.goto_declaration(),
+            _ => self.mode_update(action),
+        }
+    }
+    fn mode_update(&mut self, action: Action) -> Vec<Effect> {
+        let mut context = ModeContext {
+            status: &mut self.status,
+            generation: &mut self.generation,
+        };
+        match &mut self.mode {
+            Mode::Search => self.search.update(action, &mut context),
+            Mode::Rename(r) => r.update(action, &mut context),
+            Mode::Move(mv) => mv.update(action, &mut context),
+            Mode::Rewrite(rw) => rw.update(action, &mut context),
+            Mode::History(h) => h.update(action, &mut context),
+        }
+    }
+
+    pub fn on_event(&mut self, event: Event) -> Vec<Effect> {
+        match event {
+            Event::Searched {
+                generation,
+                matches,
+                skipped,
+            } => {
+                if generation != self.generation {
+                    return Vec::new();
+                }
+                self.search.searched(
+                    matches,
+                    skipped,
+                    &mut ModeContext {
+                        status: &mut self.status,
+                        generation: &mut self.generation,
+                    },
+                );
+                self.preview_effect()
+            }
+            Event::Answered { generation, answer } => {
+                if generation != self.generation {
+                    return Vec::new();
+                }
+                if !self.search.answered(
+                    *answer,
+                    &mut ModeContext {
+                        status: &mut self.status,
+                        generation: &mut self.generation,
+                    },
+                ) {
+                    return Vec::new();
+                }
+                self.preview_effect()
+            }
+            Event::Previewed {
+                path,
+                text,
+                highlights,
+            } => {
+                let preview = FilePreview::new(path, text, highlights);
+                match &mut self.mode {
+                    Mode::Search => self.search.previewed(preview),
+                    Mode::Rename(r) => r.previewed(preview),
+                    Mode::Move(mv) => mv.previewed(preview),
+                    // Rewrite's pane draws the plan's diff, not a source file.
+                    Mode::Rewrite(_) => {}
+                    Mode::History(_) => {}
+                }
+                Vec::new()
+            }
+            Event::Planned {
+                generation,
+                planned,
+            } => {
+                if generation != self.generation {
+                    return Vec::new();
+                }
+                self.arriving = false;
+                self.planned(planned)
+            }
+            Event::PlanFailed {
+                generation,
+                message,
+            } => {
+                if generation != self.generation {
+                    return Vec::new();
+                }
+                self.arriving = false;
+                match &mut self.mode {
+                    Mode::Rename(r) => r.plan_failed(message),
+                    Mode::Move(mv) => mv.plan_failed(message),
+                    Mode::Rewrite(rw) => rw.plan_failed(message),
+                    Mode::Search | Mode::History(_) => self.status.error(message),
+                }
+                Vec::new()
+            }
+            Event::Applied { id, intent, report } => {
+                self.mode = Mode::Search;
+                self.search.preview = None;
+                self.overlay = Some(Overlay::Report {
+                    report: Box::new(report),
+                    cursor: 0,
+                });
+                let effects = self.search();
+                self.status.busy = false;
+                self.status
+                    .info(format!("✓ #{id}  {}  ·  u undoes it", IntentLine(&intent)));
+                effects
+            }
+            Event::History(entries) => {
+                self.status.busy = false;
+                if entries.is_empty() {
+                    self.status.info("∅ no history");
+                } else {
+                    self.mode = Mode::History(HistoryMode::new(entries));
+                }
+                Vec::new()
+            }
+            Event::Undone(entry) => {
+                self.mode = Mode::Search;
+                self.search.preview = None;
+                let effects = self.search();
+                self.status.busy = false;
+                self.status
+                    .info(format!("↩ #{}  {}", entry.id, IntentLine(&entry.intent)));
+                effects
+            }
+            Event::Failed(message) => {
+                self.status.busy = false;
+                self.arriving = false;
+                match &mut self.mode {
+                    Mode::Rename(r) => r.failed(),
+                    Mode::Move(mv) => mv.failed(),
+                    Mode::Rewrite(rw) => rw.failed(),
+                    Mode::Search | Mode::History(_) => {}
+                }
+                self.status.error(message);
+                Vec::new()
+            }
+        }
+    }
+
+    /// A plan answered: the mode that asked takes what it shows.
+    fn planned(&mut self, planned: Planned) -> Vec<Effect> {
+        match (&mut self.mode, planned) {
+            (
+                Mode::Rename(r),
+                Planned::Rename {
+                    declarations,
+                    occurrences,
+                    files,
+                    ..
+                },
+            ) => r.planned(declarations, occurrences, files),
+            (
+                Mode::Move(mv),
+                Planned::Move {
+                    intent,
+                    respellings,
+                    notices,
+                    files,
+                },
+            ) => mv.planned(intent, respellings, notices, files),
+            (Mode::Rewrite(rw), Planned::Rewrite { files }) => rw.planned(files),
+            _ => Vec::new(),
+        }
+    }
+
+    // ------------------------------------------------------------ cursors
+
+    fn moved(&mut self, by: i32) -> Vec<Effect> {
+        if let Some(Overlay::Menu(menu)) = &mut self.overlay {
+            menu.move_cursor(by);
+            Vec::new()
+        } else {
+            self.mode_update(Action::Move(by))
+        }
+    }
+
+    fn jump(&mut self, top: bool) -> Vec<Effect> {
+        if matches!(self.mode, Mode::Search) && self.search.scroll_focused() {
+            self.search.jump(top)
+        } else {
+            self.moved(if top { i32::MIN / 2 } else { i32::MAX / 2 })
+        }
+    }
+
+    /// Whether the focused panel is a text panel that scrolls rather than
+    /// a list with a cursor.
+    fn scroll_focused(&self) -> bool {
+        match &self.mode {
+            Mode::Search => self.search.scroll_focused(),
+            Mode::Rename(r) => r.scroll_focused(),
+            Mode::Move(mv) => mv.scroll_focused(),
+            Mode::Rewrite(rw) => rw.scroll_focused(),
+            Mode::History(h) => h.scroll_focused(),
+        }
+    }
+
+    fn scrolled(&mut self, by: i32) -> Vec<Effect> {
+        if self
+            .overlay
+            .as_mut()
+            .is_some_and(|overlay| overlay.help_scrolled(by))
+        {
+            Vec::new()
+        } else if !self.scroll_focused() {
+            self.moved(by)
+        } else {
+            self.mode_update(Action::Scroll(by))
+        }
+    }
+
+    /// The file the focused row is in, if the mode's detail does not show
+    /// it yet.
+    fn preview_effect(&self) -> Vec<Effect> {
+        match &self.mode {
+            Mode::Search => self.search.preview_effect(),
+            Mode::Rename(r) => r.preview_effect(),
+            Mode::Move(mv) => mv.preview_effect(),
+            Mode::Rewrite(_) | Mode::History(_) => Vec::new(),
+        }
+    }
+
+    // ------------------------------------------------------------ inputs
+
+    fn search(&mut self) -> Vec<Effect> {
+        self.search.search(&mut ModeContext {
+            status: &mut self.status,
+            generation: &mut self.generation,
+        })
+    }
+
+    fn plan_move(&mut self, debounce: bool) -> Vec<Effect> {
+        let generation = self.next_generation();
+        match &mut self.mode {
+            Mode::Move(mv) => mv.plan(generation, debounce),
+            _ => Vec::new(),
+        }
+    }
+
+    // ------------------------------------------------------------ enter / back
+
+    /// `⏎`: in search, go to the results; in a mode, commit; on a
+    /// confirmation, yes.
+    fn entered(&mut self) -> Vec<Effect> {
+        if let Some(Overlay::Confirm(c)) = &self.overlay {
+            let then = c.then.clone();
+            self.overlay = None;
+            self.status.busy = true;
+            return match then {
+                Confirmed::Undo => vec![Effect::Undo],
+            };
+        }
+        if matches!(self.mode, Mode::History(_)) {
+            self.undo_requested()
+        } else {
+            self.mode_update(Action::Enter)
+        }
+    }
+
+    fn back(&mut self) -> Vec<Effect> {
+        if self.overlay.take().is_some() {
+            return Vec::new();
+        }
+        if !matches!(self.mode, Mode::Search) {
+            self.mode = Mode::Search;
+            self.arriving = false;
+            self.status.clear();
+            return self.preview_effect();
+        }
+        self.search.back(&mut ModeContext {
+            status: &mut self.status,
+            generation: &mut self.generation,
+        })
+    }
+
+    // ------------------------------------------------------------ modes
+
+    /// A retained-hub selection follows the active mode's preview.
+    fn navigation(&self, navigation: Navigation) -> Vec<Effect> {
+        match navigation {
+            Navigation::Selection => self.preview_effect(),
+            Navigation::Effects(effects) => effects,
+        }
+    }
+
+    fn goto_declaration(&mut self) -> Vec<Effect> {
+        let navigation = self.search.goto_declaration(&mut ModeContext {
+            status: &mut self.status,
+            generation: &mut self.generation,
+        });
+        self.navigation(navigation)
+    }
+
+    fn enter_rename(&mut self) -> Vec<Effect> {
+        let r = match RenameMode::from_results(&self.search.results) {
+            Ok(r) => r,
+            Err(message) => return self.fail(message),
+        };
+        let intent = r.judgment();
+        self.mode = Mode::Rename(Box::new(r));
+        self.arriving = true;
+        let generation = self.next_generation();
+        vec![Effect::Plan {
+            generation,
+            intent: Intent::Rename(intent),
+            debounce: false,
+        }]
+    }
+
+    fn enter_move(&mut self, symbol: bool) -> Vec<Effect> {
+        let mv = match MoveMode::from_results(&self.search.results, symbol) {
+            Ok(mv) => mv,
+            Err(message) => return self.fail(message),
+        };
+        self.mode = Mode::Move(Box::new(mv));
+        let effects = self.plan_move(false);
+        self.arriving = !effects.is_empty();
+        effects
+    }
+
+    fn enter_rewrite(&mut self) -> Vec<Effect> {
+        let rw = match RewriteMode::from_results(&self.search.results) {
+            Ok(rw) => rw,
+            Err(message) => return self.fail(message),
+        };
+        self.mode = Mode::Rewrite(Box::new(rw));
+        self.preview_effect()
+    }
+
+    fn open_menu(&mut self, target: MenuTarget) -> Vec<Effect> {
+        self.overlay = Some(Overlay::Menu(Menu::for_target(
+            target,
+            &self.languages,
+            &self.search,
+        )));
+        Vec::new()
+    }
+
+    fn choose_menu(&mut self) -> Vec<Effect> {
+        let Some(Overlay::Menu(menu)) = &self.overlay else {
+            return Vec::new();
+        };
+        let choice = menu.chosen();
+        self.overlay = None;
+        let navigation = self.search.choose_menu(
+            choice,
+            &mut ModeContext {
+                status: &mut self.status,
+                generation: &mut self.generation,
+            },
+        );
+        self.navigation(navigation)
+    }
+
+    fn undo_requested(&mut self) -> Vec<Effect> {
+        match &self.mode {
+            Mode::History(h) => match h.confirmation() {
+                Ok(confirm) => {
+                    self.overlay = Some(Overlay::Confirm(confirm));
+                    Vec::new()
+                }
+                Err(message) => self.fail(message),
+            },
+            _ => {
+                self.status.busy = true;
+                vec![Effect::History]
+            }
+        }
+    }
+
+    /// `$EDITOR` at the focused row's line.
+    fn edit(&mut self) -> Vec<Effect> {
+        if matches!(self.overlay, Some(Overlay::Report { .. })) {
+            return match self.report_site() {
+                Some((path, line)) => vec![Effect::Edit { path, line }],
+                None => Vec::new(),
+            };
+        }
+        let site = match &self.mode {
+            Mode::Search => self.search.results.current_site(),
+            Mode::Rename(r) => r.site(),
+            Mode::Move(mv) => mv.site(),
+            Mode::Rewrite(rw) => rw.site(),
+            Mode::History(_) => None,
+        };
+        match site {
+            Some((path, line)) => vec![Effect::Edit { path, line }],
+            None => Vec::new(),
+        }
+    }
+
+    fn fail(&mut self, message: &str) -> Vec<Effect> {
+        self.status.error(message);
+        Vec::new()
+    }
 }
 
 /// One job, with its own layout and keys.
@@ -237,27 +680,6 @@ impl Mode {
             Self::History(h) => h.focus.index(),
         }
     }
-}
-
-/// A small question in front of the mode.
-#[derive(Debug, Clone)]
-pub enum Overlay {
-    Menu(Menu),
-    Confirm(Confirm),
-    /// The key list: the screen the user was in and the panel that had the
-    /// focus, kept so the list stays about them; `scroll` is how many rows
-    /// are above the box.
-    Help {
-        screen: &'static Screen,
-        focus: usize,
-        scroll: usize,
-    },
-    /// What an apply produced, as the report the picker shows.
-    Report {
-        report: Box<Document>,
-        /// Where the cursor stands among the report's source rows.
-        cursor: usize,
-    },
 }
 
 /// A list panel's cursor. Rows live in the mode; the cursor only knows how
@@ -332,695 +754,6 @@ pub trait Panels: Copy + PartialEq + Sized + 'static {
     fn nth(n: u8) -> Option<Self> {
         Self::ALL.get(usize::from(n).checked_sub(1)?).copied()
     }
-}
-
-// ---------------------------------------------------------------- search
-
-/// The hub: a query, its results, and context for the cursor row.
-#[derive(Debug, Default)]
-pub struct Search {
-    pub query: QueryBar,
-    pub results: Results,
-    pub focus: SearchPanel,
-    pub preview: Option<FilePreview>,
-    /// A manual context scroll position; `None` follows the cursor.
-    pub preview_scroll: Option<usize>,
-}
-
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
-pub enum SearchPanel {
-    #[default]
-    Query,
-    Results,
-    Context,
-}
-
-impl Panels for SearchPanel {
-    const ALL: &'static [Self] = &[Self::Query, Self::Results, Self::Context];
-}
-
-/// Search results in the engine's order — declarations first — with the cursor.
-#[derive(Debug, Default)]
-pub struct Results {
-    pub query: Option<Query>,
-    pub matches: Vec<Match>,
-    pub cursor: Cursor,
-}
-
-impl Results {
-    pub fn replace(&mut self, matches: Vec<Match>) {
-        self.matches = matches;
-        self.cursor.clamp(self.matches.len());
-    }
-
-    pub fn current(&self) -> Option<&Match> {
-        self.matches.get(self.cursor.index)
-    }
-
-    pub fn declarations(&self) -> impl Iterator<Item = &Match> {
-        self.matches.iter().filter(|m| m.role == Role::Declaration)
-    }
-
-    /// The declaration a use row belongs to, when the results hold exactly
-    /// one declaration of that name.
-    pub fn declaration_of(&self, m: &Match) -> Option<&Match> {
-        let mut same = self
-            .declarations()
-            .filter(|d| d.symbol.as_ref().is_some_and(|s| s.name == m.text));
-        let first = same.next()?;
-        same.next().is_none().then_some(first)
-    }
-
-    /// The name a rename would act on from the cursor: a declaration's name,
-    /// kind and file, or an identifier hit's token.
-    pub fn rename_target(&self) -> Option<RenameTarget> {
-        let m = self.current()?;
-        if let Some(s) = &m.symbol {
-            return Some(RenameTarget {
-                name: s.name.clone(),
-                symbol: Some(s.kind),
-                declared_in: Some(m.path.clone()),
-            });
-        }
-        let text = m.text.as_str();
-        let mut chars = text.chars();
-        let bare = chars.next().is_some_and(|c| c.is_alphabetic() || c == '_')
-            && chars.all(|c| c.is_alphanumeric() || c == '_');
-        bare.then(|| RenameTarget {
-            name: text.to_owned(),
-            symbol: None,
-            declared_in: None,
-        })
-    }
-}
-
-/// What `r` found under the cursor.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct RenameTarget {
-    pub name: String,
-    pub symbol: Option<SymbolKind>,
-    pub declared_in: Option<RelPath>,
-}
-
-// ---------------------------------------------------------------- rename
-
-/// A rename being judged: the new name, every occurrence by verdict, and
-/// which of them are ticked for the commit.
-#[derive(Debug)]
-pub struct RenameMode {
-    pub target: RenameTarget,
-    pub language: Option<vvv_engine::LanguageId>,
-    /// The new name, edited live; the plan is re-made as it grows.
-    pub name: String,
-    pub declarations: Vec<Match>,
-    pub occurrences: Vec<Occurrence>,
-    /// The last plan's files, each holding its diff: the preview the detail
-    /// pane draws.
-    pub changes: Vec<FileChange>,
-    pub ticks: BTreeSet<MatchId>,
-    pub focus: RenamePanel,
-    /// Cursors of the `?`, `✓` and `✗` panels, in that order.
-    pub cursors: [Cursor; 3],
-    /// The list panel the detail follows when focus is elsewhere.
-    pub last_list: RenamePanel,
-    pub detail_scroll: usize,
-    pub preview: Option<FilePreview>,
-    /// The verdicts are in and the ticks seeded; later plans only refresh
-    /// `changes`, so typing does not undo the user's ticks.
-    pub judged: bool,
-    /// Waiting for the judge, or for the commit.
-    pub busy: bool,
-    pub error: Option<String>,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RenamePanel {
-    Name,
-    Unsure,
-    Sure,
-    Other,
-    Detail,
-}
-
-impl Panels for RenamePanel {
-    const ALL: &'static [Self] = &[
-        Self::Name,
-        Self::Unsure,
-        Self::Sure,
-        Self::Other,
-        Self::Detail,
-    ];
-}
-
-impl RenamePanel {
-    pub fn confidence(self) -> Option<Confidence> {
-        match self {
-            Self::Unsure => Some(Confidence::Unresolved),
-            Self::Sure => Some(Confidence::Resolved),
-            Self::Other => Some(Confidence::Other),
-            Self::Name | Self::Detail => None,
-        }
-    }
-
-    fn slot(self) -> Option<usize> {
-        match self {
-            Self::Unsure => Some(0),
-            Self::Sure => Some(1),
-            Self::Other => Some(2),
-            Self::Name | Self::Detail => None,
-        }
-    }
-}
-
-impl RenameMode {
-    pub fn new(target: RenameTarget, language: Option<vvv_engine::LanguageId>) -> Self {
-        Self {
-            name: String::new(),
-            target,
-            language,
-            declarations: Vec::new(),
-            occurrences: Vec::new(),
-            changes: Vec::new(),
-            ticks: BTreeSet::new(),
-            focus: RenamePanel::Name,
-            cursors: [Cursor::default(); 3],
-            last_list: RenamePanel::Unsure,
-            detail_scroll: 0,
-            preview: None,
-            judged: false,
-            busy: true,
-            error: None,
-        }
-    }
-
-    /// The rows of one verdict panel, in the engine's order.
-    pub fn rows(&self, confidence: Confidence) -> Vec<&Occurrence> {
-        self.occurrences
-            .iter()
-            .filter(|o| o.confidence == confidence)
-            .collect()
-    }
-
-    pub fn cursor(&self, panel: RenamePanel) -> Option<&Cursor> {
-        panel.slot().map(|i| &self.cursors[i])
-    }
-
-    pub fn cursor_mut(&mut self, panel: RenamePanel) -> Option<&mut Cursor> {
-        panel.slot().map(move |i| &mut self.cursors[i])
-    }
-
-    /// The list panel whose row the detail explains.
-    pub fn list(&self) -> RenamePanel {
-        if self.focus.confidence().is_some() {
-            self.focus
-        } else {
-            self.last_list
-        }
-    }
-
-    pub fn current(&self) -> Option<&Occurrence> {
-        let panel = self.list();
-        let rows = self.rows(panel.confidence()?);
-        rows.get(self.cursor(panel)?.index).copied()
-    }
-
-    pub fn is_ticked(&self, o: &Occurrence) -> bool {
-        self.ticks.contains(&o.m.id)
-    }
-
-    pub fn ticked(&self, confidence: Confidence) -> usize {
-        self.rows(confidence)
-            .iter()
-            .filter(|o| self.is_ticked(o))
-            .count()
-    }
-
-    pub fn toggle(&mut self) {
-        if let Some(id) = self.current().map(|o| o.m.id.clone())
-            && !self.ticks.remove(&id)
-        {
-            self.ticks.insert(id);
-        }
-    }
-
-    /// Tick every row of the focused panel, or untick them all when they
-    /// already are.
-    pub fn toggle_panel(&mut self) {
-        let Some(confidence) = self.list().confidence() else {
-            return;
-        };
-        let ids: Vec<MatchId> = self
-            .rows(confidence)
-            .iter()
-            .map(|o| o.m.id.clone())
-            .collect();
-        if ids.iter().all(|id| self.ticks.contains(id)) {
-            for id in &ids {
-                self.ticks.remove(id);
-            }
-        } else {
-            self.ticks.extend(ids);
-        }
-    }
-
-    /// The plan's change for the occurrence's file when the plan edits this
-    /// very site: the diff the detail pane draws. A file with only other
-    /// sites changed is not this row's preview.
-    pub fn file(&self, o: &Occurrence) -> Option<&FileChange> {
-        self.changes
-            .iter()
-            .find(|f| f.path == o.m.path && f.edits.iter().any(|e| e.span == o.m.span))
-    }
-
-    /// Files the commit touches, from the ticks.
-    pub fn files(&self) -> usize {
-        self.occurrences
-            .iter()
-            .filter(|o| self.is_ticked(o))
-            .map(|o| o.m.path.as_path())
-            .collect::<BTreeSet<&Path>>()
-            .len()
-    }
-}
-
-// ---------------------------------------------------------------- move
-
-/// A move being planned: the destination, edited live, and the plan it
-/// yields — or why it yields none.
-#[derive(Debug)]
-pub struct MoveMode {
-    pub from: RelPath,
-    /// `Some` when one declaration moves rather than the file.
-    pub symbol: Option<String>,
-    pub to: String,
-    pub plan: Option<MovePlan>,
-    pub error: Option<String>,
-    pub focus: MovePanel,
-    /// Cursors of the `→`, `±` and `!` panels.
-    pub cursors: [Cursor; 3],
-    pub last_list: MovePanel,
-    pub detail_scroll: usize,
-    pub preview: Option<FilePreview>,
-    /// Show the whole file diff in the detail panel.
-    pub diff: bool,
-    pub busy: bool,
-}
-
-#[derive(Debug, Clone)]
-pub struct MovePlan {
-    pub intent: Intent,
-    pub files: Vec<FileChange>,
-    pub respellings: Vec<Respelling>,
-    pub notices: Vec<Notice>,
-    /// Indices into `files` of the structural changes: moved, or holding an
-    /// edit no respelling accounts for.
-    pub structural: Vec<usize>,
-}
-
-impl MovePlan {
-    pub fn new(
-        intent: Intent,
-        files: Vec<FileChange>,
-        respellings: Vec<Respelling>,
-        notices: Vec<Notice>,
-    ) -> Self {
-        let structural = files
-            .iter()
-            .enumerate()
-            .filter(|(_, f)| {
-                f.moved_to.is_some()
-                    || f.edits.is_empty()
-                    || !f.edits.iter().all(|e| {
-                        respellings
-                            .iter()
-                            .any(|r| r.path == f.path && r.span == e.span)
-                    })
-            })
-            .map(|(i, _)| i)
-            .collect();
-        Self {
-            intent,
-            files,
-            respellings,
-            notices,
-            structural,
-        }
-    }
-
-    /// One line per structural file: where it goes, or its first changed line.
-    pub fn structural_label(&self, i: usize) -> String {
-        let file = &self.files[i];
-        if let Some(to) = &file.moved_to {
-            return format!("{} → {}", file.path.short(), to.short());
-        }
-        let change = file
-            .diff
-            .as_str()
-            .lines()
-            .find(|l| {
-                (l.starts_with('-') || l.starts_with('+'))
-                    && !l.starts_with("---")
-                    && !l.starts_with("+++")
-            })
-            .map(|l| format!("{} {}", &l[..1], l[1..].trim()))
-            .unwrap_or_default();
-        format!("{}  {change}", file.path.short())
-    }
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MovePanel {
-    To,
-    Respellings,
-    Structural,
-    Notices,
-    Detail,
-}
-
-impl Panels for MovePanel {
-    const ALL: &'static [Self] = &[
-        Self::To,
-        Self::Respellings,
-        Self::Structural,
-        Self::Notices,
-        Self::Detail,
-    ];
-}
-
-impl MovePanel {
-    fn slot(self) -> Option<usize> {
-        match self {
-            Self::Respellings => Some(0),
-            Self::Structural => Some(1),
-            Self::Notices => Some(2),
-            Self::To | Self::Detail => None,
-        }
-    }
-}
-
-/// What a move row points at, for the detail panel and the editor.
-#[derive(Debug, Clone)]
-pub enum MoveRow<'a> {
-    Respelling(&'a Respelling),
-    Structural(&'a FileChange),
-    Notice(&'a Notice),
-}
-
-impl MoveRow<'_> {
-    pub fn path(&self) -> &RelPath {
-        match self {
-            Self::Respelling(r) => &r.path,
-            Self::Structural(f) => &f.path,
-            Self::Notice(n) => &n.path,
-        }
-    }
-
-    pub fn line(&self) -> u32 {
-        match self {
-            Self::Respelling(r) => r.start.line,
-            Self::Structural(_) => 0,
-            Self::Notice(n) => n.start.line,
-        }
-    }
-}
-
-impl MoveMode {
-    pub fn new(from: RelPath, symbol: Option<String>) -> Self {
-        let to = match &symbol {
-            Some(_) => String::new(),
-            None => from.short(),
-        };
-        Self {
-            from,
-            symbol,
-            to,
-            plan: None,
-            error: None,
-            focus: MovePanel::To,
-            cursors: [Cursor::default(); 3],
-            last_list: MovePanel::Respellings,
-            detail_scroll: 0,
-            preview: None,
-            diff: false,
-            busy: false,
-        }
-    }
-
-    pub fn intent(&self) -> Option<Intent> {
-        let to = self.to.trim();
-        if to.is_empty() {
-            return None;
-        }
-        Some(match &self.symbol {
-            Some(name) => {
-                Intent::MoveSymbol(vvv_engine::MoveSymbolIntent::new(name, &self.from, to))
-            }
-            None => Intent::Move(vvv_engine::MoveIntent::new(&self.from, to)),
-        })
-    }
-
-    pub fn len(&self, panel: MovePanel) -> usize {
-        let Some(plan) = &self.plan else {
-            return 0;
-        };
-        match panel {
-            MovePanel::Respellings => plan.respellings.len(),
-            MovePanel::Structural => plan.structural.len(),
-            MovePanel::Notices => plan.notices.len(),
-            MovePanel::To | MovePanel::Detail => 0,
-        }
-    }
-
-    pub fn cursor(&self, panel: MovePanel) -> Option<&Cursor> {
-        panel.slot().map(|i| &self.cursors[i])
-    }
-
-    pub fn cursor_mut(&mut self, panel: MovePanel) -> Option<&mut Cursor> {
-        panel.slot().map(move |i| &mut self.cursors[i])
-    }
-
-    pub fn list(&self) -> MovePanel {
-        if self.focus.slot().is_some() {
-            self.focus
-        } else {
-            self.last_list
-        }
-    }
-
-    pub fn current(&self) -> Option<MoveRow<'_>> {
-        let plan = self.plan.as_ref()?;
-        let panel = self.list();
-        let i = self.cursor(panel)?.index;
-        Some(match panel {
-            MovePanel::Respellings => MoveRow::Respelling(plan.respellings.get(i)?),
-            MovePanel::Structural => MoveRow::Structural(&plan.files[*plan.structural.get(i)?]),
-            MovePanel::Notices => MoveRow::Notice(plan.notices.get(i)?),
-            MovePanel::To | MovePanel::Detail => return None,
-        })
-    }
-}
-
-// ---------------------------------------------------------------- rewrite
-
-/// A rewrite being shaped: the search's matches, the template edited live,
-/// and what each match becomes.
-#[derive(Debug)]
-pub struct RewriteMode {
-    pub query: Query,
-    pub template: String,
-    pub matches: Vec<Match>,
-    /// The last plan's files, each holding its diff: the preview the detail
-    /// pane draws.
-    pub changes: Vec<FileChange>,
-    pub ticks: BTreeSet<MatchId>,
-    pub focus: RewritePanel,
-    pub cursor: Cursor,
-    pub detail_scroll: usize,
-    pub error: Option<String>,
-    pub busy: bool,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum RewritePanel {
-    Template,
-    Matches,
-    Detail,
-}
-
-impl Panels for RewritePanel {
-    const ALL: &'static [Self] = &[Self::Template, Self::Matches, Self::Detail];
-}
-
-impl RewriteMode {
-    pub fn new(query: Query, matches: Vec<Match>) -> Self {
-        let ticks = matches.iter().map(|m| m.id.clone()).collect();
-        Self {
-            query,
-            template: String::new(),
-            matches,
-            changes: Vec::new(),
-            ticks,
-            focus: RewritePanel::Template,
-            cursor: Cursor::default(),
-            detail_scroll: 0,
-            error: None,
-            busy: false,
-        }
-    }
-
-    pub fn intent(&self) -> Option<vvv_engine::RewriteIntent> {
-        (!self.template.trim().is_empty())
-            .then(|| vvv_engine::RewriteIntent::new(self.query.clone(), self.template.as_str()))
-    }
-
-    pub fn current(&self) -> Option<&Match> {
-        self.matches.get(self.cursor.index)
-    }
-
-    pub fn is_ticked(&self, m: &Match) -> bool {
-        self.ticks.contains(&m.id)
-    }
-
-    pub fn toggle(&mut self) {
-        if let Some(id) = self.current().map(|m| m.id.clone())
-            && !self.ticks.remove(&id)
-        {
-            self.ticks.insert(id);
-        }
-    }
-
-    pub fn toggle_all(&mut self) {
-        if self.ticks.len() == self.matches.len() {
-            self.ticks.clear();
-        } else {
-            self.ticks = self.matches.iter().map(|m| m.id.clone()).collect();
-        }
-    }
-
-    pub fn files(&self) -> usize {
-        self.matches
-            .iter()
-            .filter(|m| self.is_ticked(m))
-            .map(|m| m.path.as_path())
-            .collect::<BTreeSet<&Path>>()
-            .len()
-    }
-}
-
-// ---------------------------------------------------------------- history
-
-#[derive(Debug)]
-pub struct HistoryMode {
-    pub entries: Vec<HistoryEntry>,
-    pub cursor: Cursor,
-    pub focus: HistoryPanel,
-    pub files_scroll: usize,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum HistoryPanel {
-    Entries,
-    Files,
-}
-
-impl Panels for HistoryPanel {
-    const ALL: &'static [Self] = &[Self::Entries, Self::Files];
-}
-
-impl HistoryMode {
-    pub fn new(entries: Vec<HistoryEntry>) -> Self {
-        let cursor = Cursor {
-            index: entries.len().saturating_sub(1),
-        };
-        Self {
-            entries,
-            cursor,
-            focus: HistoryPanel::Entries,
-            files_scroll: 0,
-        }
-    }
-
-    pub fn current(&self) -> Option<&HistoryEntry> {
-        self.entries.get(self.cursor.index)
-    }
-
-    pub fn is_newest(&self) -> bool {
-        self.cursor.index + 1 == self.entries.len()
-    }
-}
-
-// ---------------------------------------------------------------- overlays
-
-/// A list to pick one value from; the choice edits the query bar.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Menu {
-    pub target: MenuTarget,
-    pub items: Vec<MenuItem>,
-    pub cursor: usize,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MenuTarget {
-    Symbol,
-    Language,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MenuItem {
-    pub label: String,
-    /// The filter value, or `None` for "any".
-    pub value: Option<String>,
-}
-
-impl Menu {
-    /// Symbol kinds, or the registered languages; `current` preselects.
-    pub fn new(target: MenuTarget, values: Vec<String>, current: Option<&str>) -> Self {
-        let mut items = vec![MenuItem {
-            label: "any".to_owned(),
-            value: None,
-        }];
-        items.extend(values.into_iter().map(|v| MenuItem {
-            label: v.clone(),
-            value: Some(v),
-        }));
-        let cursor = items
-            .iter()
-            .position(|i| i.value.as_deref() == current)
-            .unwrap_or(0);
-        Self {
-            target,
-            items,
-            cursor,
-        }
-    }
-
-    pub fn title(&self) -> &'static str {
-        match self.target {
-            MenuTarget::Symbol => "symbol kind",
-            MenuTarget::Language => "language",
-        }
-    }
-
-    pub fn current(&self) -> &MenuItem {
-        &self.items[self.cursor]
-    }
-
-    pub fn move_cursor(&mut self, by: i32) {
-        let last = self.items.len() as i32 - 1;
-        self.cursor = (self.cursor as i32 + by).clamp(0, last) as usize;
-    }
-}
-
-/// A yes/no question before something irreversible-ish.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Confirm {
-    pub question: String,
-    pub then: Confirmed,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Confirmed {
-    Undo,
 }
 
 // ---------------------------------------------------------------- shared

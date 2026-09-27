@@ -1,0 +1,28 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+move needed from src/origin.rs → src/cleanup.rs
+
+± 2   2 files
+
+± src/cleanup.rs
+@@ -1,4 +1,5 @@
+ use crate::origin as alias;
+-use alias::needed;
+ 
+ pub fn call() { needed(); }
++
++pub fn needed() {}
+
+± src/origin.rs
+@@ -3,4 +3,3 @@
+ 
+ pub fn moved(_: Dep) {}
+ 
+-pub fn needed() {}
+--- stderr ---
+± 2   2 files
+hint: --apply to write · --diff for the full patch

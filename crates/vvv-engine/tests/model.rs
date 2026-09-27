@@ -39,8 +39,39 @@ impl Vfs for Counting {
     fn exists(&self, path: &Path) -> bool {
         self.inner.exists(path)
     }
-    fn rename(&self, from: &Path, to: &Path) -> Result<(), VfsError> {
-        self.inner.rename(from, to)
+    fn entry_kind(
+        &self,
+        path: &Path,
+    ) -> Result<Option<vvv_engine::EntryKind>, vvv_engine::VfsError> {
+        self.inner.entry_kind(path)
+    }
+    fn entry_path(&self, path: &Path) -> Result<Option<PathBuf>, vvv_engine::VfsError> {
+        self.inner.entry_path(path)
+    }
+
+    fn same_entry(&self, from: &Path, to: &Path) -> Result<bool, vvv_engine::VfsError> {
+        self.inner.same_entry(from, to)
+    }
+
+    fn names_alias(&self, from: &Path, to: &Path) -> Result<bool, vvv_engine::VfsError> {
+        self.inner.names_alias(from, to)
+    }
+
+    fn prepare_parent(&self, path: &Path) -> vvv_engine::ParentCreation {
+        self.inner.prepare_parent(path)
+    }
+    fn remove_file(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
+        self.inner.remove_file(path)
+    }
+    fn create_dir(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
+        self.inner.create_dir(path)
+    }
+
+    fn remove_empty_dir(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
+        self.inner.remove_empty_dir(path)
+    }
+    fn move_if_absent(&self, from: &Path, to: &Path) -> Result<(), vvv_engine::MoveError> {
+        self.inner.move_if_absent(from, to)
     }
     fn walk(&self, root: &Path) -> Result<Vec<PathBuf>, VfsError> {
         self.inner.walk(root)
@@ -64,8 +95,8 @@ fn setup() -> (Arc<Counting>, Engine) {
 }
 
 fn paths(engine: &Engine, query: &str) -> Vec<String> {
-    let mut out: Vec<String> = engine
-        .run(Query::pattern(query))
+    let mut out: Vec<String> = vvv_engine::SearchQuery::from(Query::pattern(query))
+        .execute(engine)
         .unwrap()
         .matches
         .into_iter()
@@ -110,12 +141,12 @@ fn session_sees_edits_new_files_deletions_and_renames() {
     assert_eq!(paths(&engine, "foo"), ["a.p", "b.p", "c.p"]);
 
     // Renamed: the old path is gone, the new one is loaded.
-    vfs.rename(Path::new("/ws/c.p"), Path::new("/ws/d.p"))
+    vfs.move_if_absent(Path::new("/ws/c.p"), Path::new("/ws/d.p"))
         .unwrap();
     assert_eq!(paths(&engine, "foo"), ["a.p", "b.p", "d.p"]);
 
     // Vanished (a rename to a path no language claims).
-    vfs.rename(Path::new("/ws/d.p"), Path::new("/ws/d.txt"))
+    vfs.move_if_absent(Path::new("/ws/d.p"), Path::new("/ws/d.txt"))
         .unwrap();
     assert_eq!(paths(&engine, "foo"), ["a.p", "b.p"]);
 }
@@ -125,8 +156,8 @@ fn session_sees_what_the_engine_itself_applies() {
     let (_, engine) = setup();
     assert_eq!(paths(&engine, "foo"), ["a.p"]);
     let intent = vvv_engine::RenameIntent::new("foo", "qux");
-    let rename = engine.run(intent.clone()).unwrap();
-    engine.run(Apply(rename)).unwrap();
+    let rename = intent.clone().plan(&engine).unwrap();
+    Apply(rename).apply(&engine).unwrap();
     assert_eq!(paths(&engine, "foo"), Vec::<String>::new());
     assert_eq!(paths(&engine, "qux"), ["a.p"]);
 }
@@ -154,10 +185,11 @@ fn a_trusting_session_walks_once_per_window_unless_touched() {
     assert_eq!(paths(&engine, "foo"), ["a.p", "b.p"], "told: looked at");
 
     // Its own apply is a change it knows about.
-    let rename = engine
-        .run(vvv_engine::RenameIntent::new("foo", "qux").declared_in("a.p"))
+    let rename = vvv_engine::RenameIntent::new("foo", "qux")
+        .declared_in("a.p")
+        .plan(&engine)
         .unwrap();
-    engine.run(Apply(rename)).unwrap();
+    Apply(rename).apply(&engine).unwrap();
     assert_eq!(paths(&engine, "qux"), ["a.p"]);
 }
 
@@ -180,17 +212,17 @@ fn a_file_is_parsed_once_per_stamp() {
     )
     .with_retention(Retention::session());
     let intent = vvv_engine::RenameIntent::new("foo", "bar");
-    engine.run(intent.clone()).unwrap();
+    intent.clone().plan(&engine).unwrap();
     let first = parses.load(Ordering::SeqCst);
     assert_eq!(first, 2, "each of the two files parsed exactly once");
-    engine.run(intent.clone()).unwrap();
+    intent.clone().plan(&engine).unwrap();
     assert_eq!(
         parses.load(Ordering::SeqCst),
         first,
         "nothing changed, nothing re-parsed"
     );
     vfs.write(Path::new("/ws/b.p"), "use a.p/*\nfoo").unwrap();
-    engine.run(intent.clone()).unwrap();
+    intent.clone().plan(&engine).unwrap();
     assert_eq!(
         parses.load(Ordering::SeqCst),
         first + 1,

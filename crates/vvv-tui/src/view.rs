@@ -27,22 +27,11 @@ impl View for Compact {
         ticked: bool,
         width: usize,
     ) -> Row {
-        let site_width = 22;
-        let mut line = Line::mark(Mark::ticked(ticked))
-            .and(Role::Plain, " ")
-            .and_line(Line::mark(Mark::from(occurrence.reason)))
-            .and(Role::Plain, " ");
-        let site = format!(
-            "{}:{}",
-            occurrence.m.path.short(),
-            occurrence.m.start.line + 1
-        );
-        line = line
-            .and(Role::Path, format!("{site:<site_width$}"))
-            .and(Role::Plain, " ");
-        let budget = width.saturating_sub(4 + site_width + 1);
-        line = line.and_line(Line::hit(&occurrence.m, Role::Plain).fit(budget));
-        Row::at(line, occurrence.m.path.clone(), occurrence.m.start.line)
+        Self::occurrence_line(occurrence, Some(ticked), width)
+    }
+
+    fn relation(&self, occurrence: &Occurrence, _ordinal: usize, width: usize) -> Row {
+        Self::occurrence_line(occurrence, None, width)
     }
 
     fn respelling(&self, respelling: &Respelling, width: usize) -> Row {
@@ -99,6 +88,31 @@ impl View for Compact {
 }
 
 impl Compact {
+    /// One occurrence row. `ticked` is `Some` for a plan verdict (with its
+    /// checkbox) and `None` for a relation view, which reads rather than
+    /// commits.
+    fn occurrence_line(occurrence: &Occurrence, ticked: Option<bool>, width: usize) -> Row {
+        let site_width = 22;
+        let mut line = match ticked {
+            Some(ticked) => Line::mark(Mark::ticked(ticked)).and(Role::Plain, " "),
+            None => Line::new(),
+        }
+        .and_line(Line::mark(Mark::from(occurrence.reason)))
+        .and(Role::Plain, " ");
+        let site = format!(
+            "{}:{}",
+            occurrence.m.path.short(),
+            occurrence.m.start.line + 1
+        );
+        line = line
+            .and(Role::Path, format!("{site:<site_width$}"))
+            .and(Role::Plain, " ");
+        let used = site_width + if ticked.is_some() { 4 } else { 2 } + 1;
+        let budget = width.saturating_sub(used);
+        line = line.and_line(Line::hit(&occurrence.m, Role::Plain).fit(budget));
+        Row::at(line, occurrence.m.path.clone(), occurrence.m.start.line)
+    }
+
     /// `● short:line   kind name` for a declaration; the glyph, the site
     /// and the source hit for anything else.
     fn hit(m: &Match, width: usize) -> Row {

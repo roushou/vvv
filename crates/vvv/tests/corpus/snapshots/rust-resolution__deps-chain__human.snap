@@ -1,0 +1,18 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+src/chained.rs
+
+→ 3
+  resolution_probe
+     1  crate           → src/lib.rs
+     2  root::a         → src/a.rs
+     3  parent::child   → src/a/child.rs
+
+← 0   0 files
+  ∅
+--- stderr ---
+→ 3  ← 0

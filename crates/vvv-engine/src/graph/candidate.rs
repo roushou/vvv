@@ -4,10 +4,10 @@
 use std::path::Path;
 use std::sync::{Arc, OnceLock, RwLock};
 
-use super::{Fragment, Namespace, Scope};
-use crate::{Match, SourceFile};
+use super::{Declared, Fragment, Namespace, Scope};
+use crate::{Match, Placed, SourceFile};
 
-use vvv_core::{Facts, ImportRef, Language, LanguageId, Query, SearchError};
+use vvv_core::{Facts, Language, LanguageId, Project, Query, SearchError};
 
 use crate::EngineError;
 
@@ -29,7 +29,7 @@ pub struct Candidate {
 /// Something derived from the file against one build of its language's
 /// project, kept until the project moves on.
 struct PerBuild<T> {
-    slot: RwLock<Option<(u64, Arc<T>)>>,
+    slot: RwLock<Option<(Arc<Project>, Arc<T>)>>,
 }
 
 impl<T> PerBuild<T> {
@@ -39,11 +39,11 @@ impl<T> PerBuild<T> {
         }
     }
 
-    /// The value for `generation`, building it when what is held is for
+    /// The value for `project`, building it when what is held is for
     /// another build or nothing is held yet.
     fn get_or_build(
         &self,
-        generation: u64,
+        project: &Arc<Project>,
         build: impl FnOnce() -> Result<T, EngineError>,
     ) -> Result<Arc<T>, EngineError> {
         if let Some((_, value)) = self
@@ -51,7 +51,7 @@ impl<T> PerBuild<T> {
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .as_ref()
-            .filter(|(built, _)| *built == generation)
+            .filter(|(built, _)| Arc::ptr_eq(built, project))
         {
             return Ok(value.clone());
         }
@@ -59,12 +59,27 @@ impl<T> PerBuild<T> {
         *self
             .slot
             .write()
-            .unwrap_or_else(std::sync::PoisonError::into_inner) = Some((generation, value.clone()));
+            .unwrap_or_else(std::sync::PoisonError::into_inner) =
+            Some((project.clone(), value.clone()));
         Ok(value)
     }
 }
 
 impl Candidate {
+    /// A fragment's declaration as an answer names it: with its file and line.
+    pub(crate) fn placed(&self, declared: &Declared) -> Placed {
+        Placed {
+            path: self.path().into(),
+            symbol: declared.symbol.clone(),
+            start: self
+                .file()
+                .source()
+                .position(declared.symbol.name_span.start),
+            address: declared.address.clone(),
+            reach: declared.reach.clone(),
+        }
+    }
+
     pub fn new(file: SourceFile, language: Arc<dyn Language>) -> Self {
         Self {
             file: Arc::new(file),
@@ -79,13 +94,13 @@ impl Candidate {
     /// build and shared by every clone.
     pub fn fragment(&self, ns: &Namespace) -> Result<Arc<Fragment>, EngineError> {
         self.fragment
-            .get_or_build(ns.generation(), || Fragment::build(self, ns))
+            .get_or_build(ns.project(), || Fragment::build(self, ns))
     }
 
     /// What the file can see — its imports as names and addresses — read
     /// off the fragment once per project build and shared by every clone.
     pub fn scope(&self, ns: &Namespace) -> Result<Arc<Scope>, EngineError> {
-        self.scope.get_or_build(ns.generation(), || {
+        self.scope.get_or_build(ns.project(), || {
             let fragment = self.fragment(ns)?;
             Ok(Scope::of(ns, self.path(), &fragment))
         })
@@ -140,6 +155,32 @@ impl Candidate {
         Ok(self.locate(raw))
     }
 
+    /// Retained or client-supplied matches must still describe this snapshot
+    /// before their coordinates or captures can authorize edits.
+    pub(crate) fn validate_matches(
+        &self,
+        query: &Query,
+        matches: &[Match],
+    ) -> Result<(), EngineError> {
+        if query.language().is_some_and(|id| *id != self.language()) {
+            return Err(crate::ApplyError::Stale {
+                path: self.path().into(),
+            }
+            .into());
+        }
+        let current = self.find(query)?;
+        if matches
+            .iter()
+            .any(|held| !current.iter().any(|fresh| held.same_source_match(fresh)))
+        {
+            return Err(crate::ApplyError::Stale {
+                path: self.path().into(),
+            }
+            .into());
+        }
+        Ok(())
+    }
+
     /// Every identifier token spelling `name`, located.
     pub fn references(&self, name: &str) -> Result<Vec<Match>, EngineError> {
         let facts = self.facts()?;
@@ -150,11 +191,6 @@ impl Candidate {
                 Match::locate(raw, &self.file, self.language.id())
             })
             .collect())
-    }
-
-    /// Import paths in this file, in source order.
-    pub fn imports(&self) -> Result<Vec<ImportRef>, EngineError> {
-        Ok(self.facts()?.imports.clone())
     }
 
     fn locate(&self, raw: Vec<vvv_core::RawMatch>) -> Vec<Match> {

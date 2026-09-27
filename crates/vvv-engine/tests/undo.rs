@@ -8,8 +8,8 @@ use std::sync::Arc;
 use common::Fake;
 use vvv_core::Query;
 use vvv_engine::{
-    Apply, Engine, EngineError, FileQuery, HistoryError, HistoryQuery, Intent, Languages,
-    MemoryVfs, RelPath, RewriteIntent, UndoLast, Vfs, Workspace,
+    Apply, Engine, EngineError, FileQuery, HistoryError, Intent, Languages, MemoryVfs, RelPath,
+    RewriteIntent, Vfs, Workspace,
 };
 
 fn engine() -> (Arc<MemoryVfs>, Engine) {
@@ -22,18 +22,18 @@ fn engine() -> (Arc<MemoryVfs>, Engine) {
 }
 
 fn read(engine: &Engine) -> String {
-    engine
-        .run(FileQuery {
-            path: RelPath::from("a.p"),
-        })
-        .unwrap()
-        .text
+    FileQuery {
+        path: RelPath::from("a.p"),
+    }
+    .execute(engine)
+    .unwrap()
+    .text
 }
 
 fn rewrite(engine: &Engine, from: &str, to: &str) {
     let intent = RewriteIntent::new(Query::pattern(from), to);
-    let planned = engine.run(intent.clone()).unwrap();
-    engine.run(Apply(planned)).unwrap();
+    let planned = intent.clone().plan(engine).unwrap();
+    Apply(planned).apply(engine).unwrap();
 }
 
 #[test]
@@ -42,19 +42,26 @@ fn undo_pops_applies_in_reverse_order() {
     rewrite(&engine, "one", "1");
     rewrite(&engine, "two", "2");
     assert_eq!(read(&engine), "1 2 1");
-    assert_eq!(engine.run(HistoryQuery).unwrap().entries.len(), 2);
+    assert_eq!(
+        vvv_engine::Ledger::new(&engine)
+            .history()
+            .unwrap()
+            .entries
+            .len(),
+        2
+    );
 
-    let undone = engine.run(UndoLast).unwrap();
+    let undone = vvv_engine::Ledger::new(&engine).undo().unwrap();
     assert_eq!(
         undone.undone.intent,
         Intent::Rewrite(RewriteIntent::new(Query::pattern("two"), "2"))
     );
     assert_eq!(read(&engine), "1 two 1");
 
-    engine.run(UndoLast).unwrap();
+    vvv_engine::Ledger::new(&engine).undo().unwrap();
     assert_eq!(read(&engine), "one two one");
     assert!(matches!(
-        engine.run(UndoLast),
+        vvv_engine::Ledger::new(&engine).undo(),
         Err(EngineError::History(HistoryError::Empty))
     ));
 }
@@ -64,9 +71,16 @@ fn undo_refuses_when_files_changed_and_keeps_the_entry() {
     let (vfs, engine) = engine();
     rewrite(&engine, "one", "1");
     vfs.write(Path::new("/ws/a.p"), "1 two 1 edited").unwrap();
-    assert!(matches!(engine.run(UndoLast), Err(EngineError::Apply(_))));
+    assert!(matches!(
+        vvv_engine::Ledger::new(&engine).undo(),
+        Err(EngineError::Apply(_))
+    ));
     assert_eq!(
-        engine.run(HistoryQuery).unwrap().entries.len(),
+        vvv_engine::Ledger::new(&engine)
+            .history()
+            .unwrap()
+            .entries
+            .len(),
         1,
         "entry stays for a later manual fix"
     );

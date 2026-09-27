@@ -19,6 +19,8 @@ pub use overlay::Overlay;
 pub enum VfsError {
     #[error("file not found: {0}")]
     NotFound(PathBuf),
+    #[error("destination already exists: {0}")]
+    Exists(PathBuf),
     #[error("{path}: not valid UTF-8")]
     InvalidUtf8 { path: PathBuf },
     #[error("{path}: {source}")]
@@ -27,6 +29,53 @@ pub enum VfsError {
         #[source]
         source: std::io::Error,
     },
+}
+
+/// The file effects of a failed move. Unknown outcomes require observation.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MoveState {
+    Unchanged,
+    DestinationLinked,
+    Moved,
+    Unknown,
+}
+
+#[derive(Debug, thiserror::Error)]
+#[error("{source}")]
+pub struct MoveError {
+    #[source]
+    pub source: VfsError,
+    pub state: MoveState,
+}
+
+impl MoveError {
+    pub fn new(source: VfsError, state: MoveState) -> Self {
+        Self { source, state }
+    }
+
+    pub fn into_source(self) -> VfsError {
+        self.source
+    }
+}
+
+/// Parent directories created before a file mutation, including partial failure.
+#[derive(Debug)]
+pub struct ParentCreation {
+    pub created: Vec<PathBuf>,
+    pub result: Result<(), VfsError>,
+}
+
+impl ParentCreation {
+    pub fn new(created: Vec<PathBuf>, result: Result<(), VfsError>) -> Self {
+        Self { created, result }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EntryKind {
+    File,
+    Directory,
+    Other,
 }
 
 /// A cheap witness of a file's state: modification time and size on disk, a
@@ -54,8 +103,50 @@ pub trait Vfs: Send + Sync {
     /// Write a whole file, creating parent directories as needed.
     fn write(&self, path: &Path, contents: &str) -> Result<(), VfsError>;
     fn exists(&self, path: &Path) -> bool;
-    /// Move a file, creating parent directories of `to` as needed.
-    fn rename(&self, from: &Path, to: &Path) -> Result<(), VfsError>;
+    /// Inspect a directory entry without following its final symlink.
+    fn entry_kind(&self, path: &Path) -> Result<Option<EntryKind>, VfsError>;
+    /// Stored directory-entry spelling, rather than a requested case alias.
+    /// Case-sensitive implementations can use this default.
+    fn entry_path(&self, path: &Path) -> Result<Option<PathBuf>, VfsError> {
+        Ok(self.entry_kind(path)?.map(|_| path.to_path_buf()))
+    }
+
+    /// Whether two names would address one entry, even when the names are
+    /// currently absent. Overlay uses this to preserve the base's name policy.
+    /// Case-sensitive filesystems use lexical equality.
+    fn names_alias(&self, from: &Path, to: &Path) -> Result<bool, VfsError> {
+        Ok(from == to)
+    }
+
+    /// Whether two paths resolve to the same directory entry. Distinct hard
+    /// links to the same inode are different entries and return false.
+    fn same_entry(&self, from: &Path, to: &Path) -> Result<bool, VfsError> {
+        let Some(from) = self.entry_path(from)? else {
+            return Ok(false);
+        };
+        Ok(self.entry_path(to)?.is_some_and(|to| from == to))
+    }
+
+    /// Create missing parents and retain every directory created, even on error.
+    fn prepare_parent(&self, path: &Path) -> ParentCreation;
+    /// Recreate one removed directory during recovery, without creating parents
+    /// or replacing an occupied entry. File-only backends do not model directories.
+    fn create_dir(&self, path: &Path) -> Result<(), VfsError> {
+        Err(VfsError::Io {
+            path: path.to_path_buf(),
+            source: std::io::Error::new(
+                std::io::ErrorKind::Unsupported,
+                "directory creation is not modeled by this file system",
+            ),
+        })
+    }
+    fn remove_file(&self, path: &Path) -> Result<(), VfsError>;
+    /// Remove only an empty directory.
+    fn remove_empty_dir(&self, path: &Path) -> Result<(), VfsError>;
+    /// Move a regular file without replacing an occupied destination.
+    /// Prepare destination parents first with `prepare_parent`. Success removes
+    /// the source; failure retains its observed effect state for recovery.
+    fn move_if_absent(&self, from: &Path, to: &Path) -> Result<(), MoveError>;
     /// Every regular file under `root`, in a deterministic order.
     fn walk(&self, root: &Path) -> Result<Vec<PathBuf>, VfsError>;
 }

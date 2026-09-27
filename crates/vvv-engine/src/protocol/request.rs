@@ -6,12 +6,14 @@
 use serde::{Deserialize, Serialize};
 use vvv_core::Query;
 
+use crate::capabilities::moves::{Move, MoveIntent, MoveSymbol, MoveSymbolIntent};
+use crate::capabilities::rename::{Rename, RenameIntent};
+
 use super::{
     Batch, BatchIntent, Dead, DeadQuery, Deps, DepsQuery, ExplainQuery, Explanation, File,
-    FileQuery, History, Impact, ImpactQuery, ImportsQuery, ImportsReport, Locations, Move,
-    MoveIntent, MoveSymbol, MoveSymbolIntent, Notice, Outline, OutlineQuery, References,
-    ReferencesQuery, Rename, RenameIntent, Response, Rewrite, RewriteIntent, Search, Surface,
-    SurfaceQuery, Undo, WhereQuery,
+    FileQuery, History, Impact, ImpactQuery, ImportsQuery, ImportsReport, Locations,
+    MutationAnswer, Notice, Outline, OutlineQuery, References, ReferencesQuery, Response, Rewrite,
+    RewriteIntent, Search, Surface, SurfaceQuery, Undo, WhereQuery,
 };
 
 /// One request, tagged by `command`. A mutation carries the same fields as
@@ -65,6 +67,33 @@ pub enum Request {
     Undo,
 }
 
+impl Request {
+    /// Whether running this request can write. The picker's hub asks only
+    /// these; a mutation goes through an `Intent` and `Apply`.
+    pub fn is_read_only(&self) -> bool {
+        match self {
+            Self::Search(_)
+            | Self::Outline(_)
+            | Self::References(_)
+            | Self::Where(_)
+            | Self::Deps(_)
+            | Self::Explain(_)
+            | Self::Surface(_)
+            | Self::Impact(_)
+            | Self::Dead(_)
+            | Self::Imports(_)
+            | Self::File(_)
+            | Self::History => true,
+            Self::Rewrite { .. }
+            | Self::Rename { .. }
+            | Self::Move { .. }
+            | Self::MoveSymbol { .. }
+            | Self::Batch { .. }
+            | Self::Undo => false,
+        }
+    }
+}
+
 /// The answer to a [`Request`]: the result type of the command asked. On
 /// the wire it is that type's shape alone — a client knows what it asked —
 /// so it serialises without a tag and is read back by the command's type.
@@ -108,12 +137,24 @@ impl Answer {
     /// The history entry a written answer recorded, if any.
     pub fn history_id(&self) -> Option<u64> {
         match self {
-            Self::Rewrite(r) => r.history_id,
-            Self::Rename(r) => r.history_id,
-            Self::Move(r) => r.history_id,
-            Self::MoveSymbol(r) => r.history_id,
-            Self::Batch(b) => b.history_id,
+            Self::Rewrite(r) => r.state.history_id(),
+            Self::Rename(r) => r.state.history_id(),
+            Self::Move(r) => r.state.history_id(),
+            Self::MoveSymbol(r) => r.state.history_id(),
+            Self::Batch(b) => b.state.history_id(),
             _ => None,
+        }
+    }
+}
+
+impl From<MutationAnswer> for Answer {
+    fn from(result: MutationAnswer) -> Self {
+        match result {
+            MutationAnswer::Rewrite(result) => Self::Rewrite(result),
+            MutationAnswer::Rename(result) => Self::Rename(result),
+            MutationAnswer::Move(result) => Self::Move(result),
+            MutationAnswer::MoveSymbol(result) => Self::MoveSymbol(result),
+            MutationAnswer::Batch(result) => Self::Batch(result),
         }
     }
 }
@@ -135,4 +176,31 @@ pub struct Reply<T> {
     pub id: Option<serde_json::Value>,
     #[serde(flatten)]
     pub response: Response<T>,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn the_read_only_guard_separates_queries_from_mutations() {
+        assert!(Request::History.is_read_only());
+        assert!(Request::Search(Query::pattern("Engine")).is_read_only());
+        assert!(Request::References(ReferencesQuery::new("Engine")).is_read_only());
+        assert!(!Request::Undo.is_read_only(), "undo writes, however small");
+        assert!(
+            !Request::Rename {
+                intent: RenameIntent::new("A", "B"),
+                apply: false,
+            }
+            .is_read_only()
+        );
+        assert!(
+            !Request::Batch {
+                intent: BatchIntent { intents: vec![] },
+                apply: false,
+            }
+            .is_read_only()
+        );
+    }
 }

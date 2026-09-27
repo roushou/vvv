@@ -1,0 +1,276 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "name": "Foo",
+    "declarations": [
+      {
+        "id": "ccdd1f8b8d03",
+        "path": "src/a.rs",
+        "language": "rust",
+        "span": {
+          "start": 15,
+          "end": 30
+        },
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 1,
+          "column": 15
+        },
+        "kind": "struct_item",
+        "text": "pub struct Foo;",
+        "line": "pub struct Foo;",
+        "symbol": {
+          "kind": "struct",
+          "name": "Foo",
+          "name_span": {
+            "start": 26,
+            "end": 29
+          },
+          "span": {
+            "start": 15,
+            "end": 30
+          },
+          "extent": {
+            "start": 15,
+            "end": 30
+          },
+          "visibility": {
+            "span": {
+              "start": 15,
+              "end": 18
+            },
+            "text": "pub"
+          }
+        },
+        "role": "declaration",
+        "address": {
+          "package": "resolution_probe",
+          "path": [
+            "a",
+            "Foo"
+          ]
+        }
+      }
+    ],
+    "occurrences": [
+      {
+        "id": "0e6c37e56e0a",
+        "path": "src/a.rs",
+        "language": "rust",
+        "span": {
+          "start": 26,
+          "end": 29
+        },
+        "start": {
+          "line": 1,
+          "column": 11
+        },
+        "end": {
+          "line": 1,
+          "column": 14
+        },
+        "kind": "type_identifier",
+        "text": "Foo",
+        "line": "pub struct Foo;",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "declaring"
+      },
+      {
+        "id": "83a3f39a8b28",
+        "path": "src/consumer.rs",
+        "language": "rust",
+        "span": {
+          "start": 220,
+          "end": 223
+        },
+        "start": {
+          "line": 6,
+          "column": 23
+        },
+        "end": {
+          "line": 6,
+          "column": 26
+        },
+        "kind": "type_identifier",
+        "text": "Foo",
+        "line": "pub fn grouped_path(_: Foo, _: Child) {}",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "imported"
+      },
+      {
+        "id": "122f4d8467ca",
+        "path": "src/nested.rs",
+        "language": "rust",
+        "span": {
+          "start": 109,
+          "end": 112
+        },
+        "start": {
+          "line": 3,
+          "column": 27
+        },
+        "end": {
+          "line": 3,
+          "column": 30
+        },
+        "kind": "type_identifier",
+        "text": "Foo",
+        "line": "pub fn nested(_: Child, _: Foo) { child_fn(); }",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "imported"
+      },
+      {
+        "id": "35b48ca2f7da",
+        "path": "src/chained.rs",
+        "language": "rust",
+        "span": {
+          "start": 99,
+          "end": 102
+        },
+        "start": {
+          "line": 4,
+          "column": 29
+        },
+        "end": {
+          "line": 4,
+          "column": 32
+        },
+        "kind": "type_identifier",
+        "text": "Foo",
+        "line": "pub fn via_parent(_: parent::Foo) {}",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "path"
+      },
+      {
+        "id": "6391f7d4ee18",
+        "path": "src/consumer.rs",
+        "language": "rust",
+        "span": {
+          "start": 76,
+          "end": 79
+        },
+        "start": {
+          "line": 2,
+          "column": 19
+        },
+        "end": {
+          "line": 2,
+          "column": 22
+        },
+        "kind": "identifier",
+        "text": "Foo",
+        "line": "use module_alias::{Foo, child::Child};",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "path"
+      },
+      {
+        "id": "523f413240d6",
+        "path": "src/consumer.rs",
+        "language": "rust",
+        "span": {
+          "start": 133,
+          "end": 136
+        },
+        "start": {
+          "line": 4,
+          "column": 36
+        },
+        "end": {
+          "line": 4,
+          "column": 39
+        },
+        "kind": "type_identifier",
+        "text": "Foo",
+        "line": "pub fn module_path(_: module_alias::Foo) {}",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "path"
+      },
+      {
+        "id": "e38ba69b1d57",
+        "path": "src/consumer.rs",
+        "language": "rust",
+        "span": {
+          "start": 291,
+          "end": 294
+        },
+        "start": {
+          "line": 7,
+          "column": 53
+        },
+        "end": {
+          "line": 7,
+          "column": 56
+        },
+        "kind": "identifier",
+        "text": "Foo",
+        "line": "pub fn self_path() { self::module_path(module_alias::Foo); }",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "path"
+      },
+      {
+        "id": "2f984d5c0c89",
+        "path": "src/nested.rs",
+        "language": "rust",
+        "span": {
+          "start": 75,
+          "end": 78
+        },
+        "start": {
+          "line": 1,
+          "column": 45
+        },
+        "end": {
+          "line": 1,
+          "column": 48
+        },
+        "kind": "identifier",
+        "text": "Foo",
+        "line": "use module_alias::{child::{Child, child_fn}, Foo};",
+        "role": "use",
+        "confidence": "resolved",
+        "reason": "path"
+      },
+      {
+        "id": "9f8506b3ceb7",
+        "path": "src/parent_context/nested.rs",
+        "language": "rust",
+        "span": {
+          "start": 57,
+          "end": 60
+        },
+        "start": {
+          "line": 1,
+          "column": 29
+        },
+        "end": {
+          "line": 1,
+          "column": 32
+        },
+        "kind": "type_identifier",
+        "text": "Foo",
+        "line": "pub fn from_parent(_: local::Foo) {}",
+        "role": "use",
+        "confidence": "unresolved",
+        "reason": "unresolved"
+      }
+    ]
+  }
+}
+--- stderr ---

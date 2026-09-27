@@ -1,8 +1,9 @@
 //! What a file can see, as far as syntax and the layout can tell: which
 //! names its imports bring in and where they point. Used to decide whether a
 //! token spelling the renamed name refers to the target declaration. Read
-//! off the file's [`Fragment`], so it costs no resolution of its own, and
-//! kept with the file for as long as the fragment is.
+//! off the file's [`Fragment`] and retained with it. Construction reuses
+//! resolved edges; classification can resolve a prefix for a token inside
+//! a qualified path.
 
 use std::collections::HashMap;
 use std::path::PathBuf;
@@ -28,8 +29,7 @@ pub struct Scope {
     /// Qualified paths in the file that resolved, so a token inside one is
     /// judged by the path up to it rather than as a bare name.
     paths: Vec<Resolved>,
-    /// Qualified paths the layout could not resolve on its own: their head
-    /// may be an imported name (`b::X` after `use a::b`).
+    /// Qualified paths still unresolved after Fragment propagated bindings.
     unresolved: Vec<(Span, ModulePath)>,
 }
 
@@ -88,7 +88,7 @@ impl Scope {
         let mut unresolved = Vec::new();
         for edge in &fragment.edges {
             let import = &edge.import;
-            let Some(address) = &edge.address else {
+            let Some(address) = edge.address() else {
                 unresolved.push((import.span, import.path.clone()));
                 continue;
             };
@@ -148,8 +148,8 @@ impl Scope {
             };
             return self.compare(&address, aliases, others, reason);
         }
-        if let Some(reason) = self.qualified(token, aliases, others) {
-            return reason;
+        if self.unresolved_path(token) {
+            return Reason::Unresolved;
         }
         if self.module.is_some() && self.module == target_module {
             return Reason::Declaring;
@@ -182,24 +182,16 @@ impl Scope {
         Reason::Unresolved
     }
 
-    /// A token written as the tail of a path (`b::c::X`) is judged by that
-    /// path, never as a bare name: `b` imported gives the import's address
-    /// plus the rest; otherwise the layout reads the whole path. A head it
-    /// cannot place (another crate, a type) leaves the token unresolved.
+    /// An unresolved path's tail is never judged as a bare name. Fragment
+    /// already followed every same-file binding that could supply its head.
     /// `Self::X` is not a path but the enclosing type, so it stays bare.
-    fn qualified(&self, token: &Match, aliases: &[Address], others: &[Address]) -> Option<Reason> {
-        let (_, path) = self.unresolved.iter().find(|(span, path)| {
+    fn unresolved_path(&self, token: &Match) -> bool {
+        self.unresolved.iter().any(|(span, path)| {
             span.end == token.span.end
                 && span.start < token.span.start
                 && path.last().is_some_and(|last| *last == token.text)
-        })?;
-        if path.head == PathHead::SelfType {
-            return None;
-        }
-        let Some(address) = self.imported(path) else {
-            return Some(Reason::Unresolved);
-        };
-        Some(self.compare(&address, aliases, others, Reason::Path))
+                && path.head != PathHead::SelfType
+        })
     }
 
     /// Where a path leads when its head is a name an import binds: the

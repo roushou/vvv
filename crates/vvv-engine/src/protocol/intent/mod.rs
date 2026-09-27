@@ -4,19 +4,12 @@
 //! a client from JSON, and handed to the engine. Nothing here knows how the
 //! intent is fulfilled.
 
-mod batch;
-mod move_file;
-mod move_symbol;
-mod rename;
-mod rewrite;
-
+use crate::capabilities::moves::{MoveIntent, MoveSymbolIntent};
+use crate::capabilities::rename::RenameIntent;
 use serde::{Deserialize, Serialize};
 
-pub use batch::BatchIntent;
-pub use move_file::MoveIntent;
-pub use move_symbol::MoveSymbolIntent;
-pub use rename::RenameIntent;
-pub use rewrite::{RewriteIntent, RewriteOf};
+pub use crate::batch::BatchIntent;
+pub use crate::rewrite::{RewriteIntent, RewriteOf};
 
 /// Any mutating request, as one value: what history records, what a summary
 /// renders, what a remote client sends.
@@ -30,6 +23,19 @@ pub enum Intent {
     /// Several intents planned in sequence, each against the state the
     /// previous one leaves, and applied as one.
     Batch(BatchIntent),
+}
+
+impl Intent {
+    /// Add execution policy to a mutation description without executing it.
+    pub fn into_request(self, apply: bool) -> crate::Request {
+        match self {
+            Self::Rename(intent) => crate::Request::Rename { intent, apply },
+            Self::Move(intent) => crate::Request::Move { intent, apply },
+            Self::MoveSymbol(intent) => crate::Request::MoveSymbol { intent, apply },
+            Self::Rewrite(intent) => crate::Request::Rewrite { intent, apply },
+            Self::Batch(intent) => crate::Request::Batch { intent, apply },
+        }
+    }
 }
 
 impl From<BatchIntent> for Intent {

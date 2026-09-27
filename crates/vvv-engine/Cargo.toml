@@ -17,11 +17,18 @@ description = "Composes vvv plugins into refactoring pipelines"
 blake3 = "1.8.7"
 ignore = "0.4.33"
 rayon = "1.10"
+same-file = "1.0.6"
 serde = { workspace = true }
 serde_json = { workspace = true }
 similar = "3.2.0"
 thiserror = { workspace = true }
 vvv-core = { workspace = true }
+
+[target.'cfg(any(target_os = "linux", target_os = "android", target_os = "macos", target_os = "ios"))'.dependencies]
+rustix = { version = "1.1.5", features = ["fs"] }
+
+[target.'cfg(windows)'.dependencies]
+atomicwrites = "0.4.4"
 
 [dev-dependencies]
 insta = "1.48.0"

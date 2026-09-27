@@ -1,0 +1,29 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+move src/a.rs → src/d.rs
+
+→ 3   2 files
+± 3   3 files
+
+→ src/c.rs:1         crate::a → crate::d
+→ src/grouped.rs:2   root::a::sub::Nested → d::sub::Nested
+→ src/grouped.rs:2   root::a::Foo → d::Foo
+
+± src/a/sub.rs → src/d/sub.rs
+
+± src/a.rs → src/d.rs
+
+± src/lib.rs
+@@ -1,4 +1,4 @@
+-pub mod a;
++pub mod d;
+ pub mod b;
+ pub mod c;
+ pub mod origin;
+--- stderr ---
+→ 3  ± 3   5 files
+hint: --apply to write · --diff for the full patch

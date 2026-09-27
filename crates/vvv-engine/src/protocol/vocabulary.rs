@@ -182,7 +182,7 @@ impl fmt::Display for IntentLine<'_> {
                 i.query.pattern_str().unwrap_or_default(),
                 i.template
             ),
-            Intent::Rename(i) => write!(f, "rename {} → {}", i.name, i.to),
+            Intent::Rename(i) => write!(f, "rename {} → {}", i.references.name, i.to),
             Intent::Move(i) => write!(f, "move {} → {}", i.from.display(), i.to.display()),
             Intent::MoveSymbol(i) => write!(
                 f,

@@ -11,8 +11,8 @@ use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
 
 use vvv_core::{
-    Address, Facts, ImportRef, Language, Layout, ModulePath, Packages, Parsed, PathSyntax, Project,
-    ReachKind, Regrouped, ResolveError, SideEdit, SourceText, Surgery,
+    Address, Facts, GroupedImports, Language, Layout, ModulePath, Packages, Parsed, PathSyntax,
+    Project, ReachKind, Regrouped, ResolveError, SideEdit, SourceText, Surgery,
 };
 
 pub struct Fixture<'l> {
@@ -87,13 +87,8 @@ impl<'l> Fixture<'l> {
             .to_string()
     }
 
-    pub fn regroup(
-        &self,
-        from: &Path,
-        source: &SourceText,
-        entries: &[(ImportRef, Address)],
-    ) -> Regrouped {
-        self.surgery().regroup(&self.project, from, source, entries)
+    pub fn regroup(&self, from: &Path, source: &SourceText, imports: &GroupedImports) -> Regrouped {
+        self.surgery().regroup(&self.project, from, source, imports)
     }
 
     /// What the engine does for a move: ask the layout which files change,

@@ -1,0 +1,68 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "intent": {
+      "name": "needed",
+      "from": "src/origin.rs",
+      "to": "src/cleanup.rs"
+    },
+    "applied": false,
+    "from": {
+      "package": "corpus_moves",
+      "path": [
+        "origin",
+        "needed"
+      ]
+    },
+    "to": {
+      "package": "corpus_moves",
+      "path": [
+        "cleanup",
+        "needed"
+      ]
+    },
+    "files": [
+      {
+        "path": "src/cleanup.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 28,
+              "end": 47
+            },
+            "replacement": ""
+          },
+          {
+            "span": {
+              "start": 76,
+              "end": 76
+            },
+            "replacement": "\npub fn needed() {}\n"
+          }
+        ],
+        "diff": "--- a/src/cleanup.rs\n+++ b/src/cleanup.rs\n@@ -1,4 +1,5 @@\n use crate::origin as alias;\n-use alias::needed;\n \n pub fn call() { needed(); }\n+\n+pub fn needed() {}\n"
+      },
+      {
+        "path": "src/origin.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 74,
+              "end": 93
+            },
+            "replacement": ""
+          }
+        ],
+        "diff": "--- a/src/origin.rs\n+++ b/src/origin.rs\n@@ -3,4 +3,3 @@\n \n pub fn moved(_: Dep) {}\n \n-pub fn needed() {}\n"
+      }
+    ]
+  }
+}
+--- stderr ---

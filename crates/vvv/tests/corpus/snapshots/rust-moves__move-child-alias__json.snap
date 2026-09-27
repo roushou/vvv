@@ -1,0 +1,122 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "intent": {
+      "from": "src/a/sub.rs",
+      "to": "src/b/sub.rs"
+    },
+    "applied": false,
+    "from": "src/a/sub.rs",
+    "to": "src/b/sub.rs",
+    "from_address": {
+      "package": "corpus_moves",
+      "path": [
+        "a",
+        "sub"
+      ]
+    },
+    "to_address": {
+      "package": "corpus_moves",
+      "path": [
+        "b",
+        "sub"
+      ]
+    },
+    "respellings": [
+      {
+        "path": "src/c.rs",
+        "span": {
+          "start": 67,
+          "end": 85
+        },
+        "start": {
+          "line": 4,
+          "column": 13
+        },
+        "from": "alias::sub::Nested",
+        "to": "crate::b::sub::Nested"
+      },
+      {
+        "path": "src/grouped.rs",
+        "span": {
+          "start": 30,
+          "end": 44
+        },
+        "start": {
+          "line": 1,
+          "column": 11
+        },
+        "from": "root::a::sub::Nested",
+        "to": "b::sub::Nested"
+      }
+    ],
+    "files": [
+      {
+        "path": "src/a/sub.rs",
+        "moved_to": "src/b/sub.rs",
+        "edits": [],
+        "diff": "--- a/src/a/sub.rs\n+++ b/src/b/sub.rs\n"
+      },
+      {
+        "path": "src/a.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 52,
+              "end": 65
+            },
+            "replacement": ""
+          }
+        ],
+        "diff": "--- a/src/a.rs\n+++ b/src/a.rs\n@@ -4,4 +4,3 @@\n     self::foo();\n }\n \n-pub mod sub;\n"
+      },
+      {
+        "path": "src/b.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 0,
+              "end": 0
+            },
+            "replacement": "pub mod sub;\n"
+          }
+        ],
+        "diff": "--- a/src/b.rs\n+++ b/src/b.rs\n@@ -1 +1,2 @@\n+pub mod sub;\n // Destination for moved declarations.\n"
+      },
+      {
+        "path": "src/c.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 67,
+              "end": 85
+            },
+            "replacement": "crate::b::sub::Nested"
+          }
+        ],
+        "diff": "--- a/src/c.rs\n+++ b/src/c.rs\n@@ -2,4 +2,4 @@\n \n fn consume(_: alias::Foo) {}\n \n-fn nested(_: alias::sub::Nested) {}\n+fn nested(_: crate::b::sub::Nested) {}\n"
+      },
+      {
+        "path": "src/grouped.rs",
+        "edits": [
+          {
+            "span": {
+              "start": 30,
+              "end": 44
+            },
+            "replacement": "b::sub::Nested"
+          }
+        ],
+        "diff": "--- a/src/grouped.rs\n+++ b/src/grouped.rs\n@@ -1,5 +1,5 @@\n use crate as root;\n-use root::{a::sub::Nested, a::Foo};\n+use root::{b::sub::Nested, a::Foo};\n \n fn nested(_: Nested) {}\n fn foo(_: Foo) {}\n"
+      }
+    ]
+  }
+}
+--- stderr ---

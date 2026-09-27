@@ -11,7 +11,7 @@ Nothing else: the language grammars are compiled in behind Cargo features.
 ## Build and test
 
 ```console
-cargo build                                             # default features: rust, typescript
+cargo build                                             # default features: rust, typescript, tui
 cargo test --workspace --all-features                   # includes the corpus gate
 cargo clippy --workspace --all-targets --all-features
 cargo fmt --all

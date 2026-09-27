@@ -5,6 +5,8 @@
 //! warnings go to `err` (stderr). Both are generic writers so tests can
 //! render into buffers.
 
+mod advice;
+
 use std::io::{self, IsTerminal, Stderr, Stdout, Write};
 
 use clap::ColorChoice;
@@ -13,7 +15,7 @@ use vvv_engine::protocol::Answer;
 use super::Diagnose;
 use crate::output::Reporter;
 use crate::output::render::{Palette, Renderer, Styled};
-use vvv_engine::report::{Detailed, Document, Options, View};
+use vvv_engine::report::{Block, Detailed, Document, Note, Options, Presentation, View};
 
 pub struct HumanReporter<O: Write = Stdout, E: Write = Stderr> {
     out: O,
@@ -77,10 +79,8 @@ impl<O: Write, E: Write> HumanReporter<O, E> {
     }
 }
 
-impl<O: Write, E: Write> Renderer for HumanReporter<O, E> {
-    /// Render a document, stream for stream: one styled line each.
-    fn render(&mut self, report: &Document) -> io::Result<()> {
-        let presentation = Detailed.present(report, self.options(), usize::MAX);
+impl<O: Write, E: Write> HumanReporter<O, E> {
+    fn render_presentation(&mut self, presentation: &Presentation) -> io::Result<()> {
         for row in &presentation.body {
             writeln!(self.out, "{}", Styled(&self.styles, &row.line))?;
         }
@@ -91,16 +91,30 @@ impl<O: Write, E: Write> Renderer for HumanReporter<O, E> {
     }
 }
 
+impl<O: Write, E: Write> Renderer for HumanReporter<O, E> {
+    /// Render a document, stream for stream: one styled line each.
+    fn render(&mut self, report: &Document) -> io::Result<()> {
+        let presentation = Detailed.present(report, self.options(), usize::MAX);
+        self.render_presentation(&presentation)
+    }
+}
+
 impl<O: Write, E: Write> Reporter for HumanReporter<O, E> {
     fn report(&mut self, answer: &Answer) -> anyhow::Result<()> {
-        let options = self.options();
-        let report = Document::of(answer, options);
-        self.render(&report)?;
+        let report = Document::of(answer);
+        let presentation =
+            advice::TerminalView { answer }.present(&report, self.options(), usize::MAX);
+        self.render_presentation(&presentation)?;
         Ok(())
     }
 
     fn error(&mut self, error: &anyhow::Error) {
-        let _ = self.render(&Document::error(&error.failure()));
+        let failure = error.failure();
+        let mut report = Document::error(&failure);
+        for line in failure.hint.iter().flat_map(|hint| hint.lines()) {
+            report.block_note(Block::Note(Note::Hint(line.to_owned())));
+        }
+        let _ = self.render(&report);
     }
 }
 
@@ -310,6 +324,16 @@ mod tests {
             r.error(&query);
             r.error(&symbol);
         }));
+    }
+
+    #[test]
+    fn ambiguous_symbol_error_keeps_cli_flag_advice() {
+        let error = anyhow::Error::from(vvv_engine::EngineError::AmbiguousSymbol {
+            name: "Config".to_owned(),
+            declarations: vec![],
+        });
+        let output = render(|reporter| reporter.error(&error));
+        assert!(output.contains("pick one with --in <file>"));
     }
 
     #[test]

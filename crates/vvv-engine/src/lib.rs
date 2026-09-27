@@ -1,52 +1,70 @@
-//! The engine: a graph of the tree built from a [`Workspace`] and a language
-//! registry, and one entry point that runs a [`Command`] against it — a
-//! [`protocol`] intent or query, answering with the protocol type of the
-//! same name; a mutation answers with a [`Planned`] result that [`Apply`]
-//! writes.
+//! The engine: typed capabilities over a workspace and a language registry.
+//! [`Engine::run`] dispatches a [`Request`] and returns an in-process [`Execution`].
+//! Queries answer with concrete data; mutations retain [`Planned`] results until
+//! [`Apply`] writes and commits their history entry. [`Intent`] is the
+//! mutation description shared by history and batch.
 //!
-//! Interfaces (CLI, TUI, JSON) talk only to [`Engine::run`]; they never touch
-//! a language or the file system directly. Each command lives with its
-//! components in its own module — `rewrite`, `rename`, `move_file`,
-//! `answers`, `understanding`, `batch`, `history` — as `impl Command for
-//! <request>`.
+//! Typed clients call capability-owned `execute`, `plan`, or `apply` methods,
+//! and [`Ledger`] owns history and undo. The dispatcher orchestrates those bodies;
+//! interfaces consume [`Execution::into_answer`] only at a reporting boundary.
+//!
+//! Mutation capability types have one canonical public path, at the crate root:
+//!
+//! ```
+//! use vvv_engine::{Rename, RenameIntent, Move, MoveIntent, MoveSymbol, MoveSymbolIntent};
+//! let _: Option<(Rename, RenameIntent, Move, MoveIntent, MoveSymbol, MoveSymbolIntent)> = None;
+//! ```
+//!
+//! They are not aliases in `protocol`:
+//!
+//! ```compile_fail,E0432
+//! use vvv_engine::protocol::{Rename, RenameIntent, Move, MoveIntent, MoveSymbol, MoveSymbolIntent};
+//! ```
+//!
+//! Their owning capability modules are private:
+//!
+//! ```compile_fail,E0603
+//! use vvv_engine::capabilities::rename::Rename;
+//! ```
 
-mod answers;
+#[cfg(test)]
+extern crate self as vvv_engine;
+
 mod batch;
+mod capabilities;
 mod change;
-mod command;
 mod engine;
 mod error;
 mod graph;
 mod history;
-mod move_file;
 mod plan;
 pub mod protocol;
-mod rename;
 pub mod report;
-mod request;
 mod rewrite;
-mod understanding;
 mod vfs;
 mod workspace;
 
-pub use command::{Command, Context};
-pub use engine::Engine;
-pub use error::EngineError;
+pub use capabilities::moves::{ExtractionError, Move, MoveIntent, MoveSymbol, MoveSymbolIntent};
+pub use capabilities::rename::{Rename, RenameIntent};
+pub use engine::{Engine, Execution, ExecutionKind};
+pub use error::{EngineError, RecoveryError};
 pub use graph::Retention;
-pub use history::{Apply, HistoryError};
+pub use history::{Applied, Apply, HistoryError, Ledger};
 pub use plan::{ApplyError, FilePreview, Planned};
 pub use protocol::{
     Answer, Batch, BatchIntent, Call, Confidence, Consumer, Dead, DeadQuery, Dep, Deps, DepsQuery,
     ErrorCode, ExplainQuery, Explanation, Exposed, Failure, File, FileChange, FileQuery, History,
-    HistoryEntry, HistoryQuery, Impact, ImpactQuery, ImportSite, Importer, ImportsQuery,
-    ImportsReport, Intent, Locations, Match, MatchId, Move, MoveIntent, MoveSymbol,
-    MoveSymbolIntent, Mutation, Notice, NoticeKind, Occurrence, Outline, OutlineItem, OutlineQuery,
-    Placed, Reach, Reason, References, ReferencesQuery, Rename, RenameIntent, Reply, Request,
-    Respelling, Rewrite, RewriteIntent, RewriteOf, Search, Selection, SelectionError, Site,
-    Skipped, Surface, SurfaceQuery, Template, TemplateError, Undo, UndoLast, Unreferenced,
-    WhereQuery,
+    HistoryEntry, Impact, ImpactQuery, ImportSite, Importer, ImportsQuery, ImportsReport, Intent,
+    Locations, Match, MatchId, Mutation, MutationAnswer, MutationState, Notice, NoticeKind,
+    Occurrence, Outline, OutlineItem, OutlineQuery, Placed, Reach, Reason, Recovery,
+    RecoveryEffect, RecoveryIssue, RecoveryOperation, RecoveryState, RecoveryUnverified,
+    References, ReferencesQuery, Reply, Request, Respelling, Rewrite, RewriteIntent, RewriteOf,
+    Search, SearchQuery, Selection, SelectionError, Site, Skipped, Surface, SurfaceQuery, Template,
+    TemplateError, Undo, Unreferenced, WhereQuery,
 };
-pub use vfs::{DiskVfs, MemoryVfs, Stamp, Vfs, VfsError};
+pub use vfs::{
+    DiskVfs, EntryKind, MemoryVfs, MoveError, MoveState, ParentCreation, Stamp, Vfs, VfsError,
+};
 pub use workspace::Workspace;
 
 /// The nouns of the plugin contract that appear in the engine's answers, so

@@ -18,25 +18,27 @@ mod namespace;
 mod references;
 mod scope;
 
-use std::collections::HashMap;
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 use rayon::prelude::*;
 use vvv_core::{
-    Address, FileSet, Language, LanguageId, LanguageRegistry, Oracle, Package, Packages, Project,
-    Query, Role, SourceText,
+    Address, FileSet, Language, LanguageId, LanguageRegistry, Name, Oracle, Package, Packages,
+    Project, Query, Role, SourceText,
 };
 
 pub use candidate::Candidate;
 pub use fragment::{Declared, Edge, Fragment, Node, Structure};
 pub use namespace::Namespace;
+use references::{Declaration, Target};
 pub use references::{DeclarationSite, Evidence};
 pub use scope::Scope;
 
 use crate::{
-    Dep, EngineError, Importer, Match, ReferencesQuery, Search, Skipped, Stamp, Workspace,
+    Dep, EngineError, Importer, Match, Occurrence, Reach, Reason, ReferencesQuery, Search, Skipped,
+    Stamp, Workspace,
 };
 
 pub struct Graph {
@@ -51,15 +53,15 @@ pub struct Graph {
     entries: Vec<Entry>,
     /// The workspace as a language's layout sees it, built from the last
     /// walk the first time that language asks; a search never pays for it.
-    /// With it, which build this is: a project equal to the previous build
-    /// keeps its number, so fragments resolved against it stay valid.
-    projects: HashMap<LanguageId, (Arc<Project>, u64)>,
+    /// A project equal to the previous build keeps its allocation, so
+    /// fragments resolved against it stay valid.
+    projects: HashMap<LanguageId, Arc<Project>>,
     /// A second opinion for tokens syntax cannot place, when the host has
     /// one; asked after the scope, never instead of it.
     oracle: Option<Arc<dyn Oracle>>,
     /// The last build of each language's project, to tell a refresh that
     /// changed nothing about the project from one that did.
-    previous: HashMap<LanguageId, (Arc<Project>, u64)>,
+    previous: HashMap<LanguageId, Arc<Project>>,
 }
 
 struct Entry {
@@ -158,7 +160,7 @@ impl Graph {
             })
             .collect::<Result<_, EngineError>>()?;
         self.entries = now;
-        self.previous = std::mem::take(&mut self.projects);
+        self.previous.extend(std::mem::take(&mut self.projects));
         self.walked = walked;
         self.walked_at = Some(Instant::now());
         Ok(())
@@ -212,8 +214,7 @@ impl Graph {
     /// The workspace as `language`'s layout sees it: the walk's files plus
     /// the packages the layout's manifests declare. Built on first use after
     /// a refresh; `None` when the language has no layout.
-    /// The project and the number of its build.
-    fn project_build(&mut self, language: &LanguageId) -> Option<(Arc<Project>, u64)> {
+    fn project_build(&mut self, language: &LanguageId) -> Option<Arc<Project>> {
         if let Some(built) = self.projects.get(language) {
             return Some(built.clone());
         }
@@ -242,12 +243,11 @@ impl Graph {
             .collect();
         let packages = Packages::new(packages);
         let project = Project { packages, files };
-        // The same project as last time keeps its number: every fragment
+        // The same project as last time keeps its allocation: every fragment
         // resolved against it is still right.
         let built = match self.previous.remove(language) {
-            Some((last, generation)) if *last == project => (last, generation),
-            Some((_, generation)) => (Arc::new(project), generation + 1),
-            None => (Arc::new(project), 1),
+            Some(last) if *last == project => last,
+            _ => Arc::new(project),
         };
         self.projects.insert(language.clone(), built.clone());
         Some(built)
@@ -283,8 +283,8 @@ impl Graph {
     pub fn namespace(&mut self, language: &LanguageId) -> Option<Namespace> {
         let language = self.languages.get(language)?;
         language.layout()?;
-        let (project, generation) = self.project_build(&language.id())?;
-        Some(Namespace::new(language, project, generation))
+        let project = self.project_build(&language.id())?;
+        Some(Namespace::new(language, project))
     }
 
     /// The namespace of the language claiming `path`, or why there is none:
@@ -416,18 +416,18 @@ impl Graph {
         source: &SourceText,
         edge: &Edge,
     ) -> Result<Dep, EngineError> {
-        let origin = match &edge.address {
+        let origin = match edge.address() {
             Some(address) => self.origin_of(ns, address)?.filter(|o| o != address),
             None => None,
         };
         let file = origin
             .as_ref()
-            .or(edge.address.as_ref())
+            .or(edge.address())
             .and_then(|a| ns.file_of(a));
         Ok(Dep {
             import: edge.import.clone(),
             start: source.position(edge.import.span.start),
-            address: edge.address.clone(),
+            address: edge.address().cloned(),
             origin,
             file: file.map(Into::into),
         })
@@ -461,7 +461,7 @@ impl Graph {
             .flat_map(|node| {
                 node.fragment
                     .imports()
-                    .filter(|e| e.address.as_ref().is_some_and(&leads))
+                    .filter(|e| e.address().is_some_and(&leads))
                     .map(|e| Importer {
                         path: node.path().into(),
                         import: e.import.clone(),
@@ -469,6 +469,270 @@ impl Graph {
                     })
                     .collect::<Vec<_>>()
             })
+            .collect())
+    }
+
+    /// Gather what a rename rests on. Occurrences come only from the
+    /// languages in which a matching declaration exists, so a Rust `foo`
+    /// never touches a TypeScript `foo`.
+    pub fn references(&mut self, query: &ReferencesQuery) -> Result<Evidence, EngineError> {
+        let graph = self;
+        let declarations = graph.declarations(query)?;
+        let languages: BTreeSet<LanguageId> =
+            declarations.iter().map(|m| m.language.clone()).collect();
+        let mut occurrences = Vec::new();
+        // Languages whose name has more than one declaration: an unresolved
+        // token there could belong to any of them.
+        let mut ambiguous = BTreeSet::new();
+        for language in languages {
+            let semantics = graph
+                .language(&language)
+                .map(|l| l.semantics())
+                .ok_or_else(|| EngineError::NoLayout(language.clone()))?;
+            let addressable = Declaration::addressable_in(&declarations, &language, semantics);
+            let mut target = Target::of(graph, query, &addressable)?;
+            if let Some(target) = &mut target
+                && let Some(ns) = graph.namespace(&language)
+            {
+                target.aliases = graph.aliases_of(&ns, &target.address, &query.name)?;
+            }
+            if addressable.len() > 1 || target.as_ref().is_some_and(|t| !t.others.is_empty()) {
+                ambiguous.insert(language.clone());
+            }
+            // No token can spell a name the text does not contain.
+            let candidates = graph.containing(Some(&language), &[&query.name]);
+            let per_file: Vec<Vec<Occurrence>> = candidates
+                .par_iter()
+                .map(|c| match &target {
+                    Some(target) => target.judge(c, &query.name),
+                    // Nothing to judge against: every token is a candidate.
+                    None => Ok(c
+                        .references(&query.name)?
+                        .into_iter()
+                        .map(|m| Occurrence::judged(m, Reason::ByName))
+                        .collect()),
+                })
+                .collect::<Result<_, _>>()?;
+            let mut judged: Vec<Occurrence> = per_file.into_iter().flatten().collect();
+            if let (Some(oracle), Some(target)) = (graph.oracle(), &target) {
+                graph.consult(oracle.as_ref(), target, &mut judged)?;
+            }
+            occurrences.extend(judged);
+        }
+        // Grouped as a preview lists them — `✓`, then `?`, then `✗`, and
+        // within those by reason — so the rows to add or drop with
+        // `--select` are one range.
+        occurrences.sort_by_key(|o| o.reason);
+        Ok(Evidence {
+            declarations,
+            occurrences,
+            ambiguous,
+        })
+    }
+
+    /// Every address that reaches `target` through re-exports, `target`
+    /// itself first: a `pub use` of the target (or of an alias of it) in a
+    /// file offers it on under that file's address — as the name it binds,
+    /// so `pub use a::X as Y` offers `Y`; a glob re-export of an alias's
+    /// module offers it under its own name. Followed to a fixed point, so
+    /// chains of re-exports resolve. Only files spelling one of the names
+    /// found so far (or a `*`) are read.
+    pub fn aliases_of(
+        &self,
+        ns: &Namespace,
+        target: &Address,
+        name: &str,
+    ) -> Result<Vec<Address>, EngineError> {
+        let mut aliases = vec![target.clone()];
+        let mut names: BTreeSet<Name> = [Name::from(name)].into();
+        let mut read: HashSet<PathBuf> = HashSet::new();
+        let mut files: Vec<Arc<Fragment>> = Vec::new();
+        // A named re-export spells the name. A glob re-export spells the
+        // language's glob marker, and sits in the alias's own package or
+        // spells that package's name in its path (`pub use foo_core::*`).
+        let glob = ns.language().glob_marker();
+        let reach = self.reach_of(ns, target)?;
+        loop {
+            let packages: BTreeSet<vvv_core::PackageId> =
+                aliases.iter().map(|a| a.package().clone()).collect();
+            let globs_toward = |c: &Candidate| {
+                glob.is_some_and(|marker| c.text().contains(marker))
+                    && (packages.iter().any(|p| c.contains_all(&[p.as_str()]))
+                        || ns
+                            .address(c.path())
+                            .is_ok_and(|a| packages.contains(a.package())))
+            };
+            let fresh: Vec<(PathBuf, Arc<Fragment>)> = self
+                .files(Some(&ns.id()))
+                .into_par_iter()
+                .filter(|c| !read.contains(c.path()))
+                .filter(|c| names.iter().any(|n| c.contains_all(&[n.as_str()])) || globs_toward(c))
+                .map(|c| Ok((c.path().to_path_buf(), c.fragment(ns)?)))
+                .collect::<Result<_, EngineError>>()?;
+            for (path, fragment) in fresh {
+                read.insert(path);
+                files.push(fragment);
+            }
+            let mut grew = false;
+            for fragment in &files {
+                let Some(module) = &fragment.module else {
+                    continue;
+                };
+                for edge in fragment.edges.iter().filter(|e| e.import.reexport) {
+                    let Some(resolved) = edge.address() else {
+                        continue;
+                    };
+                    let offered: Vec<Name> = if edge.import.glob {
+                        // A glob brings in what the module can see: the
+                        // declaration itself only where its reach admits.
+                        aliases
+                            .iter()
+                            .filter(|a| a.parent().as_ref() == Some(resolved))
+                            .filter(|a| *a != target || reach.admits(module))
+                            .filter_map(|a| a.path().last().cloned())
+                            .collect()
+                    } else if aliases.contains(resolved) {
+                        edge.import.binding().cloned().into_iter().collect()
+                    } else {
+                        Vec::new()
+                    };
+                    for name in offered {
+                        let alias = module.join(name.as_str());
+                        if !aliases.contains(&alias) {
+                            names.insert(name);
+                            aliases.push(alias);
+                            grew = true;
+                        }
+                    }
+                }
+            }
+            if !grew {
+                return Ok(aliases);
+            }
+        }
+    }
+
+    /// Ask the oracle about every token the scope left unresolved. An
+    /// answer counts only as a declaration the graph knows: the target's
+    /// own name is `Oracle`, another addressable declaration's is
+    /// `OracleOther`, anything else leaves the token as it was.
+    fn consult(
+        &self,
+        oracle: &dyn Oracle,
+        target: &Target,
+        occurrences: &mut [Occurrence],
+    ) -> Result<(), EngineError> {
+        for occurrence in occurrences
+            .iter_mut()
+            .filter(|o| o.reason == Reason::Unresolved)
+        {
+            let Some(referent) = oracle.refers(&occurrence.m.path, occurrence.m.span) else {
+                continue;
+            };
+            let Some(candidate) = self.candidate(&referent.path) else {
+                continue;
+            };
+            let fragment = candidate.fragment(&target.ns)?;
+            let Some(declared) = fragment
+                .declarations
+                .iter()
+                .find(|d| d.symbol.name_span == referent.name_span)
+            else {
+                continue;
+            };
+            let reason = if target.aliases.contains(&declared.address) {
+                Reason::Oracle
+            } else {
+                Reason::OracleOther
+            };
+            *occurrence = Occurrence::judged(occurrence.m.clone(), reason);
+        }
+        Ok(())
+    }
+
+    /// Who may name the declaration at `address`, as its file declares it;
+    /// everyone when the graph cannot find it (a re-export's own reach).
+    fn reach_of(&self, ns: &Namespace, address: &Address) -> Result<Reach, EngineError> {
+        let Some(file) = address.parent().and_then(|module| ns.file_of(&module)) else {
+            return Ok(Reach::Everyone);
+        };
+        let fragment = self.file(&file)?.fragment(ns)?;
+        Ok(fragment
+            .declarations
+            .iter()
+            .find(|d| d.address == *address)
+            .map_or(Reach::Everyone, |d| d.reach.clone()))
+    }
+
+    /// The declaration an address reaches through re-exports: the address
+    /// itself when its module declares the name; else what the module's
+    /// re-export of the name (a `pub use` binding it, or a glob of a module
+    /// that has it) leads to, followed to the end. `None` when the chain
+    /// leaves what the layout can place — another package, a type's item.
+    pub fn origin_of(
+        &self,
+        ns: &Namespace,
+        address: &Address,
+    ) -> Result<Option<Address>, EngineError> {
+        self.origin_from(ns, address, &mut HashSet::new())
+    }
+
+    fn origin_from(
+        &self,
+        ns: &Namespace,
+        at: &Address,
+        seen: &mut HashSet<Address>,
+    ) -> Result<Option<Address>, EngineError> {
+        if !seen.insert(at.clone()) {
+            return Ok(None);
+        }
+        let (Some(module), Some(name)) = (at.parent(), at.path().last()) else {
+            // A package root names itself.
+            return Ok(Some(at.clone()));
+        };
+        let Some(file) = ns.file_of(&module) else {
+            return Ok(None);
+        };
+        let fragment = self.file(&file)?.fragment(ns)?;
+        if fragment.module.as_ref() != Some(&module) {
+            return Ok(None);
+        }
+        if fragment.declarations.iter().any(|d| *name == d.symbol.name) {
+            return Ok(Some(at.clone()));
+        }
+        for edge in fragment.edges.iter().filter(|e| e.import.reexport) {
+            let Some(resolved) = edge.address() else {
+                continue;
+            };
+            let next = if edge.import.glob {
+                resolved.join(name.as_str())
+            } else if edge.import.binding() == Some(name) {
+                resolved.clone()
+            } else {
+                continue;
+            };
+            if let Some(origin) = self.origin_from(ns, &next, seen)? {
+                return Ok(Some(origin));
+            }
+        }
+        Ok(None)
+    }
+
+    /// Modules with an import or a qualified path resolving to `address` or
+    /// under it — every file of the namespace's language except `except`,
+    /// in path order. What must still see a declaration after it moves.
+    pub fn consumers(
+        &self,
+        ns: &Namespace,
+        address: &Address,
+        except: &[&Path],
+    ) -> Result<Vec<Address>, EngineError> {
+        Ok(self
+            .fragments(ns)?
+            .into_iter()
+            .filter(|node| !except.contains(&node.path()))
+            .filter(|node| node.fragment.reaches(address))
+            .filter_map(|node| node.fragment.module.clone())
             .collect())
     }
 }

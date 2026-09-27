@@ -1,0 +1,28 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+move moved from src/origin.rs → src/b.rs
+
+± 2   2 files
+
+± src/b.rs
+@@ -1 +1,4 @@
++use crate::dependency::Dep;
+ // Destination for moved declarations.
++
++pub fn moved(_: Dep) {}
+
+± src/origin.rs
+@@ -1,6 +1,4 @@
+ use crate::dependency as alias;
+ use alias::Dep;
+ 
+-pub fn moved(_: Dep) {}
+-
+ pub fn needed() {}
+--- stderr ---
+± 2   2 files
+hint: --apply to write · --diff for the full patch

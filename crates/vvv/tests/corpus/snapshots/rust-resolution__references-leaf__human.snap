@@ -1,0 +1,19 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● struct Child   src/a/child.rs:1:1
+
+✓ 7  4 files
+  1  src/a/child.rs
+  1  src/chained.rs
+  3  src/consumer.rs
+  2  src/nested.rs
+
+? 0
+
+✗ 0
+--- stderr ---
+✓ 7  ? 0  ✗ 0   4 files

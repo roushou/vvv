@@ -1,4 +1,4 @@
-use crate::{ApplyError, ErrorCode, Failure, SelectionError, TemplateError, VfsError};
+use crate::{ApplyError, ErrorCode, SelectionError, TemplateError, VfsError};
 
 use vvv_core::RelPath;
 use vvv_core::{
@@ -9,6 +9,11 @@ use crate::history::HistoryError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EngineError {
+    #[error("expected {expected} execution, got {actual}")]
+    ExecutionKind {
+        expected: crate::ExecutionKind,
+        actual: crate::ExecutionKind,
+    },
     #[error("{}: {source}", path.display())]
     Open {
         path: RelPath,
@@ -36,7 +41,11 @@ pub enum EngineError {
     },
     #[error(transparent)]
     Conflict(#[from] EditConflict),
-    #[error("`{name}` is declared in several places ({}); pick one with --in <file>", declarations.iter().map(ToString::to_string).collect::<Vec<_>>().join(", "))]
+    #[error(transparent)]
+    Extraction(#[from] crate::ExtractionError),
+    #[error(transparent)]
+    Regroup(#[from] vvv_core::RegroupError),
+    #[error("`{name}` is declared in several places ({})", declarations.iter().map(ToString::to_string).collect::<Vec<_>>().join(", "))]
     AmbiguousSymbol {
         name: String,
         declarations: Vec<crate::graph::DeclarationSite>,
@@ -60,24 +69,28 @@ pub enum EngineError {
     Apply(#[from] ApplyError),
     #[error(transparent)]
     History(#[from] HistoryError),
+    #[error(transparent)]
+    Recovery(#[from] RecoveryError),
 }
 
 impl EngineError {
     /// The stable code a client branches on.
     pub fn code(&self) -> ErrorCode {
         match self {
+            Self::ExecutionKind { .. } => ErrorCode::BadRequest,
             Self::Open { .. } => ErrorCode::Io,
             Self::Vfs(e)
             | Self::History(HistoryError::Vfs(e))
             | Self::Apply(ApplyError::Vfs(e)) => match e {
                 VfsError::NotFound(_) => ErrorCode::NotFound,
+                VfsError::Exists(_) => ErrorCode::Exists,
                 _ => ErrorCode::Io,
             },
             Self::Query(_) => ErrorCode::BadQuery,
             Self::Search { .. } => ErrorCode::BadPattern,
             Self::Selection(_) => ErrorCode::BadSelection,
             Self::Template { .. } => ErrorCode::BadTemplate,
-            Self::Conflict(_) => ErrorCode::Conflict,
+            Self::Conflict(_) | Self::Extraction(_) | Self::Regroup(_) => ErrorCode::Conflict,
             Self::AmbiguousSymbol { .. } => ErrorCode::AmbiguousSymbol,
             Self::NoSuchSymbol { .. } => ErrorCode::NoSuchSymbol,
             Self::Exists(_) => ErrorCode::Exists,
@@ -91,10 +104,12 @@ impl EngineError {
                 _ => ErrorCode::Unmovable,
             },
             Self::Apply(e) => match e {
+                ApplyError::DestinationExists { .. } => ErrorCode::Exists,
                 ApplyError::Stale { .. } | ApplyError::Modified { .. } => ErrorCode::Stale,
                 _ => ErrorCode::Io,
             },
             Self::History(_) => ErrorCode::NoHistory,
+            Self::Recovery(_) => ErrorCode::RecoveryFailed,
         }
     }
 
@@ -120,12 +135,39 @@ impl EngineError {
     }
 }
 
-impl From<&EngineError> for Failure {
-    fn from(error: &EngineError) -> Self {
-        let failure = Failure::new(error.code(), format!("{error:#}"));
-        match error.hint() {
-            Some(hint) => failure.with_hint(hint),
-            None => failure,
+/// A failed mutation whose effects could not all be restored and verified.
+#[derive(Debug)]
+pub struct RecoveryError {
+    pub cause: Box<EngineError>,
+    pub details: crate::Recovery,
+}
+
+impl std::fmt::Display for RecoveryError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}; recovery incomplete", self.cause)?;
+        for effect in &self.details.remaining {
+            write!(
+                f,
+                "; {}: expected {:?}, observed {:?}",
+                effect.path.display(),
+                effect.expected,
+                effect.observed
+            )?;
         }
+        for issue in &self.details.unverified {
+            write!(
+                f,
+                "; {}: state unverified ({})",
+                issue.path.display(),
+                issue.message
+            )?;
+        }
+        Ok(())
+    }
+}
+
+impl std::error::Error for RecoveryError {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(self.cause.as_ref())
     }
 }

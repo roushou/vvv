@@ -1,21 +1,25 @@
-//! The mutation lifecycle: a [`Plan`] is previewed, then consumed by `apply`
-//! into a [`Receipt`] that can roll the change back.
+//! Plan preconditions, staging, and preview. Applying delegates attempted effects
+//! and recovery to [`Transaction`], retaining a [`Receipt`] for undo.
 //!
 //! A plan remembers a fingerprint of every file it touches. Preview and apply
 //! refuse to proceed if a file changed since planning, so an agent that runs
 //! `rewrite` (preview) and later `rewrite --apply` cannot corrupt edits made
 //! in between.
 
-use std::collections::{BTreeMap, BTreeSet};
-use std::path::{Path, PathBuf};
-
-use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+#[cfg(test)]
+use std::path::Path;
+use std::path::PathBuf;
 
 mod fingerprint;
 mod planned;
+mod receipt;
+mod transaction;
 
 pub use fingerprint::Fingerprint;
 pub use planned::Planned;
+pub use receipt::Receipt;
+pub(crate) use transaction::Transaction;
 
 use crate::{VfsError, Workspace};
 use vvv_core::ChangeSet;
@@ -27,37 +31,32 @@ pub enum ApplyError {
     Vfs(#[from] VfsError),
     #[error("{} changed since the plan was made", path.display())]
     Stale { path: RelPath },
+    #[error("{} already exists", path.display())]
+    DestinationExists { path: RelPath },
     #[error("{} changed since it was written; refusing to undo", path.display())]
     Modified { path: RelPath },
-    #[error("writing {} failed; {restored} file(s) restored: {source}", path.display())]
+    #[error("writing {} failed: {source}", path.display())]
     Write {
         path: RelPath,
-        restored: usize,
         #[source]
         source: VfsError,
     },
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Plan {
     change_set: ChangeSet,
     fingerprints: BTreeMap<PathBuf, Fingerprint>,
 }
 
 impl Plan {
-    /// Bind a change set to the current contents of the files it touches.
-    pub fn new(change_set: ChangeSet, workspace: &Workspace) -> Result<Self, VfsError> {
-        let fingerprints = change_set
-            .paths()
-            .map(|path| {
-                let text = workspace.vfs().read(&workspace.absolute(path))?;
-                Ok((path.to_path_buf(), Fingerprint::of(&text)))
-            })
-            .collect::<Result<_, VfsError>>()?;
-        Ok(Self {
+    /// Retain the source fingerprints observed by the edit producers.
+    pub(crate) fn new(change: crate::change::WitnessedChangeSet) -> Self {
+        let (change_set, fingerprints) = change.into_parts();
+        Self {
             change_set,
             fingerprints,
-        })
+        }
     }
 
     pub fn change_set(&self) -> &ChangeSet {
@@ -74,43 +73,30 @@ impl Plan {
         })
     }
 
-    pub fn apply(self, workspace: &Workspace) -> Result<Receipt, ApplyError> {
-        let staged = self.stage(workspace)?;
-        let vfs = workspace.vfs();
-        let mut receipt = Receipt::default();
-        for file in &staged {
-            let result = match &file.moved_to {
-                Some(to) => vfs
-                    .rename(&workspace.absolute(&file.path), &workspace.absolute(to))
-                    .and_then(|()| {
-                        receipt
-                            .moves
-                            .push((file.path.to_path_buf(), to.to_path_buf()));
-                        vfs.write(&workspace.absolute(to), &file.after)
-                    }),
-                None => vfs.write(&workspace.absolute(&file.path), &file.after),
-            };
-            if let Err(source) = result {
-                let restored = receipt.rollback(workspace).unwrap_or(0);
-                return Err(ApplyError::Write {
-                    path: file.path.clone(),
-                    restored,
-                    source,
-                });
-            }
-            receipt
-                .originals
-                .insert(file.path.to_path_buf(), file.before.clone());
-            let final_path = file.moved_to.clone().unwrap_or_else(|| file.path.clone());
-            receipt
-                .written
-                .insert(final_path.to_path_buf(), Fingerprint::of(&file.after));
+    pub fn apply(self, workspace: &Workspace) -> Result<Receipt, crate::EngineError> {
+        let mut transaction = Transaction::new(workspace);
+        match transaction.apply(self) {
+            Ok(()) => Ok(transaction.receipt()),
+            Err(error) => Err(transaction.recover(error.into())),
         }
-        Ok(receipt)
     }
 
     /// Read every touched file, check it is unchanged, and compute its new contents.
     fn stage(&self, workspace: &Workspace) -> Result<Vec<FilePreview>, ApplyError> {
+        // Check every move before any file is written. This is a preflight
+        // condition, not an atomic reservation against external writers.
+        for (from, to) in self.change_set.moves() {
+            if workspace
+                .vfs()
+                .entry_kind(&workspace.absolute(to))?
+                .is_some()
+                && !workspace
+                    .vfs()
+                    .same_entry(&workspace.absolute(from), &workspace.absolute(to))?
+            {
+                return Err(ApplyError::DestinationExists { path: to.into() });
+            }
+        }
         self.fingerprints
             .iter()
             .map(|(path, expected)| {
@@ -147,75 +133,6 @@ pub struct FilePreview {
     pub after: String,
 }
 
-/// Proof that a plan was applied, holding what is needed to undo it.
-#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Receipt {
-    /// Pre-apply contents keyed by pre-apply path.
-    originals: BTreeMap<PathBuf, String>,
-    /// Moves performed, in order.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    moves: Vec<(PathBuf, PathBuf)>,
-    /// What was written, keyed by post-apply path, so an undo can tell
-    /// whether the files have been touched since.
-    #[serde(default)]
-    written: BTreeMap<PathBuf, Fingerprint>,
-}
-
-impl Receipt {
-    pub fn paths(&self) -> impl Iterator<Item = &Path> {
-        self.originals.keys().map(PathBuf::as_path)
-    }
-
-    pub fn moves(&self) -> &[(PathBuf, PathBuf)] {
-        &self.moves
-    }
-
-    /// This apply followed by `next`, as one receipt: rolling it back undoes
-    /// both, checking it checks the files as `next` left them. Originals are
-    /// the first ones seen for a file; a path `next` touched that this apply
-    /// had already written keeps this apply's original.
-    pub fn then(mut self, next: Receipt) -> Receipt {
-        let written_here: BTreeSet<PathBuf> = self.written.keys().cloned().collect();
-        for (path, original) in next.originals {
-            if !written_here.contains(&path) {
-                self.originals.entry(path).or_insert(original);
-            }
-        }
-        let moved_away: BTreeSet<&PathBuf> = next.moves.iter().map(|(from, _)| from).collect();
-        self.written.retain(|path, _| !moved_away.contains(path));
-        self.written.extend(next.written);
-        self.moves.extend(next.moves);
-        self
-    }
-
-    /// Undo: move files back, then restore every file to its pre-apply
-    /// contents. Returns how many files were restored. Does not check that
-    /// the files are still as written; see [`Receipt::undo`].
-    pub fn rollback(&self, workspace: &Workspace) -> Result<usize, VfsError> {
-        let vfs = workspace.vfs();
-        for (from, to) in self.moves.iter().rev() {
-            vfs.rename(&workspace.absolute(to), &workspace.absolute(from))?;
-        }
-        for (path, original) in &self.originals {
-            vfs.write(&workspace.absolute(path), original)?;
-        }
-        Ok(self.originals.len())
-    }
-
-    /// Roll back only if every file is still exactly as this apply left it.
-    pub fn undo(&self, workspace: &Workspace) -> Result<usize, ApplyError> {
-        for (path, expected) in &self.written {
-            let current = workspace.vfs().read(&workspace.absolute(path))?;
-            if &Fingerprint::of(&current) != expected {
-                return Err(ApplyError::Modified {
-                    path: path.clone().into(),
-                });
-            }
-        }
-        Ok(self.rollback(workspace)?)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::sync::Arc;
@@ -224,26 +141,49 @@ mod tests {
     use crate::MemoryVfs;
     use vvv_core::{Edit, Span};
 
-    fn workspace() -> Workspace {
-        let vfs = MemoryVfs::new()
-            .with_file("/ws/a.txt", "hello world")
-            .with_file("/ws/b.txt", "foo");
-        Workspace::new("/ws", Arc::new(vfs))
+    struct Fixture {
+        workspace: Workspace,
     }
 
-    fn plan(ws: &Workspace) -> Plan {
-        let mut cs = ChangeSet::new();
-        cs.insert("a.txt", Edit::replace(Span::new(0, 5), "goodbye"))
-            .unwrap();
-        cs.insert("b.txt", Edit::replace(Span::new(0, 3), "bar"))
-            .unwrap();
-        Plan::new(cs, ws).unwrap()
+    impl Fixture {
+        fn new() -> Self {
+            let vfs = MemoryVfs::new()
+                .with_file("/ws/a.txt", "hello world")
+                .with_file("/ws/b.txt", "foo");
+            Self {
+                workspace: Workspace::new("/ws", Arc::new(vfs)),
+            }
+        }
+
+        fn plan(&self, cs: ChangeSet) -> Plan {
+            let mut change = crate::change::Change::new();
+            for path in cs.paths() {
+                let file = self.workspace.load(path).unwrap();
+                change
+                    .edits(file.witness(), cs.edits_for(path).iter().cloned())
+                    .unwrap();
+                if let Some(to) = cs.destination(path) {
+                    change.move_file(file.witness(), to).unwrap();
+                }
+            }
+            Plan::new(change.bind().unwrap().change_set)
+        }
+
+        fn replacement(&self) -> Plan {
+            let mut cs = ChangeSet::new();
+            cs.insert("a.txt", Edit::replace(Span::new(0, 5), "goodbye"))
+                .unwrap();
+            cs.insert("b.txt", Edit::replace(Span::new(0, 3), "bar"))
+                .unwrap();
+            self.plan(cs)
+        }
     }
 
     #[test]
     fn preview_does_not_write() {
-        let ws = workspace();
-        let preview = plan(&ws).preview(&ws).unwrap();
+        let fixture = Fixture::new();
+        let ws = &fixture.workspace;
+        let preview = fixture.replacement().preview(ws).unwrap();
         assert_eq!(preview.files[0].after, "goodbye world");
         assert_eq!(
             ws.vfs().read(Path::new("/ws/a.txt")).unwrap(),
@@ -252,15 +192,39 @@ mod tests {
     }
 
     #[test]
+    fn preview_refuses_a_newly_occupied_destination() {
+        let fixture = Fixture::new();
+        let ws = &fixture.workspace;
+        let mut cs = ChangeSet::new();
+        cs.move_file("a.txt", "new.txt").unwrap();
+        let plan = fixture.plan(cs);
+        ws.vfs()
+            .write(Path::new("/ws/new.txt"), "precious new file")
+            .unwrap();
+        assert!(
+            matches!(plan.preview(ws), Err(ApplyError::DestinationExists { path }) if path == Path::new("new.txt"))
+        );
+        assert_eq!(
+            ws.vfs().read(Path::new("/ws/a.txt")).unwrap(),
+            "hello world"
+        );
+        assert_eq!(
+            ws.vfs().read(Path::new("/ws/new.txt")).unwrap(),
+            "precious new file"
+        );
+    }
+
+    #[test]
     fn apply_then_rollback_round_trips() {
-        let ws = workspace();
-        let receipt = plan(&ws).apply(&ws).unwrap();
+        let fixture = Fixture::new();
+        let ws = &fixture.workspace;
+        let receipt = fixture.replacement().apply(ws).unwrap();
         assert_eq!(
             ws.vfs().read(Path::new("/ws/a.txt")).unwrap(),
             "goodbye world"
         );
         assert_eq!(ws.vfs().read(Path::new("/ws/b.txt")).unwrap(), "bar");
-        assert_eq!(receipt.rollback(&ws).unwrap(), 2);
+        assert_eq!(receipt.rollback(ws).unwrap(), 2);
         assert_eq!(
             ws.vfs().read(Path::new("/ws/a.txt")).unwrap(),
             "hello world"
@@ -269,28 +233,29 @@ mod tests {
 
     #[test]
     fn moves_apply_after_edits_and_roll_back_in_reverse() {
-        let ws = workspace();
+        let fixture = Fixture::new();
+        let ws = &fixture.workspace;
         let mut cs = ChangeSet::new();
         cs.insert("a.txt", Edit::replace(Span::new(0, 5), "moved"))
             .unwrap();
         cs.move_file("a.txt", "dir/z.txt").unwrap();
-        let plan = Plan::new(cs, &ws).unwrap();
+        let plan = fixture.plan(cs);
 
-        let preview = plan.preview(&ws).unwrap();
+        let preview = plan.preview(ws).unwrap();
         assert_eq!(
             preview.files[0].moved_to.as_deref(),
             Some(Path::new("dir/z.txt"))
         );
         assert_eq!(preview.files[0].after, "moved world");
 
-        let receipt = plan.apply(&ws).unwrap();
+        let receipt = plan.apply(ws).unwrap();
         assert!(!ws.vfs().exists(Path::new("/ws/a.txt")));
         assert_eq!(
             ws.vfs().read(Path::new("/ws/dir/z.txt")).unwrap(),
             "moved world"
         );
 
-        receipt.rollback(&ws).unwrap();
+        receipt.rollback(ws).unwrap();
         assert!(!ws.vfs().exists(Path::new("/ws/dir/z.txt")));
         assert_eq!(
             ws.vfs().read(Path::new("/ws/a.txt")).unwrap(),
@@ -300,13 +265,14 @@ mod tests {
 
     #[test]
     fn undo_refuses_files_edited_after_apply() {
-        let ws = workspace();
-        let receipt = plan(&ws).apply(&ws).unwrap();
+        let fixture = Fixture::new();
+        let ws = &fixture.workspace;
+        let receipt = fixture.replacement().apply(ws).unwrap();
         ws.vfs()
             .write(Path::new("/ws/b.txt"), "edited later")
             .unwrap();
         assert!(
-            matches!(receipt.undo(&ws), Err(ApplyError::Modified { path }) if path == Path::new("b.txt"))
+            matches!(receipt.undo(ws), Err(crate::EngineError::Apply(ApplyError::Modified { path })) if path == Path::new("b.txt"))
         );
         assert_eq!(
             ws.vfs().read(Path::new("/ws/a.txt")).unwrap(),
@@ -317,11 +283,12 @@ mod tests {
 
     #[test]
     fn stale_file_is_refused() {
-        let ws = workspace();
-        let plan = plan(&ws);
+        let fixture = Fixture::new();
+        let ws = &fixture.workspace;
+        let plan = fixture.replacement();
         ws.vfs().write(Path::new("/ws/b.txt"), "changed").unwrap();
         assert!(
-            matches!(plan.apply(&ws), Err(ApplyError::Stale { path }) if path == Path::new("b.txt"))
+            matches!(plan.apply(ws), Err(crate::EngineError::Apply(ApplyError::Stale { path })) if path == Path::new("b.txt"))
         );
         assert_eq!(
             ws.vfs().read(Path::new("/ws/a.txt")).unwrap(),
@@ -333,13 +300,14 @@ mod tests {
     /// the chained receipt back restores the tree exactly.
     #[test]
     fn chained_receipts_roll_back_both_steps() {
-        let ws = workspace();
+        let fixture = Fixture::new();
+        let ws = &fixture.workspace;
         let mut first = ChangeSet::new();
         first.move_file("a.txt", "moved.txt").unwrap();
         first
             .insert("b.txt", Edit::replace(Span::new(0, 3), "bar"))
             .unwrap();
-        let r1 = Plan::new(first, &ws).unwrap().apply(&ws).unwrap();
+        let r1 = fixture.plan(first).apply(ws).unwrap();
         let mut second = ChangeSet::new();
         second
             .insert("moved.txt", Edit::replace(Span::new(0, 5), "goodbye"))
@@ -347,7 +315,7 @@ mod tests {
         second
             .insert("b.txt", Edit::replace(Span::new(0, 3), "baz"))
             .unwrap();
-        let r2 = Plan::new(second, &ws).unwrap().apply(&ws).unwrap();
+        let r2 = fixture.plan(second).apply(ws).unwrap();
         let read = |p: &str| ws.vfs().read(Path::new(p)).unwrap();
         assert_eq!(read("/ws/moved.txt"), "goodbye world");
         assert_eq!(read("/ws/b.txt"), "baz");
@@ -358,7 +326,7 @@ mod tests {
             2,
             "originals keyed by pre-batch paths"
         );
-        chained.undo(&ws).unwrap();
+        chained.undo(ws).unwrap();
         assert_eq!(read("/ws/a.txt"), "hello world");
         assert_eq!(read("/ws/b.txt"), "foo");
         assert!(!ws.vfs().exists(Path::new("/ws/moved.txt")));

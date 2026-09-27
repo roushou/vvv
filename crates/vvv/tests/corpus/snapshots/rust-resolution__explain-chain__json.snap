@@ -1,0 +1,46 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "path": "src/chained.rs",
+    "position": {
+      "line": 2,
+      "column": 5
+    },
+    "module": {
+      "package": "resolution_probe",
+      "path": [
+        "chained"
+      ]
+    },
+    "import": {
+      "span": {
+        "start": 46,
+        "end": 59
+      },
+      "path": "parent::child",
+      "declares": true,
+      "alias": "leaf",
+      "start": {
+        "line": 2,
+        "column": 4
+      },
+      "address": {
+        "package": "resolution_probe",
+        "path": [
+          "a",
+          "child"
+        ]
+      },
+      "file": "src/a/child.rs"
+    },
+    "importers": []
+  }
+}
+--- stderr ---

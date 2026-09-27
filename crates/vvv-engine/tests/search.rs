@@ -22,7 +22,10 @@ fn engine() -> Engine {
 
 #[test]
 fn matches_carry_relative_paths_and_positions() {
-    let found = engine().run(Query::pattern("foo")).unwrap().matches;
+    let found = vvv_engine::SearchQuery::from(Query::pattern("foo"))
+        .execute(&engine())
+        .unwrap()
+        .matches;
     assert_eq!(found.len(), 2);
     assert_eq!(found[0].path, Path::new("a.p"));
     assert_eq!(found[0].start, Position::new(0, 0));
@@ -32,8 +35,8 @@ fn matches_carry_relative_paths_and_positions() {
 
 #[test]
 fn unknown_language_filter_yields_nothing() {
-    let found = engine()
-        .run(Query::pattern("foo").in_language("rust"))
+    let found = vvv_engine::SearchQuery::from(Query::pattern("foo").in_language("rust"))
+        .execute(&engine())
         .unwrap();
     assert!(found.matches.is_empty() && found.skipped.is_empty());
 }
@@ -79,7 +82,9 @@ fn a_language_that_declines_the_query_is_skipped_not_fatal() {
         Workspace::new("/ws", Arc::new(vfs)),
         Languages::new().with(Fake::default()).with(Picky),
     );
-    let search = engine.run(Query::pattern("foo")).unwrap();
+    let search = vvv_engine::SearchQuery::from(Query::pattern("foo"))
+        .execute(&engine)
+        .unwrap();
     assert_eq!(
         search.matches.len(),
         1,
@@ -89,8 +94,8 @@ fn a_language_that_declines_the_query_is_skipped_not_fatal() {
     assert_eq!(search.skipped[0].language, "picky".into());
     assert!(search.skipped[0].reason.contains("cannot parse `foo`"));
 
-    let only_fake = engine
-        .run(Query::pattern("foo").in_language("fake"))
+    let only_fake = vvv_engine::SearchQuery::from(Query::pattern("foo").in_language("fake"))
+        .execute(&engine)
         .unwrap();
     assert!(
         only_fake.skipped.is_empty(),

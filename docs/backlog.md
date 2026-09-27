@@ -1,0 +1,81 @@
+# Open technical work
+
+These items describe unresolved contracts and ownership issues. Implementations
+must follow [architecture.md](architecture.md) and [AGENTS.md](../AGENTS.md):
+behavior belongs to the type that owns its data or to a trait implementation.
+
+## API path unification
+
+Capability types have inconsistent public paths. Query types are available at both
+the crate root and `protocol::`, while `Rename`, `RenameIntent`, `Move`,
+`MoveIntent`, `MoveSymbol`, and `MoveSymbolIntent` are root-only. The evidence is
+[protocol's query re-exports](../crates/vvv-engine/src/protocol/mod.rs) and
+[the root exports and negative API doctests](../crates/vvv-engine/src/lib.rs).
+Define one public-path policy, with explicit compatibility decisions and
+compile-time checks. Serialized requests and answers must remain independent of
+Rust import paths.
+
+## Structured error hints
+
+[EngineError::hint](../crates/vvv-engine/src/error.rs) returns strings containing
+CLI syntax such as `vvv search` and `--in`; conversion to `Failure` puts those
+strings on the shared wire. The [serve tests](../crates/vvv/src/cli/commands/serve.rs)
+assert this JSON hint, while the [TUI worker](../crates/vvv-tui/src/worker.rs)
+reduces failures to messages. Represent suggested actions as structured data owned
+by the error so clients can act on them, and let each interface select its wording.
+Specify wire compatibility for `Failure.hint` and preserve `Failure.recovery`.
+
+## Distinct capability errors
+
+[Namespace::surgery](../crates/vvv-engine/src/graph/namespace.rs) returns
+`EngineError::NoLayout` for a language with a Layout but no Surgery. Its
+[message and code](../crates/vvv-engine/src/error.rs) describe unavailable path
+resolution rather than unavailable editing. Distinguish missing Layout, missing
+Surgery, and unsupported operations; keep component errors with their owners and
+map them to `EngineError` and `Failure` at the boundary. Cover a language with
+Layout but no Surgery using the shared Fake, and specify any public variant or
+wire-code changes.
+
+## Source and preview ownership
+
+[Match::locate](../crates/vvv-engine/src/protocol/search.rs) takes a `SourceFile`
+and derives coordinates inside a wire module; `Candidate` owns the file and
+language needed for this construction.
+[FileChange::all](../crates/vvv-engine/src/protocol/result.rs) depends on `Plan`
+and `FilePreview`; its construction belongs with those lifecycle types.
+[Namespace](../crates/vvv-engine/src/graph/namespace.rs) relies on Graph checking
+for a Layout and then re-fetches it with `expect`. Its constructor should retain
+the required capability explicitly. The checked caller prevents a demonstrated
+panic, but the type does not encode that precondition. Preserve behavior and wire
+shapes when transferring these responsibilities.
+
+## Composition and default ownership
+
+[Builtins](../crates/vvv/src/languages.rs) is a namespace-only unit struct. Give
+the composition root registry state so registration methods operate on owned
+data. The free serde default helper `yes` in
+[ImportRef](../crates/vvv-core/src/import/mod.rs) belongs on the type that owns
+the field's default. Neither correction needs a behavior or serialization change.
+
+## Test fixture ownership
+
+Test-helper free functions are subject to the ownership rule. The TUI's
+[fixtures.rs](../crates/vvv-tui/src/fixtures.rs) contains engine-value factories,
+and [tests.rs](../crates/vvv-tui/src/tests.rs) contains helpers for models,
+previews, input, effects, plans, history entries, reports, and anchored states.
+Other test suites also contain free fixture helpers. Give these helpers
+owners that retain the fixture data, following `Layers` and `FrameFixture`, and
+preserve assertions and snapshots. `#[test]` functions remain exempt.
+
+## Cross-file parent aliases
+
+Same-file imported bindings propagate to a fixed point. Cross-file private
+bindings do not: a parent with `use crate::a as parent` and a child with
+`use super::parent as local` can leave `local::Foo` unresolved. This limitation is
+specified in [the guide](guide.md#rename) and covered by the ignored
+`child_modules_follow_private_module_aliases_imported_from_their_parent` test in
+[corpus.rs](../crates/vvv/tests/corpus.rs), using the
+[Rust fixture](../crates/vvv/tests/corpus/rust-resolution/src/parent_context/nested.rs).
+Resolution must retain provenance, visibility, and cycle handling across files.
+Fragment, references, deps, and explain must agree on the correct Rust target;
+references must not discard valid resolutions to match an unresolved edge.
