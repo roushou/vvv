@@ -9,8 +9,8 @@ use std::sync::Arc;
 use common::Fake;
 use vvv_core::Query;
 use vvv_engine::{
-    Apply, BatchIntent, Engine, EngineError, FileQuery, HistoryQuery, Intent, Languages, MemoryVfs,
-    MoveIntent, RelPath, RenameIntent, RewriteIntent, UndoLast, Vfs, Workspace,
+    Apply, BatchIntent, Engine, EngineError, FileQuery, Intent, Languages, MemoryVfs, MoveIntent,
+    RelPath, RenameIntent, RewriteIntent, Vfs, Workspace,
 };
 
 fn engine_and_vfs() -> (Arc<MemoryVfs>, Engine) {
@@ -32,32 +32,32 @@ fn engine() -> Engine {
 }
 
 fn read(engine: &Engine, path: &str) -> String {
-    engine
-        .run(FileQuery {
-            path: RelPath::from(path),
-        })
-        .unwrap()
-        .text
+    FileQuery {
+        path: RelPath::from(path),
+    }
+    .execute(engine)
+    .unwrap()
+    .text
 }
 
 fn exists(engine: &Engine, path: &str) -> bool {
-    engine
-        .run(FileQuery {
-            path: RelPath::from(path),
-        })
-        .is_ok()
+    FileQuery {
+        path: RelPath::from(path),
+    }
+    .execute(engine)
+    .is_ok()
 }
 
 #[test]
 fn a_rename_can_follow_the_move_of_its_file() {
     let engine = engine();
-    let batch = engine
-        .run(BatchIntent::new([
-            Intent::Move(MoveIntent::new("a/x.p", "b/y.p")),
-            // Planned against the moved tree: the declaration is in b/y.p now.
-            Intent::Rename(RenameIntent::new("foo", "bar").declared_in("b/y.p")),
-        ]))
-        .unwrap();
+    let batch = BatchIntent::new([
+        Intent::Move(MoveIntent::new("a/x.p", "b/y.p")),
+        // Planned against the moved tree: the declaration is in b/y.p now.
+        Intent::Rename(RenameIntent::new("foo", "bar").declared_in("b/y.p")),
+    ])
+    .plan(&engine)
+    .unwrap();
     assert_eq!(batch.intents.len(), 2);
     assert!(exists(&engine, "a/x.p"), "nothing real moved yet");
 
@@ -78,17 +78,21 @@ fn a_rename_can_follow_the_move_of_its_file() {
         "{files:?}"
     );
 
-    let applied = engine.run(Apply(batch)).unwrap();
+    let applied = Apply(batch).apply(&engine).unwrap();
     assert!(applied.state == vvv_engine::MutationState::Applied { history_id: 1 });
     assert_eq!(read(&engine, "b/y.p"), "def bar\nbar");
     assert_eq!(read(&engine, "lib.p"), "use b/y.p\nbar");
     assert_eq!(
-        engine.run(HistoryQuery).unwrap().entries.len(),
+        vvv_engine::Ledger::new(&engine)
+            .history()
+            .unwrap()
+            .entries
+            .len(),
         1,
         "one entry for the whole batch"
     );
 
-    let undone = engine.run(UndoLast).unwrap();
+    let undone = vvv_engine::Ledger::new(&engine).undo().unwrap();
     assert!(
         matches!(undone.undone.intent, Intent::Batch(BatchIntent { ref intents }) if intents.len() == 2)
     );
@@ -100,23 +104,23 @@ fn a_rename_can_follow_the_move_of_its_file() {
 #[test]
 fn a_failing_step_rolls_the_earlier_ones_back() {
     let (vfs, engine) = engine_and_vfs();
-    let batch = engine
-        .run(BatchIntent::new(
-            [
-                // Touches a/x.p only.
-                Intent::Rewrite(RewriteIntent::new(Query::pattern("def"), "fn")),
-                // Touches both files.
-                Intent::Rewrite(RewriteIntent::new(Query::pattern("foo"), "bar")),
-            ]
-            .iter()
-            .cloned(),
-        ))
-        .unwrap();
+    let batch = BatchIntent::new(
+        [
+            // Touches a/x.p only.
+            Intent::Rewrite(RewriteIntent::new(Query::pattern("def"), "fn")),
+            // Touches both files.
+            Intent::Rewrite(RewriteIntent::new(Query::pattern("foo"), "bar")),
+        ]
+        .iter()
+        .cloned(),
+    )
+    .plan(&engine)
+    .unwrap();
     // Somebody edits lib.p between planning and applying: step one still
     // holds, step two is stale.
     vfs.write(Path::new("/ws/lib.p"), "use a/x.p\nfoo // touched")
         .unwrap();
-    let err = engine.run(Apply(batch)).unwrap_err();
+    let err = Apply(batch).apply(&engine).unwrap_err();
     assert!(matches!(err, EngineError::Apply(_)), "{err}");
     assert_eq!(
         read(&engine, "a/x.p"),
@@ -128,19 +132,25 @@ fn a_failing_step_rolls_the_earlier_ones_back() {
         "use a/x.p\nfoo // touched",
         "the edit that broke it is kept"
     );
-    assert_eq!(engine.run(HistoryQuery).unwrap().entries.len(), 0);
+    assert_eq!(
+        vvv_engine::Ledger::new(&engine)
+            .history()
+            .unwrap()
+            .entries
+            .len(),
+        0
+    );
 }
 
 #[test]
 fn batch_recovers_every_attempted_step_after_a_partial_write() {
     let fixture = common::FaultFixture::new(&[("a.p", "one")]);
-    let planned = fixture
-        .engine
-        .run(BatchIntent::new([
-            Intent::Rewrite(RewriteIntent::new(Query::pattern("one"), "two")),
-            Intent::Rewrite(RewriteIntent::new(Query::pattern("two"), "three")),
-        ]))
-        .unwrap();
+    let planned = BatchIntent::new([
+        Intent::Rewrite(RewriteIntent::new(Query::pattern("one"), "two")),
+        Intent::Rewrite(RewriteIntent::new(Query::pattern("two"), "three")),
+    ])
+    .plan(&fixture.engine)
+    .unwrap();
     fixture.arm(
         common::FaultOperation::Write,
         "a.p",
@@ -148,7 +158,7 @@ fn batch_recovers_every_attempted_step_after_a_partial_write() {
         common::FaultAction::Partial("cut".into()),
     );
     assert!(matches!(
-        fixture.engine.run(Apply(planned)),
+        Apply(planned).apply(&fixture.engine),
         Err(EngineError::Apply(_))
     ));
     assert_eq!(fixture.read("a.p"), "one");
@@ -157,13 +167,12 @@ fn batch_recovers_every_attempted_step_after_a_partial_write() {
 #[test]
 fn batch_reports_failure_to_restore_an_earlier_step() {
     let fixture = common::FaultFixture::new(&[("a.p", "one"), ("b.p", "two")]);
-    let planned = fixture
-        .engine
-        .run(BatchIntent::new([
-            Intent::Rewrite(RewriteIntent::new(Query::pattern("one"), "1")),
-            Intent::Rewrite(RewriteIntent::new(Query::pattern("two"), "2")),
-        ]))
-        .unwrap();
+    let planned = BatchIntent::new([
+        Intent::Rewrite(RewriteIntent::new(Query::pattern("one"), "1")),
+        Intent::Rewrite(RewriteIntent::new(Query::pattern("two"), "2")),
+    ])
+    .plan(&fixture.engine)
+    .unwrap();
     fixture.arm(
         common::FaultOperation::Write,
         "b.p",
@@ -176,7 +185,7 @@ fn batch_reports_failure_to_restore_an_earlier_step() {
         1,
         common::FaultAction::Before,
     );
-    let error = fixture.engine.run(Apply(planned)).unwrap_err();
+    let error = Apply(planned).apply(&fixture.engine).unwrap_err();
     let EngineError::Recovery(recovery) = error else {
         panic!("expected recovery error: {error}")
     };

@@ -121,7 +121,7 @@ impl<T: Mutation> Deref for Planned<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Apply, Engine, HistoryQuery, Languages, MemoryVfs, Rename, RenameIntent};
+    use crate::{Apply, Engine, Languages, MemoryVfs, Rename, RenameIntent};
     use std::sync::Arc;
 
     #[test]
@@ -146,9 +146,9 @@ mod tests {
             Workspace::new("/ws", Arc::new(MemoryVfs::new())),
             Languages::new(),
         );
-        engine.run(Apply(planned.into_mutation())).unwrap();
+        Apply(planned.into_mutation()).apply(&engine).unwrap();
         assert_eq!(
-            engine.run(HistoryQuery).unwrap().entries[0].intent,
+            vvv_engine::Ledger::new(&engine).history().unwrap().entries[0].intent,
             captured
         );
     }

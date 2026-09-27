@@ -15,7 +15,9 @@ pub struct ServeCmd;
 
 impl ServeCmd {
     pub fn run(self, ctx: &Context) -> anyhow::Result<()> {
-        let engine = ctx.engine().clone().with_retention(Retention::session());
+        let session = Session {
+            engine: ctx.engine().clone().with_retention(Retention::session()),
+        };
         let stdin = std::io::stdin().lock();
         let mut stdout = std::io::stdout().lock();
         for line in stdin.lines() {
@@ -23,7 +25,7 @@ impl ServeCmd {
             if line.trim().is_empty() {
                 continue;
             }
-            let reply = Session::answer(&engine, &line);
+            let reply = session.answer(&line);
             serde_json::to_writer(&mut stdout, &reply)?;
             stdout.write_all(b"\n")?;
             stdout.flush()?;
@@ -33,17 +35,19 @@ impl ServeCmd {
 }
 
 /// One line in, one line out.
-struct Session;
+struct Session {
+    engine: Engine,
+}
 
 impl Session {
-    fn answer(engine: &Engine, line: &str) -> Reply<Answer> {
+    fn answer(&self, line: &str) -> Reply<Answer> {
         // The id is echoed even when the rest of the line makes no sense.
         let id = serde_json::from_str::<Value>(line)
             .ok()
             .and_then(|v| v.get("id").cloned());
         let response = match serde_json::from_str::<Call>(line) {
-            Ok(call) => match engine.run(call.request) {
-                Ok(answer) => Response::ok(answer),
+            Ok(call) => match self.engine.run(call.request) {
+                Ok(answer) => Response::ok(answer.into_answer()),
                 Err(error) => Response::error(error.failure()),
             },
             Err(error) => Response::error(Failure::new(
@@ -71,12 +75,12 @@ mod tests {
 
     #[test]
     fn a_bad_line_is_a_bad_request_with_its_id() {
-        let reply = Session::answer(&engine(), r#"{"id": 7, "command": "nope"}"#);
+        let reply = Session { engine: engine() }.answer(r#"{"id": 7, "command": "nope"}"#);
         let v = serde_json::to_value(&reply).unwrap();
         assert_eq!(v["id"], 7);
         assert_eq!(v["status"], "error");
         assert_eq!(v["code"], "bad_request");
-        let reply = Session::answer(&engine(), "not json");
+        let reply = Session { engine: engine() }.answer("not json");
         let v = serde_json::to_value(&reply).unwrap();
         assert!(v.get("id").is_none());
         assert_eq!(v["code"], "bad_request");
@@ -84,12 +88,12 @@ mod tests {
 
     #[test]
     fn an_engine_error_carries_its_code_and_hint() {
-        let reply = Session::answer(&engine(), r#"{"id": "x", "command": "search"}"#);
+        let reply = Session { engine: engine() }.answer(r#"{"id": "x", "command": "search"}"#);
         let v = serde_json::to_value(&reply).unwrap();
         assert_eq!(v["id"], "x");
         assert_eq!(v["code"], "bad_query");
         assert!(v["hint"].as_str().unwrap().contains("vvv search"));
-        let reply = Session::answer(&engine(), r#"{"command": "history"}"#);
+        let reply = Session { engine: engine() }.answer(r#"{"command": "history"}"#);
         let v = serde_json::to_value(&reply).unwrap();
         assert_eq!(v["status"], "ok");
         assert_eq!(v["schema"], 1);
@@ -98,7 +102,10 @@ mod tests {
     #[test]
     fn session_mutations_keep_preview_and_applied_envelopes() {
         let engine = engine();
-        let preview = Session::answer(&engine, r#"{"id": 7, "command": "batch", "intents": []}"#);
+        let preview = Session {
+            engine: engine.clone(),
+        }
+        .answer(r#"{"id": 7, "command": "batch", "intents": []}"#);
         assert_eq!(
             serde_json::to_value(preview).unwrap(),
             serde_json::json!({
@@ -106,10 +113,8 @@ mod tests {
                 "result": {"intents": [], "applied": false, "files": []}
             })
         );
-        let applied = Session::answer(
-            &engine,
-            r#"{"id": 8, "command": "batch", "intents": [], "apply": true}"#,
-        );
+        let applied = Session { engine }
+            .answer(r#"{"id": 8, "command": "batch", "intents": [], "apply": true}"#);
         assert_eq!(
             serde_json::to_value(applied).unwrap(),
             serde_json::json!({

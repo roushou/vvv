@@ -18,7 +18,6 @@ use vvv_core::{Address, Edit, Name, Parsed, Span, Surgery};
 
 use super::{Extraction, Rebase, Site, Widen};
 use crate::change::Change;
-use crate::command::{Command, Context};
 use crate::graph::{Candidate, Fragment, Namespace, Node};
 use crate::protocol::vocabulary::IntentLine;
 use crate::report::{Document, MoveCounts};
@@ -83,7 +82,9 @@ impl Mutation for MoveSymbol {
 impl MoveSymbolIntent {
     /// Plan without writing files.
     pub fn plan(self, engine: &crate::Engine) -> Result<Planned<MoveSymbol>, EngineError> {
-        engine.run(self)
+        let _operation = engine.operation();
+        let mut graph = engine.graph()?;
+        self.plan_in(&mut graph, engine.workspace())
     }
 
     pub(crate) fn plan_in(
@@ -138,16 +139,6 @@ impl MoveSymbolIntent {
                 files,
             },
         )
-    }
-}
-
-// Temporary adapter while callers migrate to typed capability methods.
-impl Command for MoveSymbolIntent {
-    type Output = Planned<MoveSymbol>;
-
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let mut graph = cx.engine.graph()?;
-        self.plan_in(&mut graph, cx.workspace)
     }
 }
 

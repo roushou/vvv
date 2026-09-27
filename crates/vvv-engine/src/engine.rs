@@ -6,7 +6,6 @@ use std::sync::{Arc, Mutex, MutexGuard};
 
 use vvv_core::{LanguageRegistry, Oracle};
 
-use crate::command::{Command, Context};
 use crate::graph::{Graph, Retention};
 use crate::{EngineError, LanguageId, Workspace};
 
@@ -37,8 +36,8 @@ impl std::fmt::Debug for Engine {
 
 impl Engine {
     /// An engine over `workspace` that understands `languages`. Reads the
-    /// tree afresh for every command unless [`Engine::with_retention`] says
-    /// otherwise.
+    /// tree afresh for every graph-dependent request unless
+    /// [`Engine::with_retention`] says otherwise.
     pub fn new(workspace: Workspace, languages: LanguageRegistry) -> Self {
         let graph = Graph::new(workspace.clone(), languages.clone());
         Self {
@@ -58,11 +57,105 @@ impl Engine {
         Self { retention, ..self }
     }
 
-    /// Run one operation. Only graph-dependent capabilities refresh the tree.
-    pub fn run<C: Command>(&self, command: C) -> Result<C::Output, EngineError> {
+    /// Run one request under operation exclusion. Acquire the graph only for
+    /// capabilities that need source-tree facts; retain mutation plans until
+    /// the caller applies them or converts the execution to a wire answer.
+    /// A typed query goes through its capability method, not this dispatcher:
+    ///
+    /// ```compile_fail,E0308
+    /// use vvv_engine::{Engine, Languages, MemoryVfs, Query, Workspace};
+    /// use std::sync::Arc;
+    /// let engine = Engine::new(Workspace::new("/ws", Arc::new(MemoryVfs::new())), Languages::new());
+    /// engine.run(Query::pattern("foo"));
+    /// ```
+    pub fn run(&self, request: crate::Request) -> Result<Execution, EngineError> {
         let _operation = self.operation();
-        let mut cx = Context::new(self);
-        command.run(&mut cx)
+        Ok(match request {
+            crate::Request::Search(query) => Execution::Completed(crate::Answer::Search(
+                crate::SearchQuery::from(query).execute_in(&mut *self.graph()?)?,
+            )),
+            crate::Request::Outline(query) => Execution::Completed(crate::Answer::Outline(
+                query.execute_in(&mut *self.graph()?, self.workspace())?,
+            )),
+            crate::Request::References(query) => Execution::Completed(crate::Answer::References(
+                query.execute_in(&mut *self.graph()?)?,
+            )),
+            crate::Request::Where(query) => Execution::Completed(crate::Answer::Where(
+                query.execute_in(&mut *self.graph()?, self.workspace())?,
+            )),
+            crate::Request::Deps(query) => Execution::Completed(crate::Answer::Deps(
+                query.execute_in(&mut *self.graph()?, self.workspace())?,
+            )),
+            crate::Request::Explain(query) => Execution::Completed(crate::Answer::Explain(
+                query.execute_in(&mut *self.graph()?, self.workspace())?,
+            )),
+            crate::Request::Surface(query) => Execution::Completed(crate::Answer::Surface(
+                query.execute_in(&mut *self.graph()?)?,
+            )),
+            crate::Request::Impact(query) => Execution::Completed(crate::Answer::Impact(
+                query.execute_in(&mut *self.graph()?)?,
+            )),
+            crate::Request::Dead(query) => {
+                Execution::Completed(crate::Answer::Dead(query.execute_in(&mut *self.graph()?)?))
+            }
+            crate::Request::Imports(query) => Execution::Completed(crate::Answer::Imports(
+                query.execute_in(&mut *self.graph()?, self.workspace())?,
+            )),
+            crate::Request::File(query) => Execution::Completed(crate::Answer::File(
+                query.execute_in(self.workspace(), self.languages())?,
+            )),
+            crate::Request::Rename { intent, apply } => {
+                let planned = {
+                    let mut graph = self.graph()?;
+                    intent.plan_in(&mut graph, self.workspace())?
+                };
+                self.mutation(planned, apply)?
+            }
+            crate::Request::Move { intent, apply } => {
+                let planned = {
+                    let mut graph = self.graph()?;
+                    intent.plan_in(&mut graph, self.workspace())?
+                };
+                self.mutation(planned, apply)?
+            }
+            crate::Request::MoveSymbol { intent, apply } => {
+                let planned = {
+                    let mut graph = self.graph()?;
+                    intent.plan_in(&mut graph, self.workspace())?
+                };
+                self.mutation(planned, apply)?
+            }
+            crate::Request::Rewrite { intent, apply } => {
+                let planned = {
+                    let mut graph = self.graph()?;
+                    intent.plan_in(&mut graph, self.workspace())?
+                };
+                self.mutation(planned, apply)?
+            }
+            crate::Request::Batch { intent, apply } => {
+                self.mutation(intent.plan_in(self)?, apply)?
+            }
+            crate::Request::History => Execution::Completed(crate::Answer::History(
+                crate::Ledger::new(self).history_in()?,
+            )),
+            crate::Request::Undo => {
+                Execution::Completed(crate::Answer::Undo(crate::Ledger::new(self).undo_in()?))
+            }
+        })
+    }
+
+    fn mutation<T: crate::Mutation>(
+        &self,
+        planned: crate::Planned<T>,
+        apply: bool,
+    ) -> Result<Execution, EngineError> {
+        if apply {
+            Ok(Execution::Applied(
+                crate::Apply(planned).apply_in(self)?.into_mutation(),
+            ))
+        } else {
+            Ok(Execution::Preview(planned.into_mutation()))
+        }
     }
 
     /// Ask `oracle` about the tokens syntax cannot place — a build, a
@@ -142,6 +235,71 @@ impl Engine {
         }
         graph.refresh(self.retention)?;
         Ok(graph)
+    }
+}
+
+/// An in-process result. Only mutation previews carry executable plans.
+#[derive(Debug)]
+pub enum Execution {
+    Completed(crate::Answer),
+    Preview(crate::Planned<crate::MutationAnswer>),
+    Applied(crate::Applied<crate::MutationAnswer>),
+}
+
+/// The kind of retained result requested by an in-process caller.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ExecutionKind {
+    Completed,
+    Preview,
+    Applied,
+}
+
+impl std::fmt::Display for ExecutionKind {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            Self::Completed => "completed",
+            Self::Preview => "preview",
+            Self::Applied => "applied",
+        })
+    }
+}
+
+impl Execution {
+    pub fn kind(&self) -> ExecutionKind {
+        match self {
+            Self::Completed(_) => ExecutionKind::Completed,
+            Self::Preview(_) => ExecutionKind::Preview,
+            Self::Applied(_) => ExecutionKind::Applied,
+        }
+    }
+
+    /// Consume the retained handle at a reporting or wire boundary.
+    pub fn into_answer(self) -> crate::Answer {
+        match self {
+            Self::Completed(answer) => answer,
+            Self::Preview(planned) => planned.into_inner().into(),
+            Self::Applied(applied) => applied.into_inner().into(),
+        }
+    }
+
+    pub fn into_preview(self) -> Result<crate::Planned<crate::MutationAnswer>, EngineError> {
+        match self {
+            Self::Preview(planned) => Ok(planned),
+            other => Err(EngineError::ExecutionKind {
+                expected: ExecutionKind::Preview,
+                actual: other.kind(),
+            }),
+        }
+    }
+
+    pub fn into_applied(self) -> Result<crate::Applied<crate::MutationAnswer>, EngineError> {
+        match self {
+            Self::Applied(applied) => Ok(applied),
+            other => Err(EngineError::ExecutionKind {
+                expected: ExecutionKind::Applied,
+                actual: other.kind(),
+            }),
+        }
     }
 }
 

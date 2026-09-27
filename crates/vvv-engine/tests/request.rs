@@ -28,12 +28,12 @@ fn request(json: &str) -> Request {
 }
 
 fn read(engine: &Engine, path: &str) -> String {
-    engine
-        .run(FileQuery {
-            path: RelPath::from(path),
-        })
-        .unwrap()
-        .text
+    FileQuery {
+        path: RelPath::from(path),
+    }
+    .execute(engine)
+    .unwrap()
+    .text
 }
 
 #[test]
@@ -41,21 +41,24 @@ fn a_request_is_the_command_it_names() {
     let engine = engine();
     let answer = engine
         .run(request(r#"{"command": "search", "name": "foo"}"#))
-        .unwrap();
+        .unwrap()
+        .into_answer();
     let Answer::Search(search) = answer else {
         panic!("{answer:?}");
     };
     assert_eq!(search.matches.len(), 1);
     let answer = engine
         .run(request(r#"{"command": "references", "name": "foo"}"#))
-        .unwrap();
+        .unwrap()
+        .into_answer();
     let Answer::References(refs) = answer else {
         panic!("{answer:?}");
     };
     assert_eq!(refs.occurrences.len(), 4);
     let answer = engine
         .run(request(r#"{"command": "deps", "path": "b.p"}"#))
-        .unwrap();
+        .unwrap()
+        .into_answer();
     let value = serde_json::to_value(&answer).unwrap();
     assert_eq!(
         value["path"], "b.p",
@@ -63,7 +66,10 @@ fn a_request_is_the_command_it_names() {
     );
     assert_eq!(value["imports"][0]["path"], "a.p/foo");
     assert!(matches!(
-        engine.run(request(r#"{"command": "history"}"#)).unwrap(),
+        engine
+            .run(request(r#"{"command": "history"}"#))
+            .unwrap()
+            .into_answer(),
         Answer::History(_)
     ));
 }
@@ -72,7 +78,7 @@ fn a_request_is_the_command_it_names() {
 fn a_mutation_previews_unless_it_applies_and_then_records_one_undo() {
     let engine = engine();
     let preview = request(r#"{"command": "rename", "name": "foo", "to": "bar"}"#);
-    let Answer::Rename(rename) = engine.run(preview).unwrap() else {
+    let Answer::Rename(rename) = engine.run(preview).unwrap().into_answer() else {
         panic!()
     };
     assert!(!rename.state.is_applied());
@@ -83,13 +89,17 @@ fn a_mutation_previews_unless_it_applies_and_then_records_one_undo() {
     );
 
     let apply = request(r#"{"command": "rename", "name": "foo", "to": "bar", "apply": true}"#);
-    let Answer::Rename(rename) = engine.run(apply).unwrap() else {
+    let Answer::Rename(rename) = engine.run(apply).unwrap().into_answer() else {
         panic!()
     };
     assert!(rename.state.is_applied() && rename.state.history_id().is_some());
     assert_eq!(read(&engine, "a.p"), "def bar\nbar");
 
-    let Answer::Undo(undo) = engine.run(request(r#"{"command": "undo"}"#)).unwrap() else {
+    let Answer::Undo(undo) = engine
+        .run(request(r#"{"command": "undo"}"#))
+        .unwrap()
+        .into_answer()
+    else {
         panic!()
     };
     assert_eq!(undo.restored.len(), 2);
@@ -171,6 +181,90 @@ fn rename_composes_a_flat_references_query_on_the_wire() {
             let value = serde_json::to_value(&request).unwrap();
             let decoded: Request = serde_json::from_value(value.clone()).unwrap();
             assert_eq!(serde_json::to_value(decoded).unwrap(), value);
+        }
+    }
+}
+
+#[test]
+fn dispatch_preserves_an_executable_preview_and_its_applied_completion() {
+    use vvv_engine::{Apply, ExecutionKind, Ledger, MutationAnswer};
+
+    let engine = engine();
+    let execution = engine
+        .run(request(r#"{"command":"rename","name":"foo","to":"bar"}"#))
+        .unwrap();
+    assert_eq!(execution.kind(), ExecutionKind::Preview);
+    let planned = execution.into_preview().unwrap();
+    assert!(matches!(&*planned, MutationAnswer::Rename(_)));
+    assert_eq!(read(&engine, "a.p"), "def foo\nfoo");
+    let applied = Apply(planned).apply(&engine).unwrap();
+    assert_eq!(
+        Ledger::new(&engine).history().unwrap().entries[0].id,
+        applied.history_id()
+    );
+    assert!(applied.into_inner().history_id().is_some());
+    let execution = engine
+        .run(request(
+            r#"{"command":"rename","name":"bar","to":"baz","apply":true}"#,
+        ))
+        .unwrap();
+    assert_eq!(execution.kind(), ExecutionKind::Applied);
+    let applied = execution.into_applied().unwrap();
+    assert_eq!(applied.history_id(), 2);
+    assert!(applied.into_inner().history_id().is_some());
+}
+
+#[test]
+fn execution_kind_mismatches_are_structured_rejections() {
+    use vvv_engine::{ExecutionKind, Ledger};
+
+    let engine = engine();
+    let completed = engine
+        .run(request(r#"{"command":"search","name":"foo"}"#))
+        .unwrap();
+    let error = completed.into_preview().unwrap_err();
+    assert!(matches!(
+        error,
+        EngineError::ExecutionKind {
+            expected: ExecutionKind::Preview,
+            actual: ExecutionKind::Completed
+        }
+    ));
+    assert_eq!(Failure::from(&error).code, ErrorCode::BadRequest);
+    let preview = engine
+        .run(request(r#"{"command":"rename","name":"foo","to":"bar"}"#))
+        .unwrap();
+    let error = preview.into_applied().unwrap_err();
+    assert!(matches!(
+        error,
+        EngineError::ExecutionKind {
+            expected: ExecutionKind::Applied,
+            actual: ExecutionKind::Preview
+        }
+    ));
+    assert_eq!(read(&engine, "a.p"), "def foo\nfoo");
+    assert!(Ledger::new(&engine).history().unwrap().entries.is_empty());
+}
+
+#[test]
+fn intent_conversion_changes_only_execution_policy_on_the_wire() {
+    use vvv_engine::Intent;
+
+    for json in [
+        r#"{"command":"rename","name":"foo","to":"bar","declared_in":"a.p"}"#,
+        r#"{"command":"move","from":"a.p","to":"c.p"}"#,
+        r#"{"command":"move_symbol","name":"foo","from":"a.p","to":"b.p"}"#,
+        r#"{"command":"rewrite","query":{"pattern":"foo"},"template":"bar"}"#,
+        r#"{"command":"batch","intents":[]}"#,
+    ] {
+        let intent: Intent = serde_json::from_str(json).unwrap();
+        let mut expected = serde_json::to_value(&intent).unwrap();
+        for apply in [false, true] {
+            expected["apply"] = serde_json::json!(apply);
+            let request = intent.clone().into_request(apply);
+            assert_eq!(serde_json::to_value(&request).unwrap(), expected);
+            let decoded: Request = serde_json::from_value(expected.clone()).unwrap();
+            assert_eq!(decoded, request);
         }
     }
 }

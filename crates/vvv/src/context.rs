@@ -39,7 +39,7 @@ impl Context {
 
     /// Run a request and report its answer.
     pub fn run(&self, request: Request) -> anyhow::Result<()> {
-        let answer = self.engine.run(request)?;
+        let answer = self.engine.run(request)?.into_answer();
         self.reporter().report(&answer)
     }
 

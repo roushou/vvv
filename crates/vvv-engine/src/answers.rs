@@ -2,9 +2,8 @@
 //! file with its highlights. Each reads the graph and answers with plain
 //! data; nothing is planned.
 
-use vvv_core::{Address, Query};
+use vvv_core::Address;
 
-use crate::command::{Command, Context};
 use crate::{
     Deps, DepsQuery, EngineError, ExplainQuery, Explanation, File, FileQuery, Locations, Outline,
     OutlineItem, OutlineQuery, ReferencesQuery, Search, Site, WhereQuery,
@@ -15,7 +14,9 @@ use crate::{
 impl OutlineQuery {
     /// Answer with the concrete result of this query.
     pub fn execute(self, engine: &crate::Engine) -> Result<Outline, EngineError> {
-        engine.run(self)
+        let _operation = engine.operation();
+        let mut graph = engine.graph()?;
+        self.execute_in(&mut graph, engine.workspace())
     }
 
     pub(crate) fn execute_in(
@@ -49,22 +50,14 @@ impl OutlineQuery {
     }
 }
 
-// Temporary adapter while callers migrate to typed capability methods.
-impl Command for OutlineQuery {
-    type Output = Outline;
-
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let mut graph = cx.engine.graph()?;
-        self.execute_in(&mut graph, cx.workspace)
-    }
-}
-
 /// Where `name` is declared, and the import that reaches each site from
 /// `from`, spelled as that language writes it.
 impl WhereQuery {
     /// Answer with the concrete result of this query.
     pub fn execute(self, engine: &crate::Engine) -> Result<Locations, EngineError> {
-        engine.run(self)
+        let _operation = engine.operation();
+        let mut graph = engine.graph()?;
+        self.execute_in(&mut graph, engine.workspace())
     }
 
     pub(crate) fn execute_in(
@@ -107,16 +100,6 @@ impl WhereQuery {
     }
 }
 
-// Temporary adapter while callers migrate to typed capability methods.
-impl Command for WhereQuery {
-    type Output = Locations;
-
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let mut graph = cx.engine.graph()?;
-        self.execute_in(&mut graph, cx.workspace)
-    }
-}
-
 /// What a file imports and, across its language, who imports it — through
 /// re-exports both ways: an import is followed to the declaration it
 /// reaches, and a file importing one of this file's declarations under an
@@ -124,7 +107,9 @@ impl Command for WhereQuery {
 impl DepsQuery {
     /// Answer with the concrete result of this query.
     pub fn execute(self, engine: &crate::Engine) -> Result<Deps, EngineError> {
-        engine.run(self)
+        let _operation = engine.operation();
+        let mut graph = engine.graph()?;
+        self.execute_in(&mut graph, engine.workspace())
     }
 
     pub(crate) fn execute_in(
@@ -160,22 +145,14 @@ impl DepsQuery {
     }
 }
 
-// Temporary adapter while callers migrate to typed capability methods.
-impl Command for DepsQuery {
-    type Output = Deps;
-
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let mut graph = cx.engine.graph()?;
-        self.execute_in(&mut graph, cx.workspace)
-    }
-}
-
 /// What is at a position: the enclosing declaration, its address and reach,
 /// and the files whose imports lead to it.
 impl ExplainQuery {
     /// Answer with the concrete result of this query.
     pub fn execute(self, engine: &crate::Engine) -> Result<Explanation, EngineError> {
-        engine.run(self)
+        let _operation = engine.operation();
+        let mut graph = engine.graph()?;
+        self.execute_in(&mut graph, engine.workspace())
     }
 
     pub(crate) fn execute_in(
@@ -250,21 +227,12 @@ impl ExplainQuery {
     }
 }
 
-// Temporary adapter while callers migrate to typed capability methods.
-impl Command for ExplainQuery {
-    type Output = Explanation;
-
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let mut graph = cx.engine.graph()?;
-        self.execute_in(&mut graph, cx.workspace)
-    }
-}
-
 /// One file as it is now, coloured by its language when one claims it.
 impl FileQuery {
     /// Answer with the concrete result of this query.
     pub fn execute(self, engine: &crate::Engine) -> Result<File, EngineError> {
-        engine.run(self)
+        let _operation = engine.operation();
+        self.execute_in(engine.workspace(), engine.languages())
     }
 
     pub(crate) fn execute_in(
@@ -293,44 +261,18 @@ impl FileQuery {
     }
 }
 
-// Temporary adapter while callers migrate to typed capability methods.
-impl Command for FileQuery {
-    type Output = File;
-
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.execute_in(cx.workspace, cx.engine.languages())
-    }
-}
-
 /// Structural or symbolic search across the workspace: only files spelling
 /// the query's literal words are parsed.
 impl crate::SearchQuery {
     /// Answer with the concrete result of this query.
     pub fn execute(self, engine: &crate::Engine) -> Result<Search, EngineError> {
-        engine.run(self)
+        let _operation = engine.operation();
+        let mut graph = engine.graph()?;
+        self.execute_in(&mut graph)
     }
 
     pub(crate) fn execute_in(self, graph: &mut crate::graph::Graph) -> Result<Search, EngineError> {
         self.0.check()?;
         graph.search(&self.0)
-    }
-}
-
-// Temporary adapter while callers migrate to typed capability methods.
-impl Command for crate::SearchQuery {
-    type Output = Search;
-
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let mut graph = cx.engine.graph()?;
-        self.execute_in(&mut graph)
-    }
-}
-
-impl Command for Query {
-    type Output = Search;
-
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let mut graph = cx.engine.graph()?;
-        crate::SearchQuery::from(self).execute_in(&mut graph)
     }
 }

@@ -14,7 +14,6 @@ use vvv_core::{Address, Facts, Parsed, ReachKind, RelPath, ResolveError};
 
 use super::{MoveSet, Reachability, Rebase, Site, Widen};
 use crate::change::Change;
-use crate::command::{Command, Context};
 use crate::protocol::vocabulary::IntentLine;
 use crate::report::{Document, MoveCounts};
 use crate::{
@@ -78,7 +77,9 @@ impl Mutation for Move {
 impl MoveIntent {
     /// Plan without writing files.
     pub fn plan(self, engine: &crate::Engine) -> Result<Planned<Move>, EngineError> {
-        engine.run(self)
+        let _operation = engine.operation();
+        let mut graph = engine.graph()?;
+        self.plan_in(&mut graph, engine.workspace())
     }
 
     pub(crate) fn plan_in(
@@ -248,16 +249,6 @@ impl MoveIntent {
                 files,
             },
         )
-    }
-}
-
-// Temporary adapter while callers migrate to typed capability methods.
-impl Command for MoveIntent {
-    type Output = Planned<Move>;
-
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let mut graph = cx.engine.graph()?;
-        self.plan_in(&mut graph, cx.workspace)
     }
 }
 

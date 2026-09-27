@@ -36,18 +36,18 @@ fn module(parts: &[&str]) -> Address {
 }
 
 fn read(engine: &Engine, path: &str) -> String {
-    engine
-        .run(FileQuery {
-            path: RelPath::from(path),
-        })
-        .unwrap()
-        .text
+    FileQuery {
+        path: RelPath::from(path),
+    }
+    .execute(engine)
+    .unwrap()
+    .text
 }
 
 #[test]
 fn an_alias_under_another_name_is_followed_but_not_renamed() {
     let engine = engine();
-    let surface = engine.run(SurfaceQuery { package: None }).unwrap();
+    let surface = SurfaceQuery { package: None }.execute(&engine).unwrap();
     assert_eq!(surface.items.len(), 1);
     assert_eq!(
         surface.items[0].via,
@@ -55,12 +55,12 @@ fn an_alias_under_another_name_is_followed_but_not_renamed() {
     );
     assert_eq!(surface.items[0].importers, 4, "lib.p, d.p, c.p, e.p");
 
-    let impact = engine
-        .run(ImpactQuery {
-            name: "foo".to_owned(),
-            declared_in: None,
-        })
-        .unwrap();
+    let impact = ImpactQuery {
+        name: "foo".to_owned(),
+        declared_in: None,
+    }
+    .execute(&engine)
+    .unwrap();
     let rings: Vec<(String, u32)> = impact
         .consumers
         .iter()
@@ -77,7 +77,7 @@ fn an_alias_under_another_name_is_followed_but_not_renamed() {
     );
 
     // The rename touches what spells `foo`; `bar` stays `bar`.
-    let rename = engine.run(RenameIntent::new("foo", "qux")).unwrap();
+    let rename = RenameIntent::new("foo", "qux").plan(&engine).unwrap();
     let sites: Vec<(String, Confidence)> = rename
         .occurrences
         .iter()
@@ -90,7 +90,7 @@ fn an_alias_under_another_name_is_followed_but_not_renamed() {
             ("lib.p".to_owned(), Confidence::Resolved),
         ]
     );
-    engine.run(Apply(rename)).unwrap();
+    Apply(rename).apply(&engine).unwrap();
     assert_eq!(read(&engine, "lib.p"), "pub use a/x.p/qux as bar");
     assert_eq!(read(&engine, "c.p"), "use lib.p/bar\nbar");
 }
@@ -98,11 +98,11 @@ fn an_alias_under_another_name_is_followed_but_not_renamed() {
 #[test]
 fn deps_follow_imports_to_their_origin_and_count_importers_through_aliases() {
     let engine = engine();
-    let deps = engine
-        .run(DepsQuery {
-            path: RelPath::from("e.p"),
-        })
-        .unwrap();
+    let deps = DepsQuery {
+        path: RelPath::from("e.p"),
+    }
+    .execute(&engine)
+    .unwrap();
     let [dep] = deps.imports.as_slice() else {
         panic!("{:?}", deps.imports);
     };
@@ -110,11 +110,11 @@ fn deps_follow_imports_to_their_origin_and_count_importers_through_aliases() {
     assert_eq!(dep.origin, Some(module(&["a", "x.p", "foo"])));
     assert_eq!(dep.file, Some(RelPath::from("a/x.p")));
 
-    let deps = engine
-        .run(DepsQuery {
-            path: RelPath::from("a/x.p"),
-        })
-        .unwrap();
+    let deps = DepsQuery {
+        path: RelPath::from("a/x.p"),
+    }
+    .execute(&engine)
+    .unwrap();
     let importers: Vec<String> = deps
         .importers
         .iter()
@@ -126,12 +126,12 @@ fn deps_follow_imports_to_their_origin_and_count_importers_through_aliases() {
 #[test]
 fn explain_on_an_import_says_where_it_comes_from() {
     let engine = engine();
-    let explanation = engine
-        .run(ExplainQuery {
-            path: RelPath::from("e.p"),
-            position: Position::new(0, 6),
-        })
-        .unwrap();
+    let explanation = ExplainQuery {
+        path: RelPath::from("e.p"),
+        position: Position::new(0, 6),
+    }
+    .execute(&engine)
+    .unwrap();
     assert!(explanation.symbol.is_none());
     let dep = explanation.import.expect("on the import");
     assert_eq!(dep.import.path.to_string(), "d.p/bar");
@@ -139,12 +139,12 @@ fn explain_on_an_import_says_where_it_comes_from() {
 
     // On the declaration: every address it is offered at, and importers
     // through them.
-    let explanation = engine
-        .run(ExplainQuery {
-            path: RelPath::from("a/x.p"),
-            position: Position::new(0, 9),
-        })
-        .unwrap();
+    let explanation = ExplainQuery {
+        path: RelPath::from("a/x.p"),
+        position: Position::new(0, 9),
+    }
+    .execute(&engine)
+    .unwrap();
     assert_eq!(
         explanation.via,
         [module(&["lib.p", "bar"]), module(&["d.p", "bar"])]
@@ -169,11 +169,11 @@ fn a_symbol_move_rebases_the_reexport_and_leaves_its_takers_alone() {
         Workspace::new("/ws", Arc::new(vfs)),
         Languages::new().with(Fake::default()),
     );
-    let mv = engine
-        .run(MoveSymbolIntent::new("foo", "a/x.p", "a/z.p"))
+    let mv = MoveSymbolIntent::new("foo", "a/x.p", "a/z.p")
+        .plan(&engine)
         .unwrap();
     assert!(mv.notices.is_empty(), "{:?}", mv.notices);
-    engine.run(Apply(mv)).unwrap();
+    Apply(mv).apply(&engine).unwrap();
     assert_eq!(read(&engine, "lib.p"), "pub use a/z.p/foo");
     assert_eq!(read(&engine, "c.p"), "use lib.p/foo\nfoo", "untouched");
     assert_eq!(read(&engine, "a/x.p"), "");

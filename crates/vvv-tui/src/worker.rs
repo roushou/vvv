@@ -9,7 +9,7 @@ use std::error::Error as _;
 
 use vvv_engine::report::{Document, Options};
 use vvv_engine::{
-    Answer, Apply, Engine, EngineError, FileQuery, HistoryQuery, Intent, MutationAnswer, UndoLast,
+    Answer, Engine, EngineError, FileQuery, Intent, Ledger, MutationAnswer, SearchQuery,
 };
 
 use super::action::{Effect, Event, Planned};
@@ -121,7 +121,10 @@ impl Runner {
 
     fn plan(&self, intent: Intent) -> Result<Planned, Failure> {
         let engine = &self.engine;
-        let answer = engine.run(intent.clone())?.into_inner();
+        let answer = engine
+            .run(intent.clone().into_request(false))?
+            .into_preview()?
+            .into_inner();
         Ok(match answer {
             MutationAnswer::Rename(r) => Planned::Rename {
                 files: r.files,
@@ -152,7 +155,7 @@ impl Runner {
     fn execute(&self, effect: Effect) -> Result<Event, Failure> {
         Ok(match effect {
             Effect::Search { generation, query } => {
-                let search = self.engine.run(query.clone())?;
+                let search = SearchQuery::from(query.clone()).execute(&self.engine)?;
                 Event::Searched {
                     generation,
                     matches: search.matches,
@@ -168,14 +171,14 @@ impl Runner {
                         "the hub asks read-only questions; a mutation is planned",
                     ));
                 }
-                let answer = self.engine.run(request)?;
+                let answer = self.engine.run(request)?.into_answer();
                 Event::Answered {
                     generation,
                     answer: Box::new(answer),
                 }
             }
             Effect::Preview { path } => {
-                let file = self.engine.run(FileQuery { path: path.clone() })?;
+                let file = FileQuery { path: path.clone() }.execute(&self.engine)?;
                 Event::Previewed {
                     text: file.text,
                     highlights: file.highlights,
@@ -184,14 +187,16 @@ impl Runner {
             }
             Effect::Commit { intent } => {
                 let engine = &self.engine;
-                let applied = engine.run(Apply(engine.run(intent.clone())?))?;
+                let applied = engine
+                    .run(intent.clone().into_request(true))?
+                    .into_applied()?;
                 let id = applied.history_id();
                 let answer: Answer = applied.into_inner().into();
                 let report = Document::of(&answer, Options::default());
                 Event::Applied { id, intent, report }
             }
-            Effect::History => Event::History(self.engine.run(HistoryQuery)?.entries),
-            Effect::Undo => Event::Undone(self.engine.run(UndoLast)?.undone),
+            Effect::History => Event::History(Ledger::new(&self.engine).history()?.entries),
+            Effect::Undo => Event::Undone(Ledger::new(&self.engine).undo()?.undone),
             // Planned above; the loop runs `Edit` itself; `Touched` is
             // handled before anything is answered.
             Effect::Plan { .. } | Effect::Edit { .. } | Effect::Touched => {
@@ -244,6 +249,9 @@ mod tests {
             inbox.recv().unwrap(),
             Event::Applied { id: 1, .. }
         ));
-        assert_eq!(runner.engine.run(HistoryQuery).unwrap().entries[0].id, 1);
+        assert_eq!(
+            Ledger::new(&runner.engine).history().unwrap().entries[0].id,
+            1
+        );
     }
 }

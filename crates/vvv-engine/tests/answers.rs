@@ -27,11 +27,11 @@ fn engine() -> Engine {
 
 #[test]
 fn outline_lists_declarations_with_addresses_and_reach() {
-    let outline = engine()
-        .run(OutlineQuery {
-            path: RelPath::from("a/x.p"),
-        })
-        .unwrap();
+    let outline = OutlineQuery {
+        path: RelPath::from("a/x.p"),
+    }
+    .execute(&engine())
+    .unwrap();
     assert_eq!(outline.path, RelPath::from("a/x.p"));
     let names: Vec<(&str, Option<&Address>, Option<&Reach>)> = outline
         .items
@@ -60,16 +60,17 @@ fn outline_lists_declarations_with_addresses_and_reach() {
         "extent starts at the item"
     );
     assert!(matches!(
-        engine().run(OutlineQuery {
+        OutlineQuery {
             path: RelPath::from("notes.txt")
-        }),
+        }
+        .execute(&engine()),
         Err(EngineError::NoLanguage(_))
     ));
 }
 
 #[test]
 fn references_are_renames_evidence_without_a_plan() {
-    let refs = engine().run(ReferencesQuery::new("foo")).unwrap();
+    let refs = ReferencesQuery::new("foo").execute(&engine()).unwrap();
     assert_eq!(refs.declarations.len(), 1);
     let by_file: Vec<(String, Confidence)> = refs
         .occurrences
@@ -91,33 +92,33 @@ fn references_are_renames_evidence_without_a_plan() {
 
 #[test]
 fn locate_names_the_site_and_the_import_to_write() {
-    let found = engine()
-        .run(WhereQuery {
-            name: "foo".to_owned(),
-            from: Some(RelPath::from("lib.p")),
-        })
-        .unwrap();
+    let found = WhereQuery {
+        name: "foo".to_owned(),
+        from: Some(RelPath::from("lib.p")),
+    }
+    .execute(&engine())
+    .unwrap();
     assert_eq!(found.sites.len(), 1);
     let site = &found.sites[0];
     assert_eq!(site.declaration.path, RelPath::from("a/x.p"));
     assert_eq!(site.address, Some(Address::new("ws", ["a", "x.p", "foo"])));
     assert_eq!(site.import.as_deref(), Some("use a/x.p/foo"));
-    let without_from = engine()
-        .run(WhereQuery {
-            name: "foo".to_owned(),
-            from: None,
-        })
-        .unwrap();
+    let without_from = WhereQuery {
+        name: "foo".to_owned(),
+        from: None,
+    }
+    .execute(&engine())
+    .unwrap();
     assert_eq!(without_from.sites[0].import, None, "no file to write it in");
 }
 
 #[test]
 fn deps_go_both_ways() {
-    let deps = engine()
-        .run(DepsQuery {
-            path: RelPath::from("a/x.p"),
-        })
-        .unwrap();
+    let deps = DepsQuery {
+        path: RelPath::from("a/x.p"),
+    }
+    .execute(&engine())
+    .unwrap();
     assert!(deps.imports.is_empty(), "x.p imports nothing");
     let importers: Vec<(String, String)> = deps
         .importers
@@ -132,11 +133,11 @@ fn deps_go_both_ways() {
         ]
     );
 
-    let lib = engine()
-        .run(DepsQuery {
-            path: RelPath::from("lib.p"),
-        })
-        .unwrap();
+    let lib = DepsQuery {
+        path: RelPath::from("lib.p"),
+    }
+    .execute(&engine())
+    .unwrap();
     let imports: Vec<(String, Option<RelPath>)> = lib
         .imports
         .iter()
@@ -154,23 +155,23 @@ fn deps_go_both_ways() {
 #[test]
 fn explain_finds_the_enclosing_declaration_and_its_importers() {
     // Offset 12 in "def foo\nfoo foo\n\ndef bar\nbar" is the second `foo`.
-    let explained = engine()
-        .run(ExplainQuery {
-            path: "a/x.p".into(),
-            position: Position::new(1, 4),
-        })
-        .unwrap();
+    let explained = ExplainQuery {
+        path: "a/x.p".into(),
+        position: Position::new(1, 4),
+    }
+    .execute(&engine())
+    .unwrap();
     assert_eq!(
         explained.symbol.as_ref().map(|s| s.name.as_str()),
         None,
         "a plain token has no enclosing extent"
     );
-    let on_decl = engine()
-        .run(ExplainQuery {
-            path: "a/x.p".into(),
-            position: Position::new(0, 5),
-        })
-        .unwrap();
+    let on_decl = ExplainQuery {
+        path: "a/x.p".into(),
+        position: Position::new(0, 5),
+    }
+    .execute(&engine())
+    .unwrap();
     assert_eq!(
         on_decl.symbol.as_ref().map(|s| s.name.as_str()),
         Some("foo")
@@ -185,10 +186,11 @@ fn explain_finds_the_enclosing_declaration_and_its_importers() {
         [RelPath::from("b/y.p"), RelPath::from("lib.p")]
     );
     assert!(matches!(
-        engine().run(ExplainQuery {
+        ExplainQuery {
             path: "a/x.p".into(),
             position: Position::new(40, 0),
-        }),
+        }
+        .execute(&engine()),
         Err(EngineError::NoSuchPosition { .. })
     ));
 }

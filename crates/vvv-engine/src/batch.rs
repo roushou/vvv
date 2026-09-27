@@ -3,7 +3,6 @@
 //! all are applied in order as one transaction with one receipt — one
 //! preview, one apply, one undo.
 
-use crate::command::{Command, Context};
 use crate::{
     Batch, BatchIntent, EngineError, FileChange, FilePreview, Intent, Planned, Receipt, VfsError,
 };
@@ -15,7 +14,8 @@ use crate::{
 impl BatchIntent {
     /// Plan without writing files.
     pub fn plan(self, engine: &crate::Engine) -> Result<Planned<Batch>, EngineError> {
-        engine.run(self)
+        let _operation = engine.operation();
+        self.plan_in(engine)
     }
 
     pub(crate) fn plan_in(self, engine: &crate::Engine) -> Result<Planned<Batch>, EngineError> {
@@ -25,7 +25,9 @@ impl BatchIntent {
         let mut notices = Vec::new();
         let mut receipt: Option<Receipt> = None;
         for intent in &self.intents {
-            let planned = engine.run(intent.clone())?;
+            let planned = engine
+                .run(intent.clone().into_request(false))?
+                .into_preview()?;
             notices.extend_from_slice(planned.notices());
             for plan in planned.into_plans() {
                 let applied = plan.clone().apply(&staging)?;
@@ -72,14 +74,5 @@ impl BatchIntent {
             steps,
             preview,
         ))
-    }
-}
-
-// Temporary adapter while callers migrate to typed capability methods.
-impl Command for BatchIntent {
-    type Output = Planned<Batch>;
-
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.plan_in(cx.engine)
     }
 }

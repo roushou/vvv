@@ -27,24 +27,25 @@ fn engine() -> Engine {
 }
 
 fn read(engine: &Engine, path: &str) -> String {
-    engine
-        .run(FileQuery {
-            path: RelPath::from(path),
-        })
-        .unwrap()
-        .text
+    FileQuery {
+        path: RelPath::from(path),
+    }
+    .execute(engine)
+    .unwrap()
+    .text
 }
 
 #[test]
 fn renames_declaration_and_references_in_declaring_language_only() {
     let engine = engine();
-    let rename = engine
-        .run(RenameIntent::new("foo", "qux").in_language("one"))
+    let rename = RenameIntent::new("foo", "qux")
+        .in_language("one")
+        .plan(&engine)
         .unwrap();
     assert_eq!(rename.declarations.len(), 1);
     assert_eq!(rename.occurrences.len(), 4);
 
-    engine.run(Apply(rename)).unwrap();
+    Apply(rename).apply(&engine).unwrap();
     assert_eq!(read(&engine, "a.one"), "def qux\nqux() foo_bar qux");
     assert_eq!(read(&engine, "b.one"), "call qux");
     assert_eq!(
@@ -57,7 +58,7 @@ fn renames_declaration_and_references_in_declaring_language_only() {
 #[test]
 fn without_language_every_declaring_language_is_renamed() {
     let engine = engine();
-    let rename = engine.run(RenameIntent::new("foo", "qux")).unwrap();
+    let rename = RenameIntent::new("foo", "qux").plan(&engine).unwrap();
     assert_eq!(rename.declarations.len(), 2);
     assert_eq!(rename.occurrences.len(), 6);
 }
@@ -77,14 +78,15 @@ fn ambiguity_is_judged_per_language() {
             .with(Fake::new("one", &["one"]))
             .with(Fake::new("two", &["two"])),
     );
-    let err = engine.run(RenameIntent::new("foo", "qux")).unwrap_err();
+    let err = RenameIntent::new("foo", "qux").plan(&engine).unwrap_err();
     assert!(
         matches!(&err, EngineError::AmbiguousSymbol { declarations, .. } if declarations.len() == 2),
         "{err}"
     );
 
-    let rename = engine
-        .run(RenameIntent::new("foo", "qux").declared_in("a.one"))
+    let rename = RenameIntent::new("foo", "qux")
+        .declared_in("a.one")
+        .plan(&engine)
         .unwrap();
     let touched: Vec<&Path> = rename.files.iter().map(|f| f.path.as_path()).collect();
     assert_eq!(
@@ -97,20 +99,19 @@ fn ambiguity_is_judged_per_language() {
 #[test]
 fn selection_limits_occurrences() {
     let engine = engine();
-    let all = engine
-        .run(RenameIntent::new("foo", "qux").in_language("one"))
+    let all = RenameIntent::new("foo", "qux")
+        .in_language("one")
+        .plan(&engine)
         .unwrap();
     let only_b = all
         .occurrences
         .iter()
         .find(|o| o.m.path == Path::new("b.one"))
         .unwrap();
-    let rename = engine
-        .run(
-            RenameIntent::new("foo", "qux")
-                .in_language("one")
-                .selecting(Selection::ids([only_b.m.id.clone()])),
-        )
+    let rename = RenameIntent::new("foo", "qux")
+        .in_language("one")
+        .selecting(Selection::ids([only_b.m.id.clone()]))
+        .plan(&engine)
         .unwrap();
     assert_eq!(rename.files.len(), 1);
     assert_eq!(rename.preview()[0].after, "call qux");
@@ -118,8 +119,9 @@ fn selection_limits_occurrences() {
 
 #[test]
 fn missing_declaration_is_an_error() {
-    let err = engine()
-        .run(RenameIntent::new("nope", "x").of_symbol(SymbolKind::Struct))
+    let err = RenameIntent::new("nope", "x")
+        .of_symbol(SymbolKind::Struct)
+        .plan(&engine())
         .unwrap_err();
     assert!(matches!(err, EngineError::NoSuchSymbol { .. }));
     assert_eq!(err.to_string(), "no struct named `nope`");
@@ -152,8 +154,9 @@ mod scope {
     }
 
     fn confidences(engine: &Engine, intent: &RenameIntent) -> Vec<(String, Confidence)> {
-        engine
-            .run(intent.clone())
+        intent
+            .clone()
+            .plan(engine)
             .unwrap()
             .occurrences
             .iter()
@@ -163,7 +166,7 @@ mod scope {
 
     #[test]
     fn ambiguous_without_declared_in() {
-        let err = engine().run(RenameIntent::new("foo", "bar")).unwrap_err();
+        let err = RenameIntent::new("foo", "bar").plan(&engine()).unwrap_err();
         assert!(
             matches!(&err, EngineError::AmbiguousSymbol { declarations, .. } if declarations.len() == 2)
         );
@@ -191,7 +194,7 @@ mod scope {
                 ("d.p".to_owned(), Other),
             ]
         );
-        let rename = engine.run(intent.clone()).unwrap();
+        let rename = intent.clone().plan(&engine).unwrap();
         let touched: Vec<&Path> = rename.files.iter().map(|f| f.path.as_path()).collect();
         assert_eq!(
             touched,
@@ -226,8 +229,9 @@ mod scope {
                 ("c.p".to_owned(), Other), // Self::foo, judged as bare
             ]
         );
-        let reasons: Vec<Reason> = engine
-            .run(intent.clone())
+        let reasons: Vec<Reason> = intent
+            .clone()
+            .plan(&engine)
             .unwrap()
             .occurrences
             .iter()
@@ -279,7 +283,7 @@ mod scope {
             Workspace::new("/ws", Arc::new(vfs)),
             Languages::new().with(Fake::default()),
         );
-        let rename = engine.run(RenameIntent::new("foo", "bar")).unwrap();
+        let rename = RenameIntent::new("foo", "bar").plan(&engine).unwrap();
         assert_eq!(
             rename
                 .occurrences
@@ -316,8 +320,9 @@ mod reexports {
             Workspace::new("/ws", Arc::new(vfs)),
             Languages::new().with(Fake::default()),
         );
-        let rename = engine
-            .run(RenameIntent::new("foo", "bar").declared_in("a/x.p"))
+        let rename = RenameIntent::new("foo", "bar")
+            .declared_in("a/x.p")
+            .plan(&engine)
             .unwrap();
         let by_file: Vec<(String, Confidence, Reason)> = rename
             .occurrences

@@ -43,8 +43,9 @@ fn engine(oracle: Option<Table>) -> Engine {
 }
 
 fn verdicts(engine: &Engine) -> Vec<(String, Confidence, Reason)> {
-    engine
-        .run(ReferencesQuery::new("foo").declared_in("a.p"))
+    ReferencesQuery::new("foo")
+        .declared_in("a.p")
+        .execute(engine)
         .unwrap()
         .occurrences
         .iter()
@@ -113,7 +114,7 @@ fn an_oracle_is_not_asked_about_the_resolved() {
         Languages::new().with(Fake::default()),
     )
     .with_oracle(Arc::new(Loud));
-    let refs = engine.run(ReferencesQuery::new("foo")).unwrap();
+    let refs = ReferencesQuery::new("foo").execute(&engine).unwrap();
     assert!(
         refs.occurrences
             .iter()

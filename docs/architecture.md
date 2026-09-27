@@ -81,57 +81,61 @@ one. With no features the crate is just the searcher and has no tests.
 `Engine::new(workspace, languages)` — `Workspace::disk(root)` for the binary and the
 registry from its composition root (`vvv-rs`'s `languages.rs`), a `MemoryVfs` and a fake
 language for tests; `with_retention`, and `with_oracle(Arc<dyn Oracle>)` for a host that has a
-build or a language server to ask — and one entry point, `Engine::run(command)`. An engine runs commands and
-nothing else: it excludes concurrent operations across clones, builds a temporary
-`Context` (engine and workspace), and lets the capability answer. A capability
-acquires the graph only when its question needs the tree. A **`Command`** is a request as
-data — one of the protocol's intents or queries — with `type Output` and
-`fn run(self, &mut Context) -> Result<Output>`, implemented in the module that holds
-its components (`impl Command for RenameIntent` in `capabilities/rename.rs`, `for MoveIntent` in
-`capabilities/moves/file.rs`, `for MoveSymbolIntent` in `capabilities/moves/symbol.rs`, the per-file queries in `answers.rs`, the whole-tree ones in
-`understanding.rs`). A mutation answers with `Planned<T>` —
-the answer as a preview (`applied: false`, `files` filled) with the plan(s) kept
-beside it; `Intent` itself is a command answering `Planned<MutationAnswer>`, so a batch step,
-the picker or `serve` plans any intent without matching its variants. `Apply` writes,
-records history and returns an immutable `Applied<T>` completion with a required
-history id and the result marked applied — it needs the
-`Mutation` capability, sealed to the five mutation payloads and their closed
-`MutationAnswer` sum. Queries cannot carry a `Planned` or reach `Apply`. Typed plans
-wrap their payload with `into_mutation`; there is no arbitrary result mapping or
-mutable result access. `Planned` captures its history `Intent` when constructed,
-independently of its presentation data, and `Apply` records that captured intent.
-Capabilities also expose typed methods: mutation intents and `RewriteOf` have
-`plan(&Engine)`, queries have `execute(&Engine)`, and `Apply<T>` has
-`apply(&Engine)`. `SearchQuery` wraps the plugin's `Query` without changing its
-serialization. `Ledger::new(&Engine)` owns access to history and undo. These
-entry points keep concrete outputs (`Planned<Rename>`, `Search`, `Applied<T>`)
-without passing through `Answer`; temporary `Command` adapters retain the current
-runner lifecycle while clients migrate.
+build or a language server to ask — and one wire dispatcher, `Engine::run(Request)`.
+The dispatcher holds a shared operation guard and delegates to capability-owned
+execution bodies. It acquires the graph only for source-tree questions and
+planning. History, undo, retained-plan apply, and file preview do not refresh the
+tree. The engine owns orchestration, not capability behavior.
 
-Mutation payloads own a `MutationState`: `Preview` or `Applied { history_id }`,
-serialized as the existing `applied` and `history_id` fields. Contradictory states
-are rejected during deserialization.
-`MutationAnswer` becomes an `Answer` only at the reporting boundary; `UndoLast` and
-`HistoryQuery` are commands too. `FileQuery` gives an interface a file with its highlights; `root()` and
-`language_ids()` are the two facts about the session. Nothing about a command lives
-on the engine: a new capability is a request type and its implementation. A
-capability module may own its request and answer data, command implementation,
-and report composition together. `protocol/` keeps shared wire types and the
-central `Request`/`Answer` contract, and re-exports capability-owned wire types.
-The data and serialization code do not access `Workspace`. Graph-dependent queries
-and planning bring `Graph` up to date before asking it questions. History, undo,
-retained-plan apply, and file preview do not refresh the tree. One shared operation
-mutex spans planning, application, history save, and recovery; it is acquired before
-the graph mutex. Staging engines have independent operation locks. Apply and undo
-mark shared dirty state before attempting file effects, including unsuccessful
-operations. External `Engine::touched` marks that state without acquiring the graph;
-the next graph access consumes it. This expires the trusted walk without clearing
-cached candidates: a session still reads contents only when stamps changed. A touch
-arriving during refresh remains pending for the next access. Each
-`Candidate` (a file with its language) answers `find`, `references` and `imports` for
-itself, and parses once however many questions it is asked: its `Facts` are computed
-on first use and shared. Per-file work runs in parallel with `rayon` and collects in
-path order.
+Typed clients call `SearchQuery::execute(&Engine)`, the other queries' `execute`,
+mutation intents' and `RewriteOf`'s `plan`, `Apply<T>::apply`, or
+`Ledger::new(&Engine).history()` / `.undo()`. These keep concrete outputs such as
+`Search`, `Planned<Rename>`, and `Applied<Rename>`. `SearchQuery` wraps the plugin's
+`Query` without changing its serialization. Execution bodies take the graph,
+workspace, or registry they use explicitly; there is no `Command` trait or engine
+`Context`. Public typed methods acquire the same operation guard as the dispatcher;
+internal bodies do not reacquire it.
+
+`Engine::run` returns an in-process `Execution`: `Completed(Answer)`,
+`Preview(Planned<MutationAnswer>)`, or `Applied(Applied<MutationAnswer>)`. Only
+mutation previews retain executable plans. `into_preview` and `into_applied`
+reject a mismatched kind with a structured error; `into_answer` consumes the handle
+at a reporting or wire boundary. `Execution` is not serialized. The CLI and serve
+convert it to the existing `Answer`; the picker retains previews and applied
+completions until it has extracted what its view needs.
+
+A mutation answers with `Planned<T>`: immutable presentation data beside plans
+and the captured history intent. `Apply` requires the sealed `Mutation` capability,
+writes the plans, records history, and returns `Applied<T>` with a required history
+id. Queries cannot carry `Planned` or reach `Apply`. Typed plans and completions can
+widen to the closed `MutationAnswer` sum without losing their handles; they become
+`Answer` only at the reporting boundary. There is no arbitrary result mapping or
+mutable result access. Mutation payloads own a `MutationState`: `Preview` or
+`Applied { history_id }`, serialized as the existing `applied` and `history_id`
+fields. Contradictory states are rejected during deserialization.
+
+`Intent` remains a mutation description recorded by history and composed by batch.
+Its `into_request(apply)` conversion adds execution policy as data; Intent does not
+execute or dispatch capabilities. A batch runs preview requests on an independent
+staging engine, extracts their executable previews, and applies the retained plans
+to the overlay. Real writes and history still belong to one outer apply. Rename
+contains the `ReferencesQuery` it asks, flattened on the wire.
+
+One operation mutex spans planning, application, history save, and recovery; it is
+acquired before the graph mutex. Engine clones share both locks and dirty state.
+Apply and undo mark dirty state before attempting file effects, including
+unsuccessful operations. External `Engine::touched` marks it without acquiring the
+graph; the next graph access consumes it. This expires the trusted walk without
+clearing cached candidates: a session reads contents only when stamps changed. A
+touch arriving during refresh remains pending for the next access.
+
+A capability module owns its request and answer data, typed execution, and report
+composition. `protocol/` keeps shared wire types and the central `Request`/`Answer`
+contract, and re-exports capability-owned wire types. Data and serialization code
+do not access `Workspace`. Each `Candidate` (a file with its language) answers
+`find`, `references`, and `imports` for itself, and parses once however many
+questions it is asked: its `Facts` are computed on first use and shared. Per-file
+work runs in parallel with `rayon` and collects in path order.
 
 The `Graph` (`graph/`) is what vvv knows about the tree and the questions commands ask
 of it. The store: every walked file, the loaded text and facts of every claimed one,
@@ -162,7 +166,7 @@ stamps what it loads (`Vfs::stamp`: mtime and size on disk, a version counter in
 memory) and on the next command re-reads only what changed; it still walks, so new and
 deleted files are seen — except within `trust` of the last walk, when it does not look
 at all: a burst of keystrokes walks a large tree once (the walk is the floor on a
-76k-file tree, ~230 ms), and the engine's own writes (`Apply`, `UndoLast`) or
+76k-file tree, ~230 ms), and the engine's own writes (`Apply`, `Ledger::undo`) or
 `Engine::touched()` (the TUI after an editor hand-off) end the trust at once.
 One command uses one graph however many questions it asks — a
 rename's declarations, its other declarations, its occurrences and its project all come
@@ -194,16 +198,16 @@ the language's `glob_marker` (`::*` in Rust) in the alias's own package or namin
 
 | command            | what it asks                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Query`            | `Graph::search`: `containing(literals)`, then each `Candidate::find(query)`, in parallel; declarations get their address from the namespace and move to the front                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `SearchQuery`      | `Graph::search`: `containing(literals)`, then each `Candidate::find(query)`, in parallel; declarations get their address from the namespace and move to the front                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
 | `RewriteIntent`    | `search`, `Selection::narrow`, one `Edit` per match from the `Template`, `Plan::new`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
 | `RenameIntent`     | declarations by name (narrowed by `declared_in`); per declaring language: a `Target` (module address + name, via the language's `Layout`) when one path-addressable declaration is meant — two refuse and ask for `declared_in` — then `Graph::containing(name)` and `Target::judge` on each file (each token judged by a `Scope` built from the file's imports; a token ending a path is judged by the path, or `?` when its head is unknown); default selection by confidence; `Selection::narrow`, one `Edit` per occurrence, `Plan::new`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 | `MoveIntent`       | validate paths and language, `Graph::namespace_of` (layout, surgery, project in one), compute the `MoveSet` (a file, or every file under a directory, plus the layout's companions such as Rust's `a.rs` ↔ `a/`), then `Rebase::rewrite` on sites from every `Graph::fragments(ns)` (re-render every import resolving under the old address, moved files' own imports from their new locations — each a snapshot-bound `FileRewrite`, converted to a `Change`), `Reachability::check` on the references it touched, a `Widen` per violation (an edit, or a notice across a package boundary), the surgery's side edits (`relocate`, told what the moved `mod` line needs), record every move, `Planned::of`                                                                                                                                                                                                                                                                                                                                                                |
 | `MoveSymbolIntent` | the graph establishes the situation — the `Extraction` (the declaration and its pieces; `impl` blocks are `Impl` symbols named after their type), both files parsed, `Graph::consumers` of the old address, `Graph::references` for the old file's remaining uses — then `SymbolMove` runs its operations over it, each appending to one `Change`: the old file's imports and siblings the text names become imports in the new file (siblings `Widen`ed if needed); `Site::partition` assigns source edges to moving and staying text before `Rebase` transforms and renders each selected edge once in its final context, and rewrites other consumers from their own sites; a bare use left in the old file imports it back; an import of it in the new file is deleted; the declaration is `Widen`ed for consumers its reach at the new module no longer admits; last, the cut (`Extraction::cuts`) and the paste (`Extraction::assemble`, which carries only edits computed for the moving site) at `Surgery::item_insertion`, imports at `Surgery::import_insertion` |
 | `BatchIntent`      | `Workspace::staged()` (an `Overlay` the real files never see); each intent planned by an engine over it and applied to it, receipts chained with `Receipt::then`; the preview is every touched file now against the staging tree at its final path                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| `Request`          | the command it names, run against the same context, its result as the `Answer` of that name; a mutation with `apply` runs the intent then `Apply` on what it planned (`request.rs`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| `Request`          | one match in `Engine::run`, delegating to typed capability bodies and returning `Execution`; mutation previews retain plans, applied requests commit them through `Apply`; `into_answer` consumes the result at the presentation boundary                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
 | `Apply(planned)`   | validate the history snapshot and next id, then apply every plan through one `Transaction`; retain effects and receipts until saving the ledger succeeds; a file or ledger failure recovers the full before-state; the result comes back with `applied` and `history_id` set                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| `UndoLast`         | one validated history snapshot; `Receipt::undo_in` checks fingerprints, restores files and cleans owned empty directories through one `Transaction`; save the snapshot without its newest entry before releasing recovery effects; on failure, recover the pre-undo state; answers `Undo` with what was restored                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| `HistoryQuery`     | `History::entries`, each record's entry                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| `Ledger::undo`     | one validated history snapshot; `Receipt::undo_in` checks fingerprints, restores files and cleans owned empty directories through one `Transaction`; save the snapshot without its newest entry before releasing recovery effects; on failure, recover the pre-undo state; answers `Undo` with what was restored                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| `Ledger::history`  | `Ledger` reads a validated snapshot and returns each record's entry                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `SurfaceQuery`     | every fragment's declarations in the package; each public one, or one `aliases_of` offers elsewhere, listed with its aliases and how many other fragments import any of its addresses                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `ImpactQuery`      | `references` for the declaration, `aliases_of` for its addresses, then breadth first over fragments: a module whose imports lead under a frontier address joins the next ring, once, at the depth it is first reached                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `DeadQuery`        | for each placed declaration (a type and its impls once), `references(name declared_in file)`: no `Resolved` token beyond its own name spans means unreferenced, `Unresolved` tokens are counted as `unsure`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -339,7 +343,7 @@ Package `vvv-rs` (the bare name is taken on crates.io), binary `vvv`.
 `Cli` (global `-C`, `--json`, `--color`) → `Context { engine, format }` (`Engine::new`)
 → `cli::commands::*Cmd` (`clap::Args`; fields are the command's own inputs;
 `run(self, &Context)`) → a `Reporter` (`Human` or `Json`). A command builds a
-`Request`; `Context::run` runs it and hands the `Answer` to the reporter: three lines,
+`Request`; `Context::run` runs it, consumes `Execution` into `Answer`, and hands it to the reporter: three lines,
 no logic. Applying is the `Request`'s job (`apply: true`), the same path `serve` uses
 — the per-command `--apply` dance is not repeated. `vvv serve`
 is the exception that has none of its own: it reads a `Call` per line of stdin, runs
@@ -621,13 +625,14 @@ and position) so the numbers a preview prints are the numbers `--select` reads.
 
 ### Add a mutating command
 
-1. Put the intent, answer, `impl Mutation`, `impl Command`, and report composition
+1. Put the intent, answer, `impl Mutation`, typed `plan`, and report composition
    together in one engine capability module. Keep the data and serialization code
    independent of `Workspace`. Put reusable data in `protocol/`; re-export the
    capability's wire types there and add its variants to `Request` and `Answer`.
 2. Keep the capability's components beside it (a noun with state that answers
-   questions — see `Rebase`, `Target`). Its `run` asks the graph, builds a `Change`,
-   and ends in `Planned::of(cx.workspace, change, |bound, files| Cmd { … })`.
+   questions — see `Rebase`, `Target`). Its execution body asks the graph, builds a `Change`,
+   and ends in `Planned::of(workspace, change, intent, |bound, files| Cmd { … })`.
+   Add its Request routing to `Engine::run`; keep its behavior on its owning type.
    Test with the fake language in `vvv-engine/tests/`.
 3. `crates/vvv/src/cli/commands/<cmd>.rs`: `clap::Args` struct, `run(self, &Context)`
    (build a `Request` and `ctx.run(request)`); add it to `Commands`. The answer's

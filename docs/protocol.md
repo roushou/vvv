@@ -511,3 +511,8 @@ removed during undo. During failed undo, expected states describe the pre-undo
 Successful answer shapes are unchanged; the envelope schema remains 1.
 Directory ownership is kept in internal history receipts, with an empty default
 for receipts written by older versions; it is not a new field in client answers.
+
+The Rust library dispatcher returns an in-process `Execution` so a mutation preview
+can retain its executable plan and an applied completion can retain its committed
+history id. Interfaces consume `Execution::into_answer()` before serializing the
+existing `Answer`. These handles do not change the JSON request or reply shapes.

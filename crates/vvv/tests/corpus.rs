@@ -452,7 +452,7 @@ fn apply_is_preview(corpus: &Corpus) {
     for request in (corpus.mutations)() {
         let (vfs, engine) = corpus.engine();
         let before = snapshot(&vfs);
-        let preview = engine.run(request.clone()).unwrap();
+        let preview = engine.run(request.clone()).unwrap().into_answer();
         assert!(
             !files(&preview).is_empty(),
             "{request:?}: previews something"
@@ -606,19 +606,21 @@ fn symbol_moves_preserve_references_through_module_aliases() {
     use vvv_engine::{Confidence, ReferencesQuery};
 
     let (vfs, engine) = RUST_MOVES.engine();
-    let before = engine
-        .run(ReferencesQuery::new("Foo").declared_in("src/a.rs"))
+    let before = ReferencesQuery::new("Foo")
+        .declared_in("src/a.rs")
+        .execute(&engine)
         .unwrap();
     assert!(before.occurrences.iter().any(|occurrence| {
         occurrence.m.path == Path::new("src/c.rs") && occurrence.confidence == Confidence::Resolved
     }));
 
-    let planned = engine
-        .run(MoveSymbolIntent::new("Foo", "src/a.rs", "src/b.rs"))
+    let planned = MoveSymbolIntent::new("Foo", "src/a.rs", "src/b.rs")
+        .plan(&engine)
         .unwrap();
-    engine.run(vvv_engine::Apply(planned)).unwrap();
-    let after = engine
-        .run(ReferencesQuery::new("Foo").declared_in("src/b.rs"))
+    vvv_engine::Apply(planned).apply(&engine).unwrap();
+    let after = ReferencesQuery::new("Foo")
+        .declared_in("src/b.rs")
+        .execute(&engine)
         .unwrap();
     let consumers: Vec<_> = after
         .occurrences
@@ -653,13 +655,14 @@ fn symbol_moves_preserve_self_references() {
     use vvv_engine::{Confidence, ReferencesQuery};
 
     let (vfs, engine) = RUST_MOVES.engine();
-    let planned = engine
-        .run(MoveSymbolIntent::new("foo", "src/a.rs", "src/b.rs"))
+    let planned = MoveSymbolIntent::new("foo", "src/a.rs", "src/b.rs")
+        .plan(&engine)
         .expect("a self-reference must be movable without conflicting edits");
-    engine.run(vvv_engine::Apply(planned)).unwrap();
+    vvv_engine::Apply(planned).apply(&engine).unwrap();
 
-    let references = engine
-        .run(ReferencesQuery::new("foo").declared_in("src/b.rs"))
+    let references = ReferencesQuery::new("foo")
+        .declared_in("src/b.rs")
+        .execute(&engine)
         .unwrap();
     let moved: Vec<_> = references
         .occurrences
@@ -713,15 +716,16 @@ fn rust_moves_batch_is_composition() {
 fn file_moves_preserve_references_through_module_aliases() {
     use vvv_engine::{Confidence, ReferencesQuery};
     let (vfs, engine) = RUST_MOVES.engine();
-    engine
-        .run(vvv_engine::Apply(
-            engine
-                .run(MoveIntent::new("src/a/sub.rs", "src/b/sub.rs"))
-                .unwrap(),
-        ))
-        .unwrap();
-    let after = engine
-        .run(ReferencesQuery::new("Nested").declared_in("src/b/sub.rs"))
+    vvv_engine::Apply(
+        MoveIntent::new("src/a/sub.rs", "src/b/sub.rs")
+            .plan(&engine)
+            .unwrap(),
+    )
+    .apply(&engine)
+    .unwrap();
+    let after = ReferencesQuery::new("Nested")
+        .declared_in("src/b/sub.rs")
+        .execute(&engine)
         .unwrap();
     assert!(
         after
@@ -740,11 +744,13 @@ fn file_moves_preserve_references_through_module_aliases() {
 #[test]
 fn module_moves_keep_alias_spellings_when_the_binding_is_rebased() {
     let (vfs, engine) = RUST_MOVES.engine();
-    engine
-        .run(vvv_engine::Apply(
-            engine.run(MoveIntent::new("src/a.rs", "src/d.rs")).unwrap(),
-        ))
-        .unwrap();
+    vvv_engine::Apply(
+        MoveIntent::new("src/a.rs", "src/d.rs")
+            .plan(&engine)
+            .unwrap(),
+    )
+    .apply(&engine)
+    .unwrap();
     let consumer = vfs.read(Path::new("/ws/src/c.rs")).unwrap();
     assert!(consumer.contains("use crate::d as alias;"));
     assert!(consumer.contains("alias::Foo"));
@@ -756,18 +762,19 @@ fn module_moves_keep_alias_spellings_when_the_binding_is_rebased() {
 fn moved_declarations_provision_imports_from_resolved_edges() {
     use vvv_engine::{Confidence, ReferencesQuery};
     let (vfs, engine) = RUST_MOVES.engine();
-    engine
-        .run(vvv_engine::Apply(
-            engine
-                .run(MoveSymbolIntent::new("moved", "src/origin.rs", "src/b.rs"))
-                .unwrap(),
-        ))
-        .unwrap();
+    vvv_engine::Apply(
+        MoveSymbolIntent::new("moved", "src/origin.rs", "src/b.rs")
+            .plan(&engine)
+            .unwrap(),
+    )
+    .apply(&engine)
+    .unwrap();
     let dest = vfs.read(Path::new("/ws/src/b.rs")).unwrap();
     assert!(dest.contains("use crate::dependency::Dep;"));
     assert!(!dest.contains("use alias::Dep;"));
-    let after = engine
-        .run(ReferencesQuery::new("Dep").declared_in("src/dependency.rs"))
+    let after = ReferencesQuery::new("Dep")
+        .declared_in("src/dependency.rs")
+        .execute(&engine)
         .unwrap();
     assert!(
         after
@@ -781,17 +788,13 @@ fn moved_declarations_provision_imports_from_resolved_edges() {
 #[test]
 fn destination_cleanup_recognizes_imports_through_module_aliases() {
     let (vfs, engine) = RUST_MOVES.engine();
-    engine
-        .run(vvv_engine::Apply(
-            engine
-                .run(MoveSymbolIntent::new(
-                    "needed",
-                    "src/origin.rs",
-                    "src/cleanup.rs",
-                ))
-                .unwrap(),
-        ))
-        .unwrap();
+    vvv_engine::Apply(
+        MoveSymbolIntent::new("needed", "src/origin.rs", "src/cleanup.rs")
+            .plan(&engine)
+            .unwrap(),
+    )
+    .apply(&engine)
+    .unwrap();
     let dest = vfs.read(Path::new("/ws/src/cleanup.rs")).unwrap();
     assert!(!dest.contains("use alias::needed;"));
     assert!(dest.contains("pub fn needed() {}"));
@@ -816,20 +819,21 @@ fn preview_insertions_keep_their_wire_order() {
 fn grouped_alias_prefixes_keep_their_resolved_meaning() {
     use vvv_engine::{Confidence, ReferencesQuery};
     let (vfs, engine) = RUST_MOVES.engine();
-    engine
-        .run(vvv_engine::Apply(
-            engine
-                .run(MoveIntent::new("src/a/sub.rs", "src/b/sub.rs"))
-                .unwrap(),
-        ))
-        .unwrap();
+    vvv_engine::Apply(
+        MoveIntent::new("src/a/sub.rs", "src/b/sub.rs")
+            .plan(&engine)
+            .unwrap(),
+    )
+    .apply(&engine)
+    .unwrap();
     let text = vfs.read(Path::new("/ws/src/grouped.rs")).unwrap();
     assert!(
         text.contains("use root::{b::sub::Nested, a::Foo};"),
         "{text}"
     );
-    let references = engine
-        .run(ReferencesQuery::new("Nested").declared_in("src/b/sub.rs"))
+    let references = ReferencesQuery::new("Nested")
+        .declared_in("src/b/sub.rs")
+        .execute(&engine)
         .unwrap();
     assert!(
         references.occurrences.iter().any(
@@ -843,17 +847,13 @@ fn grouped_alias_prefixes_keep_their_resolved_meaning() {
 fn moving_and_staying_paths_use_their_own_render_contexts() {
     use vvv_engine::{Confidence, ReferencesQuery};
     let (vfs, engine) = RUST_MOVES.engine();
-    engine
-        .run(vvv_engine::Apply(
-            engine
-                .run(MoveSymbolIntent::new(
-                    "recursive",
-                    "src/selfrefs.rs",
-                    "src/b.rs",
-                ))
-                .unwrap(),
-        ))
-        .unwrap();
+    vvv_engine::Apply(
+        MoveSymbolIntent::new("recursive", "src/selfrefs.rs", "src/b.rs")
+            .plan(&engine)
+            .unwrap(),
+    )
+    .apply(&engine)
+    .unwrap();
     let moved = vfs.read(Path::new("/ws/src/b.rs")).unwrap();
     assert!(moved.contains("self::recursive();"), "{moved}");
     assert!(moved.contains("crate::selfrefs::sibling();"), "{moved}");
@@ -863,8 +863,9 @@ fn moving_and_staying_paths_use_their_own_render_contexts() {
         source.contains("pub fn outside() { crate::b::recursive(); }"),
         "{source}"
     );
-    let references = engine
-        .run(ReferencesQuery::new("recursive").declared_in("src/b.rs"))
+    let references = ReferencesQuery::new("recursive")
+        .declared_in("src/b.rs")
+        .execute(&engine)
         .unwrap();
     assert!(
         references
@@ -881,17 +882,13 @@ fn moving_and_staying_paths_use_their_own_render_contexts() {
 fn companion_paths_travel_with_the_declaration_and_keep_their_targets() {
     use vvv_engine::{Confidence, ReferencesQuery};
     let (vfs, engine) = RUST_MOVES.engine();
-    engine
-        .run(vvv_engine::Apply(
-            engine
-                .run(MoveSymbolIntent::new(
-                    "Bundle",
-                    "src/companions.rs",
-                    "src/b.rs",
-                ))
-                .unwrap(),
-        ))
-        .unwrap();
+    vvv_engine::Apply(
+        MoveSymbolIntent::new("Bundle", "src/companions.rs", "src/b.rs")
+            .plan(&engine)
+            .unwrap(),
+    )
+    .apply(&engine)
+    .unwrap();
     let moved = vfs.read(Path::new("/ws/src/b.rs")).unwrap();
     assert!(moved.contains("pub struct Bundle;"));
     assert!(moved.contains("impl Bundle"));
@@ -899,8 +896,9 @@ fn companion_paths_travel_with_the_declaration_and_keep_their_targets() {
     assert!(moved.contains("crate::companions::helper();"));
     let source = vfs.read(Path::new("/ws/src/companions.rs")).unwrap();
     assert_eq!(source.trim(), "pub fn helper() {}");
-    let references = engine
-        .run(ReferencesQuery::new("Bundle").declared_in("src/b.rs"))
+    let references = ReferencesQuery::new("Bundle")
+        .declared_in("src/b.rs")
+        .execute(&engine)
         .unwrap();
     assert!(references.occurrences.len() >= 3);
     assert!(
@@ -927,14 +925,14 @@ impl ResolutionFixture {
     }
 
     fn import_at(&self, path: &str, position: vvv_engine::Position) -> vvv_engine::Dep {
-        self.engine
-            .run(vvv_engine::ExplainQuery {
-                path: path.into(),
-                position,
-            })
-            .unwrap()
-            .import
-            .expect("the position is inside an import")
+        vvv_engine::ExplainQuery {
+            path: path.into(),
+            position,
+        }
+        .execute(&self.engine)
+        .unwrap()
+        .import
+        .expect("the position is inside an import")
     }
 }
 
@@ -1008,9 +1006,9 @@ fn same_file_alias_chains_agree_across_references_deps_and_explain() {
 
     let fixture = ResolutionFixture::new();
     for (name, line) in [("Foo", 4), ("child", 2)] {
-        let references = fixture
-            .engine
-            .run(ReferencesQuery::new(name).declared_in("src/a.rs"))
+        let references = ReferencesQuery::new(name)
+            .declared_in("src/a.rs")
+            .execute(&fixture.engine)
             .unwrap();
         let occurrence = references
             .occurrences
@@ -1023,12 +1021,11 @@ fn same_file_alias_chains_agree_across_references_deps_and_explain() {
             "{name} already resolves correctly"
         );
     }
-    let deps = fixture
-        .engine
-        .run(DepsQuery {
-            path: "src/chained.rs".into(),
-        })
-        .unwrap();
+    let deps = DepsQuery {
+        path: "src/chained.rs".into(),
+    }
+    .execute(&fixture.engine)
+    .unwrap();
     let leaf = deps
         .imports
         .iter()
@@ -1042,9 +1039,9 @@ fn same_file_alias_chains_agree_across_references_deps_and_explain() {
     );
     let explained = fixture.import_at("src/chained.rs", Position::new(2, 5));
     assert_eq!(explained.address, Some(expected));
-    let references = fixture
-        .engine
-        .run(ReferencesQuery::new("Child").declared_in("src/a/child.rs"))
+    let references = ReferencesQuery::new("Child")
+        .declared_in("src/a/child.rs")
+        .execute(&fixture.engine)
         .unwrap();
     let occurrence = references
         .occurrences
@@ -1065,12 +1062,11 @@ fn child_modules_follow_private_module_aliases_imported_from_their_parent() {
     use vvv_engine::{Address, Confidence, DepsQuery, Position, ReferencesQuery};
 
     let fixture = ResolutionFixture::new();
-    let deps = fixture
-        .engine
-        .run(DepsQuery {
-            path: "src/parent_context/nested.rs".into(),
-        })
-        .unwrap();
+    let deps = DepsQuery {
+        path: "src/parent_context/nested.rs".into(),
+    }
+    .execute(&fixture.engine)
+    .unwrap();
     let expected = Address::new("resolution_probe", ["a"]);
     assert_eq!(deps.imports[0].address, Some(expected.clone()));
     assert_eq!(
@@ -1079,9 +1075,9 @@ fn child_modules_follow_private_module_aliases_imported_from_their_parent() {
             .address,
         Some(expected)
     );
-    let references = fixture
-        .engine
-        .run(ReferencesQuery::new("Foo").declared_in("src/a.rs"))
+    let references = ReferencesQuery::new("Foo")
+        .declared_in("src/a.rs")
+        .execute(&fixture.engine)
         .unwrap();
     let occurrence = references
         .occurrences

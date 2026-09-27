@@ -5,7 +5,6 @@ use std::collections::{BTreeMap, btree_map::Entry};
 use vvv_core::{Edit, RelPath};
 
 use crate::change::Change;
-use crate::command::{Command, Context};
 use crate::graph::Graph;
 use crate::{Candidate, EngineError, Match, Planned, Rewrite, RewriteIntent, RewriteOf, Workspace};
 
@@ -13,7 +12,9 @@ use crate::{Candidate, EngineError, Match, Planned, Rewrite, RewriteIntent, Rewr
 impl RewriteIntent {
     /// Plan without writing files.
     pub fn plan(self, engine: &crate::Engine) -> Result<Planned<Rewrite>, EngineError> {
-        engine.run(self)
+        let _operation = engine.operation();
+        let mut graph = engine.graph()?;
+        self.plan_in(&mut graph, engine.workspace())
     }
 
     pub(crate) fn plan_in(
@@ -26,22 +27,14 @@ impl RewriteIntent {
     }
 }
 
-// Temporary adapter while callers migrate to typed capability methods.
-impl Command for RewriteIntent {
-    type Output = Planned<Rewrite>;
-
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let mut graph = cx.engine.graph()?;
-        self.plan_in(&mut graph, cx.workspace)
-    }
-}
-
 /// Retained matches are revalidated against their candidate snapshots before
 /// expansion. The intent's selection still narrows them.
 impl RewriteOf {
     /// Plan without writing files.
     pub fn plan(self, engine: &crate::Engine) -> Result<Planned<Rewrite>, EngineError> {
-        engine.run(self)
+        let _operation = engine.operation();
+        let mut graph = engine.graph()?;
+        self.plan_in(&mut graph, engine.workspace())
     }
 
     pub(crate) fn plan_in(
@@ -55,16 +48,6 @@ impl RewriteOf {
                 .validate_matches(&matched.intent.query, &file.matches)?;
         }
         matched.plan(workspace)
-    }
-}
-
-// Temporary adapter while callers migrate to typed capability methods.
-impl Command for RewriteOf {
-    type Output = Planned<Rewrite>;
-
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let mut graph = cx.engine.graph()?;
-        self.plan_in(&mut graph, cx.workspace)
     }
 }
 

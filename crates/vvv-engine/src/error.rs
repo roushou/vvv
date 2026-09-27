@@ -9,6 +9,11 @@ use crate::history::HistoryError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EngineError {
+    #[error("expected {expected} execution, got {actual}")]
+    ExecutionKind {
+        expected: crate::ExecutionKind,
+        actual: crate::ExecutionKind,
+    },
     #[error("{}: {source}", path.display())]
     Open {
         path: RelPath,
@@ -72,6 +77,7 @@ impl EngineError {
     /// The stable code a client branches on.
     pub fn code(&self) -> ErrorCode {
         match self {
+            Self::ExecutionKind { .. } => ErrorCode::BadRequest,
             Self::Open { .. } => ErrorCode::Io,
             Self::Vfs(e)
             | Self::History(HistoryError::Vfs(e))

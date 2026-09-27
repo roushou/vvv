@@ -28,6 +28,19 @@ pub enum Intent {
     Batch(BatchIntent),
 }
 
+impl Intent {
+    /// Add execution policy to a mutation description without executing it.
+    pub fn into_request(self, apply: bool) -> crate::Request {
+        match self {
+            Self::Rename(intent) => crate::Request::Rename { intent, apply },
+            Self::Move(intent) => crate::Request::Move { intent, apply },
+            Self::MoveSymbol(intent) => crate::Request::MoveSymbol { intent, apply },
+            Self::Rewrite(intent) => crate::Request::Rewrite { intent, apply },
+            Self::Batch(intent) => crate::Request::Batch { intent, apply },
+        }
+    }
+}
+
 impl From<BatchIntent> for Intent {
     fn from(i: BatchIntent) -> Self {
         Self::Batch(i)

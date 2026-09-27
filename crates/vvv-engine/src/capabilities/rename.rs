@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize};
 use vvv_core::{Edit, LanguageId, RelPath, SymbolKind};
 
 use crate::change::Change;
-use crate::command::{Command, Context};
 use crate::graph::Evidence;
 use crate::protocol::display::{Line, Role};
 use crate::protocol::vocabulary::{IntentLine, Plural};
@@ -91,7 +90,9 @@ impl Mutation for Rename {
 impl RenameIntent {
     /// Plan without writing files.
     pub fn plan(self, engine: &crate::Engine) -> Result<Planned<Rename>, EngineError> {
-        engine.run(self)
+        let _operation = engine.operation();
+        let mut graph = engine.graph()?;
+        self.plan_in(&mut graph, engine.workspace())
     }
 
     pub(crate) fn plan_in(
@@ -144,22 +145,14 @@ impl RenameIntent {
     }
 }
 
-// Temporary adapter while callers migrate to typed capability methods.
-impl Command for RenameIntent {
-    type Output = Planned<Rename>;
-
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let mut graph = cx.engine.graph()?;
-        self.plan_in(&mut graph, cx.workspace)
-    }
-}
-
 /// The declarations called `name` and every token spelling it, judged:
 /// what `rename` acts on, answered without a plan.
 impl ReferencesQuery {
     /// Answer with the concrete result of this query.
     pub fn execute(self, engine: &crate::Engine) -> Result<References, EngineError> {
-        engine.run(self)
+        let _operation = engine.operation();
+        let mut graph = engine.graph()?;
+        self.execute_in(&mut graph)
     }
 
     pub(crate) fn execute_in(
@@ -173,16 +166,6 @@ impl ReferencesQuery {
             declarations: evidence.declarations,
             occurrences: evidence.occurrences,
         })
-    }
-}
-
-// Temporary adapter while callers migrate to typed capability methods.
-impl Command for ReferencesQuery {
-    type Output = References;
-
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        let mut graph = cx.engine.graph()?;
-        self.execute_in(&mut graph)
     }
 }
 

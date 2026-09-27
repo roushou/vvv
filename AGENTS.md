@@ -56,14 +56,14 @@ docs/          architecture, guide, protocol, report
 ## Rules
 
 - **An engine runs commands.** `Engine` has `new`, `run`, `root` and
-  `language_ids`. A capability may own its request and answer data, `impl Command`,
+  `language_ids`. A capability may own its request and answer data, typed execution,
   and report composition in one module. `protocol/` owns shared wire types and
   the central `Request`/`Answer` contract, and re-exports capability-owned wire
   types. Keep the data and serialization part independent of `Workspace`; only
   execution may read the tree. A new method on `Engine` is the wrong place for
   a capability.
 - **Library first.** Behaviour lives in `vvv-engine`. `crates/vvv` builds an intent,
-  runs it, runs `Apply` if asked, hands the result to a `Reporter`. Nothing else —
+  runs its Request (including apply policy), hands the result to a `Reporter`. Nothing else —
   no `format!` of user-facing text outside `output/`. What crosses a boundary is data
   (`Intent`, `NoticeKind`, error variants, protocol types); words are the display
   layer's job. An error or notice that only exists as a `String` is a bug.
@@ -110,7 +110,7 @@ docs/          architecture, guide, protocol, report
 - **Nothing writes without a `Plan`.** Planners emit a `ChangeSet`; `Plan::preview` is
   read-only; `Plan::apply(self)` consumes the plan, checks fingerprints, and returns a
   `Receipt`. `ChangeSet` has no write method on purpose. A command returns
-  `Planned<T>` — its wire result with the plan beside it — and only the `Apply` command
+  `Planned<T>` — its wire result with the plan beside it — and only `Apply`
   turns that into writes and a history entry.
 - **Every engine feature is testable with a fake language.** `vvv-engine/tests/` must
   keep passing with `--no-default-features`. If a test needs a real grammar it belongs

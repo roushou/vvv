@@ -215,17 +215,16 @@ mod tests {
     use std::path::PathBuf;
 
     use super::{common::Fake, *};
-    use crate::{Command, Context, Engine, Languages, MemoryVfs, Workspace};
+    use crate::{Engine, Languages, MemoryVfs, Workspace};
 
     struct FragmentQuery {
         path: PathBuf,
     }
 
-    impl Command for FragmentQuery {
-        type Output = Arc<Fragment>;
-
-        fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-            let mut graph = cx.engine.graph()?;
+    impl FragmentQuery {
+        fn execute(self, engine: &Engine) -> Result<Arc<Fragment>, EngineError> {
+            let _operation = engine.operation();
+            let mut graph = engine.graph()?;
             let ns = graph.namespace_of(&self.path)?;
             graph.file(&self.path)?.fragment(&ns)
         }
@@ -242,11 +241,11 @@ mod tests {
             Languages::new()
                 .with(Fake::default().with_unresolved_heads(&["root", "parent", "leaf"])),
         );
-        let fragment = engine
-            .run(FragmentQuery {
-                path: "consumer.p".into(),
-            })
-            .unwrap();
+        let fragment = FragmentQuery {
+            path: "consumer.p".into(),
+        }
+        .execute(&engine)
+        .unwrap();
         let expected = [
             ("root::child", Address::new("ws", ["a.p", "child"]), "a.p"),
             (
@@ -291,11 +290,11 @@ mod tests {
             Languages::new()
                 .with(Fake::default().with_unresolved_heads(&["root", "parent", "leaf", "tip"])),
         );
-        let fragment = engine
-            .run(FragmentQuery {
-                path: "consumer.p".into(),
-            })
-            .unwrap();
+        let fragment = FragmentQuery {
+            path: "consumer.p".into(),
+        }
+        .execute(&engine)
+        .unwrap();
         assert_eq!(
             fragment.edges.last().unwrap().address(),
             Some(&Address::new(
@@ -324,11 +323,11 @@ mod tests {
             ),
             Languages::new().with(Fake::default().with_unresolved_heads(&["left", "right"])),
         );
-        let fragment = engine
-            .run(FragmentQuery {
-                path: "consumer.p".into(),
-            })
-            .unwrap();
+        let fragment = FragmentQuery {
+            path: "consumer.p".into(),
+        }
+        .execute(&engine)
+        .unwrap();
         assert!(fragment.edges.iter().all(|edge| edge.address().is_none()));
     }
 }

@@ -20,19 +20,19 @@ fn engine() -> Engine {
 }
 
 fn read(engine: &Engine) -> String {
-    engine
-        .run(FileQuery {
-            path: RelPath::from("a.p"),
-        })
-        .unwrap()
-        .text
+    FileQuery {
+        path: RelPath::from("a.p"),
+    }
+    .execute(engine)
+    .unwrap()
+    .text
 }
 
 #[test]
 fn rewrite_all_matches_with_template() {
     let engine = engine();
-    let planned = engine
-        .run(RewriteIntent::new(Query::pattern("foo"), "bar$NEXT!"))
+    let planned = RewriteIntent::new(Query::pattern("foo"), "bar$NEXT!")
+        .plan(&engine)
         .unwrap();
     assert!(!planned.state.is_applied());
     assert_eq!(planned.preview()[0].after, "bar1! bar2!\nbar3!");
@@ -42,7 +42,7 @@ fn rewrite_all_matches_with_template() {
         "preview must not write"
     );
 
-    let rewrite = engine.run(Apply(planned)).unwrap();
+    let rewrite = Apply(planned).apply(&engine).unwrap();
     assert!(rewrite.state == vvv_engine::MutationState::Applied { history_id: 1 });
     assert_eq!(read(&engine), "bar1! bar2!\nbar3!");
 }
@@ -50,17 +50,20 @@ fn rewrite_all_matches_with_template() {
 #[test]
 fn selection_narrows_and_rejects_unknown_ids() {
     let engine = engine();
-    let matches = engine.run(Query::pattern("foo")).unwrap().matches;
+    let matches = vvv_engine::SearchQuery::from(Query::pattern("foo"))
+        .execute(&engine)
+        .unwrap()
+        .matches;
     let intent = RewriteIntent::new(Query::pattern("foo"), "X")
         .selecting(Selection::ids([matches[1].id.clone()]));
-    let planned = engine.run(intent.clone()).unwrap();
+    let planned = intent.clone().plan(&engine).unwrap();
     assert_eq!(planned.preview()[0].after, "foo:1 X\nfoo:3");
 
     let bogus = RewriteIntent::new(Query::pattern("foo"), "X").selecting(Selection::ids([
         vvv_engine::MatchId::derive(&vvv_engine::RelPath::from("z"), Span::new(0, 1), "?"),
     ]));
     assert!(matches!(
-        engine.run(bogus.clone()),
+        bogus.clone().plan(&engine),
         Err(EngineError::Selection(_))
     ));
 }
@@ -68,8 +71,8 @@ fn selection_narrows_and_rejects_unknown_ids() {
 #[test]
 fn unknown_template_variable_names_the_location() {
     let engine = engine();
-    let err = engine
-        .run(RewriteIntent::new(Query::pattern("foo"), "$MISSING"))
+    let err = RewriteIntent::new(Query::pattern("foo"), "$MISSING")
+        .plan(&engine)
         .unwrap_err();
     assert!(
         matches!(err, EngineError::Template { line: 0, .. }),

@@ -95,8 +95,8 @@ fn setup() -> (Arc<Counting>, Engine) {
 }
 
 fn paths(engine: &Engine, query: &str) -> Vec<String> {
-    let mut out: Vec<String> = engine
-        .run(Query::pattern(query))
+    let mut out: Vec<String> = vvv_engine::SearchQuery::from(Query::pattern(query))
+        .execute(engine)
         .unwrap()
         .matches
         .into_iter()
@@ -156,8 +156,8 @@ fn session_sees_what_the_engine_itself_applies() {
     let (_, engine) = setup();
     assert_eq!(paths(&engine, "foo"), ["a.p"]);
     let intent = vvv_engine::RenameIntent::new("foo", "qux");
-    let rename = engine.run(intent.clone()).unwrap();
-    engine.run(Apply(rename)).unwrap();
+    let rename = intent.clone().plan(&engine).unwrap();
+    Apply(rename).apply(&engine).unwrap();
     assert_eq!(paths(&engine, "foo"), Vec::<String>::new());
     assert_eq!(paths(&engine, "qux"), ["a.p"]);
 }
@@ -185,10 +185,11 @@ fn a_trusting_session_walks_once_per_window_unless_touched() {
     assert_eq!(paths(&engine, "foo"), ["a.p", "b.p"], "told: looked at");
 
     // Its own apply is a change it knows about.
-    let rename = engine
-        .run(vvv_engine::RenameIntent::new("foo", "qux").declared_in("a.p"))
+    let rename = vvv_engine::RenameIntent::new("foo", "qux")
+        .declared_in("a.p")
+        .plan(&engine)
         .unwrap();
-    engine.run(Apply(rename)).unwrap();
+    Apply(rename).apply(&engine).unwrap();
     assert_eq!(paths(&engine, "qux"), ["a.p"]);
 }
 
@@ -211,17 +212,17 @@ fn a_file_is_parsed_once_per_stamp() {
     )
     .with_retention(Retention::session());
     let intent = vvv_engine::RenameIntent::new("foo", "bar");
-    engine.run(intent.clone()).unwrap();
+    intent.clone().plan(&engine).unwrap();
     let first = parses.load(Ordering::SeqCst);
     assert_eq!(first, 2, "each of the two files parsed exactly once");
-    engine.run(intent.clone()).unwrap();
+    intent.clone().plan(&engine).unwrap();
     assert_eq!(
         parses.load(Ordering::SeqCst),
         first,
         "nothing changed, nothing re-parsed"
     );
     vfs.write(Path::new("/ws/b.p"), "use a.p/*\nfoo").unwrap();
-    engine.run(intent.clone()).unwrap();
+    intent.clone().plan(&engine).unwrap();
     assert_eq!(
         parses.load(Ordering::SeqCst),
         first + 1,

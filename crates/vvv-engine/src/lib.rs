@@ -1,14 +1,12 @@
-//! The engine: a graph of the tree built from a [`Workspace`] and a language
-//! registry, and one entry point that runs a [`Command`] against it — a
-//! [`protocol`] intent or query, answering with the protocol type of the
-//! same name; a mutation answers with a [`Planned`] result that [`Apply`]
-//! writes.
+//! The engine: typed capabilities over a workspace and a language registry.
+//! [`Engine::run`] dispatches a [`Request`] and returns an in-process [`Execution`].
+//! Queries answer with concrete data; mutations retain [`Planned`] results until
+//! [`Apply`] writes and commits their history entry. [`Intent`] remains the
+//! mutation description shared by history and batch.
 //!
-//! Interfaces (CLI, TUI, JSON) talk only to [`Engine::run`]; they never touch
-//! a language or the file system directly. Each command lives with its
-//! components in its own module — `rewrite`, `capabilities::rename`, `capabilities::moves`,
-//! `answers`, `understanding`, `batch`, `history` — as `impl Command for
-//! <request>`.
+//! Typed clients call capability-owned `execute`, `plan`, or `apply` methods,
+//! and [`Ledger`] owns history and undo. The dispatcher orchestrates those bodies;
+//! interfaces consume [`Execution::into_answer`] only at a reporting boundary.
 
 #[cfg(test)]
 extern crate self as vvv_engine;
@@ -17,7 +15,6 @@ mod answers;
 mod batch;
 mod capabilities;
 mod change;
-mod command;
 mod engine;
 mod error;
 mod graph;
@@ -25,15 +22,13 @@ mod history;
 mod plan;
 pub mod protocol;
 pub mod report;
-mod request;
 mod rewrite;
 mod understanding;
 mod vfs;
 mod workspace;
 
 pub use capabilities::moves::ExtractionError;
-pub use command::{Command, Context};
-pub use engine::Engine;
+pub use engine::{Engine, Execution, ExecutionKind};
 pub use error::{EngineError, RecoveryError};
 pub use graph::Retention;
 pub use history::{Applied, Apply, HistoryError, Ledger};
@@ -41,14 +36,14 @@ pub use plan::{ApplyError, FilePreview, Planned};
 pub use protocol::{
     Answer, Batch, BatchIntent, Call, Confidence, Consumer, Dead, DeadQuery, Dep, Deps, DepsQuery,
     ErrorCode, ExplainQuery, Explanation, Exposed, Failure, File, FileChange, FileQuery, History,
-    HistoryEntry, HistoryQuery, Impact, ImpactQuery, ImportSite, Importer, ImportsQuery,
-    ImportsReport, Intent, Locations, Match, MatchId, Move, MoveIntent, MoveSymbol,
-    MoveSymbolIntent, Mutation, MutationAnswer, MutationState, Notice, NoticeKind, Occurrence,
-    Outline, OutlineItem, OutlineQuery, Placed, Reach, Reason, Recovery, RecoveryEffect,
-    RecoveryIssue, RecoveryOperation, RecoveryState, RecoveryUnverified, References,
-    ReferencesQuery, Rename, RenameIntent, Reply, Request, Respelling, Rewrite, RewriteIntent,
-    RewriteOf, Search, SearchQuery, Selection, SelectionError, Site, Skipped, Surface,
-    SurfaceQuery, Template, TemplateError, Undo, UndoLast, Unreferenced, WhereQuery,
+    HistoryEntry, Impact, ImpactQuery, ImportSite, Importer, ImportsQuery, ImportsReport, Intent,
+    Locations, Match, MatchId, Move, MoveIntent, MoveSymbol, MoveSymbolIntent, Mutation,
+    MutationAnswer, MutationState, Notice, NoticeKind, Occurrence, Outline, OutlineItem,
+    OutlineQuery, Placed, Reach, Reason, Recovery, RecoveryEffect, RecoveryIssue,
+    RecoveryOperation, RecoveryState, RecoveryUnverified, References, ReferencesQuery, Rename,
+    RenameIntent, Reply, Request, Respelling, Rewrite, RewriteIntent, RewriteOf, Search,
+    SearchQuery, Selection, SelectionError, Site, Skipped, Surface, SurfaceQuery, Template,
+    TemplateError, Undo, Unreferenced, WhereQuery,
 };
 pub use vfs::{
     DiskVfs, EntryKind, MemoryVfs, MoveError, MoveState, ParentCreation, Stamp, Vfs, VfsError,

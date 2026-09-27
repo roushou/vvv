@@ -27,7 +27,13 @@ fn typed_queries_preserve_their_concrete_answers() {
     assert_eq!(references.occurrences.len(), 2);
     assert_eq!(
         serde_json::to_value(&references).unwrap(),
-        serde_json::to_value(engine.run(ReferencesQuery::new("foo")).unwrap()).unwrap()
+        serde_json::to_value(
+            engine
+                .run(vvv_engine::Request::References(ReferencesQuery::new("foo")))
+                .unwrap()
+                .into_answer()
+        )
+        .unwrap()
     );
 }
 

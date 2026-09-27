@@ -1,17 +1,16 @@
 //! Writing and unwriting: [`Apply`] turns a planned result into files and one
 //! entry of the undo stack — one JSON file under `.vvv/` holding the receipts
-//! of the most recent applies, newest last — [`UndoLast`] reverses the newest,
-//! [`HistoryQuery`] lists them.
+//! of the most recent applies, newest last — [`Ledger::undo`] reverses the newest,
+//! [`Ledger::history`] lists them.
 
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 
-use crate::command::{Command, Context};
 use crate::{
-    EngineError, History as HistoryResult, HistoryEntry, HistoryQuery, Intent, Mutation, Planned,
-    Receipt, Undo, UndoLast, VfsError,
+    EngineError, History as HistoryResult, HistoryEntry, Intent, Mutation, Planned, Receipt, Undo,
+    VfsError,
 };
 
 const FILE: &str = ".vvv/history.json";
@@ -166,7 +165,8 @@ pub struct Apply<T: Mutation>(pub Planned<T>);
 impl<T: Mutation> Apply<T> {
     /// Apply a retained typed plan and commit its history entry.
     pub fn apply(self, engine: &crate::Engine) -> Result<Applied<T>, EngineError> {
-        engine.run(self)
+        let _operation = engine.operation();
+        self.apply_in(engine)
     }
 
     pub(crate) fn apply_in(self, engine: &crate::Engine) -> Result<Applied<T>, EngineError> {
@@ -189,14 +189,6 @@ impl<T: Mutation> Apply<T> {
             Err(error) => return Err(transaction.recover(error.into())),
         };
         Ok(Applied::new(result, record.id))
-    }
-}
-
-impl<T: Mutation> Command for Apply<T> {
-    type Output = Applied<T>;
-
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        self.apply_in(cx.engine)
     }
 }
 
@@ -226,6 +218,14 @@ impl<T: Mutation> Applied<T> {
         self.history_id
     }
 
+    /// Preserve the committed id while widening only to the closed mutation sum.
+    pub fn into_mutation(self) -> Applied<crate::MutationAnswer> {
+        Applied {
+            result: self.result.into_mutation(),
+            history_id: self.history_id,
+        }
+    }
+
     /// The applied wire payload without its in-process completion handle.
     pub fn into_inner(self) -> T {
         self.result
@@ -246,28 +246,11 @@ impl<T: Mutation + Serialize> Serialize for Applied<T> {
     }
 }
 
-/// Reverse the most recent apply, provided its files are untouched since.
-impl Command for UndoLast {
-    type Output = Undo;
-
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        Ledger::new(cx.engine).undo_in()
-    }
-}
-
-/// Applies that can still be undone, oldest first.
-impl Command for HistoryQuery {
-    type Output = HistoryResult;
-
-    fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
-        Ledger::new(cx.engine).history_in()
-    }
-}
-
 impl Ledger<'_> {
-    /// Undo the latest committed entry.
+    /// Reverse the latest apply, provided its files are untouched since.
     pub fn undo(&self) -> Result<Undo, EngineError> {
-        self.engine.run(UndoLast)
+        let _operation = self.engine.operation();
+        self.undo_in()
     }
 
     pub(crate) fn undo_in(&self) -> Result<Undo, EngineError> {
@@ -293,9 +276,10 @@ impl Ledger<'_> {
                 .collect(),
         })
     }
-    /// Read the committed history entries.
+    /// Read applies that can still be undone, oldest first.
     pub fn history(&self) -> Result<HistoryResult, EngineError> {
-        self.engine.run(HistoryQuery)
+        let _operation = self.engine.operation();
+        self.history_in()
     }
 
     pub(crate) fn history_in(&self) -> Result<HistoryResult, EngineError> {

@@ -1,6 +1,6 @@
 //! The read-only requests, as data: what an interface asks when it wants to
-//! understand rather than change. Each is a command whose answer is the
-//! result type of the same name.
+//! understand rather than change. Each owns a typed execution method
+//! whose answer is the result type of the same name.
 
 use vvv_core::RelPath;
 
@@ -40,14 +40,6 @@ pub struct WhereQuery {
 pub struct FileQuery {
     pub path: RelPath,
 }
-
-/// The applies that can still be undone.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
-pub struct HistoryQuery;
-
-/// Reverse the most recent apply, provided its files are untouched since.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
-pub struct UndoLast;
 
 /// `vvv surface [package]`: what a package offers to everyone.
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
