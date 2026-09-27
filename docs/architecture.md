@@ -442,12 +442,12 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
 `Overlay::Report` draws it and walks its source rows (`j`/`k`, `e`).
 
 - `error.rs` — the crate's public `Error`: terminal I/O, the engine, the editor.
-- `model.rs` — all state as data: the `Search` hub (query, results, context; a
-  declaration under the cursor can be entered as its `subject`, and the hub then shows
-  one read-only relation about it — references, impact, definition, deps), the
-  current `Mode` (`Rename`, `Move`, `Rewrite`, `History`, each with its input, its
-  rows, its panel cursors and a focus enum implementing `Panels`), an optional
-  `Overlay` (menu, confirm, help), status.
+- `model.rs` — application state: the retained `Search` hub, current `Mode`,
+  optional overlay, status, report-view choice, and split size. Common cursor,
+  panel-focus, and file-preview data stay here. Each mode owns its state,
+  transitions, and typed screen under `modes/<name>/` (`rename`, `moves`,
+  `rewrite`, `history`, `search`). Search also owns its query bar and read-only
+  relations (references, impact, definition, deps).
 - `action.rs` — `Action` (what the user did, generic across modes: `Input`, `Enter`,
   `Toggle`, `FocusNth`…), `Effect` (what to ask the engine: `Search`, `Query` for a
   read-only request, `Plan`, `Commit`, `Preview`, `History`, `Undo`; `Edit` for the
@@ -462,14 +462,11 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
 - `screen/` — shared key, focus, and help metadata (`Screen`, `Panel`) and
   the application frame. `BoundScreen<V>` owns a typed view and its layout and panel
   callbacks; panels render from that view without inspecting `Mode`.
-  `screen/defaults.rs` holds the shared key layers. Rename, moves, rewrite, and history now own their state,
-  transitions, metadata, and typed views under `modes/rename/`, `modes/moves/`,
-  `modes/rewrite/`, and `modes/history/`;
-  search and overlays use a
-  temporary `LegacyScreen` renderer until their individual migrations.
-- `modes/context.rs` — shared status borrowed by a mode transition, without access
-  to `Model` or another mode. `input.rs` holds `TextInput`, which edits a borrowed
-  string buffer for name, destination, and template inputs.
+  `screen/defaults.rs` holds the shared key layers. Overlays alone still use a
+  temporary `LegacyScreen` renderer until their integration migration.
+- `modes/context.rs` — shared status and generation borrowed by a mode transition,
+  without access to `Model` or another mode. `input.rs` holds `TextInput`, which
+  edits a borrowed string buffer for name, destination, and template inputs.
 - `render/` — the drawing primitives the screens compose. `Painter` owns the
   palette `Theme` and answers the drawing questions with one receiver (`caret`,
   `site`, `hit`, `line`, `source_window`); the colour policy is reachable through
@@ -484,7 +481,9 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
 - `update.rs` — `Model::action_for(event)` resolves through
   `Model::screen().resolve(focus, key, holds)`: the globals first, then the
   focused panel's layer, the screen's, the panel kind's defaults, then navigation.
-  `Model::update` and `Model::on_event` are pure and return effects. Searches and plans carry a
+  `Model::update` routes application actions and delegates local transitions to
+  the selected mode. `Model::on_event` filters generations before delivering data
+  to its owner. Both are pure and return effects. Searches and plans carry a
   generation so stale answers are dropped; a mode's input (name, destination,
   template) drives a plan the way the query bar drives a search. Entering a mode
   sends its first plan at once (no debounce) and sets `arriving`: keys already go

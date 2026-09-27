@@ -8,12 +8,13 @@ use ratatui::widgets::Widget;
 use vvv_engine::Role;
 use vvv_engine::{Answer, Confidence, Impact, Occurrence};
 
-use super::{LegacyScreen, Panel, Screen};
+use super::{Relation, Search, SearchPanel};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
-use crate::model::{MenuTarget, Model, PanelKind, Relation, SearchPanel};
+use crate::model::{MenuTarget, PanelKind, ReportView};
 use crate::render::Pane;
 use crate::render::{Header, Painter, Region};
+use crate::screen::{BoundScreen, Panel, Screen};
 use vvv_engine::protocol::vocabulary::{Files, Mark};
 use vvv_engine::report::{Document, Options, View};
 
@@ -367,43 +368,58 @@ pub(crate) static SEARCH: Screen = Screen {
     panels: &[QUERY_PANEL, RESULTS_PANEL, CONTEXT_PANEL],
 };
 
-pub(crate) static SEARCH_RENDER: LegacyScreen = LegacyScreen {
-    screen: &SEARCH,
-    content: &[draw_query, draw_results, draw_context],
-    layout,
-};
-
-fn layout(model: &Model, painter: Painter, area: Region) -> Vec<Region> {
-    let (top, body) = SearchView::new(model, painter).header().areas(area);
-    let (left, right) = body.columns(model.split);
-    vec![top, left, right]
-}
-
-fn draw_query(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    SearchView::new(model, painter).header().render(area, buf);
-}
-
-fn draw_results(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    SearchView::new(model, painter).results(area, buf);
-}
-
-fn draw_context(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    SearchView::new(model, painter).context(area, buf);
-}
-
 pub struct SearchView<'a> {
-    model: &'a Model,
+    search: &'a Search,
+    root: &'a str,
+    busy: bool,
+    split: u16,
+    view: ReportView,
     painter: Painter,
 }
 
 impl<'a> SearchView<'a> {
-    pub fn new(model: &'a Model, painter: Painter) -> Self {
-        Self { model, painter }
+    pub fn new(
+        search: &'a Search,
+        root: &'a str,
+        busy: bool,
+        painter: Painter,
+        split: u16,
+        view: ReportView,
+    ) -> Self {
+        Self {
+            search,
+            root,
+            busy,
+            painter,
+            split,
+            view,
+        }
     }
 
+    pub fn screen(self) -> BoundScreen<Self, 3> {
+        BoundScreen::new(
+            self,
+            &SEARCH,
+            Self::layout,
+            [Self::draw_query, Self::draw_results, Self::draw_context],
+        )
+    }
+    fn layout(&self, area: Region) -> Vec<Region> {
+        let (top, body) = self.header().areas(area);
+        let (left, right) = body.columns(self.split);
+        vec![top, left, right]
+    }
+    fn draw_query(&self, area: Rect, buf: &mut Buffer) {
+        self.header().render(area, buf);
+    }
+    fn draw_results(&self, area: Rect, buf: &mut Buffer) {
+        self.results(area, buf);
+    }
+    fn draw_context(&self, area: Rect, buf: &mut Buffer) {
+        self.context(area, buf);
+    }
     fn header(&self) -> Header<'a> {
-        let (m, t) = (self.model, self.painter);
-        let s = &m.search;
+        let (s, t) = (self.search, self.painter);
         let focused = s.focus == SearchPanel::Query;
         let mut right = Vec::new();
         if let Some(subject) = &s.results.subject {
@@ -477,7 +493,7 @@ impl<'a> SearchView<'a> {
             focused,
             Line::from(vec![
                 Span::styled(" vvv ", t.title),
-                Span::styled(format!("{} ", m.root), t.dim),
+                Span::styled(format!("{} ", self.root), t.dim),
             ]),
         )
         .right(Line::from(right))
@@ -490,10 +506,9 @@ impl<'a> SearchView<'a> {
     }
 
     fn results(&self, area: Rect, buf: &mut Buffer) {
-        let (m, t) = (self.model, self.painter);
-        let s = &m.search;
+        let (s, t) = (self.search, self.painter);
         let width = area.width.saturating_sub(2) as usize;
-        let view = m.view.view();
+        let view = self.view.view();
 
         // The rows: the search's hits, or, once a declaration is entered,
         // one read-only answer about it.
@@ -552,7 +567,7 @@ impl<'a> SearchView<'a> {
         };
         let empty = if s.query.is_empty() {
             ""
-        } else if m.status.busy {
+        } else if self.busy {
             "…"
         } else {
             "∅ no matches"
@@ -652,8 +667,7 @@ impl<'a> SearchView<'a> {
 
     /// What the cursor row is, then the file around it.
     fn context(&self, area: Rect, buf: &mut Buffer) {
-        let (m, t) = (self.model, self.painter);
-        let s = &m.search;
+        let (s, t) = (self.search, self.painter);
         let focused = s.focus == SearchPanel::Context;
         let current = s.results.current();
         let consumer = s.results.current_consumer();
@@ -712,7 +726,7 @@ impl<'a> SearchView<'a> {
             let height = inner_height.saturating_sub(head);
             let first = s
                 .preview_scroll
-                .unwrap_or_else(|| m.preview_anchor())
+                .unwrap_or_else(|| s.preview_anchor())
                 .min(preview.line_count().saturating_sub(1));
             let highlight = current
                 .filter(|c| c.path == *path)

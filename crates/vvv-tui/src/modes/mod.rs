@@ -4,3 +4,4 @@ pub(crate) mod history;
 pub(crate) mod moves;
 pub(crate) mod rename;
 pub(crate) mod rewrite;
+pub(crate) mod search;

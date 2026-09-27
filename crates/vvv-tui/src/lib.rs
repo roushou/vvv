@@ -15,7 +15,6 @@ mod input;
 mod keymap;
 mod model;
 mod modes;
-mod query;
 mod render;
 mod screen;
 mod tui;

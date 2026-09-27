@@ -1,11 +1,41 @@
 //! Pure rewrite transitions.
 use super::{RewriteMode, RewritePanel};
-use crate::action::Effect;
+use crate::action::{Action, Effect};
 use crate::model::Panels;
 use crate::modes::context::ModeContext;
 use vvv_engine::protocol::FileChange;
 use vvv_engine::{Intent, RelPath, Selection};
 impl RewriteMode {
+    pub fn update(&mut self, action: Action, context: &mut ModeContext<'_>) -> Vec<Effect> {
+        match action {
+            Action::FocusNext => self.focus_by(1),
+            Action::FocusPrev => self.focus_by(-1),
+            Action::FocusNth(n) => self.focus_nth(n),
+            Action::Move(n) => self.moved(n),
+            Action::Top => self.moved(i32::MIN / 2),
+            Action::Bottom => self.moved(i32::MAX / 2),
+            Action::Scroll(n) if self.scroll_focused() => {
+                self.scrolled(n);
+                return Vec::new();
+            }
+            Action::Scroll(n) => self.moved(n),
+            Action::Input(c) => {
+                self.input(Some(c));
+                let generation = context.next_generation();
+                return self.plan(generation);
+            }
+            Action::Backspace => {
+                self.input(None);
+                let generation = context.next_generation();
+                return self.plan(generation);
+            }
+            Action::Enter => return self.commit(context),
+            Action::Toggle => return self.toggled(false),
+            Action::ToggleAll => return self.toggled(true),
+            _ => return Vec::new(),
+        }
+        Vec::new()
+    }
     pub fn focus_by(&mut self, by: i32) {
         self.focus = self.focus.step(by);
     }
@@ -72,7 +102,7 @@ impl RewriteMode {
         }
         Vec::new()
     }
-    pub fn from_results(results: &crate::model::Results) -> Result<Self, &'static str> {
+    pub fn from_results(results: &crate::modes::search::Results) -> Result<Self, &'static str> {
         let Some(query) = results.query.clone() else {
             return Err("search for the pattern to rewrite first");
         };

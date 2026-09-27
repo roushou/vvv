@@ -1,11 +1,41 @@
 //! Pure transitions of a rename.
 use super::{RenameMode, RenamePanel, RenameTarget};
-use crate::action::Effect;
+use crate::action::{Action, Effect};
 use crate::model::{FilePreview, Panels};
 use crate::modes::context::ModeContext;
 use vvv_engine::protocol::FileChange;
 use vvv_engine::{Confidence, Intent, Match, Occurrence, RelPath, RenameIntent, Selection};
 impl RenameMode {
+    pub fn update(&mut self, action: Action, context: &mut ModeContext<'_>) -> Vec<Effect> {
+        match action {
+            Action::FocusNext => self.focus_by(1),
+            Action::FocusPrev => self.focus_by(-1),
+            Action::FocusNth(n) => self.focus_nth(n),
+            Action::Move(n) => self.moved(n),
+            Action::Top => self.moved(i32::MIN / 2),
+            Action::Bottom => self.moved(i32::MAX / 2),
+            Action::Scroll(n) if self.scroll_focused() => {
+                self.scrolled(n);
+                return Vec::new();
+            }
+            Action::Scroll(n) => self.moved(n),
+            Action::Input(c) => {
+                self.input(Some(c));
+                let generation = context.next_generation();
+                return self.plan(generation, true);
+            }
+            Action::Backspace => {
+                self.input(None);
+                let generation = context.next_generation();
+                return self.plan(generation, true);
+            }
+            Action::Enter => return self.commit(context),
+            Action::Toggle => return self.toggled(false),
+            Action::ToggleAll => return self.toggled(true),
+            _ => return Vec::new(),
+        }
+        self.preview_effect()
+    }
     pub fn input(&mut self, c: Option<char>) {
         crate::input::TextInput::new(&mut self.name).edit(c);
     }
@@ -119,7 +149,7 @@ impl RenameMode {
 
         Vec::new()
     }
-    pub fn from_results(results: &crate::model::Results) -> Result<Self, &'static str> {
+    pub fn from_results(results: &crate::modes::search::Results) -> Result<Self, &'static str> {
         let (target, language) = match &results.subject {
             Some(s) => (
                 RenameTarget {

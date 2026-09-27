@@ -4,16 +4,16 @@
 //! testable with plain assertions.
 
 use ratatui::crossterm::event::KeyEvent;
-use vvv_engine::{Answer, DepsQuery, ExplainQuery, ImpactQuery, Intent, Request, SymbolKind};
+use vvv_engine::{Intent, SymbolKind};
 
 use super::action::{Action, Effect, Event, Planned};
 use super::keymap::{Dispatch, Key};
-use super::model::{
-    Confirmed, FilePreview, HistoryMode, Menu, MenuTarget, Mode, Model, MoveMode, Overlay, Panels,
-    Relation, RenameMode, RewriteMode, SearchPanel,
-};
-use super::query::Filter;
+use super::model::{Confirmed, FilePreview, Menu, MenuTarget, Mode, Model, Overlay};
 use crate::modes::context::ModeContext;
+use crate::modes::search::{Navigation, Relation, query::Filter};
+use crate::modes::{
+    history::HistoryMode, moves::MoveMode, rename::RenameMode, rewrite::RewriteMode,
+};
 use vvv_engine::protocol::vocabulary::IntentLine;
 
 impl Model {
@@ -44,9 +44,6 @@ impl Model {
                 self.quit = true;
                 Vec::new()
             }
-            Action::FocusNext => self.focus_by(1),
-            Action::FocusPrev => self.focus_by(-1),
-            Action::FocusNth(n) => self.focus_nth(n),
             Action::Move(n) => {
                 if matches!(self.overlay, Some(Overlay::Report { .. })) {
                     self.report_moved(n);
@@ -63,19 +60,8 @@ impl Model {
                 self.split = (i32::from(self.split) + i32::from(by)).clamp(20, 80) as u16;
                 Vec::new()
             }
-            Action::Toggle => self.toggled(false),
-            Action::ToggleAll => self.toggled(true),
             Action::View => {
                 self.view = self.view.toggled();
-                Vec::new()
-            }
-            Action::Input(c) => self.input(Some(c)),
-            Action::Backspace => self.input(None),
-            Action::Clear => {
-                if let Mode::Search = self.mode {
-                    self.search.query.clear();
-                    return self.search();
-                }
                 Vec::new()
             }
             Action::Enter => self.entered(),
@@ -99,14 +85,22 @@ impl Model {
                 });
                 Vec::new()
             }
-            Action::Diff => {
-                if let Mode::Move(mv) = &mut self.mode {
-                    mv.toggle_diff();
-                }
-                Vec::new()
-            }
             Action::Edit => self.edit(),
             Action::Jump => self.goto_declaration(),
+            _ => self.mode_update(action),
+        }
+    }
+    fn mode_update(&mut self, action: Action) -> Vec<Effect> {
+        let mut context = ModeContext {
+            status: &mut self.status,
+            generation: &mut self.generation,
+        };
+        match &mut self.mode {
+            Mode::Search => self.search.update(action, &mut context),
+            Mode::Rename(r) => r.update(action, &mut context),
+            Mode::Move(mv) => mv.update(action, &mut context),
+            Mode::Rewrite(rw) => rw.update(action, &mut context),
+            Mode::History(h) => h.update(action, &mut context),
         }
     }
 
@@ -120,31 +114,28 @@ impl Model {
                 if generation != self.generation {
                     return Vec::new();
                 }
-                self.status.busy = false;
-                self.search.results.replace(matches);
-                if skipped.is_empty() {
-                    self.status.clear();
-                } else {
-                    let names: Vec<String> =
-                        skipped.iter().map(|s| s.language.to_string()).collect();
-                    self.status.info(format!(
-                        "{} skipped: the pattern does not parse there",
-                        names.join(", ")
-                    ));
-                }
+                self.search.searched(
+                    matches,
+                    skipped,
+                    &mut ModeContext {
+                        status: &mut self.status,
+                        generation: &mut self.generation,
+                    },
+                );
                 self.preview_effect()
             }
             Event::Answered { generation, answer } => {
                 if generation != self.generation {
                     return Vec::new();
                 }
-                self.status.busy = false;
-                match *answer {
-                    Answer::References(references) => self.search.results.entered(references),
-                    Answer::Impact(impact) => self.search.results.show_impact(impact),
-                    Answer::Explain(definition) => self.search.results.show_definition(definition),
-                    Answer::Deps(deps) => self.search.results.show_deps(deps),
-                    _ => return Vec::new(),
+                if !self.search.answered(
+                    *answer,
+                    &mut ModeContext {
+                        status: &mut self.status,
+                        generation: &mut self.generation,
+                    },
+                ) {
+                    return Vec::new();
                 }
                 self.preview_effect()
             }
@@ -155,10 +146,7 @@ impl Model {
             } => {
                 let preview = FilePreview::new(path, text, highlights);
                 match &mut self.mode {
-                    Mode::Search => {
-                        self.search.preview = Some(preview);
-                        self.search.preview_scroll = None;
-                    }
+                    Mode::Search => self.search.previewed(preview),
                     Mode::Rename(r) => r.previewed(preview),
                     Mode::Move(mv) => mv.previewed(preview),
                     // Rewrite's pane draws the plan's diff, not a source file.
@@ -265,67 +253,22 @@ impl Model {
         }
     }
 
-    // ------------------------------------------------------------ focus
-
-    fn focus_by(&mut self, by: i32) -> Vec<Effect> {
-        match &mut self.mode {
-            Mode::Search => self.search.focus = self.search.focus.step(by),
-            Mode::Rename(r) => r.focus_by(by),
-            Mode::Move(mv) => mv.focus_by(by),
-            Mode::Rewrite(rw) => rw.focus_by(by),
-            Mode::History(h) => h.focus_by(by),
-        }
-        self.preview_effect()
-    }
-
-    fn focus_nth(&mut self, n: u8) -> Vec<Effect> {
-        match &mut self.mode {
-            Mode::Search => {
-                if let Some(p) = SearchPanel::nth(n) {
-                    self.search.focus = p;
-                }
-            }
-            Mode::Rename(r) => r.focus_nth(n),
-            Mode::Move(mv) => mv.focus_nth(n),
-            Mode::Rewrite(rw) => rw.focus_nth(n),
-            Mode::History(h) => h.focus_nth(n),
-        }
-        self.preview_effect()
-    }
-
     // ------------------------------------------------------------ cursors
 
     fn moved(&mut self, by: i32) -> Vec<Effect> {
         if let Some(Overlay::Menu(menu)) = &mut self.overlay {
             menu.move_cursor(by);
-            return Vec::new();
+            Vec::new()
+        } else {
+            self.mode_update(Action::Move(by))
         }
-        match &mut self.mode {
-            Mode::Search => {
-                let len = self.search.results.len();
-                self.search.results.cursor.move_by(by, len);
-                self.search.preview_scroll = None;
-            }
-            Mode::Rename(r) => r.moved(by),
-            Mode::Move(mv) => mv.moved(by),
-            Mode::Rewrite(rw) => rw.moved(by),
-            Mode::History(h) => h.moved(by),
-        }
-        self.preview_effect()
     }
 
     fn jump(&mut self, top: bool) -> Vec<Effect> {
-        let far = if top { i32::MIN / 2 } else { i32::MAX / 2 };
-        match (&self.mode, self.scroll_focused()) {
-            (Mode::Search, true) => {
-                self.search.preview_scroll = Some(if top {
-                    0
-                } else {
-                    self.search.preview.as_ref().map_or(0, |p| p.line_count())
-                });
-                Vec::new()
-            }
-            _ => self.moved(far),
+        if matches!(self.mode, Mode::Search) && self.search.scroll_focused() {
+            self.search.jump(top)
+        } else {
+            self.moved(if top { i32::MIN / 2 } else { i32::MAX / 2 })
         }
     }
 
@@ -333,7 +276,7 @@ impl Model {
     /// a list with a cursor.
     fn scroll_focused(&self) -> bool {
         match &self.mode {
-            Mode::Search => self.search.focus == SearchPanel::Context,
+            Mode::Search => self.search.scroll_focused(),
             Mode::Rename(r) => r.scroll_focused(),
             Mode::Move(mv) => mv.scroll_focused(),
             Mode::Rewrite(rw) => rw.scroll_focused(),
@@ -342,145 +285,40 @@ impl Model {
     }
 
     fn scrolled(&mut self, by: i32) -> Vec<Effect> {
-        let bump = |scroll: &mut usize| *scroll = (*scroll as i32 + by).max(0) as usize;
         if let Some(Overlay::Help { scroll, .. }) = &mut self.overlay {
-            bump(scroll);
-            return Vec::new();
+            *scroll = (*scroll as i32 + by).max(0) as usize;
+            Vec::new()
+        } else if !self.scroll_focused() {
+            self.moved(by)
+        } else {
+            self.mode_update(Action::Scroll(by))
         }
-        if !self.scroll_focused() {
-            return self.moved(by);
-        }
-        match &mut self.mode {
-            Mode::Search => {
-                let max = self
-                    .search
-                    .preview
-                    .as_ref()
-                    .map_or(0, |p| p.line_count().saturating_sub(1));
-                let current = self
-                    .search
-                    .preview_scroll
-                    .unwrap_or_else(|| self.preview_anchor());
-                self.search.preview_scroll =
-                    Some((current as i32 + by).clamp(0, max as i32) as usize);
-            }
-            Mode::Rename(r) => r.scrolled(by),
-            Mode::Move(mv) => mv.scrolled(by),
-            Mode::Rewrite(rw) => rw.scrolled(by),
-            Mode::History(h) => h.scrolled(by),
-        }
-        Vec::new()
-    }
-
-    /// The line the search context centres on when following the cursor.
-    pub fn preview_anchor(&self) -> usize {
-        self.search
-            .results
-            .current()
-            .map_or(0, |m| (m.start.line as usize).saturating_sub(5))
     }
 
     /// The file the focused row is in, if the mode's detail does not show
     /// it yet.
     fn preview_effect(&self) -> Vec<Effect> {
-        let (path, shown) = match &self.mode {
-            Mode::Search => (
-                self.search.results.current_site().map(|(path, _)| path),
-                self.search.preview.as_ref().map(|p| p.path.clone()),
-            ),
-            Mode::Rename(r) => return r.preview_effect(),
-            Mode::Move(mv) => return mv.preview_effect(),
-            // Rewrite's preview is the plan's diff, not a source file.
-            Mode::Rewrite(_) => (None, None),
-            Mode::History(_) => (None, None),
-        };
-        match path {
-            Some(path) if shown.as_ref() != Some(&path) => vec![Effect::Preview { path }],
-            _ => Vec::new(),
+        match &self.mode {
+            Mode::Search => self.search.preview_effect(),
+            Mode::Rename(r) => r.preview_effect(),
+            Mode::Move(mv) => mv.preview_effect(),
+            Mode::Rewrite(_) | Mode::History(_) => Vec::new(),
         }
-    }
-
-    // ------------------------------------------------------------ toggles
-
-    fn toggled(&mut self, all: bool) -> Vec<Effect> {
-        match &mut self.mode {
-            Mode::Rename(r) => return r.toggled(all),
-            Mode::Rewrite(rw) => return rw.toggled(all),
-            Mode::Search | Mode::Move(_) | Mode::History(_) => {}
-        }
-        Vec::new()
     }
 
     // ------------------------------------------------------------ inputs
 
-    /// A character typed (or, with `None`, erased) in the mode's input.
-    fn input(&mut self, c: Option<char>) -> Vec<Effect> {
-        match &mut self.mode {
-            Mode::Search => {
-                match c {
-                    Some(c) => self.search.query.push(c),
-                    None => self.search.query.pop(),
-                }
-                self.search()
-            }
-            Mode::Rename(r) => {
-                r.input(c);
-                self.plan_rename(true)
-            }
-            Mode::Move(mv) => {
-                mv.input(c);
-                self.plan_move(true)
-            }
-            Mode::Rewrite(rw) => {
-                rw.input(c);
-                self.plan_rewrite()
-            }
-            Mode::History(_) => Vec::new(),
-        }
-    }
-
     fn search(&mut self) -> Vec<Effect> {
-        let generation = self.next_generation();
-        match self.search.query.parse() {
-            Ok(query) => {
-                self.status.busy = true;
-                self.status.clear();
-                self.search.results.query = Some(query.clone());
-                vec![Effect::Search { generation, query }]
-            }
-            Err(e) => {
-                self.search.results.replace(Vec::new());
-                self.search.results.query = None;
-                if self.search.query.is_empty() {
-                    self.status.clear();
-                } else {
-                    self.status.error(e.to_string());
-                }
-                Vec::new()
-            }
-        }
-    }
-
-    fn plan_rename(&mut self, debounce: bool) -> Vec<Effect> {
-        let generation = self.next_generation();
-        match &mut self.mode {
-            Mode::Rename(r) => r.plan(generation, debounce),
-            _ => Vec::new(),
-        }
+        self.search.search(&mut ModeContext {
+            status: &mut self.status,
+            generation: &mut self.generation,
+        })
     }
 
     fn plan_move(&mut self, debounce: bool) -> Vec<Effect> {
         let generation = self.next_generation();
         match &mut self.mode {
             Mode::Move(mv) => mv.plan(generation, debounce),
-            _ => Vec::new(),
-        }
-    }
-
-    fn plan_rewrite(&mut self) -> Vec<Effect> {
-        let generation = self.next_generation();
-        match &mut self.mode {
-            Mode::Rewrite(rw) => rw.plan(generation),
             _ => Vec::new(),
         }
     }
@@ -498,25 +336,10 @@ impl Model {
                 Confirmed::Undo => vec![Effect::Undo],
             };
         }
-        match &mut self.mode {
-            Mode::Search => match self.search.focus {
-                SearchPanel::Query => {
-                    self.search.focus = SearchPanel::Results;
-                    Vec::new()
-                }
-                SearchPanel::Results => self.enter_subject(),
-                SearchPanel::Context => Vec::new(),
-            },
-            Mode::Rename(r) => r.commit(&mut ModeContext {
-                status: &mut self.status,
-            }),
-            Mode::Move(mv) => mv.commit(&mut ModeContext {
-                status: &mut self.status,
-            }),
-            Mode::Rewrite(rw) => rw.commit(&mut ModeContext {
-                status: &mut self.status,
-            }),
-            Mode::History(_) => self.undo_requested(),
+        if matches!(self.mode, Mode::History(_)) {
+            self.undo_requested()
+        } else {
+            self.mode_update(Action::Enter)
         }
     }
 
@@ -530,101 +353,37 @@ impl Model {
             self.status.clear();
             return self.preview_effect();
         }
-        if self.search.results.is_anchored() {
-            self.search.results.leave();
-            self.status.clear();
-            return self.preview_effect();
-        }
-        self.search.focus = SearchPanel::Query;
-        Vec::new()
+        self.search.back(&mut ModeContext {
+            status: &mut self.status,
+            generation: &mut self.generation,
+        })
     }
 
     // ------------------------------------------------------------ modes
 
-    /// Enter the declaration under the cursor as the search's subject. The
-    /// screen keeps showing the search until the answer arrives, so the
-    /// rows never blank mid-request.
-    fn enter_subject(&mut self) -> Vec<Effect> {
-        let Some(m) = self.search.results.current().cloned() else {
-            return self.fail("put the cursor on a declaration to enter its scope");
-        };
-        let Some(query) = self.search.results.subject_at(&m) else {
-            return self.fail("put the cursor on a declaration to enter its scope");
-        };
-        self.status.busy = true;
-        let generation = self.next_generation();
-        vec![Effect::Query {
-            generation,
-            request: Request::References(query),
-        }]
+    /// A retained-hub selection follows the active mode's preview.
+    fn navigation(&self, navigation: Navigation) -> Vec<Effect> {
+        match navigation {
+            Navigation::Selection => self.preview_effect(),
+            Navigation::Effects(effects) => effects,
+        }
     }
-
-    /// Show another relation for the entered declaration. A verdict filter
-    /// is local; a fetch switches the view only when its answer arrives.
     fn choose_relation(&mut self, relation: Relation) -> Vec<Effect> {
-        match relation {
-            Relation::Impact | Relation::Definition | Relation::Deps => self.ask_relation(relation),
-            _ => {
-                self.search.results.set_relation(relation);
-                self.preview_effect()
-            }
-        }
+        let navigation = self.search.choose_relation(
+            relation,
+            &mut ModeContext {
+                status: &mut self.status,
+                generation: &mut self.generation,
+            },
+        );
+        self.navigation(navigation)
     }
-
-    /// Fetch a relation about the subject unless it is cached, so a switch
-    /// back and forth costs nothing.
-    fn ask_relation(&mut self, relation: Relation) -> Vec<Effect> {
-        let Some(subject) = self.search.results.subject.clone() else {
-            return Vec::new();
-        };
-        let Some(declaration) = self.search.results.subject_declaration().cloned() else {
-            return Vec::new();
-        };
-        let cached = match relation {
-            Relation::Impact => self.search.results.impact.is_some(),
-            Relation::Definition => self.search.results.definition.is_some(),
-            Relation::Deps => self.search.results.deps.is_some(),
-            _ => true,
-        };
-        if cached {
-            self.search.results.set_relation(relation);
-            return self.preview_effect();
-        }
-        let request = match relation {
-            Relation::Impact => Request::Impact(ImpactQuery {
-                name: subject.name.clone(),
-                declared_in: subject.declared_in.clone(),
-            }),
-            Relation::Definition => Request::Explain(ExplainQuery {
-                path: declaration.path.clone(),
-                position: declaration.start,
-            }),
-            Relation::Deps => Request::Deps(DepsQuery {
-                path: declaration.path.clone(),
-            }),
-            _ => return Vec::new(),
-        };
-        self.status.busy = true;
-        let generation = self.next_generation();
-        vec![Effect::Query {
-            generation,
-            request,
-        }]
-    }
-
-    /// The declaration the cursor's row names: the row itself when the
-    /// cursor is on one, else the row that resolves to it. Not on screen:
-    /// enter the declaration's scope instead.
     fn goto_declaration(&mut self) -> Vec<Effect> {
-        if let Some(row) = self.search.results.declaration_row() {
-            self.search.results.cursor.index = row;
-            self.search.preview_scroll = None;
-            return self.preview_effect();
-        }
-        if !self.search.results.is_anchored() && self.search.results.current().is_some() {
-            return self.enter_subject();
-        }
-        Vec::new()
+        let navigation = self.search.goto_declaration(&mut ModeContext {
+            status: &mut self.status,
+            generation: &mut self.generation,
+        });
+        self.navigation(navigation)
     }
 
     fn enter_rename(&mut self) -> Vec<Effect> {

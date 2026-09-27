@@ -8,12 +8,13 @@ use ratatui::widgets::Widget;
 use vvv_engine::{Answer, Intent, Request, Selection, SymbolKind};
 
 use super::action::{Action, Effect, Event, Planned};
-use super::model::{Level, MenuTarget, Mode, Model, Overlay, Relation, ReportView, SearchPanel};
-use super::query::Filter;
+use super::model::{Level, MenuTarget, Mode, Model, Overlay, ReportView};
 use crate::fixtures as fx;
 use crate::modes::moves::MovePanel;
 use crate::modes::rename::RenamePanel;
 use crate::modes::rewrite::RewritePanel;
+use crate::modes::search::query::Filter;
+use crate::modes::search::{Relation, SearchPanel};
 use crate::render::Painter;
 use crate::screen::App;
 

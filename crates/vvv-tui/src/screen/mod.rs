@@ -8,7 +8,7 @@ use crate::modes::moves::screen as moving;
 pub(crate) mod overlay;
 use crate::modes::rename::screen as rename;
 use crate::modes::rewrite::screen as rewrite;
-pub(crate) mod search;
+use crate::modes::search::screen as search;
 mod status;
 
 use ratatui::buffer::Buffer;
@@ -225,7 +225,11 @@ impl Widget for App<'_> {
             crate::model::Mode::Rename(r) => rename::RenameView::new(r, t, m.split, m.view)
                 .screen()
                 .render(body, buf),
-            crate::model::Mode::Search => search::SEARCH_RENDER.render(m, t, body, buf),
+            crate::model::Mode::Search => {
+                search::SearchView::new(&m.search, &m.root, m.status.busy, t, m.split, m.view)
+                    .screen()
+                    .render(body, buf)
+            }
             crate::model::Mode::Move(mv) => moving::MoveView::new(mv, t, m.split, m.view)
                 .screen()
                 .render(body, buf),
