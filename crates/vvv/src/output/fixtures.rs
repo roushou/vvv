@@ -4,18 +4,16 @@
 use std::collections::BTreeMap;
 use vvv_engine::RelPath;
 
-use vvv_engine::protocol::{
-    Diff, FileChange, History, HistoryEntry, Move, Rename, Rewrite, Search, Undo,
-};
+use vvv_engine::protocol::{Diff, FileChange, History, HistoryEntry, Rewrite, Search, Undo};
 use vvv_engine::{
     Address, Consumer, Dead, Dep, Deps, Explanation, Exposed, Impact, ImportRef, ImportSite,
     Importer, ImportsReport, Locations, Modifier, Outline, OutlineItem, PackageId, PathSyntax,
     Placed, Reach, References, Site, Surface, Unreferenced,
 };
 use vvv_engine::{
-    Edit, Intent, LanguageId, Match, MatchId, MoveIntent, Notice, NoticeKind, Occurrence, Position,
-    Query, Reason, RenameIntent, Respelling, RewriteIntent, Role, Selection, Span, Symbol,
-    SymbolKind,
+    Edit, Intent, LanguageId, Match, MatchId, Move, MoveIntent, Notice, NoticeKind, Occurrence,
+    Position, Query, Reason, Rename, RenameIntent, Respelling, RewriteIntent, Role, Selection,
+    Span, Symbol, SymbolKind,
 };
 
 pub fn m(path: &str, line: u32, col: u32, text: &str, source_line: &str) -> Match {
@@ -543,8 +541,8 @@ pub fn explanation_of_an_import() -> Explanation {
     }
 }
 
-pub fn move_symbol() -> vvv_engine::protocol::MoveSymbol {
-    vvv_engine::protocol::MoveSymbol {
+pub fn move_symbol() -> vvv_engine::MoveSymbol {
+    vvv_engine::MoveSymbol {
         intent: vvv_engine::MoveSymbolIntent::new("Config", "src/util.rs", "src/config.rs"),
         state: vvv_engine::MutationState::Preview,
         from: Address::new("cli", ["util", "Config"]),

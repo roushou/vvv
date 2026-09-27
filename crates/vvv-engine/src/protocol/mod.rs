@@ -23,8 +23,6 @@ pub mod vocabulary;
 
 use serde::{Deserialize, Serialize};
 
-pub use crate::capabilities::moves::{Move, MoveIntent, MoveSymbol, MoveSymbolIntent};
-pub use crate::capabilities::rename::{Rename, RenameIntent};
 pub use answer::{
     Consumer, Dead, Dep, Deps, Explanation, Exposed, File, Impact, ImportSite, Importer,
     ImportsReport, Locations, Outline, OutlineItem, Placed, References, Site, Surface,

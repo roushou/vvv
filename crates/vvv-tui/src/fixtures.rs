@@ -4,11 +4,11 @@
 use std::collections::BTreeMap;
 use vvv_engine::RelPath;
 
-use vvv_engine::protocol::{Diff, FileChange, Move, Rename, Search};
+use vvv_engine::protocol::{Diff, FileChange, Search};
 use vvv_engine::{
-    Address, Consumer, Deps, Edit, Explanation, Impact, Intent, LanguageId, Match, MatchId,
-    MoveIntent, Notice, NoticeKind, Occurrence, Position, Query, Reason, References, RenameIntent,
-    Respelling, Role, Selection, Span, Symbol, SymbolKind,
+    Address, Consumer, Deps, Edit, Explanation, Impact, Intent, LanguageId, Match, MatchId, Move,
+    MoveIntent, Notice, NoticeKind, Occurrence, Position, Query, Reason, References, Rename,
+    RenameIntent, Respelling, Role, Selection, Span, Symbol, SymbolKind,
 };
 
 pub fn m(path: &str, line: u32, col: u32, text: &str, source_line: &str) -> Match {

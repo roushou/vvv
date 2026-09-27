@@ -8,6 +8,8 @@ use vvv_core::{Edit, Query};
 
 use super::diff::Diff;
 use super::{Intent, Match, Notice, RewriteIntent, Skipped};
+use crate::capabilities::moves::{Move, MoveSymbol};
+use crate::capabilities::rename::Rename;
 use crate::plan::{FilePreview, Plan};
 
 /// The lifecycle of a mutation result, with a history id exactly when applied.
@@ -223,9 +225,9 @@ impl Mutation for Batch {
 #[allow(clippy::large_enum_variant)]
 pub enum MutationAnswer {
     Rewrite(Rewrite),
-    Rename(super::Rename),
-    Move(super::Move),
-    MoveSymbol(super::MoveSymbol),
+    Rename(Rename),
+    Move(Move),
+    MoveSymbol(MoveSymbol),
     Batch(Batch),
 }
 
@@ -298,9 +300,9 @@ impl TryFrom<super::Answer> for MutationAnswer {
 mod sealed {
     pub trait Sealed {}
     impl Sealed for super::Rewrite {}
-    impl Sealed for super::super::Rename {}
-    impl Sealed for super::super::Move {}
-    impl Sealed for super::super::MoveSymbol {}
+    impl Sealed for super::Rename {}
+    impl Sealed for super::Move {}
+    impl Sealed for super::MoveSymbol {}
     impl Sealed for super::Batch {}
     impl Sealed for super::MutationAnswer {}
 }

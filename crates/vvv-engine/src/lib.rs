@@ -7,6 +7,25 @@
 //! Typed clients call capability-owned `execute`, `plan`, or `apply` methods,
 //! and [`Ledger`] owns history and undo. The dispatcher orchestrates those bodies;
 //! interfaces consume [`Execution::into_answer`] only at a reporting boundary.
+//!
+//! Mutation capability types have one canonical public path, at the crate root:
+//!
+//! ```
+//! use vvv_engine::{Rename, RenameIntent, Move, MoveIntent, MoveSymbol, MoveSymbolIntent};
+//! let _: Option<(Rename, RenameIntent, Move, MoveIntent, MoveSymbol, MoveSymbolIntent)> = None;
+//! ```
+//!
+//! They are not aliases in `protocol`:
+//!
+//! ```compile_fail,E0432
+//! use vvv_engine::protocol::{Rename, RenameIntent, Move, MoveIntent, MoveSymbol, MoveSymbolIntent};
+//! ```
+//!
+//! Their owning capability modules are private:
+//!
+//! ```compile_fail,E0603
+//! use vvv_engine::capabilities::rename::Rename;
+//! ```
 
 #[cfg(test)]
 extern crate self as vvv_engine;
@@ -27,7 +46,8 @@ mod understanding;
 mod vfs;
 mod workspace;
 
-pub use capabilities::moves::ExtractionError;
+pub use capabilities::moves::{ExtractionError, Move, MoveIntent, MoveSymbol, MoveSymbolIntent};
+pub use capabilities::rename::{Rename, RenameIntent};
 pub use engine::{Engine, Execution, ExecutionKind};
 pub use error::{EngineError, RecoveryError};
 pub use graph::Retention;
@@ -37,12 +57,11 @@ pub use protocol::{
     Answer, Batch, BatchIntent, Call, Confidence, Consumer, Dead, DeadQuery, Dep, Deps, DepsQuery,
     ErrorCode, ExplainQuery, Explanation, Exposed, Failure, File, FileChange, FileQuery, History,
     HistoryEntry, Impact, ImpactQuery, ImportSite, Importer, ImportsQuery, ImportsReport, Intent,
-    Locations, Match, MatchId, Move, MoveIntent, MoveSymbol, MoveSymbolIntent, Mutation,
-    MutationAnswer, MutationState, Notice, NoticeKind, Occurrence, Outline, OutlineItem,
-    OutlineQuery, Placed, Reach, Reason, Recovery, RecoveryEffect, RecoveryIssue,
-    RecoveryOperation, RecoveryState, RecoveryUnverified, References, ReferencesQuery, Rename,
-    RenameIntent, Reply, Request, Respelling, Rewrite, RewriteIntent, RewriteOf, Search,
-    SearchQuery, Selection, SelectionError, Site, Skipped, Surface, SurfaceQuery, Template,
+    Locations, Match, MatchId, Mutation, MutationAnswer, MutationState, Notice, NoticeKind,
+    Occurrence, Outline, OutlineItem, OutlineQuery, Placed, Reach, Reason, Recovery,
+    RecoveryEffect, RecoveryIssue, RecoveryOperation, RecoveryState, RecoveryUnverified,
+    References, ReferencesQuery, Reply, Request, Respelling, Rewrite, RewriteIntent, RewriteOf,
+    Search, SearchQuery, Selection, SelectionError, Site, Skipped, Surface, SurfaceQuery, Template,
     TemplateError, Undo, Unreferenced, WhereQuery,
 };
 pub use vfs::{

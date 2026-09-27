@@ -6,12 +6,14 @@
 use serde::{Deserialize, Serialize};
 use vvv_core::Query;
 
+use crate::capabilities::moves::{Move, MoveIntent, MoveSymbol, MoveSymbolIntent};
+use crate::capabilities::rename::{Rename, RenameIntent};
+
 use super::{
     Batch, BatchIntent, Dead, DeadQuery, Deps, DepsQuery, ExplainQuery, Explanation, File,
-    FileQuery, History, Impact, ImpactQuery, ImportsQuery, ImportsReport, Locations, Move,
-    MoveIntent, MoveSymbol, MoveSymbolIntent, Notice, Outline, OutlineQuery, References,
-    ReferencesQuery, Rename, RenameIntent, Response, Rewrite, RewriteIntent, Search, Surface,
-    SurfaceQuery, Undo, WhereQuery,
+    FileQuery, History, Impact, ImpactQuery, ImportsQuery, ImportsReport, Locations, Notice,
+    Outline, OutlineQuery, References, ReferencesQuery, Response, Rewrite, RewriteIntent, Search,
+    Surface, SurfaceQuery, Undo, WhereQuery,
 };
 
 /// One request, tagged by `command`. A mutation carries the same fields as
