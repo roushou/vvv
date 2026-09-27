@@ -1,8 +1,10 @@
 //! Pure query, relation, and cursor transitions.
+use super::query::Filter;
 use super::{Relation, Search, SearchPanel};
 use crate::action::{Action, Effect};
 use crate::model::{FilePreview, Panels};
 use crate::modes::context::ModeContext;
+use crate::overlays::MenuTarget;
 use vvv_engine::{Answer, DepsQuery, ExplainQuery, ImpactQuery, Match, Request, Skipped};
 /// A retained-hub navigation either follows its changed selection or requests data.
 /// The application previews its active mode, which can differ from the retained hub.
@@ -46,6 +48,29 @@ impl Search {
             generation,
             request: Request::References(query),
         }]
+    }
+    pub fn choose_menu(
+        &mut self,
+        (target, value): (MenuTarget, Option<String>),
+        context: &mut ModeContext<'_>,
+    ) -> Navigation {
+        match target {
+            MenuTarget::Symbol => {
+                self.query.set_filter(Filter::Symbol, value.as_deref());
+                Navigation::Effects(self.search(context))
+            }
+            MenuTarget::Language => {
+                self.query.set_filter(Filter::Lang, value.as_deref());
+                Navigation::Effects(self.search(context))
+            }
+            MenuTarget::Relation => {
+                let relation = value
+                    .as_deref()
+                    .and_then(Relation::from_key)
+                    .unwrap_or_default();
+                self.choose_relation(relation, context)
+            }
+        }
     }
     pub fn choose_relation(
         &mut self,

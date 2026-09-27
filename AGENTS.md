@@ -155,9 +155,10 @@ docs/          architecture, guide, protocol, report
   should handle goes into the corpus first, with a case that shows it. The same file
   checks three properties every mutation must keep (apply is the preview, undo is the
   identity, a batch is composition); those never get accepted, only fixed.
-- TUI ownership → each migrated mode keeps state, transitions, and a typed view
+- TUI ownership → each mode keeps state, transitions, and a typed view
   under `modes/<name>/`. Shared screens own key/focus/help metadata; rendering
-  callbacks take the bound view, never an arbitrary `Model`.
+  callbacks take the bound view, never an arbitrary `Model`. Overlays keep their
+  state, transitions, and typed boxes under `overlays/`.
 - TUI change → `update`/`on_event` stay pure (no I/O, no time); views stay pure
   functions of the model; the engine is only ever called from `worker.rs`; the terminal
   and the editor only from `tui.rs`; the surface stays `Tui`'s four methods. Test with

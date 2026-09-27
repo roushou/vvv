@@ -5,10 +5,11 @@
 pub(crate) mod defaults;
 use crate::modes::history::screen as history;
 use crate::modes::moves::screen as moving;
-pub(crate) mod overlay;
 use crate::modes::rename::screen as rename;
 use crate::modes::rewrite::screen as rewrite;
 use crate::modes::search::screen as search;
+#[cfg(test)]
+use crate::overlays::screen as overlay;
 mod status;
 
 use ratatui::buffer::Buffer;
@@ -133,21 +134,6 @@ impl Screen {
     }
 }
 
-/// Temporary renderer for modes not yet migrated to a typed view.
-pub(crate) struct LegacyScreen {
-    pub screen: &'static Screen,
-    pub content: &'static [fn(&Model, Painter, Rect, &mut Buffer)],
-    pub layout: fn(&Model, Painter, Region) -> Vec<Region>,
-}
-impl LegacyScreen {
-    pub fn render(&self, model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-        let regions = (self.layout)(model, painter, Region::new(area));
-        debug_assert_eq!(self.screen.panels.len(), regions.len());
-        for (draw, region) in self.content.iter().zip(regions) {
-            draw(model, painter, region.rect(), buf);
-        }
-    }
-}
 /// Rendering callbacks bound to the mode state that supplies their data.
 pub(crate) struct BoundScreen<V, const N: usize> {
     view: V,
@@ -241,15 +227,8 @@ impl Widget for App<'_> {
                 .render(body, buf),
         }
         StatusBar::new(m, t).render(bottom, buf);
-        if let Some(o) = &m.overlay {
-            use crate::model::Overlay;
-            let screen = match o {
-                Overlay::Menu(_) => &overlay::MENU_SCREEN_RENDER,
-                Overlay::Confirm(_) => &overlay::CONFIRM_SCREEN_RENDER,
-                Overlay::Help { .. } => &overlay::HELP_SCREEN_RENDER,
-                Overlay::Report { .. } => &overlay::REPORT_SCREEN_RENDER,
-            };
-            screen.render(m, t, area, buf);
+        if let Some(overlay) = &m.overlay {
+            overlay.render(t, area, buf);
         }
     }
 }

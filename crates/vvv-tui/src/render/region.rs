@@ -16,6 +16,11 @@ impl Region {
         self.0
     }
 
+    /// One panel using the full area, as overlay views do.
+    pub fn full(self) -> Vec<Self> {
+        vec![self]
+    }
+
     /// The left and right of the area, `percent` of the width to the left.
     pub fn columns(self, percent: u16) -> (Region, Region) {
         let [left, right] = Layout::horizontal([

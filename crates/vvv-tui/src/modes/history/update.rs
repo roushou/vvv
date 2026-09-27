@@ -1,8 +1,9 @@
 //! Pure history transitions.
 use super::{HistoryMode, HistoryPanel};
 use crate::action::{Action, Effect};
-use crate::model::{Confirm, Confirmed, Panels};
+use crate::model::Panels;
 use crate::modes::context::ModeContext;
+use crate::overlays::{Confirm, Confirmed};
 use vvv_engine::protocol::vocabulary::IntentLine;
 impl HistoryMode {
     pub fn update(&mut self, action: Action, _context: &mut ModeContext<'_>) -> Vec<Effect> {

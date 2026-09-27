@@ -462,8 +462,13 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
 - `screen/` — shared key, focus, and help metadata (`Screen`, `Panel`) and
   the application frame. `BoundScreen<V>` owns a typed view and its layout and panel
   callbacks; panels render from that view without inspecting `Mode`.
-  `screen/defaults.rs` holds the shared key layers. Overlays alone still use a
-  temporary `LegacyScreen` renderer until their integration migration.
+  `screen/defaults.rs` holds the shared key layers. Each mode binds its view once;
+  the application chooses the shown mode before panel rendering. Panels never
+  receive `Model` or inspect `Mode`. There is no legacy renderer.
+- `overlays/` — menu, confirmation, help, and report state, transitions, metadata,
+  and typed boxes. `Overlay` owns report-source selection and help scrolling;
+  each box renders from its own borrowed data. Help retains static screen metadata
+  independently of a renderer.
 - `modes/context.rs` — shared status and generation borrowed by a mode transition,
   without access to `Model` or another mode. `input.rs` holds `TextInput`, which
   edits a borrowed string buffer for name, destination, and template inputs.

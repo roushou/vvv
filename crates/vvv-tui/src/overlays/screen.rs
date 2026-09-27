@@ -7,11 +7,11 @@ use ratatui::layout::{Constraint, Rect};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Paragraph, Widget};
 
-use super::{LegacyScreen, Panel, Screen};
+use super::{Confirm, Menu, Overlay};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
-use crate::model::{Confirm, Menu, Model, Overlay};
-use crate::render::{Painter, Region};
+use crate::render::Painter;
+use crate::screen::{BoundScreen, Panel, Screen};
 use vvv_engine::report::{Detailed, Document, Options, View};
 
 use Action as A;
@@ -245,77 +245,18 @@ pub(crate) static MENU_SCREEN: Screen = Screen {
     panels: &[MENU_PANEL],
 };
 
-pub(crate) static MENU_SCREEN_RENDER: LegacyScreen = LegacyScreen {
-    screen: &MENU_SCREEN,
-    content: &[draw_menu],
-    layout: full,
-};
-
 pub(crate) static CONFIRM_SCREEN: Screen = Screen {
     layer: CONFIRM,
     panels: &[CONFIRM_PANEL],
 };
-
-pub(crate) static CONFIRM_SCREEN_RENDER: LegacyScreen = LegacyScreen {
-    screen: &CONFIRM_SCREEN,
-    content: &[draw_confirm],
-    layout: full,
-};
-
 pub(crate) static HELP_SCREEN: Screen = Screen {
     layer: HELP,
     panels: &[HELP_PANEL],
 };
-
-pub(crate) static HELP_SCREEN_RENDER: LegacyScreen = LegacyScreen {
-    screen: &HELP_SCREEN,
-    content: &[draw_help],
-    layout: full,
-};
-
 pub(crate) static REPORT_SCREEN: Screen = Screen {
     layer: REPORT,
     panels: &[REPORT_PANEL],
 };
-
-pub(crate) static REPORT_SCREEN_RENDER: LegacyScreen = LegacyScreen {
-    screen: &REPORT_SCREEN,
-    content: &[draw_report],
-    layout: full,
-};
-
-fn full(_model: &Model, _painter: Painter, area: Region) -> Vec<Region> {
-    vec![area]
-}
-
-fn draw_menu(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    if let Some(Overlay::Menu(menu)) = &model.overlay {
-        MenuBox::new(menu, painter).render(area, buf);
-    }
-}
-
-fn draw_confirm(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    if let Some(Overlay::Confirm(confirm)) = &model.overlay {
-        ConfirmBox::new(confirm, painter).render(area, buf);
-    }
-}
-
-fn draw_help(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    if let Some(Overlay::Help {
-        screen,
-        focus,
-        scroll,
-    }) = &model.overlay
-    {
-        HelpBox::new(screen, *focus, *scroll, painter).render(area, buf);
-    }
-}
-
-fn draw_report(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    if let Some(Overlay::Report { report, cursor }) = &model.overlay {
-        ReportBox::new(report, *cursor, painter).render(area, buf);
-    }
-}
 
 /// A list to pick one value from.
 pub struct MenuBox<'a> {
@@ -324,13 +265,16 @@ pub struct MenuBox<'a> {
 }
 
 impl<'a> MenuBox<'a> {
+    pub fn screen(self) -> BoundScreen<Self, 1> {
+        BoundScreen::new(self, &MENU_SCREEN, |_, area| area.full(), [Self::draw])
+    }
     pub fn new(menu: &'a Menu, painter: Painter) -> Self {
         Self { menu, painter }
     }
 }
 
-impl Widget for MenuBox<'_> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+impl MenuBox<'_> {
+    fn draw(&self, area: Rect, buf: &mut Buffer) {
         let height = (self.menu.items.len() as u16 + 2).min(area.height);
         let boxed = area.centered(Constraint::Length(30), Constraint::Length(height));
         Clear.render(boxed, buf);
@@ -367,13 +311,16 @@ pub struct ConfirmBox<'a> {
 }
 
 impl<'a> ConfirmBox<'a> {
+    pub fn screen(self) -> BoundScreen<Self, 1> {
+        BoundScreen::new(self, &CONFIRM_SCREEN, |_, area| area.full(), [Self::draw])
+    }
     pub fn new(confirm: &'a Confirm, painter: Painter) -> Self {
         Self { confirm, painter }
     }
 }
 
-impl Widget for ConfirmBox<'_> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+impl ConfirmBox<'_> {
+    fn draw(&self, area: Rect, buf: &mut Buffer) {
         let width = (self.confirm.question.len() as u16 + 6)
             .max(30)
             .min(area.width);
@@ -400,6 +347,9 @@ pub struct HelpBox<'a> {
 }
 
 impl<'a> HelpBox<'a> {
+    pub fn screen(self) -> BoundScreen<Self, 1> {
+        BoundScreen::new(self, &HELP_SCREEN, |_, area| area.full(), [Self::draw])
+    }
     pub fn new(screen: &'a Screen, focus: usize, scroll: usize, painter: Painter) -> Self {
         Self {
             screen,
@@ -435,8 +385,8 @@ impl<'a> HelpBox<'a> {
     }
 }
 
-impl Widget for HelpBox<'_> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+impl HelpBox<'_> {
+    fn draw(&self, area: Rect, buf: &mut Buffer) {
         let rows = self.rows();
         let height = (rows.len() as u16 + 2).min(area.height);
         let boxed = area.centered(
@@ -479,6 +429,9 @@ pub struct ReportBox<'a> {
 }
 
 impl<'a> ReportBox<'a> {
+    pub fn screen(self) -> BoundScreen<Self, 1> {
+        BoundScreen::new(self, &REPORT_SCREEN, |_, area| area.full(), [Self::draw])
+    }
     pub fn new(report: &'a Document, cursor: usize, painter: Painter) -> Self {
         Self {
             report,
@@ -488,8 +441,8 @@ impl<'a> ReportBox<'a> {
     }
 }
 
-impl Widget for ReportBox<'_> {
-    fn render(self, area: Rect, buf: &mut Buffer) {
+impl ReportBox<'_> {
+    fn draw(&self, area: Rect, buf: &mut Buffer) {
         let painter = self.painter;
         let presentation = Detailed.present(self.report, Options::default(), usize::MAX);
         // The rows a cursor can stand on, and the one it is on.
@@ -531,5 +484,32 @@ impl Widget for ReportBox<'_> {
         let offset = cursor.map_or(0, |c| c.saturating_sub(visible.saturating_sub(1)));
         let shown: Vec<Line> = lines.into_iter().skip(offset).collect();
         Paragraph::new(shown).render(inner, buf);
+    }
+}
+
+impl Overlay {
+    pub fn screen(&self) -> &'static Screen {
+        match self {
+            Self::Menu(_) => &MENU_SCREEN,
+            Self::Confirm(_) => &CONFIRM_SCREEN,
+            Self::Help { .. } => &HELP_SCREEN,
+            Self::Report { .. } => &REPORT_SCREEN,
+        }
+    }
+    pub fn render(&self, painter: Painter, area: Rect, buf: &mut Buffer) {
+        match self {
+            Self::Menu(menu) => MenuBox::new(menu, painter).screen().render(area, buf),
+            Self::Confirm(confirm) => ConfirmBox::new(confirm, painter).screen().render(area, buf),
+            Self::Help {
+                screen,
+                focus,
+                scroll,
+            } => HelpBox::new(screen, *focus, *scroll, painter)
+                .screen()
+                .render(area, buf),
+            Self::Report { report, cursor } => ReportBox::new(report, *cursor, painter)
+                .screen()
+                .render(area, buf),
+        }
     }
 }

@@ -1,27 +1,56 @@
 # Remaining audit work
 
 The behavior repairs, dispatch consolidation, report boundary changes, and engine
-navigation batch are complete. These items remain; each needs its own approved
+navigation batch and the TUI mode pass are complete. The open items below remain; each needs its own approved
 plan. Follow [architecture.md](architecture.md) and the ownership rules in
 [AGENTS.md](../AGENTS.md). New behavior must live on the type that owns its data or
 in a trait implementation, never in a free function or a namespace-only unit
 struct.
 
-## TUI modes and screen integration
+## TUI modes and screen integration — done
 
-Group each mode's state, transitions, and screen under `modes/<name>/`, keeping
-`Model::update` as the application router and `worker.rs` as the engine boundary.
-Bind a typed view once so its panels cannot be paired with an unrelated mode;
-replace the remaining rendering free functions with methods on those views, and
-the nested string editor with a data-bearing `TextInput`. The audit evidence is
-[state for every mode in model.rs](../crates/vvv-tui/src/model.rs#L212),
-[mode branches across update.rs](../crates/vvv-tui/src/update.rs#L348),
-[Screen and Panel callbacks accepting any Model](../crates/vvv-tui/src/screen/mod.rs#L34),
-[rename callbacks repeatedly inspecting Mode](../crates/vvv-tui/src/screen/rename.rs#L180),
-[history's free layout and rendering helpers](../crates/vvv-tui/src/screen/history.rs#L86),
-and [the nested edit function](../crates/vvv-tui/src/update.rs#L556). This is an
-ownership and integration correction; preserve action/effect behavior, first-plan
-arrival handling, key precedence, and every TUI snapshot.
+The pass addresses the audit's all-mode state and transition files, callbacks
+accepting any `Model` and repeatedly inspecting `Mode`, and rendering free functions.
+Each mode now owns its state, transitions, and typed screen under
+[modes/](../crates/vvv-tui/src/modes/mod.rs); overlays own their data and views under
+[overlays/](../crates/vvv-tui/src/overlays/mod.rs). Shared
+[Screen and Panel](../crates/vvv-tui/src/screen/mod.rs) hold key, focus, and help
+metadata; `BoundScreen<V>` binds one typed view to its panel callbacks.
+[Model::update](../crates/vvv-tui/src/update.rs) routes application actions and
+[worker.rs](../crates/vvv-tui/src/worker.rs) remains the engine boundary.
+[TextInput](../crates/vvv-tui/src/input.rs) owns the borrowed text buffer edited by
+name, destination, and template inputs. The existing action assertions and TUI
+snapshots pass without snapshot updates; first-plan arrival and key precedence
+remain unchanged.
+
+## Free-function inventory
+
+The TUI production entries are done: all 33 inventoried functions now belong to
+views or the data they operate on. No namespace-only struct was introduced.
+
+| Audited TUI functions                                                                           | Status and owner                                                              |
+| ----------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
+| Rename: `layout`, `draw_name`, `draw_unsure`, `draw_sure`, `draw_other`, `draw_detail`          | Done: `RenameView` in `modes/rename/screen.rs`                                |
+| Move: `layout`, `draw_to`, `draw_respellings`, `draw_structural`, `draw_notices`, `draw_detail` | Done: `MoveView` in `modes/moves/screen.rs`                                   |
+| Rewrite: `layout`, `draw_template`, `draw_matches`, `draw_detail`                               | Done: `RewriteView` in `modes/rewrite/screen.rs`                              |
+| Search: `layout`, `draw_query`, `draw_results`, `draw_context`                                  | Done: `SearchView` in `modes/search/screen.rs`                                |
+| History: `layout`, `draw_header`, `draw_entries`, `draw_files`, `header`, `entries`, `files`    | Done: `HistoryView` in `modes/history/screen.rs`                              |
+| Overlays: `draw_menu`, `draw_confirm`, `draw_help`, `draw_report`                               | Done: `MenuBox`, `ConfirmBox`, `HelpBox`, `ReportBox` in `overlays/screen.rs` |
+| Overlays: `full`                                                                                | Done: `Region::full`                                                          |
+| Nested input: `edit`                                                                            | Done: `TextInput::edit`                                                       |
+
+The touched test helpers `layers` and `render` also now belong to data-bearing
+`Layers` and `FrameFixture`. What remains is the production serde default `yes`
+([ImportRef](../crates/vvv-core/src/import/mod.rs#L47)), the namespace-only
+[Builtins](../crates/vvv/src/languages.rs#L10), and existing test-helper free
+functions. In the TUI, those remaining helpers are the engine-value factories in
+[fixtures.rs](../crates/vvv-tui/src/fixtures.rs), and the model, source preview,
+numbered lines, key/input, effect-generation, mode/plan, history-entry, report, and
+anchored-state fixtures in [tests.rs](../crates/vvv-tui/src/tests.rs). They are not
+exempt from the ownership rule; migrate them to owners of the fixture data in a
+separate test-fixture cleanup, preserving assertions and snapshots. API paths,
+hints, capability errors, the other small ownership fixes, and cross-file parent
+aliases remain open below.
 
 ## API path unification
 

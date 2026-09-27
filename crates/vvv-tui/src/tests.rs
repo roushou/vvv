@@ -293,30 +293,38 @@ fn history_entry(id: u64) -> vvv_engine::HistoryEntry {
     }
 }
 
-fn render(model: &Model) -> String {
-    let backend = TestBackend::new(90, 20);
-    let mut terminal = Terminal::new(backend).unwrap();
-    terminal
-        .draw(|f| {
-            App::new(
-                model,
-                Painter::plain(),
-                vvv_engine::protocol::vocabulary::Ago::now(),
-            )
-            .render(f.area(), f.buffer_mut())
-        })
-        .unwrap();
-    let buffer = terminal.backend().buffer();
-    (0..buffer.area.height)
-        .map(|y| {
-            (0..buffer.area.width)
-                .map(|x| buffer[(x, y)].symbol())
-                .collect::<String>()
-                .trim_end()
-                .to_owned()
-        })
-        .collect::<Vec<_>>()
-        .join("\n")
+struct FrameFixture<'a> {
+    model: &'a Model,
+}
+impl<'a> FrameFixture<'a> {
+    fn new(model: &'a Model) -> Self {
+        Self { model }
+    }
+    fn render(&self) -> String {
+        let backend = TestBackend::new(90, 20);
+        let mut terminal = Terminal::new(backend).unwrap();
+        terminal
+            .draw(|f| {
+                App::new(
+                    self.model,
+                    Painter::plain(),
+                    vvv_engine::protocol::vocabulary::Ago::now(),
+                )
+                .render(f.area(), f.buffer_mut())
+            })
+            .unwrap();
+        let buffer = terminal.backend().buffer();
+        (0..buffer.area.height)
+            .map(|y| {
+                (0..buffer.area.width)
+                    .map(|x| buffer[(x, y)].symbol())
+                    .collect::<String>()
+                    .trim_end()
+                    .to_owned()
+            })
+            .collect::<Vec<_>>()
+            .join("\n")
+    }
 }
 
 // ------------------------------------------------------------------ search
@@ -585,7 +593,7 @@ fn a_mode_is_drawn_only_once_its_first_plan_answers() {
         matches!(m.shown(), Mode::Search),
         "the screen waits for something to show"
     );
-    let before = render(&m);
+    let before = FrameFixture::new(&m).render();
     assert!(before.contains("results"), "{before}");
     assert!(!before.contains("unverified"));
 
@@ -804,7 +812,7 @@ fn the_rewrite_detail_shows_the_hunk_holding_the_current_match() {
     m.update(Action::FocusNth(2));
     // The second `src/lib.rs` match (line 41) sits in its own hunk.
     m.update(Action::Move(3));
-    let lines = render(&m);
+    let lines = FrameFixture::new(&m).render();
     assert!(lines.contains("src/lib.rs:41"), "{lines}");
     assert!(lines.contains("+    Lang::new()"), "{lines}");
     assert!(
@@ -871,7 +879,7 @@ fn snapshot_report_overlay() {
         report: Box::new(report()),
         cursor: 0,
     });
-    insta::assert_snapshot!(render(&m));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 #[test]
@@ -894,7 +902,7 @@ fn shared_move_and_rename_reports_have_no_cli_flag_advice() {
 fn snapshot_search() {
     let mut m = searched();
     m.update(Action::Enter);
-    insta::assert_snapshot!(render(&m));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 #[test]
@@ -902,7 +910,7 @@ fn snapshot_search_detailed() {
     let mut m = searched();
     m.update(Action::Enter);
     m.view = ReportView::Detailed;
-    insta::assert_snapshot!(render(&m));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 #[test]
@@ -951,7 +959,7 @@ fn snapshot_search_use_row_with_context() {
     );
     let refs: Vec<&str> = lines.iter().map(String::as_str).collect();
     m.on_event(preview("src/lib.rs", &refs));
-    insta::assert_snapshot!(render(&m));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 /// `searched()`, then `Enter` on the declaration and the engine's answer:
@@ -1022,14 +1030,14 @@ fn anchored_rename_targets_the_subject_from_any_row() {
 #[test]
 fn snapshot_search_anchored() {
     let m = anchored();
-    insta::assert_snapshot!(render(&m));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 #[test]
 fn snapshot_search_anchored_detailed() {
     let mut m = anchored();
     m.view = ReportView::Detailed;
-    insta::assert_snapshot!(render(&m));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 #[test]
@@ -1072,7 +1080,7 @@ fn the_relation_menu_narrows_references_and_switches_to_impact() {
 fn snapshot_search_anchored_unresolved() {
     let mut m = anchored();
     m.search.results.set_relation(Relation::Unresolved);
-    insta::assert_snapshot!(render(&m));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 #[test]
@@ -1128,14 +1136,14 @@ fn o_jumps_from_a_use_to_its_declaration() {
 fn snapshot_search_definition() {
     let mut m = anchored();
     m.search.results.show_definition(fx::explanation());
-    insta::assert_snapshot!(render(&m));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 #[test]
 fn snapshot_search_deps() {
     let mut m = anchored();
     m.search.results.show_deps(fx::deps());
-    insta::assert_snapshot!(render(&m));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 #[test]
@@ -1165,12 +1173,12 @@ fn snapshot_search_impact() {
     let lines = numbered(5, &[(1, "use super::{Language, LanguageId};")]);
     let refs: Vec<&str> = lines.iter().map(String::as_str).collect();
     m.on_event(preview("src/lang/registry.rs", &refs));
-    insta::assert_snapshot!(render(&m));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 #[test]
 fn snapshot_empty_search() {
-    insta::assert_snapshot!(render(&model()));
+    insta::assert_snapshot!(FrameFixture::new(&model()).render());
 }
 
 #[test]
@@ -1184,7 +1192,7 @@ fn snapshot_rename() {
     // The `✓` re-export in src/other.rs: the detail draws the plan's hunk.
     m.update(Action::FocusNth(3));
     m.update(Action::Move(2));
-    insta::assert_snapshot!(render(&m));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 #[test]
@@ -1197,7 +1205,7 @@ fn the_rename_detail_shows_the_hunk_holding_the_current_site() {
     });
     m.update(Action::FocusNth(3));
     m.update(Action::Move(2));
-    let lines = render(&m);
+    let lines = FrameFixture::new(&m).render();
     assert!(lines.contains("src/other.rs:13"), "{lines}");
     assert!(lines.contains("vvv::Lang::default()"), "{lines}");
     assert!(
@@ -1218,7 +1226,7 @@ fn snapshot_rename_detailed() {
     });
     m.update(Action::FocusNth(3));
     m.update(Action::Move(2));
-    insta::assert_snapshot!(render(&m));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 #[test]
@@ -1228,7 +1236,7 @@ fn snapshot_move() {
     let lines = numbered(5, &[(1, "use crate::util::parse::X;")]);
     let refs: Vec<&str> = lines.iter().map(String::as_str).collect();
     m.on_event(preview("src/lib.rs", &refs));
-    insta::assert_snapshot!(render(&m));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 #[test]
@@ -1239,14 +1247,14 @@ fn snapshot_move_detailed() {
     let lines = numbered(5, &[(1, "use crate::util::parse::X;")]);
     let refs: Vec<&str> = lines.iter().map(String::as_str).collect();
     m.on_event(preview("src/lib.rs", &refs));
-    insta::assert_snapshot!(render(&m));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 #[test]
 fn snapshot_move_structural_row_shows_the_hunk() {
     let mut m = moving();
     m.update(Action::FocusNth(3));
-    insta::assert_snapshot!(render(&m));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 #[test]
@@ -1254,7 +1262,7 @@ fn snapshot_rewrite() {
     let mut m = rewriting();
     m.update(Action::FocusNth(2));
     m.update(Action::Move(1));
-    insta::assert_snapshot!(render(&m));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 #[test]
@@ -1263,16 +1271,16 @@ fn snapshot_rewrite_detailed() {
     m.view = ReportView::Detailed;
     m.update(Action::FocusNth(2));
     m.update(Action::Move(1));
-    insta::assert_snapshot!(render(&m));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 #[test]
 fn snapshot_history_and_confirm() {
     let mut m = searched();
     m.on_event(Event::History(vec![history_entry(1), history_entry(2)]));
-    let history = render(&m);
+    let history = FrameFixture::new(&m).render();
     m.update(Action::Undo);
-    let confirm = render(&m);
+    let confirm = FrameFixture::new(&m).render();
     insta::assert_snapshot!(format!("{history}\n\n=== confirm ===\n{confirm}"));
 }
 
@@ -1280,7 +1288,7 @@ fn snapshot_history_and_confirm() {
 fn snapshot_help() {
     let mut m = searched();
     m.update(Action::Help);
-    insta::assert_snapshot!(render(&m));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 #[test]
@@ -1316,7 +1324,7 @@ fn report_overlay_opens_declaration_sites_and_skips_suggested_imports() {
         model.report_site(),
         Some((first.path.clone(), first.start.line))
     );
-    assert!(render(&model).contains("Language"));
+    assert!(FrameFixture::new(&model).render().contains("Language"));
     model.update(Action::Move(1));
     assert_eq!(
         model.report_site(),

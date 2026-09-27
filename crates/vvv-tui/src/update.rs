@@ -4,16 +4,17 @@
 //! testable with plain assertions.
 
 use ratatui::crossterm::event::KeyEvent;
-use vvv_engine::{Intent, SymbolKind};
+use vvv_engine::Intent;
 
 use super::action::{Action, Effect, Event, Planned};
 use super::keymap::{Dispatch, Key};
-use super::model::{Confirmed, FilePreview, Menu, MenuTarget, Mode, Model, Overlay};
+use super::model::{FilePreview, Mode, Model};
 use crate::modes::context::ModeContext;
-use crate::modes::search::{Navigation, Relation, query::Filter};
+use crate::modes::search::Navigation;
 use crate::modes::{
     history::HistoryMode, moves::MoveMode, rename::RenameMode, rewrite::RewriteMode,
 };
+use crate::overlays::{Confirmed, Menu, MenuTarget, Overlay};
 use vvv_engine::protocol::vocabulary::IntentLine;
 
 impl Model {
@@ -46,7 +47,9 @@ impl Model {
             }
             Action::Move(n) => {
                 if matches!(self.overlay, Some(Overlay::Report { .. })) {
-                    self.report_moved(n);
+                    if let Some(overlay) = &mut self.overlay {
+                        overlay.report_moved(n);
+                    }
                     Vec::new()
                 } else {
                     self.moved(n)
@@ -285,8 +288,11 @@ impl Model {
     }
 
     fn scrolled(&mut self, by: i32) -> Vec<Effect> {
-        if let Some(Overlay::Help { scroll, .. }) = &mut self.overlay {
-            *scroll = (*scroll as i32 + by).max(0) as usize;
+        if self
+            .overlay
+            .as_mut()
+            .is_some_and(|overlay| overlay.help_scrolled(by))
+        {
             Vec::new()
         } else if !self.scroll_focused() {
             self.moved(by)
@@ -368,16 +374,7 @@ impl Model {
             Navigation::Effects(effects) => effects,
         }
     }
-    fn choose_relation(&mut self, relation: Relation) -> Vec<Effect> {
-        let navigation = self.search.choose_relation(
-            relation,
-            &mut ModeContext {
-                status: &mut self.status,
-                generation: &mut self.generation,
-            },
-        );
-        self.navigation(navigation)
-    }
+
     fn goto_declaration(&mut self) -> Vec<Effect> {
         let navigation = self.search.goto_declaration(&mut ModeContext {
             status: &mut self.status,
@@ -423,22 +420,11 @@ impl Model {
     }
 
     fn open_menu(&mut self, target: MenuTarget) -> Vec<Effect> {
-        let menu = match target {
-            MenuTarget::Symbol => {
-                let values = SymbolKind::ALL
-                    .iter()
-                    .map(|k| k.as_str().to_owned())
-                    .collect();
-                let current = self.search.query.filter(Filter::Symbol).map(str::to_owned);
-                Menu::new(target, values, current.as_deref())
-            }
-            MenuTarget::Language => {
-                let current = self.search.query.filter(Filter::Lang).map(str::to_owned);
-                Menu::new(target, self.languages.clone(), current.as_deref())
-            }
-            MenuTarget::Relation => Menu::relations(self.search.results.relation),
-        };
-        self.overlay = Some(Overlay::Menu(menu));
+        self.overlay = Some(Overlay::Menu(Menu::for_target(
+            target,
+            &self.languages,
+            &self.search,
+        )));
         Vec::new()
     }
 
@@ -446,28 +432,16 @@ impl Model {
         let Some(Overlay::Menu(menu)) = &self.overlay else {
             return Vec::new();
         };
-        let target = menu.target;
-        let value = menu.current().value.clone();
+        let choice = menu.chosen();
         self.overlay = None;
-        match target {
-            MenuTarget::Symbol => {
-                self.search
-                    .query
-                    .set_filter(Filter::Symbol, value.as_deref());
-                self.search()
-            }
-            MenuTarget::Language => {
-                self.search.query.set_filter(Filter::Lang, value.as_deref());
-                self.search()
-            }
-            MenuTarget::Relation => {
-                let relation = value
-                    .as_deref()
-                    .and_then(Relation::from_key)
-                    .unwrap_or_default();
-                self.choose_relation(relation)
-            }
-        }
+        let navigation = self.search.choose_menu(
+            choice,
+            &mut ModeContext {
+                status: &mut self.status,
+                generation: &mut self.generation,
+            },
+        );
+        self.navigation(navigation)
     }
 
     fn undo_requested(&mut self) -> Vec<Effect> {

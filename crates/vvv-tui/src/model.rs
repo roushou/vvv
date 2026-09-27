@@ -4,11 +4,10 @@
 use vvv_engine::RelPath;
 
 use vvv_engine::Highlight;
-use vvv_engine::report::{Detailed, Document, Options, View};
 
 use super::action::Action;
 use super::keymap::{Dispatch, Layer, When};
-use super::screen::{Screen, overlay};
+use super::screen::Screen;
 use crate::modes::history::HistoryMode;
 use crate::modes::history::screen as history;
 use crate::modes::moves::MoveMode;
@@ -17,9 +16,9 @@ use crate::modes::rename::RenameMode;
 use crate::modes::rename::screen as rename;
 use crate::modes::rewrite::RewriteMode;
 use crate::modes::rewrite::screen as rewrite;
-use crate::modes::search::Relation;
 use crate::modes::search::screen as search;
 use crate::modes::search::{Search, SearchPanel};
+pub(crate) use crate::overlays::{MenuTarget, Overlay};
 
 #[derive(Debug)]
 pub struct Model {
@@ -92,32 +91,9 @@ impl Model {
         }
     }
 
-    /// The sources a report's rows stand for, in the order it draws them.
-    fn report_sites(report: &Document) -> Vec<vvv_engine::report::Source> {
-        Detailed
-            .present(report, Options::default(), usize::MAX)
-            .body
-            .into_iter()
-            .filter_map(|row| row.source)
-            .collect()
-    }
-
-    /// Move the report overlay's cursor by `by` source rows.
-    pub fn report_moved(&mut self, by: i32) {
-        if let Some(Overlay::Report { report, cursor }) = &mut self.overlay {
-            let last = Self::report_sites(report).len().saturating_sub(1) as i32;
-            *cursor = (*cursor as i32 + by).clamp(0, last) as usize;
-        }
-    }
-
-    /// The source the report overlay's cursor stands on, when it is a report.
+    /// The selected report source, when the active overlay is a report.
     pub fn report_site(&self) -> Option<(RelPath, u32)> {
-        let Some(Overlay::Report { report, cursor }) = &self.overlay else {
-            return None;
-        };
-        Self::report_sites(report)
-            .get(*cursor)
-            .map(|site| (site.path.clone(), site.line))
+        self.overlay.as_ref()?.report_site()
     }
 
     /// The view of the mode on screen.
@@ -133,13 +109,7 @@ impl Model {
 
     /// The overlay's view, when one is open.
     pub fn overlay_screen(&self) -> Option<&'static Screen> {
-        match &self.overlay {
-            Some(Overlay::Menu(_)) => Some(&overlay::MENU_SCREEN),
-            Some(Overlay::Confirm(_)) => Some(&overlay::CONFIRM_SCREEN),
-            Some(Overlay::Help { .. }) => Some(&overlay::HELP_SCREEN),
-            Some(Overlay::Report { .. }) => Some(&overlay::REPORT_SCREEN),
-            None => None,
-        }
+        self.overlay.as_ref().map(Overlay::screen)
     }
 
     /// The view the keys go to: the overlay when one is open, the mode otherwise.
@@ -240,27 +210,6 @@ impl Mode {
     }
 }
 
-/// A small question in front of the mode.
-#[derive(Debug, Clone)]
-pub enum Overlay {
-    Menu(Menu),
-    Confirm(Confirm),
-    /// The key list: the screen the user was in and the panel that had the
-    /// focus, kept so the list stays about them; `scroll` is how many rows
-    /// are above the box.
-    Help {
-        screen: &'static Screen,
-        focus: usize,
-        scroll: usize,
-    },
-    /// What an apply produced, as the report the picker shows.
-    Report {
-        report: Box<Document>,
-        /// Where the cursor stands among the report's source rows.
-        cursor: usize,
-    },
-}
-
 /// A list panel's cursor. Rows live in the mode; the cursor only knows how
 /// to stay inside them.
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
@@ -333,102 +282,6 @@ pub trait Panels: Copy + PartialEq + Sized + 'static {
     fn nth(n: u8) -> Option<Self> {
         Self::ALL.get(usize::from(n).checked_sub(1)?).copied()
     }
-}
-
-// ---------------------------------------------------------------- overlays
-
-/// A list to pick one value from; the choice edits the query bar.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Menu {
-    pub target: MenuTarget,
-    pub items: Vec<MenuItem>,
-    pub cursor: usize,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum MenuTarget {
-    Symbol,
-    Language,
-    Relation,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct MenuItem {
-    pub label: String,
-    /// The filter value, or `None` for "any".
-    pub value: Option<String>,
-}
-
-impl Menu {
-    /// Symbol kinds, or the registered languages; `current` preselects.
-    pub fn new(target: MenuTarget, values: Vec<String>, current: Option<&str>) -> Self {
-        let mut items = vec![MenuItem {
-            label: "any".to_owned(),
-            value: None,
-        }];
-        items.extend(values.into_iter().map(|v| MenuItem {
-            label: v.clone(),
-            value: Some(v),
-        }));
-        let cursor = items
-            .iter()
-            .position(|i| i.value.as_deref() == current)
-            .unwrap_or(0);
-        Self {
-            target,
-            items,
-            cursor,
-        }
-    }
-
-    /// What the hub shows about the entered declaration.
-    pub fn relations(current: Relation) -> Self {
-        let items = Relation::ALL
-            .iter()
-            .map(|r| MenuItem {
-                label: r.label().to_owned(),
-                value: Some(r.key().to_owned()),
-            })
-            .collect();
-        let cursor = Relation::ALL
-            .iter()
-            .position(|r| *r == current)
-            .unwrap_or(0);
-        Self {
-            target: MenuTarget::Relation,
-            items,
-            cursor,
-        }
-    }
-
-    pub fn title(&self) -> &'static str {
-        match self.target {
-            MenuTarget::Symbol => "symbol kind",
-            MenuTarget::Language => "language",
-            MenuTarget::Relation => "relation",
-        }
-    }
-
-    pub fn current(&self) -> &MenuItem {
-        &self.items[self.cursor]
-    }
-
-    pub fn move_cursor(&mut self, by: i32) {
-        let last = self.items.len() as i32 - 1;
-        self.cursor = (self.cursor as i32 + by).clamp(0, last) as usize;
-    }
-}
-
-/// A yes/no question before something irreversible-ish.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Confirm {
-    pub question: String,
-    pub then: Confirmed,
-}
-
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub enum Confirmed {
-    Undo,
 }
 
 // ---------------------------------------------------------------- shared
