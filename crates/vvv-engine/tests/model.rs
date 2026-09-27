@@ -63,6 +63,10 @@ impl Vfs for Counting {
     fn remove_file(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
         self.inner.remove_file(path)
     }
+    fn create_dir(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
+        self.inner.create_dir(path)
+    }
+
     fn remove_empty_dir(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
         self.inner.remove_empty_dir(path)
     }

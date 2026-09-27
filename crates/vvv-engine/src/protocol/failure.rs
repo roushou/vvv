@@ -109,6 +109,7 @@ pub struct RecoveryUnverified {
 pub enum RecoveryOperation {
     RestoreFile,
     RestoreMove,
+    RestoreDirectory,
     RemoveFile,
     RemoveDirectory,
 }

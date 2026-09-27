@@ -94,20 +94,6 @@ impl<'a> History<'a> {
     pub fn entries(&self) -> Result<Vec<Record>, HistoryError> {
         Ok(self.snapshot()?.entries)
     }
-
-    /// The newest entry, without removing it.
-    pub fn last(&self) -> Result<Record, HistoryError> {
-        self.entries()?.pop().ok_or(HistoryError::Empty)
-    }
-
-    /// Remove the newest entry. Called after its receipt was undone.
-    pub fn pop(&self) -> Result<(), HistoryError> {
-        let mut entries = self.entries()?;
-        entries.pop().ok_or(HistoryError::Empty)?;
-        let text = serde_json::to_string(&entries)
-            .map_err(|error| HistoryError::Corrupt(error.to_string()))?;
-        Ok(self.workspace.vfs().write(&self.file(), &text)?)
-    }
 }
 
 /// Validated history retained for one mutation, including its exact before-state.
@@ -144,6 +130,15 @@ impl HistorySnapshot {
         }
         self.save(transaction)?;
         Ok(entry)
+    }
+
+    fn last(&self) -> Result<&Record, HistoryError> {
+        self.entries.last().ok_or(HistoryError::Empty)
+    }
+
+    fn pop(&mut self, transaction: &mut crate::plan::Transaction<'_>) -> Result<(), HistoryError> {
+        self.entries.pop().ok_or(HistoryError::Empty)?;
+        self.save(transaction)
     }
 
     fn next_id(&self) -> Result<u64, HistoryError> {
@@ -195,10 +190,16 @@ impl Command for UndoLast {
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
         let history = History::new(cx.workspace);
-        let record = history.last()?;
+        let mut snapshot = history.snapshot()?;
+        let record = snapshot.last()?.clone();
         cx.graph.touched();
-        record.receipt.undo(cx.workspace)?;
-        history.pop()?;
+        let mut transaction = crate::plan::Transaction::new(cx.workspace);
+        if let Err(error) = record.receipt.undo_in(&mut transaction) {
+            return Err(transaction.recover(error.into()));
+        }
+        if let Err(error) = snapshot.pop(&mut transaction) {
+            return Err(transaction.recover(error.into()));
+        }
         Ok(Undo {
             undone: record.entry(),
             restored: record.receipt.paths().map(Into::into).collect(),

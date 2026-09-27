@@ -283,8 +283,7 @@ the file or ledger whose write failed partway through. If restoration cannot fin
 or be verified, `recovery_failed` names the remaining effects and any paths whose
 state is unknown. Recovery is in memory: interruption or a crash has no automatic
 recovery. It does not provide isolation from external writers or restore inode
-identity, timestamps, or complete filesystem metadata. Coupled history removal
-during undo is still pending.
+identity, timestamps, or complete filesystem metadata.
 
 Each apply is saved to `.vvv/history.json` (worth adding `.vvv/` to `.gitignore`).
 
@@ -299,9 +298,20 @@ $ vvv undo
   src/util.rs
 ```
 
-Undo restores files to exactly what they were, moves included (a moved file shows as
-`src/b.rs → src/a.rs`). If you've edited one of those files since the apply, undo
-refuses and leaves the history entry in place, so you can sort it out and try again.
+Successful undo restores the receipt's file contents, locations, and case spelling,
+removes its history entry, and removes owned empty directories (a moved file shows
+as `src/b.rs → src/a.rs`). Pre-existing directories, directories containing other
+files, and directories without ownership evidence in older receipts are retained.
+If you've edited one of those files since the apply, undo refuses before restoration
+and leaves the history entry in place.
+
+Undo keeps its recovery state until the updated history ledger is saved. If file
+restoration, directory cleanup, or that history save returns an error, undo restores
+the pre-undo file and ledger state, including directories it removed, or returns
+`recovery_failed` naming confirmed remaining effects and unverified paths.
+Apply, batch, and undo are failure-correct for returned I/O errors; they are not
+crash-consistent and do not isolate concurrent writers. They do not restore inode
+identity, timestamps, or complete filesystem metadata.
 
 Errors start with `✗` and are followed by `hint:` lines when there is an obvious next
 thing to try; an empty answer is `∅`.

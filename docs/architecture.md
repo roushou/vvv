@@ -168,7 +168,7 @@ the language's `glob_marker` (`::*` in Rust) in the alias's own package or namin
 | `BatchIntent`      | `Workspace::staged()` (an `Overlay` the real files never see); each intent planned by an engine over it and applied to it, receipts chained with `Receipt::then`; the preview is every touched file now against the staging tree at its final path                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 | `Request`          | the command it names, run against the same context, its result as the `Answer` of that name; a mutation with `apply` runs the intent then `Apply` on what it planned (`request.rs`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | `Apply(planned)`   | validate the history snapshot and next id, then apply every plan through one `Transaction`; retain effects and receipts until saving the ledger succeeds; a file or ledger failure recovers the full before-state; the result comes back with `applied` and `history_id` set                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
-| `UndoLast`         | `History::last` → `Receipt::undo` (fingerprint check, then rollback) → `History::pop`; answers `Undo` with what was restored                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            |
+| `UndoLast`         | one validated history snapshot; `Receipt::undo_in` checks fingerprints, restores files and cleans owned empty directories through one `Transaction`; save the snapshot without its newest entry before releasing recovery effects; on failure, recover the pre-undo state; answers `Undo` with what was restored                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 | `HistoryQuery`     | `History::entries`, each record's entry                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | `SurfaceQuery`     | every fragment's declarations in the package; each public one, or one `aliases_of` offers elsewhere, listed with its aliases and how many other fragments import any of its addresses                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | `ImpactQuery`      | `references` for the declaration, `aliases_of` for its addresses, then breadth first over fragments: a module whose imports lead under a frontier address joins the next ring, once, at the depth it is first reached                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
@@ -238,8 +238,10 @@ cannot hide a failed restoration of case. Temporary files that cannot be restore
 appear explicitly in `Recovery.remaining`. This logical two-leg operation is not
 atomic, even when each primitive rename is atomic. Receipts record the logical
 source and destination, and receipt rollback uses the same transaction and case
-handling. File-restoration failures in undo now recover to the pre-undo file state;
-removing the history entry is still a separate operation pending coupled undo.
+handling. Undo retains its transaction through saving the ledger without the newest entry.
+A failed file restoration, directory cleanup, or history save compensates toward
+the pre-undo file and ledger state, with structured recovery failures if that state
+cannot be restored or verified.
 
 CI tests run on Linux, macOS, and Windows; formatting, documentation, lint and
 feature-matrix gates run on Linux. Local validation is on the host platform.
@@ -249,6 +251,17 @@ receipt carries full pre-apply file contents. Each record stores the `Intent` th
 applied — data, never a sentence — and its receipt; the receipt never leaves the engine,
 a client sees the `HistoryEntry` (id, time, intent, what was written). It goes through the
 `Vfs` like everything else, so engine tests exercise it in memory.
+
+New receipts also retain the directories actually created by the file plans, in
+creation order; `Receipt::then` keeps that ownership across batch steps. Ledger-only
+parent directories are excluded from the receipt. Undo removes owned directories
+in reverse creation order only when empty. Pre-existing directories and directories
+containing other files are retained. Old receipts have no directory ownership
+evidence and conservatively retain their directories. A removed directory has a
+before-state in the undo transaction; recovery recreates parents before children
+through `Vfs::create_dir`, which does not replace an occupied entry.
+The directory-capable disk backend implements this recovery primitive; file-only
+backends return an explicit unsupported-operation error if asked to create one.
 
 `protocol::vocabulary` sits with the shapes so a
 client reads them the way the CLI prints them: `Mark`, every glyph any interface
@@ -436,8 +449,9 @@ ordered recovery log. One transaction spans all plans of an apply, including a b
 A successful `Receipt` describes the applied changes; it is not the recovery log
 for a partially attempted operation. `ChangeSet` has no write method.
 
-On a file-operation failure, recovery reverses the effect log, continues restoring
-independent effects after an error, and checks every retained before-state. Complete
+When a file operation or history save returns an error, recovery reverses the effect
+log, continues restoring independent effects after an error, and checks every
+retained before-state. Complete
 verified restoration returns the initiating error. Otherwise `EngineError::Recovery`
 reports the cause, failed restoration operations, confirmed remaining effects, and
 paths whose state could not be verified. Recovery also removes owned empty parent
@@ -447,8 +461,16 @@ even when preparation fails partway through.
 This is in-memory failure recovery, not crash consistency: there is no durable
 journal, restart recovery, or isolation from external writers. Restoration concerns
 file contents and locations and owned directories, not inode identity, timestamps,
-or complete filesystem metadata. Apply and batch compensate failed history saves in the same transaction as the
-files. Coupling undo with history removal is the remaining transaction change.
+or complete filesystem metadata. Apply and batch keep recovery effects and receipts
+until their history entry is saved. Undo keeps its recovery effects until the entry is removed from the saved
+ledger. On any returned file-operation, directory-cleanup, or history-save error,
+the outcome is either verified restoration of the state before that command or a
+structured recovery failure naming confirmed remaining effects and unverified
+paths. Successful undo restores the receipt's file contents, locations, and case
+spelling, removes its history entry, and removes owned empty directories.
+Directories containing other files and directories without ownership evidence
+are retained. These guarantees exclude crashes and concurrent-writer isolation;
+they do not promise to restore inode identity, timestamps, or complete metadata.
 
 **Plan provenance covers edited and moved files.** An immutable `SourceFile` gives
 an edit producer a `SourceWitness` (relative path and content fingerprint). `Change`

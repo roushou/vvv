@@ -520,6 +520,7 @@ pub enum FaultOperation {
     PrepareParent,
     RemoveFile,
     RemoveDirectory,
+    CreateDirectory,
 }
 
 #[derive(Debug, Clone)]
@@ -679,6 +680,21 @@ impl vvv_engine::Vfs for FaultVfs {
             }
             Some(action) => Err(action.error(path)),
             None => self.base.remove_file(path),
+        }
+    }
+
+    fn create_dir(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
+        match self.action(FaultOperation::CreateDirectory, path) {
+            Some(action @ FaultAction::After) => {
+                self.base.create_dir(path)?;
+                Err(action.error(path))
+            }
+            Some(FaultAction::Occupy(contents)) => {
+                self.base.write(path, &contents)?;
+                self.base.create_dir(path)
+            }
+            Some(action) => Err(action.error(path)),
+            None => self.base.create_dir(path),
         }
     }
 

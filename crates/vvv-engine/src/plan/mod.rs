@@ -179,6 +179,10 @@ pub struct Receipt {
     /// whether the files have been touched since.
     #[serde(default)]
     written: BTreeMap<PathBuf, Fingerprint>,
+    /// Only directories actually created by the file plans, in creation order.
+    /// Old receipts lack this evidence and conservatively keep their directories.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    directories: Vec<RelPath>,
 }
 
 impl Receipt {
@@ -205,43 +209,63 @@ impl Receipt {
         self.written.retain(|path, _| !moved_away.contains(path));
         self.written.extend(next.written);
         self.moves.extend(next.moves);
+        self.directories.extend(next.directories);
         self
     }
 
-    /// Undo: move files back, then restore every file to its pre-apply
-    /// contents. Returns how many files were restored. Does not check that
-    /// the files are still as written; see [`Receipt::undo`].
-    pub fn rollback(&self, workspace: &Workspace) -> Result<usize, crate::EngineError> {
+    fn rollback_in(&self, transaction: &mut Transaction<'_>) -> Result<usize, ApplyError> {
+        for (from, to) in self.moves.iter().rev() {
+            let before = transaction
+                .workspace
+                .vfs()
+                .read(&transaction.workspace.absolute(to))?;
+            transaction.move_file(&to.clone().into(), &from.clone().into(), &before)?;
+        }
+        for (path, original) in &self.originals {
+            let before = transaction
+                .workspace
+                .vfs()
+                .read(&transaction.workspace.absolute(path))?;
+            transaction.write(&path.clone().into(), &before, original)?;
+        }
+        for directory in self.directories.iter().rev() {
+            transaction.remove_owned_directory(directory)?;
+        }
+        Ok(self.originals.len())
+    }
+
+    /// Keep undo's effects live until its caller also saves the history ledger.
+    pub(crate) fn undo_in(&self, transaction: &mut Transaction<'_>) -> Result<usize, ApplyError> {
+        for (path, expected) in &self.written {
+            let current = transaction
+                .workspace
+                .vfs()
+                .read(&transaction.workspace.absolute(path))?;
+            if &Fingerprint::of(&current) != expected {
+                return Err(ApplyError::Modified {
+                    path: path.clone().into(),
+                });
+            }
+        }
+        self.rollback_in(transaction)
+    }
+
+    #[cfg(test)]
+    fn rollback(&self, workspace: &Workspace) -> Result<usize, crate::EngineError> {
         let mut transaction = Transaction::new(workspace);
-        let result = (|| -> Result<(), ApplyError> {
-            for (from, to) in self.moves.iter().rev() {
-                let before = workspace.vfs().read(&workspace.absolute(to))?;
-                transaction.move_file(&to.clone().into(), &from.clone().into(), &before)?;
-            }
-            for (path, original) in &self.originals {
-                let before = workspace.vfs().read(&workspace.absolute(path))?;
-                transaction.write(&path.clone().into(), &before, original)?;
-            }
-            Ok(())
-        })();
-        match result {
-            Ok(()) => Ok(self.originals.len()),
+        match self.rollback_in(&mut transaction) {
+            Ok(restored) => Ok(restored),
             Err(error) => Err(transaction.recover(error.into())),
         }
     }
 
-    /// Roll back only if every file is still exactly as this apply left it.
-    pub fn undo(&self, workspace: &Workspace) -> Result<usize, crate::EngineError> {
-        for (path, expected) in &self.written {
-            let current = workspace.vfs().read(&workspace.absolute(path))?;
-            if &Fingerprint::of(&current) != expected {
-                return Err(ApplyError::Modified {
-                    path: path.clone().into(),
-                }
-                .into());
-            }
+    #[cfg(test)]
+    fn undo(&self, workspace: &Workspace) -> Result<usize, crate::EngineError> {
+        let mut transaction = Transaction::new(workspace);
+        match self.undo_in(&mut transaction) {
+            Ok(restored) => Ok(restored),
+            Err(error) => Err(transaction.recover(error.into())),
         }
-        self.rollback(workspace)
     }
 }
 
@@ -265,7 +289,17 @@ impl<'a> Transaction<'a> {
     }
 
     pub(crate) fn apply(&mut self, plan: Plan) -> Result<(), ApplyError> {
-        let receipt = plan.apply_in(self)?;
+        let start = self.effects.len();
+        let mut receipt = plan.apply_in(self)?;
+        receipt
+            .directories
+            .extend(self.effects[start..].iter().filter_map(|effect| {
+                if let Effect::Directory(path) = effect {
+                    Some(path.clone())
+                } else {
+                    None
+                }
+            }));
         self.receipts.push(receipt);
         Ok(())
     }
@@ -290,6 +324,29 @@ impl<'a> Transaction<'a> {
             self.effects.push(Effect::Directory(path));
         }
         parents.result
+    }
+
+    fn remove_owned_directory(&mut self, path: &RelPath) -> Result<(), VfsError> {
+        let absolute = self.workspace.absolute(path);
+        match self.workspace.vfs().entry_kind(&absolute)? {
+            None => return Ok(()),
+            Some(crate::EntryKind::Directory) => {}
+            Some(_) => return Err(VfsError::Exists(absolute)),
+        }
+        self.originals
+            .entry(path.clone())
+            .or_insert(Original::Directory);
+        self.effects.push(Effect::RemovedDirectory(path.clone()));
+        match self.workspace.vfs().remove_empty_dir(&absolute) {
+            // A directory containing another file is retained; only empty owned
+            // directories are cleanup targets, even if a file arrives mid-check.
+            Err(VfsError::Io { source, .. })
+                if source.kind() == std::io::ErrorKind::DirectoryNotEmpty =>
+            {
+                Ok(())
+            }
+            outcome => outcome,
+        }
     }
 
     fn write(&mut self, path: &RelPath, before: &str, after: &str) -> Result<(), ApplyError> {
@@ -525,6 +582,7 @@ impl Original {
 
 enum Effect {
     CreateFile(RelPath),
+    RemovedDirectory(RelPath),
     Write {
         path: RelPath,
         before: String,
@@ -541,7 +599,10 @@ enum Effect {
 impl Effect {
     fn path(&self) -> &RelPath {
         match self {
-            Self::Write { path, .. } | Self::Directory(path) | Self::CreateFile(path) => path,
+            Self::Write { path, .. }
+            | Self::Directory(path)
+            | Self::CreateFile(path)
+            | Self::RemovedDirectory(path) => path,
             Self::Move { from, .. } => from,
         }
     }
@@ -552,6 +613,7 @@ impl Effect {
             Self::CreateFile(_) => crate::RecoveryOperation::RemoveFile,
             Self::Move { .. } => crate::RecoveryOperation::RestoreMove,
             Self::Directory(_) => crate::RecoveryOperation::RemoveDirectory,
+            Self::RemovedDirectory(_) => crate::RecoveryOperation::RestoreDirectory,
         }
     }
 
@@ -561,15 +623,24 @@ impl Effect {
         let mut failed_path = self.path();
         let result = (|| -> Result<(), VfsError> {
             match self {
+                Self::RemovedDirectory(path) => match vfs.entry_kind(&workspace.absolute(path))? {
+                    Some(crate::EntryKind::Directory) => Ok(()),
+                    None => vfs.create_dir(&workspace.absolute(path)),
+                    Some(_) => Err(VfsError::Exists(workspace.absolute(path))),
+                },
                 Self::CreateFile(path) => match vfs.entry_kind(&workspace.absolute(path))? {
                     None => Ok(()),
                     Some(crate::EntryKind::File) => vfs.remove_file(&workspace.absolute(path)),
                     Some(_) => Err(VfsError::Exists(workspace.absolute(path))),
                 },
                 Self::Write { path, before } => {
-                    if Original::observe(workspace, path)? == Original::File(before.clone()) {
+                    if Original::observe(workspace, path)
+                        .is_ok_and(|observed| observed == Original::File(before.clone()))
+                    {
                         return Ok(());
                     }
+                    // A partial write may leave unreadable text. The retained
+                    // original is enough to attempt restoration without a reload.
                     vfs.write(&workspace.absolute(path), before)
                 }
                 Self::Move {

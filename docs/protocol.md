@@ -473,7 +473,7 @@ omit this field. The envelope schema remains 1; this is an additive field.
 - `cause`: the initiating `Failure` (`code`, `message`, and optional `hint`).
 - `failures`: failed recovery operations, each with `operation`, project-relative
   `path`, `code`, and `message`. Operations are `restore_file`, `restore_move`,
-  `remove_file`, and `remove_directory`.
+  `restore_directory`, `remove_file`, and `remove_directory`.
 - `remaining`: confirmed differences from the before-state, each with `path`,
   `expected`, and `observed`.
 - `unverified`: paths whose final state could not be read, each with `path`,
@@ -491,7 +491,12 @@ for independent effects after a failure. If the final before-states are all veri
 the initiating error is returned instead, even if a restoration operation returned
 an error after completing its effect.
 
-These are in-memory recovery results, not crash-recovery records. Apply and batch
-include ledger-save compensation: an unrestored `.vvv/history.json` is listed
-like any other remaining file, and an unrestored owned ledger directory is listed
-as a directory. Coupled history removal during undo is still pending.
+These are in-memory recovery results, not crash-recovery records. Apply, batch,
+and undo include ledger-save compensation: an unrestored `.vvv/history.json` is
+listed like any other remaining file. An unrestored owned directory is listed
+as a directory; `restore_directory` identifies a failed attempt to recreate one
+removed during undo. During failed undo, expected states describe the pre-undo
+(applied) state, including the original ledger with the entry still present.
+Successful answer shapes are unchanged; the envelope schema remains 1.
+Directory ownership is kept in internal history receipts, with an empty default
+for receipts written by older versions; it is not a new field in client answers.

@@ -105,7 +105,6 @@ pub trait Vfs: Send + Sync {
     fn exists(&self, path: &Path) -> bool;
     /// Inspect a directory entry without following its final symlink.
     fn entry_kind(&self, path: &Path) -> Result<Option<EntryKind>, VfsError>;
-    /// Create missing parents and retain every directory created, even on error.
     /// Stored directory-entry spelling, rather than a requested case alias.
     /// Case-sensitive implementations can use this default.
     fn entry_path(&self, path: &Path) -> Result<Option<PathBuf>, VfsError> {
@@ -128,7 +127,19 @@ pub trait Vfs: Send + Sync {
         Ok(self.entry_path(to)?.is_some_and(|to| from == to))
     }
 
+    /// Create missing parents and retain every directory created, even on error.
     fn prepare_parent(&self, path: &Path) -> ParentCreation;
+    /// Recreate one removed directory during recovery, without creating parents
+    /// or replacing an occupied entry. File-only backends do not model directories.
+    fn create_dir(&self, path: &Path) -> Result<(), VfsError> {
+        Err(VfsError::Io {
+            path: path.to_path_buf(),
+            source: std::io::Error::new(
+                std::io::ErrorKind::Unsupported,
+                "directory creation is not modeled by this file system",
+            ),
+        })
+    }
     fn remove_file(&self, path: &Path) -> Result<(), VfsError>;
     /// Remove only an empty directory.
     fn remove_empty_dir(&self, path: &Path) -> Result<(), VfsError>;

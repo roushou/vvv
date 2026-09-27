@@ -244,6 +244,10 @@ impl Vfs for DiskVfs {
         ParentCreation::new(created, Ok(()))
     }
 
+    fn create_dir(&self, path: &Path) -> Result<(), VfsError> {
+        std::fs::create_dir(path).map_err(|error| Self::io(path, error))
+    }
+
     fn remove_file(&self, path: &Path) -> Result<(), VfsError> {
         std::fs::remove_file(path).map_err(|error| Self::io(path, error))
     }

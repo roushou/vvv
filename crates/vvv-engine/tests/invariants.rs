@@ -422,6 +422,10 @@ impl Vfs for ChangingRead {
     fn remove_file(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
         self.inner.remove_file(path)
     }
+    fn create_dir(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
+        self.inner.create_dir(path)
+    }
+
     fn remove_empty_dir(&self, path: &Path) -> Result<(), vvv_engine::VfsError> {
         self.inner.remove_empty_dir(path)
     }
@@ -2166,5 +2170,597 @@ fn history_save_recovery_reports_an_owned_ledger_directory_it_cannot_remove() {
     assert_eq!(
         recovery.details.remaining[0].observed,
         vvv_engine::RecoveryState::Directory
+    );
+}
+
+#[test]
+fn undo_history_save_failure_restores_files_and_exact_ledger() {
+    for action in [
+        common::FaultAction::Before,
+        common::FaultAction::Partial("cut".into()),
+        common::FaultAction::After,
+    ] {
+        let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo")]);
+        let planned = fixture.engine.run(RenameIntent::new("foo", "bar")).unwrap();
+        fixture.engine.run(Apply(planned)).unwrap();
+        let records: serde_json::Value =
+            serde_json::from_str(&fixture.read(".vvv/history.json")).unwrap();
+        let original = format!("\n{}\n", serde_json::to_string_pretty(&records).unwrap());
+        fixture
+            .vfs
+            .base
+            .write(Path::new("/ws/.vvv/history.json"), &original)
+            .unwrap();
+        fixture.arm(
+            common::FaultOperation::Write,
+            ".vvv/history.json",
+            0,
+            action,
+        );
+        let error = fixture.engine.run(vvv_engine::UndoLast).unwrap_err();
+        assert!(matches!(error, EngineError::History(_)), "{error}");
+        assert_eq!(fixture.read("a.p"), "def bar\nbar");
+        assert_eq!(fixture.read(".vvv/history.json"), original);
+        assert_eq!(
+            fixture
+                .engine
+                .run(vvv_engine::HistoryQuery)
+                .unwrap()
+                .entries
+                .len(),
+            1
+        );
+        fixture.engine.run(vvv_engine::UndoLast).unwrap();
+        assert_eq!(fixture.read("a.p"), "def foo\nfoo");
+    }
+}
+
+#[test]
+fn undo_of_a_batch_compensates_a_failed_history_save() {
+    let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo"), ("b.p", "foo")]);
+    let batch = fixture
+        .engine
+        .run(vvv_engine::BatchIntent::new([
+            Intent::Rename(RenameIntent::new("foo", "bar")),
+            Intent::Rename(RenameIntent::new("bar", "baz")),
+        ]))
+        .unwrap();
+    fixture.engine.run(Apply(batch)).unwrap();
+    let original = fixture.read(".vvv/history.json");
+    fixture.arm(
+        common::FaultOperation::Write,
+        ".vvv/history.json",
+        0,
+        common::FaultAction::Partial("cut".into()),
+    );
+    let error = fixture.engine.run(vvv_engine::UndoLast).unwrap_err();
+    assert!(matches!(error, EngineError::History(_)), "{error}");
+    assert_eq!(fixture.read("a.p"), "def baz\nbaz");
+    assert_eq!(fixture.read("b.p"), "baz");
+    assert_eq!(fixture.read(".vvv/history.json"), original);
+    fixture.engine.run(vvv_engine::UndoLast).unwrap();
+    assert_eq!(fixture.read("a.p"), "def foo\nfoo");
+    assert_eq!(fixture.read("b.p"), "foo");
+}
+
+#[test]
+fn undo_history_save_failure_restores_the_applied_case_spelling() {
+    let fixture =
+        common::FaultFixture::case_insensitive(&[("config.p", "def foo\nfoo"), ("manifest.p", "")]);
+    let planned = fixture
+        .engine
+        .run(MoveIntent::new("config.p", "Config.p"))
+        .unwrap();
+    fixture.engine.run(Apply(planned)).unwrap();
+    let original = fixture.read(".vvv/history.json");
+    fixture.arm(
+        common::FaultOperation::Write,
+        ".vvv/history.json",
+        0,
+        common::FaultAction::Partial("cut".into()),
+    );
+    let error = fixture.engine.run(vvv_engine::UndoLast).unwrap_err();
+    assert!(matches!(error, EngineError::History(_)), "{error}");
+    assert_eq!(
+        fixture.stored("config.p").unwrap(),
+        Path::new("/ws/Config.p")
+    );
+    assert_eq!(fixture.read("Config.p"), "def foo\nfoo");
+    assert_eq!(fixture.read("manifest.p"), "moved\n");
+    assert_eq!(fixture.read(".vvv/history.json"), original);
+    assert!(!fixture.files().iter().any(|path| {
+        path.file_name()
+            .unwrap()
+            .to_string_lossy()
+            .starts_with(".vvv-move-")
+    }));
+    fixture.engine.run(vvv_engine::UndoLast).unwrap();
+    assert_eq!(
+        fixture.stored("Config.p").unwrap(),
+        Path::new("/ws/config.p")
+    );
+}
+
+#[test]
+fn undo_recovery_reports_a_ledger_it_cannot_restore() {
+    let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo")]);
+    let planned = fixture.engine.run(RenameIntent::new("foo", "bar")).unwrap();
+    fixture.engine.run(Apply(planned)).unwrap();
+    fixture.arm(
+        common::FaultOperation::Write,
+        ".vvv/history.json",
+        0,
+        common::FaultAction::Partial("cut".into()),
+    );
+    fixture.arm(
+        common::FaultOperation::Write,
+        ".vvv/history.json",
+        0,
+        common::FaultAction::Before,
+    );
+    let error = fixture.engine.run(vvv_engine::UndoLast).unwrap_err();
+    let EngineError::Recovery(recovery) = error else {
+        panic!("expected recovery error: {error}")
+    };
+    assert!(matches!(recovery.cause.as_ref(), EngineError::History(_)));
+    assert_eq!(fixture.read("a.p"), "def bar\nbar");
+    assert_eq!(fixture.read(".vvv/history.json"), "cut");
+    assert_eq!(recovery.details.remaining.len(), 1);
+    assert_eq!(
+        recovery.details.remaining[0].path,
+        Path::new(".vvv/history.json")
+    );
+}
+
+#[test]
+fn undo_recovery_reports_a_file_it_cannot_return_to_the_applied_state() {
+    let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo")]);
+    let planned = fixture.engine.run(RenameIntent::new("foo", "bar")).unwrap();
+    fixture.engine.run(Apply(planned)).unwrap();
+    let original = fixture.read(".vvv/history.json");
+    fixture.arm(
+        common::FaultOperation::Write,
+        ".vvv/history.json",
+        0,
+        common::FaultAction::Before,
+    );
+    fixture.arm(
+        common::FaultOperation::Write,
+        "a.p",
+        1,
+        common::FaultAction::Before,
+    );
+    let error = fixture.engine.run(vvv_engine::UndoLast).unwrap_err();
+    let EngineError::Recovery(recovery) = error else {
+        panic!("expected recovery error: {error}")
+    };
+    assert_eq!(fixture.read("a.p"), "def foo\nfoo");
+    assert_eq!(fixture.read(".vvv/history.json"), original);
+    assert_eq!(recovery.details.remaining.len(), 1);
+    assert_eq!(recovery.details.remaining[0].path, Path::new("a.p"));
+}
+
+#[test]
+fn undo_recovery_reports_every_unrestored_file_and_ledger() {
+    let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo"), ("b.p", "foo")]);
+    let planned = fixture.engine.run(RenameIntent::new("foo", "bar")).unwrap();
+    fixture.engine.run(Apply(planned)).unwrap();
+    fixture.arm(
+        common::FaultOperation::Write,
+        ".vvv/history.json",
+        0,
+        common::FaultAction::After,
+    );
+    fixture.arm(
+        common::FaultOperation::Write,
+        ".vvv/history.json",
+        0,
+        common::FaultAction::Before,
+    );
+    fixture.arm(
+        common::FaultOperation::Write,
+        "a.p",
+        1,
+        common::FaultAction::Before,
+    );
+    let error = fixture.engine.run(vvv_engine::UndoLast).unwrap_err();
+    let EngineError::Recovery(recovery) = &error else {
+        panic!("expected recovery error: {error}")
+    };
+    assert_eq!(fixture.read("a.p"), "def foo\nfoo");
+    assert_eq!(fixture.read("b.p"), "bar");
+    assert_eq!(fixture.read(".vvv/history.json"), "[]");
+    let paths: Vec<_> = recovery
+        .details
+        .remaining
+        .iter()
+        .map(|effect| effect.path.as_path())
+        .collect();
+    assert_eq!(paths, [Path::new(".vvv/history.json"), Path::new("a.p")]);
+    let wire = serde_json::to_value(vvv_engine::Failure::from(&error)).unwrap();
+    assert_eq!(wire["code"], "recovery_failed");
+    assert_eq!(wire["recovery"]["remaining"].as_array().unwrap().len(), 2);
+}
+
+#[test]
+fn undo_compensation_uses_the_retained_ledger_when_a_reload_fails() {
+    let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo")]);
+    let planned = fixture.engine.run(RenameIntent::new("foo", "bar")).unwrap();
+    fixture.engine.run(Apply(planned)).unwrap();
+    let original = fixture.read(".vvv/history.json");
+    fixture.arm(
+        common::FaultOperation::Write,
+        ".vvv/history.json",
+        0,
+        common::FaultAction::Partial("cut".into()),
+    );
+    fixture.arm(
+        common::FaultOperation::Read,
+        ".vvv/history.json",
+        1,
+        common::FaultAction::Before,
+    );
+    let error = fixture.engine.run(vvv_engine::UndoLast).unwrap_err();
+    assert!(matches!(error, EngineError::History(_)), "{error}");
+    assert_eq!(fixture.read("a.p"), "def bar\nbar");
+    assert_eq!(fixture.read(".vvv/history.json"), original);
+}
+
+#[test]
+fn undo_uses_one_validated_history_snapshot() {
+    let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo")]);
+    let planned = fixture.engine.run(RenameIntent::new("foo", "bar")).unwrap();
+    fixture.engine.run(Apply(planned)).unwrap();
+    fixture.vfs.clear_trace();
+    fixture.arm(
+        common::FaultOperation::Read,
+        ".vvv/history.json",
+        1,
+        common::FaultAction::Always,
+    );
+    fixture.engine.run(vvv_engine::UndoLast).unwrap();
+    assert_eq!(fixture.read("a.p"), "def foo\nfoo");
+    assert_eq!(fixture.read(".vvv/history.json"), "[]");
+    assert_eq!(
+        fixture
+            .vfs
+            .trace()
+            .iter()
+            .filter(
+                |(operation, path)| *operation == common::FaultOperation::Read
+                    && path == Path::new("/ws/.vvv/history.json")
+            )
+            .count(),
+        1
+    );
+}
+
+#[test]
+fn undo_validates_history_before_attempting_restoration() {
+    let fixture = common::FaultFixture::new(&[("a.p", "def foo\nfoo")]);
+    let planned = fixture.engine.run(RenameIntent::new("foo", "bar")).unwrap();
+    fixture.engine.run(Apply(planned)).unwrap();
+    fixture
+        .vfs
+        .base
+        .write(Path::new("/ws/.vvv/history.json"), "corrupt")
+        .unwrap();
+    fixture.vfs.clear_trace();
+    assert!(matches!(
+        fixture.engine.run(vvv_engine::UndoLast),
+        Err(EngineError::History(_))
+    ));
+    assert_eq!(fixture.read("a.p"), "def bar\nbar");
+    assert_eq!(fixture.read(".vvv/history.json"), "corrupt");
+    assert!(
+        fixture
+            .vfs
+            .trace()
+            .iter()
+            .all(|(operation, _)| *operation == common::FaultOperation::Read)
+    );
+}
+
+#[test]
+fn undo_removes_only_owned_empty_directories() {
+    let fixture = DiskHistoryFixture::new();
+    std::fs::create_dir(fixture.root.join("nested")).unwrap();
+    let (_, engine) = fixture.fault_engine();
+    let planned = engine
+        .run(MoveIntent::new("a.p", "nested/deep/b.p"))
+        .unwrap();
+    engine.run(Apply(planned)).unwrap();
+    engine.run(vvv_engine::UndoLast).unwrap();
+    assert_eq!(fixture.source(), "def foo\nfoo");
+    assert!(!fixture.root.join("nested/deep").exists());
+    assert!(fixture.root.join("nested").is_dir());
+    assert!(fixture.root.join(".vvv").is_dir());
+    assert_eq!(
+        std::fs::read_to_string(fixture.root.join(".vvv/history.json")).unwrap(),
+        "[]"
+    );
+}
+
+#[test]
+fn undo_preserves_owned_directories_that_contain_other_files() {
+    let fixture = DiskHistoryFixture::new();
+    let (_, engine) = fixture.fault_engine();
+    let planned = engine
+        .run(MoveIntent::new("a.p", "nested/deep/b.p"))
+        .unwrap();
+    engine.run(Apply(planned)).unwrap();
+    std::fs::write(fixture.root.join("nested/deep/foreign.txt"), "foreign").unwrap();
+    engine.run(vvv_engine::UndoLast).unwrap();
+    assert_eq!(fixture.source(), "def foo\nfoo");
+    assert_eq!(
+        std::fs::read_to_string(fixture.root.join("nested/deep/foreign.txt")).unwrap(),
+        "foreign"
+    );
+    assert!(!fixture.root.join("nested/deep/b.p").exists());
+    assert_eq!(
+        std::fs::read_to_string(fixture.root.join(".vvv/history.json")).unwrap(),
+        "[]"
+    );
+}
+
+#[test]
+fn undo_of_a_batch_cleans_owned_directories_across_all_steps() {
+    let fixture = DiskHistoryFixture::new();
+    let (_, engine) = fixture.fault_engine();
+    let batch = engine
+        .run(vvv_engine::BatchIntent::new([
+            Intent::Move(MoveIntent::new("a.p", "one/b.p")),
+            Intent::Move(MoveIntent::new("one/b.p", "two/deep/c.p")),
+        ]))
+        .unwrap();
+    engine.run(Apply(batch)).unwrap();
+    engine.run(vvv_engine::UndoLast).unwrap();
+    assert_eq!(fixture.source(), "def foo\nfoo");
+    assert!(!fixture.root.join("one").exists());
+    assert!(!fixture.root.join("two").exists());
+}
+
+#[test]
+fn undo_directory_cleanup_failure_restores_the_applied_state() {
+    for action in [common::FaultAction::Before, common::FaultAction::After] {
+        let fixture = DiskHistoryFixture::new();
+        let (vfs, engine) = fixture.fault_engine();
+        let planned = engine
+            .run(MoveIntent::new("a.p", "nested/deep/b.p"))
+            .unwrap();
+        engine.run(Apply(planned)).unwrap();
+        let original = std::fs::read_to_string(fixture.root.join(".vvv/history.json")).unwrap();
+        let manifest = std::fs::read_to_string(fixture.root.join("manifest.p")).unwrap();
+        vfs.arm(
+            common::FaultOperation::RemoveDirectory,
+            &fixture.root.join("nested/deep"),
+            0,
+            action,
+        );
+        let error = engine.run(vvv_engine::UndoLast).unwrap_err();
+        assert!(matches!(error, EngineError::Apply(_)), "{error}");
+        assert!(!fixture.root.join("a.p").exists());
+        assert_eq!(
+            std::fs::read_to_string(fixture.root.join("nested/deep/b.p")).unwrap(),
+            "def foo\nfoo"
+        );
+        assert_eq!(
+            std::fs::read_to_string(fixture.root.join("manifest.p")).unwrap(),
+            manifest
+        );
+        assert_eq!(
+            std::fs::read_to_string(fixture.root.join(".vvv/history.json")).unwrap(),
+            original
+        );
+        engine.run(vvv_engine::UndoLast).unwrap();
+        assert_eq!(fixture.source(), "def foo\nfoo");
+        assert!(!fixture.root.join("nested").exists());
+    }
+}
+
+#[test]
+fn undo_history_save_failure_recreates_removed_owned_directories() {
+    let fixture = DiskHistoryFixture::new();
+    let (vfs, engine) = fixture.fault_engine();
+    let planned = engine
+        .run(MoveIntent::new("a.p", "nested/deep/b.p"))
+        .unwrap();
+    engine.run(Apply(planned)).unwrap();
+    let original = std::fs::read_to_string(fixture.root.join(".vvv/history.json")).unwrap();
+    let manifest = std::fs::read_to_string(fixture.root.join("manifest.p")).unwrap();
+    vfs.arm(
+        common::FaultOperation::Write,
+        &fixture.root.join(".vvv/history.json"),
+        0,
+        common::FaultAction::Partial("cut".into()),
+    );
+    let error = engine.run(vvv_engine::UndoLast).unwrap_err();
+    assert!(matches!(error, EngineError::History(_)), "{error}");
+    assert!(!fixture.root.join("a.p").exists());
+    assert_eq!(
+        std::fs::read_to_string(fixture.root.join("nested/deep/b.p")).unwrap(),
+        "def foo\nfoo"
+    );
+    assert_eq!(
+        std::fs::read_to_string(fixture.root.join("manifest.p")).unwrap(),
+        manifest
+    );
+    assert_eq!(
+        std::fs::read_to_string(fixture.root.join(".vvv/history.json")).unwrap(),
+        original
+    );
+    engine.run(vvv_engine::UndoLast).unwrap();
+    assert_eq!(fixture.source(), "def foo\nfoo");
+    assert!(!fixture.root.join("nested").exists());
+}
+
+#[test]
+fn undo_recovery_reports_every_directory_and_file_it_cannot_restore() {
+    let fixture = DiskHistoryFixture::new();
+    let (vfs, engine) = fixture.fault_engine();
+    let planned = engine
+        .run(MoveIntent::new("a.p", "nested/deep/b.p"))
+        .unwrap();
+    engine.run(Apply(planned)).unwrap();
+    let original = std::fs::read_to_string(fixture.root.join(".vvv/history.json")).unwrap();
+    vfs.arm(
+        common::FaultOperation::Write,
+        &fixture.root.join(".vvv/history.json"),
+        0,
+        common::FaultAction::Partial("cut".into()),
+    );
+    vfs.arm(
+        common::FaultOperation::CreateDirectory,
+        &fixture.root.join("nested"),
+        0,
+        common::FaultAction::Before,
+    );
+    let error = engine.run(vvv_engine::UndoLast).unwrap_err();
+    let EngineError::Recovery(recovery) = &error else {
+        panic!("expected recovery error: {error}")
+    };
+    assert_eq!(fixture.source(), "def foo\nfoo");
+    assert!(!fixture.root.join("nested").exists());
+    assert_eq!(
+        std::fs::read_to_string(fixture.root.join(".vvv/history.json")).unwrap(),
+        original
+    );
+    let paths: Vec<_> = recovery
+        .details
+        .remaining
+        .iter()
+        .map(|effect| effect.path.as_path())
+        .collect();
+    assert_eq!(
+        paths,
+        [
+            Path::new("a.p"),
+            Path::new("nested"),
+            Path::new("nested/deep"),
+            Path::new("nested/deep/b.p")
+        ]
+    );
+    assert!(recovery.details.failures.iter().any(|issue| issue.operation
+        == vvv_engine::RecoveryOperation::RestoreDirectory
+        && issue.path == Path::new("nested")));
+    let wire = serde_json::to_value(vvv_engine::Failure::from(&error)).unwrap();
+    assert!(
+        wire["recovery"]["failures"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|issue| issue["operation"] == "restore_directory")
+    );
+}
+
+#[test]
+fn undo_recovery_verifies_directory_recreation_that_returned_an_error() {
+    let fixture = DiskHistoryFixture::new();
+    let (vfs, engine) = fixture.fault_engine();
+    let planned = engine
+        .run(MoveIntent::new("a.p", "nested/deep/b.p"))
+        .unwrap();
+    engine.run(Apply(planned)).unwrap();
+    let original = std::fs::read_to_string(fixture.root.join(".vvv/history.json")).unwrap();
+    vfs.arm(
+        common::FaultOperation::Write,
+        &fixture.root.join(".vvv/history.json"),
+        0,
+        common::FaultAction::Before,
+    );
+    vfs.arm(
+        common::FaultOperation::CreateDirectory,
+        &fixture.root.join("nested"),
+        0,
+        common::FaultAction::After,
+    );
+    let error = engine.run(vvv_engine::UndoLast).unwrap_err();
+    assert!(matches!(error, EngineError::History(_)), "{error}");
+    assert!(!fixture.root.join("a.p").exists());
+    assert_eq!(
+        std::fs::read_to_string(fixture.root.join("nested/deep/b.p")).unwrap(),
+        "def foo\nfoo"
+    );
+    assert_eq!(
+        std::fs::read_to_string(fixture.root.join(".vvv/history.json")).unwrap(),
+        original
+    );
+}
+
+#[test]
+fn undo_reads_legacy_receipts_without_guessing_directory_ownership() {
+    let fixture = DiskHistoryFixture::new();
+    let (_, engine) = fixture.fault_engine();
+    let planned = engine
+        .run(MoveIntent::new("a.p", "nested/deep/b.p"))
+        .unwrap();
+    engine.run(Apply(planned)).unwrap();
+    let history_file = fixture.root.join(".vvv/history.json");
+    let mut records: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&history_file).unwrap()).unwrap();
+    assert!(
+        records[0]["receipt"]
+            .as_object_mut()
+            .unwrap()
+            .remove("directories")
+            .is_some()
+    );
+    std::fs::write(&history_file, serde_json::to_string(&records).unwrap()).unwrap();
+    engine.run(vvv_engine::UndoLast).unwrap();
+    assert_eq!(fixture.source(), "def foo\nfoo");
+    assert!(fixture.root.join("nested/deep").is_dir());
+    assert!(!fixture.root.join("nested/deep/b.p").exists());
+}
+
+#[test]
+fn undo_recovery_preserves_a_file_created_at_a_removed_directory_path() {
+    let fixture = DiskHistoryFixture::new();
+    let (vfs, engine) = fixture.fault_engine();
+    let planned = engine
+        .run(MoveIntent::new("a.p", "nested/deep/b.p"))
+        .unwrap();
+    engine.run(Apply(planned)).unwrap();
+    let original = std::fs::read_to_string(fixture.root.join(".vvv/history.json")).unwrap();
+    vfs.arm(
+        common::FaultOperation::Write,
+        &fixture.root.join(".vvv/history.json"),
+        0,
+        common::FaultAction::Before,
+    );
+    vfs.arm(
+        common::FaultOperation::CreateDirectory,
+        &fixture.root.join("nested"),
+        0,
+        common::FaultAction::Occupy("foreign".into()),
+    );
+    let error = engine.run(vvv_engine::UndoLast).unwrap_err();
+    let EngineError::Recovery(recovery) = error else {
+        panic!("expected recovery error: {error}")
+    };
+    assert_eq!(
+        std::fs::read_to_string(fixture.root.join("nested")).unwrap(),
+        "foreign"
+    );
+    assert_eq!(fixture.source(), "def foo\nfoo");
+    assert_eq!(
+        std::fs::read_to_string(fixture.root.join(".vvv/history.json")).unwrap(),
+        original
+    );
+    assert!(
+        recovery
+            .details
+            .remaining
+            .iter()
+            .any(|effect| effect.path == Path::new("nested")
+                && effect.expected == vvv_engine::RecoveryState::Directory
+                && matches!(effect.observed, vvv_engine::RecoveryState::File { .. }))
+    );
+    assert!(
+        recovery
+            .details
+            .failures
+            .iter()
+            .any(|issue| issue.path == Path::new("nested")
+                && issue.operation == vvv_engine::RecoveryOperation::RestoreDirectory)
     );
 }
