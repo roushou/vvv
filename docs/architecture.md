@@ -514,7 +514,14 @@ is in its graph.
 declares a `Method` when inside `impl_item`"_ as a `SymbolRule`; the traversal that
 applies it lives once, in `vvv-lang/src/syntax/`. Adding a language is adding a table.
 
-**Plans authorize file writes.** `Plan` stages every file first (read, fingerprint
+**Plans authorize file writes.** `plan/mod.rs` holds Plan's preconditions,
+staging, preview, and its thin apply entry point. `plan/transaction.rs` owns
+attempted effects, before-states, and recovery; `plan/receipt.rs` owns applied
+receipts, their composition, and undo validation/restoration. `planned.rs` and
+`fingerprint.rs` keep their existing responsibilities. Internal re-exports keep
+the lifecycle's callers independent of these file locations.
+
+`Plan` stages every file first (read, fingerprint
 check, compute), then writes through a `Transaction`. Before a write or move is
 attempted, the transaction retains its before-state and appends the effect to an
 ordered recovery log. One transaction spans all plans of an apply, including a batch.
