@@ -5,10 +5,51 @@
 
 use crate::protocol::vocabulary::IntentLine;
 use crate::report::{Block, Document, MoveCounts};
+use serde::{Deserialize, Serialize};
 
 use crate::{
-    Batch, BatchIntent, EngineError, FileChange, FilePreview, Intent, Planned, Receipt, VfsError,
+    EngineError, FileChange, FilePreview, Intent, Mutation, MutationAnswer, Notice, Planned,
+    Receipt, VfsError,
 };
+
+/// Several intents planned in sequence, each against the state the previous
+/// one leaves, and applied as one.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct BatchIntent {
+    pub intents: Vec<Intent>,
+}
+
+impl BatchIntent {
+    pub fn new(intents: impl IntoIterator<Item = Intent>) -> Self {
+        Self {
+            intents: intents.into_iter().collect(),
+        }
+    }
+}
+
+/// `vvv batch`: several intents planned in sequence and applied as one.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Batch {
+    pub intents: Vec<Intent>,
+    /// Preview or successful application with its history entry.
+    #[serde(flatten)]
+    pub state: crate::MutationState,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub notices: Vec<Notice>,
+    /// Every file any step touches, before the first step against after the
+    /// last. Edits are not listed per file: they belong to the steps, each in
+    /// the coordinates of the state before it.
+    pub files: Vec<FileChange>,
+}
+
+impl Mutation for Batch {
+    fn into_mutation(self) -> MutationAnswer {
+        MutationAnswer::Batch(self)
+    }
+    fn applied(&mut self, id: u64) {
+        self.state = crate::MutationState::Applied { history_id: id };
+    }
+}
 
 /// Plan several intents as one. Each is planned against a staging copy of
 /// the workspace onto which the previous steps have been applied, so a

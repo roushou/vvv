@@ -207,7 +207,7 @@ impl DeadQuery {
                     }
                     if !used {
                         items.push(Unreferenced {
-                            declaration: Placed::of(candidate, declared),
+                            declaration: candidate.placed(declared),
                             unsure,
                         });
                     }

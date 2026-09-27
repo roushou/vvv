@@ -10,9 +10,78 @@ use crate::protocol::display::{Line, Role};
 use crate::protocol::vocabulary::{IntentLine, Plural};
 use crate::report::{Block, Document, ReferencePlan};
 use crate::{
-    Confidence, EngineError, FileChange, Intent, Match, Mutation, Occurrence, Planned, References,
-    ReferencesQuery, Selection,
+    Confidence, EngineError, FileChange, Intent, Match, Mutation, Occurrence, Planned, Selection,
 };
+
+/// The declaration(s) called `name`, and every identifier that spells it,
+/// each judged against the declaration meant. What `rename` gathers before
+/// it plans, and what `references` answers on its own.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ReferencesQuery {
+    pub name: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub symbol: Option<SymbolKind>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub language: Option<LanguageId>,
+    /// The file declaring the symbol meant, when several share the name.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub declared_in: Option<RelPath>,
+}
+
+impl ReferencesQuery {
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            symbol: None,
+            language: None,
+            declared_in: None,
+        }
+    }
+
+    pub fn declared_in(mut self, path: impl Into<RelPath>) -> Self {
+        self.declared_in = Some(path.into());
+        self
+    }
+
+    pub fn of_symbol(mut self, symbol: SymbolKind) -> Self {
+        self.symbol = Some(symbol);
+        self
+    }
+
+    pub fn in_language(mut self, language: impl Into<LanguageId>) -> Self {
+        self.language = Some(language.into());
+        self
+    }
+
+    /// Answer with declarations and judged occurrences, without a mutation plan.
+    pub fn execute(self, engine: &crate::Engine) -> Result<References, EngineError> {
+        let _operation = engine.operation();
+        let mut graph = engine.graph()?;
+        self.execute_in(&mut graph)
+    }
+
+    pub(crate) fn execute_in(
+        self,
+        graph: &mut crate::graph::Graph,
+    ) -> Result<References, EngineError> {
+        let query = &self;
+        let evidence = graph.references(query)?;
+        Ok(References {
+            name: query.name.clone(),
+            declarations: evidence.declarations,
+            occurrences: evidence.occurrences,
+        })
+    }
+}
+
+/// `references <name>`: the declarations called `name` and every token that
+/// spells it, each judged against the declaration meant.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct References {
+    pub name: String,
+    pub declarations: Vec<Match>,
+    pub occurrences: Vec<Occurrence>,
+}
 
 /// Rename the declaration(s) called `name` and every identifier that spells it.
 ///
@@ -56,39 +125,10 @@ impl RenameIntent {
         self.selection = selection;
         self
     }
-}
 
-/// `vvv rename`: the declaration and every occurrence, each judged.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Rename {
-    pub intent: RenameIntent,
-    /// Preview or successful application with its history entry.
-    #[serde(flatten)]
-    pub state: crate::MutationState,
-    /// Where `name` is declared; more than one means the rename is ambiguous.
-    pub declarations: Vec<Match>,
-    /// Every identifier spelling the name, each judged against the target;
-    /// their ids feed a later `--select`.
-    pub occurrences: Vec<Occurrence>,
-    pub files: Vec<FileChange>,
-}
-
-impl Mutation for Rename {
-    fn into_mutation(self) -> crate::MutationAnswer {
-        crate::MutationAnswer::Rename(self)
-    }
-
-    fn applied(&mut self, id: u64) {
-        self.state = crate::MutationState::Applied { history_id: id };
-    }
-}
-
-/// Plan a rename. Nothing is written; see [`Apply`](crate::Apply).
-///
-/// Occurrences are gathered only from the languages in which a matching
-/// declaration exists, so a Rust `foo` never touches a TypeScript `foo`.
-impl RenameIntent {
-    /// Plan without writing files.
+    /// Plan a rename without writing files; see [`Apply`](crate::Apply).
+    /// Occurrences come from languages with a matching declaration, so Rust and
+    /// TypeScript declarations with the same name are judged independently.
     pub fn plan(self, engine: &crate::Engine) -> Result<Planned<Rename>, EngineError> {
         let _operation = engine.operation();
         let mut graph = engine.graph()?;
@@ -145,27 +185,28 @@ impl RenameIntent {
     }
 }
 
-/// The declarations called `name` and every token spelling it, judged:
-/// what `rename` acts on, answered without a plan.
-impl ReferencesQuery {
-    /// Answer with the concrete result of this query.
-    pub fn execute(self, engine: &crate::Engine) -> Result<References, EngineError> {
-        let _operation = engine.operation();
-        let mut graph = engine.graph()?;
-        self.execute_in(&mut graph)
+/// `vvv rename`: the declaration and every occurrence, each judged.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Rename {
+    pub intent: RenameIntent,
+    /// Preview or successful application with its history entry.
+    #[serde(flatten)]
+    pub state: crate::MutationState,
+    /// Where `name` is declared; more than one means the rename is ambiguous.
+    pub declarations: Vec<Match>,
+    /// Every identifier spelling the name, each judged against the target;
+    /// their ids feed a later `--select`.
+    pub occurrences: Vec<Occurrence>,
+    pub files: Vec<FileChange>,
+}
+
+impl Mutation for Rename {
+    fn into_mutation(self) -> crate::MutationAnswer {
+        crate::MutationAnswer::Rename(self)
     }
 
-    pub(crate) fn execute_in(
-        self,
-        graph: &mut crate::graph::Graph,
-    ) -> Result<References, EngineError> {
-        let query = &self;
-        let evidence = graph.references(query)?;
-        Ok(References {
-            name: query.name.clone(),
-            declarations: evidence.declarations,
-            occurrences: evidence.occurrences,
-        })
+    fn applied(&mut self, id: u64) {
+        self.state = crate::MutationState::Applied { history_id: id };
     }
 }
 
@@ -199,9 +240,7 @@ impl Document {
         report.block_note(Block::Summary(strip.and(Role::Plain, "   ").and_line(plan)));
         report
     }
-}
 
-impl Document {
     pub(crate) fn references(result: &References) -> Self {
         let mut report = Self::new();
         report.declarations(&result.declarations);

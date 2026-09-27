@@ -4,8 +4,8 @@
 use std::path::Path;
 use std::sync::{Arc, OnceLock, RwLock};
 
-use super::{Fragment, Namespace, Scope};
-use crate::{Match, SourceFile};
+use super::{Declared, Fragment, Namespace, Scope};
+use crate::{Match, Placed, SourceFile};
 
 use vvv_core::{Facts, Language, LanguageId, Project, Query, SearchError};
 
@@ -66,6 +66,20 @@ impl<T> PerBuild<T> {
 }
 
 impl Candidate {
+    /// A fragment's declaration as an answer names it: with its file and line.
+    pub(crate) fn placed(&self, declared: &Declared) -> Placed {
+        Placed {
+            path: self.path().into(),
+            symbol: declared.symbol.clone(),
+            start: self
+                .file()
+                .source()
+                .position(declared.symbol.name_span.start),
+            address: declared.address.clone(),
+            reach: declared.reach.clone(),
+        }
+    }
+
     pub fn new(file: SourceFile, language: Arc<dyn Language>) -> Self {
         Self {
             file: Arc::new(file),

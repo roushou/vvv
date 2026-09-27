@@ -7,13 +7,15 @@ use serde::{Deserialize, Serialize};
 use vvv_core::Edit;
 
 use super::diff::Diff;
-use super::{Intent, Notice, RewriteIntent};
+use super::{Intent, Notice};
+use crate::batch::Batch;
 use crate::capabilities::moves::{Move, MoveSymbol};
 use crate::capabilities::rename::Rename;
 use crate::plan::{FilePreview, Plan};
+use crate::rewrite::Rewrite;
 
 /// The lifecycle of a mutation result, with a history id exactly when applied.
-/// Its wire shape remains `applied` plus the optional `history_id`.
+/// Serializes as `applied` plus the optional `history_id`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "MutationStateFields", into = "MutationStateFields")]
 pub enum MutationState {
@@ -69,31 +71,6 @@ enum MutationStateError {
     PreviewWithHistory,
     #[error("an applied mutation requires a history_id")]
     AppliedWithoutHistory,
-}
-
-/// `vvv rewrite`: one edit per selected match.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Rewrite {
-    pub intent: RewriteIntent,
-    /// Preview or successful application with its history entry.
-    #[serde(flatten)]
-    pub state: crate::MutationState,
-    pub files: Vec<FileChange>,
-}
-
-/// `vvv batch`: several intents planned in sequence and applied as one.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Batch {
-    pub intents: Vec<Intent>,
-    /// Preview or successful application with its history entry.
-    #[serde(flatten)]
-    pub state: crate::MutationState,
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub notices: Vec<Notice>,
-    /// Every file any step touches, before the first step against after the
-    /// last. Edits are not listed per file: they belong to the steps, each in
-    /// the coordinates of the state before it.
-    pub files: Vec<FileChange>,
 }
 
 /// One apply that can still be undone.
@@ -184,30 +161,6 @@ pub trait Mutation: sealed::Sealed {
     fn applied(&mut self, id: u64);
 }
 
-macro_rules! mutation {
-    ($t:ty, $variant:ident) => {
-        impl Mutation for $t {
-            fn into_mutation(self) -> MutationAnswer {
-                MutationAnswer::$variant(self)
-            }
-            fn applied(&mut self, id: u64) {
-                self.state = MutationState::Applied { history_id: id };
-            }
-        }
-    };
-}
-
-mutation!(Rewrite, Rewrite);
-
-impl Mutation for Batch {
-    fn into_mutation(self) -> MutationAnswer {
-        MutationAnswer::Batch(self)
-    }
-    fn applied(&mut self, id: u64) {
-        self.state = crate::MutationState::Applied { history_id: id };
-    }
-}
-
 /// The result of a mutation intent. Queries have no variant here.
 #[derive(Debug, Clone, Serialize)]
 #[serde(untagged)]
@@ -259,18 +212,6 @@ impl Mutation for MutationAnswer {
     }
 }
 
-impl From<MutationAnswer> for super::Answer {
-    fn from(result: MutationAnswer) -> Self {
-        match result {
-            MutationAnswer::Rewrite(result) => Self::Rewrite(result),
-            MutationAnswer::Rename(result) => Self::Rename(result),
-            MutationAnswer::Move(result) => Self::Move(result),
-            MutationAnswer::MoveSymbol(result) => Self::MoveSymbol(result),
-            MutationAnswer::Batch(result) => Self::Batch(result),
-        }
-    }
-}
-
 impl TryFrom<super::Answer> for MutationAnswer {
     type Error = super::Answer;
 
@@ -286,6 +227,7 @@ impl TryFrom<super::Answer> for MutationAnswer {
     }
 }
 
+// Keep executable payload membership beside the closed MutationAnswer sum.
 mod sealed {
     pub trait Sealed {}
     impl Sealed for super::Rewrite {}

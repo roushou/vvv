@@ -5,17 +5,8 @@ use vvv_core::RelPath;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{Match, Occurrence, Reach};
+use crate::Reach;
 use vvv_core::{Address, ImportRef, Position, Symbol};
-
-/// `references <name>`: the declarations called `name` and every token that
-/// spells it, each judged against the declaration meant.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct References {
-    pub name: String,
-    pub declarations: Vec<Match>,
-    pub occurrences: Vec<Occurrence>,
-}
 
 /// One import statement in the file and, when the layout can follow it,
 /// where it leads.

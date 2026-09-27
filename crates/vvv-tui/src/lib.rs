@@ -20,7 +20,6 @@ mod overlays;
 mod render;
 mod screen;
 mod tui;
-mod update;
 mod view;
 mod worker;
 

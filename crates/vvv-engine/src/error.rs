@@ -1,4 +1,4 @@
-use crate::{ApplyError, ErrorCode, Failure, SelectionError, TemplateError, VfsError};
+use crate::{ApplyError, ErrorCode, SelectionError, TemplateError, VfsError};
 
 use vvv_core::RelPath;
 use vvv_core::{
@@ -131,19 +131,6 @@ impl EngineError {
                     .to_owned(),
             ),
             _ => None,
-        }
-    }
-}
-
-impl From<&EngineError> for Failure {
-    fn from(error: &EngineError) -> Self {
-        let mut failure = Failure::new(error.code(), format!("{error:#}"));
-        if let EngineError::Recovery(recovery) = error {
-            failure = failure.with_recovery(recovery.details.clone());
-        }
-        match error.hint() {
-            Some(hint) => failure.with_hint(hint),
-            None => failure,
         }
     }
 }

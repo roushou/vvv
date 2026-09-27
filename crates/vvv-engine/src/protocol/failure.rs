@@ -1,6 +1,7 @@
 //! What went wrong, as data: a code a client can branch on, the message a
 //! person reads, and the hint that says what to try instead.
 
+use crate::EngineError;
 use serde::{Deserialize, Serialize};
 
 /// The kind of failure, stable across releases; the message is not.
@@ -76,6 +77,19 @@ impl Failure {
     pub fn with_hint(mut self, hint: impl Into<String>) -> Self {
         self.hint = Some(hint.into());
         self
+    }
+}
+
+impl From<&EngineError> for Failure {
+    fn from(error: &EngineError) -> Self {
+        let mut failure = Failure::new(error.code(), format!("{error:#}"));
+        if let EngineError::Recovery(recovery) = error {
+            failure = failure.with_recovery(recovery.details.clone());
+        }
+        match error.hint() {
+            Some(hint) => failure.with_hint(hint),
+            None => failure,
+        }
     }
 }
 

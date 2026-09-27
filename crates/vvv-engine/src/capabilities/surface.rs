@@ -81,7 +81,7 @@ impl SurfaceQuery {
                         })
                         .count();
                     items.push(Exposed {
-                        declaration: Placed::of(candidate, declared),
+                        declaration: candidate.placed(declared),
                         via: addresses[1..].to_vec(),
                         importers,
                     });

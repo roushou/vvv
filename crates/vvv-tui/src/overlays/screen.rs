@@ -7,7 +7,7 @@ use ratatui::layout::{Constraint, Rect};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Paragraph, Widget};
 
-use super::{Confirm, Menu, Overlay};
+use super::{Confirm, Menu};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
 use crate::render::Painter;
@@ -484,32 +484,5 @@ impl ReportBox<'_> {
         let offset = cursor.map_or(0, |c| c.saturating_sub(visible.saturating_sub(1)));
         let shown: Vec<Line> = lines.into_iter().skip(offset).collect();
         Paragraph::new(shown).render(inner, buf);
-    }
-}
-
-impl Overlay {
-    pub fn screen(&self) -> &'static Screen {
-        match self {
-            Self::Menu(_) => &MENU_SCREEN,
-            Self::Confirm(_) => &CONFIRM_SCREEN,
-            Self::Help { .. } => &HELP_SCREEN,
-            Self::Report { .. } => &REPORT_SCREEN,
-        }
-    }
-    pub fn render(&self, painter: Painter, area: Rect, buf: &mut Buffer) {
-        match self {
-            Self::Menu(menu) => MenuBox::new(menu, painter).screen().render(area, buf),
-            Self::Confirm(confirm) => ConfirmBox::new(confirm, painter).screen().render(area, buf),
-            Self::Help {
-                screen,
-                focus,
-                scroll,
-            } => HelpBox::new(screen, *focus, *scroll, painter)
-                .screen()
-                .render(area, buf),
-            Self::Report { report, cursor } => ReportBox::new(report, *cursor, painter)
-                .screen()
-                .render(area, buf),
-        }
     }
 }

@@ -1,9 +1,8 @@
 //! Declaration locations and placement: outline and where.
-use crate::graph::{Candidate, Declared};
 use crate::protocol::display::{Line, Role};
 use crate::protocol::vocabulary::Mark;
 use crate::report::{Block, Document};
-use crate::{EngineError, Match, Placed, Reach, ReferencesQuery, SymbolKind};
+use crate::{EngineError, Match, Reach, ReferencesQuery, SymbolKind};
 use serde::{Deserialize, Serialize};
 use vvv_core::{Address, Position, RelPath, Symbol};
 
@@ -64,22 +63,6 @@ pub struct Site {
     /// as that language writes it.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub import: Option<String>,
-}
-
-impl Placed {
-    /// A fragment's declaration as an answer names it: with its file and line.
-    pub(crate) fn of(candidate: &Candidate, declared: &Declared) -> Self {
-        Self {
-            path: candidate.path().into(),
-            symbol: declared.symbol.clone(),
-            start: candidate
-                .file()
-                .source()
-                .position(declared.symbol.name_span.start),
-            address: declared.address.clone(),
-            reach: declared.reach.clone(),
-        }
-    }
 }
 
 /// What a file declares, in order, with where a path reaches each item and

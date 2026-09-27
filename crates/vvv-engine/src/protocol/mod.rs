@@ -11,7 +11,6 @@ mod failure;
 mod intent;
 mod notice;
 mod reach;
-mod references;
 mod request;
 mod respelling;
 mod result;
@@ -22,6 +21,7 @@ pub mod vocabulary;
 
 use serde::{Deserialize, Serialize};
 
+pub use crate::batch::Batch;
 pub use crate::capabilities::declarations::{
     Locations, Outline, OutlineItem, OutlineQuery, Site, WhereQuery,
 };
@@ -29,12 +29,14 @@ pub use crate::capabilities::file::{File, FileQuery};
 pub use crate::capabilities::imports::{
     Deps, DepsQuery, ExplainQuery, Explanation, ImportSite, ImportsQuery, ImportsReport,
 };
+pub use crate::capabilities::rename::{References, ReferencesQuery};
 pub use crate::capabilities::search::{Search, SearchQuery};
 pub use crate::capabilities::surface::{Exposed, Surface, SurfaceQuery};
 pub use crate::capabilities::usage::{
     Consumer, Dead, DeadQuery, Impact, ImpactQuery, Unreferenced,
 };
-pub use answer::{Dep, Importer, Placed, References};
+pub use crate::rewrite::Rewrite;
+pub use answer::{Dep, Importer, Placed};
 pub use diff::{Diff, DiffKind, DiffLine, Hunk, LineRange};
 pub use failure::{
     ErrorCode, Failure, Recovery, RecoveryEffect, RecoveryIssue, RecoveryOperation, RecoveryState,
@@ -44,12 +46,10 @@ pub use intent::{BatchIntent, Intent, RewriteIntent, RewriteOf};
 pub use notice::{Notice, NoticeKind};
 
 pub use reach::Reach;
-pub use references::ReferencesQuery;
 pub use request::{Answer, Call, Reply, Request};
 pub use respelling::Respelling;
 pub use result::{
-    Batch, FileChange, History, HistoryEntry, Mutation, MutationAnswer, MutationState, Rewrite,
-    Undo,
+    FileChange, History, HistoryEntry, Mutation, MutationAnswer, MutationState, Undo,
 };
 pub use search::{Confidence, Match, MatchId, Occurrence, Reason, Skipped};
 pub use selection::{Selection, SelectionError};

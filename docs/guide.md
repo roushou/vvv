@@ -266,7 +266,8 @@ from its path, byte span, and matched text). `--select` also accepts these IDs a
 rejects IDs absent from the current results. Use IDs when retaining selections
 across invocations. A plan's fingerprint protects its witnessed source snapshots
 between planning and writing. Without `--select`, a command uses its default
-selection: rename selects resolved occurrences, and rewrite selects all matches.
+selection: rename uses the confidence rules described below, and rewrite selects
+all matches.
 
 ## Previewing, applying and undoing
 

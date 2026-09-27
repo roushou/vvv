@@ -108,6 +108,12 @@ docs/          architecture, guide, protocol, report
   real implementations answer its question; with one it is a struct. A struct named with a verb, or a method whose only input is the
   previous step's output, is the smell. A helper with no natural owner is a sign the
   type is missing.
+- **Colocate types and implementations.** Keep a struct or enum and its inherent
+  methods and trait implementations in the same file by default. Multiple `impl`
+  blocks are fine; distributing them across files requires a strong, concrete
+  benefit that outweighs the additional navigation. Enforcing a dependency boundary
+  or keeping capability-specific composition with its answer can justify a split.
+  Method categories, file length, or separating data from behavior alone do not.
 - **No free functions.** Behavior lives as a method on the type that owns the
   data it uses, or in a trait impl. Do not add a unit struct solely to namespace
   an associated function. `#[test]` functions, `main`, and closures are exempt.

@@ -26,6 +26,27 @@ otherwise reach it.
 Each crate's `//!` doc is the authority on what it does; this file explains how they
 fit and the rules that keep them apart.
 
+## Type and implementation locality
+
+A struct or enum, its constructors, invariant-preserving methods, and trait
+implementations belong in the same file by default. Multiple `impl` blocks can
+express different traits or bounds without requiring additional files. A reader
+should be able to understand a type's state and behavior together.
+
+Splitting implementations across files requires a strong, concrete benefit that
+outweighs the extra navigation. A dependency boundary can require a separate
+implementation; capability-specific report composition can stay beside the answer
+it consumes so they change together. Neither method categories nor file length
+alone justify a split. Separating serialization from tree access is a code ownership
+constraint, not a requirement to separate a type from its execution methods.
+
+The shared `Document` has capability-specific composition methods beside each
+answer; its construction and shared methods live with its definition. The closed
+mutation payload allowlist stays with `MutationAnswer` and its sealed trait so
+executable result membership can be reviewed in one place. Cross-crate adapters
+stay at the client boundary rather than adding interface dependencies to engine
+or core types.
+
 ## Crates
 
 ### `vvv-core` — the plugin contract
@@ -367,8 +388,8 @@ path. Reference verdicts retain a `ReferencePlan` with files and mutation state,
 even when a view hides its patch. Per-answer constructors live on `Document`,
 implemented beside execution in the capability's owner (see the command ownership
 index). References shares rename's module; rewrite, batch, history, and undo
-composition live beside their execution. File preview has no
-rendered document.
+composition live beside their execution, requests, and results. Their types keep
+crate-root and `protocol::` exports. File preview has no rendered document.
 
 The shared report modules are `document.rs` (construction, shared helpers, and
 `of`/`error` delegation), `block.rs` (structured blocks, notes, and reference plan
@@ -464,12 +485,23 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
 `Overlay::Report` draws it and walks its source rows (`j`/`k`, `e`).
 
 - `error.rs` — the crate's public `Error`: terminal I/O, the engine, the editor.
-- `model.rs` — application state: the retained `Search` hub, current `Mode`,
-  optional overlay, status, report-view choice, and split size. Common cursor,
-  panel-focus, and file-preview data stay here. Each mode owns its state,
-  transitions, and typed screen under `modes/<name>/` (`rename`, `moves`,
-  `rewrite`, `history`, `search`). Search also owns its query bar and read-only
-  relations (references, impact, definition, deps).
+- `model.rs` — application state and its transitions: the retained `Search` hub,
+  current `Mode`, optional overlay, status, report-view choice, and split size.
+  Common cursor, panel-focus, and file-preview types keep their methods here.
+  `Model::mode_screen()`/`overlay_screen()` select screen metadata;
+  `Model::focus()` returns the focused panel's index.
+  `Model::action_for(event)` resolves through the global, focused-panel, screen,
+  panel-default, and navigation key layers. `Model::update` routes application
+  actions to the selected mode; `Model::on_event` checks generations before
+  delivering answers. Both are pure and return effects. Entering a mode sends its
+  first plan without debounce and sets `arriving`; `Model::shown` retains the
+  search screen until that plan answers.
+- `modes/<name>/mod.rs` — each mode's state and methods, including action and event
+  transitions (`rename`, `moves`, `rewrite`, `history`, `search`). Its `screen.rs`
+  defines a separate view type with its rendering methods. Search's `query.rs`
+  owns the query bar; its state includes read-only references, impact, definition,
+  and dependency relations. Mode inputs drive plans; queries drive searches, with
+  generations preventing stale answers from replacing retained data.
 - `action.rs` — `Action` (what the user did, generic across modes: `Input`, `Enter`,
   `Toggle`, `FocusNth`…), `Effect` (what to ask the engine: `Search`, `Query` for a
   read-only request, `Plan`, `Commit`, `Preview`, `History`, `Undo`; `Edit` for the
@@ -487,10 +519,11 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
   `screen/defaults.rs` holds the shared key layers. Each mode binds its view once;
   the application chooses the shown mode before panel rendering. Panels never
   receive `Model` or inspect `Mode`.
-- `overlays/` — menu, confirmation, help, and report state, transitions, metadata,
-  and typed boxes. `Overlay` owns report-source selection and help scrolling;
-  each box renders from its own borrowed data. Help retains static screen metadata
-  independently of a renderer.
+- `overlays/mod.rs` — menu, confirmation, help, and report state with selection,
+  transition, and view-binding methods. `screen.rs` owns metadata and typed box
+  views, each with its rendering methods. `Overlay` owns report-source selection
+  and help scrolling. Help retains static screen metadata independently of a
+  renderer.
 - `modes/context.rs` — shared status and generation borrowed by a mode transition,
   without access to `Model` or another mode. `input.rs` holds `TextInput`, which
   edits a borrowed string buffer for name, destination, and template inputs.
@@ -502,20 +535,6 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
   (the title card); a screen's `layout` splits a `Region` into panel regions
   (`columns`, `split`, `rows`), and `Fit` is a text helper. Words come from
   `protocol::vocabulary`.
-- `model.rs` — `Model::mode_screen()`/`overlay_screen()` pick the active
-  `Screen`, `Model::focus()` the focused panel's index, and `Overlay::Help`
-  keeps the screen and focus it was opened over so the key list stays about them.
-- `update.rs` — `Model::action_for(event)` resolves through
-  `Model::screen().resolve(focus, key, holds)`: the globals first, then the
-  focused panel's layer, the screen's, the panel kind's defaults, then navigation.
-  `Model::update` routes application actions and delegates local transitions to
-  the selected mode. `Model::on_event` filters generations before delivering data
-  to its owner. Both are pure and return effects. Searches and plans carry a
-  generation so stale answers are dropped; a mode's input (name, destination,
-  template) drives a plan the way the query bar drives a search. Entering a mode
-  sends its first plan at once (no debounce) and sets `arriving`: keys already go
-  to the mode, but `Model::shown` keeps the screen on search until the plan answers,
-  so the new layout appears filled rather than empty and then filled.
 - `worker.rs` — the engine on its own thread; effects in, events out; bursts of
   searches or plans are coalesced. `Commit` plans and applies in one step.
 - `tui.rs` — `Tui` and the only I/O: terminal setup, the event loop with

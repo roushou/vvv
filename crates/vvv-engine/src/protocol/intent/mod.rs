@@ -4,15 +4,12 @@
 //! a client from JSON, and handed to the engine. Nothing here knows how the
 //! intent is fulfilled.
 
-mod batch;
-mod rewrite;
-
 use crate::capabilities::moves::{MoveIntent, MoveSymbolIntent};
 use crate::capabilities::rename::RenameIntent;
 use serde::{Deserialize, Serialize};
 
-pub use batch::BatchIntent;
-pub use rewrite::{RewriteIntent, RewriteOf};
+pub use crate::batch::BatchIntent;
+pub use crate::rewrite::{RewriteIntent, RewriteOf};
 
 /// Any mutating request, as one value: what history records, what a summary
 /// renders, what a remote client sends.

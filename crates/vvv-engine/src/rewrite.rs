@@ -1,21 +1,52 @@
 //! `rewrite`: one edit per selected match, the template expanded with the
 //! match's captures from the same immutable source snapshot.
 
-use crate::Intent;
 use crate::protocol::display::{Line, Role};
 use crate::protocol::vocabulary::{IntentLine, Mark, Plural};
 use crate::report::{Block, Document};
+use crate::{Intent, Mutation, Selection, Template};
+use serde::{Deserialize, Serialize};
 
 use std::collections::{BTreeMap, btree_map::Entry};
-use vvv_core::{Edit, RelPath};
+use vvv_core::{Edit, Query, RelPath};
 
 use crate::change::Change;
 use crate::graph::Graph;
-use crate::{Candidate, EngineError, Match, Planned, Rewrite, RewriteIntent, RewriteOf, Workspace};
+use crate::{Candidate, EngineError, FileChange, Match, Planned, Workspace};
 
-/// Plan a rewrite. Nothing is written; see [`Apply`](crate::Apply).
+/// The rewrite `intent` makes of `matches` already found: a caller that
+/// keeps the matches supplies its selection; selected matches are revalidated
+/// against the source before their coordinates and captures are used.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct RewriteOf {
+    pub intent: RewriteIntent,
+    pub matches: Vec<crate::Match>,
+}
+
+/// Replace every selected match of `query` with `template`.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RewriteIntent {
+    pub query: Query,
+    pub template: Template,
+    #[serde(default, skip_serializing_if = "Selection::is_all")]
+    pub selection: Selection,
+}
+
 impl RewriteIntent {
-    /// Plan without writing files.
+    pub fn new(query: Query, template: impl Into<Template>) -> Self {
+        Self {
+            query,
+            template: template.into(),
+            selection: Selection::All,
+        }
+    }
+
+    pub fn selecting(mut self, selection: Selection) -> Self {
+        self.selection = selection;
+        self
+    }
+
+    /// Plan a rewrite without writing files; see [`Apply`](crate::Apply).
     pub fn plan(self, engine: &crate::Engine) -> Result<Planned<Rewrite>, EngineError> {
         let _operation = engine.operation();
         let mut graph = engine.graph()?;
@@ -29,6 +60,26 @@ impl RewriteIntent {
     ) -> Result<Planned<Rewrite>, EngineError> {
         let matches = graph.search(&self.query)?.matches;
         RewriteMatches::new(self, matches, graph)?.plan(workspace)
+    }
+}
+
+/// `vvv rewrite`: one edit per selected match.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Rewrite {
+    pub intent: RewriteIntent,
+    /// Preview or successful application with its history entry.
+    #[serde(flatten)]
+    pub state: crate::MutationState,
+    pub files: Vec<FileChange>,
+}
+
+impl Mutation for Rewrite {
+    fn into_mutation(self) -> crate::MutationAnswer {
+        crate::MutationAnswer::Rewrite(self)
+    }
+
+    fn applied(&mut self, id: u64) {
+        self.state = crate::MutationState::Applied { history_id: id };
     }
 }
 

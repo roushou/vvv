@@ -11,9 +11,9 @@ use crate::capabilities::rename::{Rename, RenameIntent};
 
 use super::{
     Batch, BatchIntent, Dead, DeadQuery, Deps, DepsQuery, ExplainQuery, Explanation, File,
-    FileQuery, History, Impact, ImpactQuery, ImportsQuery, ImportsReport, Locations, Notice,
-    Outline, OutlineQuery, References, ReferencesQuery, Response, Rewrite, RewriteIntent, Search,
-    Surface, SurfaceQuery, Undo, WhereQuery,
+    FileQuery, History, Impact, ImpactQuery, ImportsQuery, ImportsReport, Locations,
+    MutationAnswer, Notice, Outline, OutlineQuery, References, ReferencesQuery, Response, Rewrite,
+    RewriteIntent, Search, Surface, SurfaceQuery, Undo, WhereQuery,
 };
 
 /// One request, tagged by `command`. A mutation carries the same fields as
@@ -143,6 +143,18 @@ impl Answer {
             Self::MoveSymbol(r) => r.state.history_id(),
             Self::Batch(b) => b.state.history_id(),
             _ => None,
+        }
+    }
+}
+
+impl From<MutationAnswer> for Answer {
+    fn from(result: MutationAnswer) -> Self {
+        match result {
+            MutationAnswer::Rewrite(result) => Self::Rewrite(result),
+            MutationAnswer::Rename(result) => Self::Rename(result),
+            MutationAnswer::Move(result) => Self::Move(result),
+            MutationAnswer::MoveSymbol(result) => Self::MoveSymbol(result),
+            MutationAnswer::Batch(result) => Self::Batch(result),
         }
     }
 }

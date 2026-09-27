@@ -1,9 +1,17 @@
 //! Overlay questions, selection, and typed rendering.
 pub(crate) mod screen;
-mod update;
 use crate::modes::search::Relation;
+use crate::modes::search::{Search, query::Filter};
+use crate::render::Painter;
 use crate::screen::Screen;
+use ratatui::{buffer::Buffer, layout::Rect};
+use screen::{
+    CONFIRM_SCREEN, ConfirmBox, HELP_SCREEN, HelpBox, MENU_SCREEN, MenuBox, REPORT_SCREEN,
+    ReportBox,
+};
 use vvv_engine::report::Document;
+use vvv_engine::report::{Detailed, Options, Source, View};
+use vvv_engine::{RelPath, SymbolKind};
 
 /// A small question in front of the mode.
 #[derive(Debug, Clone)]
@@ -24,6 +32,67 @@ pub enum Overlay {
         /// Where the cursor stands among the report's source rows.
         cursor: usize,
     },
+}
+
+impl Overlay {
+    fn report_sites(&self) -> Vec<Source> {
+        let Self::Report { report, .. } = self else {
+            return Vec::new();
+        };
+        Detailed
+            .present(report, Options::default(), usize::MAX)
+            .body
+            .into_iter()
+            .filter_map(|row| row.source)
+            .collect()
+    }
+    pub fn report_moved(&mut self, by: i32) {
+        let last = self.report_sites().len().saturating_sub(1) as i32;
+        if let Self::Report { cursor, .. } = self {
+            *cursor = (*cursor as i32 + by).clamp(0, last) as usize;
+        }
+    }
+    pub fn report_site(&self) -> Option<(RelPath, u32)> {
+        let Self::Report { cursor, .. } = self else {
+            return None;
+        };
+        self.report_sites()
+            .get(*cursor)
+            .map(|site| (site.path.clone(), site.line))
+    }
+    pub fn help_scrolled(&mut self, by: i32) -> bool {
+        if let Self::Help { scroll, .. } = self {
+            *scroll = (*scroll as i32 + by).max(0) as usize;
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn screen(&self) -> &'static Screen {
+        match self {
+            Self::Menu(_) => &MENU_SCREEN,
+            Self::Confirm(_) => &CONFIRM_SCREEN,
+            Self::Help { .. } => &HELP_SCREEN,
+            Self::Report { .. } => &REPORT_SCREEN,
+        }
+    }
+    pub fn render(&self, painter: Painter, area: Rect, buf: &mut Buffer) {
+        match self {
+            Self::Menu(menu) => MenuBox::new(menu, painter).screen().render(area, buf),
+            Self::Confirm(confirm) => ConfirmBox::new(confirm, painter).screen().render(area, buf),
+            Self::Help {
+                screen,
+                focus,
+                scroll,
+            } => HelpBox::new(screen, *focus, *scroll, painter)
+                .screen()
+                .render(area, buf),
+            Self::Report { report, cursor } => ReportBox::new(report, *cursor, painter)
+                .screen()
+                .render(area, buf),
+        }
+    }
 }
 
 // ---------------------------------------------------------------- overlays
@@ -107,6 +176,27 @@ impl Menu {
     pub fn move_cursor(&mut self, by: i32) {
         let last = self.items.len() as i32 - 1;
         self.cursor = (self.cursor as i32 + by).clamp(0, last) as usize;
+    }
+
+    pub fn for_target(target: MenuTarget, languages: &[String], search: &Search) -> Self {
+        match target {
+            MenuTarget::Symbol => {
+                let values = SymbolKind::ALL
+                    .iter()
+                    .map(|k| k.as_str().to_owned())
+                    .collect();
+                let current = search.query.filter(Filter::Symbol).map(str::to_owned);
+                Self::new(target, values, current.as_deref())
+            }
+            MenuTarget::Language => {
+                let current = search.query.filter(Filter::Lang).map(str::to_owned);
+                Self::new(target, languages.to_vec(), current.as_deref())
+            }
+            MenuTarget::Relation => Self::relations(search.results.relation),
+        }
+    }
+    pub fn chosen(&self) -> (MenuTarget, Option<String>) {
+        (self.target, self.current().value.clone())
     }
 }
 
