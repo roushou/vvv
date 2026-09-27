@@ -7,7 +7,7 @@ use ratatui::layout::{Constraint, Rect};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Clear, Paragraph, Widget};
 
-use super::{Panel, Screen};
+use super::{LegacyScreen, Panel, Screen};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
 use crate::model::{Confirm, Menu, Model, Overlay};
@@ -214,7 +214,6 @@ static MENU_PANEL: Panel = Panel {
         bindings: &[],
     },
     kind: None,
-    content: draw_menu,
 };
 
 static CONFIRM_PANEL: Panel = Panel {
@@ -223,7 +222,6 @@ static CONFIRM_PANEL: Panel = Panel {
         bindings: &[],
     },
     kind: None,
-    content: draw_confirm,
 };
 
 static HELP_PANEL: Panel = Panel {
@@ -232,7 +230,6 @@ static HELP_PANEL: Panel = Panel {
         bindings: &[],
     },
     kind: None,
-    content: draw_help,
 };
 
 static REPORT_PANEL: Panel = Panel {
@@ -241,30 +238,49 @@ static REPORT_PANEL: Panel = Panel {
         bindings: &[],
     },
     kind: None,
-    content: draw_report,
 };
 
 pub(crate) static MENU_SCREEN: Screen = Screen {
     layer: MENU,
     panels: &[MENU_PANEL],
+};
+
+pub(crate) static MENU_SCREEN_RENDER: LegacyScreen = LegacyScreen {
+    screen: &MENU_SCREEN,
+    content: &[draw_menu],
     layout: full,
 };
 
 pub(crate) static CONFIRM_SCREEN: Screen = Screen {
     layer: CONFIRM,
     panels: &[CONFIRM_PANEL],
+};
+
+pub(crate) static CONFIRM_SCREEN_RENDER: LegacyScreen = LegacyScreen {
+    screen: &CONFIRM_SCREEN,
+    content: &[draw_confirm],
     layout: full,
 };
 
 pub(crate) static HELP_SCREEN: Screen = Screen {
     layer: HELP,
     panels: &[HELP_PANEL],
+};
+
+pub(crate) static HELP_SCREEN_RENDER: LegacyScreen = LegacyScreen {
+    screen: &HELP_SCREEN,
+    content: &[draw_help],
     layout: full,
 };
 
 pub(crate) static REPORT_SCREEN: Screen = Screen {
     layer: REPORT,
     panels: &[REPORT_PANEL],
+};
+
+pub(crate) static REPORT_SCREEN_RENDER: LegacyScreen = LegacyScreen {
+    screen: &REPORT_SCREEN,
+    content: &[draw_report],
     layout: full,
 };
 

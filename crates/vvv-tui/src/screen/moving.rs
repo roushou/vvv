@@ -9,7 +9,7 @@ use ratatui::widgets::Widget;
 use vvv_engine::NoticeKind;
 use vvv_engine::protocol::FileChange;
 
-use super::{Panel, Screen};
+use super::{LegacyScreen, Panel, Screen};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
 use crate::model::{Mode, Model, MoveMode, MovePanel, MoveRow, PanelKind};
@@ -120,25 +120,21 @@ const LIST: Layer<Action> = Layer {
 static TO_PANEL: Panel = Panel {
     layer: DESTINATION,
     kind: Some(PanelKind::Input),
-    content: draw_to,
 };
 
 static RESPELLINGS_PANEL: Panel = Panel {
     layer: LIST,
     kind: Some(PanelKind::List),
-    content: draw_respellings,
 };
 
 static STRUCTURAL_PANEL: Panel = Panel {
     layer: LIST,
     kind: Some(PanelKind::List),
-    content: draw_structural,
 };
 
 static NOTICES_PANEL: Panel = Panel {
     layer: LIST,
     kind: Some(PanelKind::List),
-    content: draw_notices,
 };
 
 static DETAIL_PANEL: Panel = Panel {
@@ -147,7 +143,6 @@ static DETAIL_PANEL: Panel = Panel {
         bindings: &[],
     },
     kind: Some(PanelKind::Text),
-    content: draw_detail,
 };
 
 /// The move screen.
@@ -159,6 +154,17 @@ pub(crate) static MOVE: Screen = Screen {
         STRUCTURAL_PANEL,
         NOTICES_PANEL,
         DETAIL_PANEL,
+    ],
+};
+
+pub(crate) static MOVE_RENDER: LegacyScreen = LegacyScreen {
+    screen: &MOVE,
+    content: &[
+        draw_to,
+        draw_respellings,
+        draw_structural,
+        draw_notices,
+        draw_detail,
     ],
     layout,
 };

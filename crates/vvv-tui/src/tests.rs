@@ -9,11 +9,12 @@ use vvv_engine::{Answer, Intent, Request, Selection, SymbolKind};
 
 use super::action::{Action, Effect, Event, Planned};
 use super::model::{
-    Level, MenuTarget, Mode, Model, MovePanel, Overlay, Relation, RenamePanel, ReportView,
-    RewritePanel, SearchPanel,
+    Level, MenuTarget, Mode, Model, MovePanel, Overlay, Relation, ReportView, RewritePanel,
+    SearchPanel,
 };
 use super::query::Filter;
 use crate::fixtures as fx;
+use crate::modes::rename::RenamePanel;
 use crate::render::Painter;
 use crate::screen::App;
 

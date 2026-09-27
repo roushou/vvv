@@ -8,7 +8,7 @@ use ratatui::widgets::Widget;
 use vvv_engine::Role;
 use vvv_engine::{Answer, Confidence, Impact, Occurrence};
 
-use super::{Panel, Screen};
+use super::{LegacyScreen, Panel, Screen};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
 use crate::model::{MenuTarget, Model, PanelKind, Relation, SearchPanel};
@@ -349,25 +349,27 @@ const CONTEXT: Layer<Action> = Layer {
 static QUERY_PANEL: Panel = Panel {
     layer: QUERY,
     kind: Some(PanelKind::Input),
-    content: draw_query,
 };
 
 static RESULTS_PANEL: Panel = Panel {
     layer: RESULTS,
     kind: Some(PanelKind::List),
-    content: draw_results,
 };
 
 static CONTEXT_PANEL: Panel = Panel {
     layer: CONTEXT,
     kind: Some(PanelKind::Text),
-    content: draw_context,
 };
 
 /// The search screen.
 pub(crate) static SEARCH: Screen = Screen {
     layer: MODE,
     panels: &[QUERY_PANEL, RESULTS_PANEL, CONTEXT_PANEL],
+};
+
+pub(crate) static SEARCH_RENDER: LegacyScreen = LegacyScreen {
+    screen: &SEARCH,
+    content: &[draw_query, draw_results, draw_context],
     layout,
 };
 

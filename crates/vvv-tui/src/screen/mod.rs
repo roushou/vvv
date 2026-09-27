@@ -1,17 +1,12 @@
-//! Rendering a [`Model`] into a frame. A [`Screen`] is the keys that work
-//! from any of its panels, the [`Panel`]s it is made of, and how they are
-//! placed; a [`Panel`] is one region — its own keys, the kind that selects
-//! its shared defaults, and how it draws. Rendering is a walk of that tree.
-//! Every draw is a pure function of `&Model` and a [`Painter`], so it can be
-//! rendered into a `TestBackend` and snapshotted.
-//!
-//! The primitives a screen draws with live in [`crate::render`].
+//! Shared key, focus, and help metadata, and rendering bound to a typed view.
+//! Mode state, transitions, and screens live together under `crate::modes`.
+//! Drawing primitives live in [`crate::render`].
 
 pub(crate) mod defaults;
 pub(crate) mod history;
 pub(crate) mod moving;
 pub(crate) mod overlay;
-pub(crate) mod rename;
+use crate::modes::rename::screen as rename;
 pub(crate) mod rewrite;
 pub(crate) mod search;
 mod status;
@@ -28,24 +23,21 @@ use crate::render::{Painter, Region};
 use self::status::StatusBar;
 
 /// One region of a screen: its own keys, the kind that selects the shared
-/// defaults, and how it draws.
+/// defaults.
 #[derive(Debug, Clone, Copy)]
 pub struct Panel {
     pub layer: Layer<Action>,
     /// `None` for a region that is drawn but never focused, such as a
     /// header or an overlay's box.
     pub kind: Option<PanelKind>,
-    pub content: fn(&Model, Painter, Rect, &mut Buffer),
 }
 
 /// One screen: the keys that work from any of its panels, the panels it is
-/// made of, and how they are placed.
+/// made of.
 #[derive(Debug, Clone, Copy)]
 pub struct Screen {
     pub layer: Layer<Action>,
     pub panels: &'static [Panel],
-    /// One rect per panel, in the same order.
-    pub layout: fn(&Model, Painter, Region) -> Vec<Region>,
 }
 
 impl Screen {
@@ -95,22 +87,6 @@ impl Screen {
         None
     }
 
-    /// Draw every panel of the screen.
-    pub fn render(&self, model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-        let regions = (self.layout)(model, painter, Region::new(area));
-        debug_assert_eq!(
-            self.panels.len(),
-            regions.len(),
-            "{} laid out {} panels into {} regions",
-            self.layer.name,
-            self.panels.len(),
-            regions.len(),
-        );
-        for (panel, region) in self.panels.iter().zip(regions) {
-            (panel.content)(model, painter, region.rect(), buf);
-        }
-    }
-
     /// The help's sections for a focus: the panel, the screen, the kind
     /// default and the globals, grouped by name.
     pub fn sections(&self, focus: usize) -> Vec<(&'static str, Vec<Row<'static, Action>>)> {
@@ -157,6 +133,51 @@ impl Screen {
     }
 }
 
+/// Temporary renderer for modes not yet migrated to a typed view.
+pub(crate) struct LegacyScreen {
+    pub screen: &'static Screen,
+    pub content: &'static [fn(&Model, Painter, Rect, &mut Buffer)],
+    pub layout: fn(&Model, Painter, Region) -> Vec<Region>,
+}
+impl LegacyScreen {
+    pub fn render(&self, model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
+        let regions = (self.layout)(model, painter, Region::new(area));
+        debug_assert_eq!(self.screen.panels.len(), regions.len());
+        for (draw, region) in self.content.iter().zip(regions) {
+            draw(model, painter, region.rect(), buf);
+        }
+    }
+}
+/// Rendering callbacks bound to the mode state that supplies their data.
+pub(crate) struct BoundScreen<V, const N: usize> {
+    view: V,
+    metadata: &'static Screen,
+    layout: fn(&V, Region) -> Vec<Region>,
+    panels: [fn(&V, Rect, &mut Buffer); N],
+}
+impl<V, const N: usize> BoundScreen<V, N> {
+    pub fn new(
+        view: V,
+        metadata: &'static Screen,
+        layout: fn(&V, Region) -> Vec<Region>,
+        panels: [fn(&V, Rect, &mut Buffer); N],
+    ) -> Self {
+        Self {
+            view,
+            metadata,
+            layout,
+            panels,
+        }
+    }
+    pub fn render(self, area: Rect, buf: &mut Buffer) {
+        let regions = (self.layout)(&self.view, Region::new(area));
+        debug_assert_eq!(self.metadata.panels.len(), N);
+        debug_assert_eq!(N, regions.len());
+        for (draw, region) in self.panels.iter().zip(regions) {
+            draw(&self.view, region.rect(), buf);
+        }
+    }
+}
 /// The help's sections while they are built: layers grouped by name, in the
 /// order they are first added.
 #[derive(Default)]
@@ -195,10 +216,25 @@ impl Widget for App<'_> {
         let [body, bottom] =
             Layout::vertical([Constraint::Min(1), Constraint::Length(1)]).areas(area);
         let (m, t) = (self.model, self.painter);
-        m.mode_screen().render(m, t, body, buf);
+        match m.shown() {
+            crate::model::Mode::Rename(r) => rename::RenameView::new(r, t, m.split, m.view)
+                .screen()
+                .render(body, buf),
+            crate::model::Mode::Search => search::SEARCH_RENDER.render(m, t, body, buf),
+            crate::model::Mode::Move(_) => moving::MOVE_RENDER.render(m, t, body, buf),
+            crate::model::Mode::Rewrite(_) => rewrite::REWRITE_RENDER.render(m, t, body, buf),
+            crate::model::Mode::History(_) => history::HISTORY_RENDER.render(m, t, body, buf),
+        }
         StatusBar::new(m, t).render(bottom, buf);
-        if let Some(overlay) = m.overlay_screen() {
-            overlay.render(m, t, area, buf);
+        if let Some(o) = &m.overlay {
+            use crate::model::Overlay;
+            let screen = match o {
+                Overlay::Menu(_) => &overlay::MENU_SCREEN_RENDER,
+                Overlay::Confirm(_) => &overlay::CONFIRM_SCREEN_RENDER,
+                Overlay::Help { .. } => &overlay::HELP_SCREEN_RENDER,
+                Overlay::Report { .. } => &overlay::REPORT_SCREEN_RENDER,
+            };
+            screen.render(m, t, area, buf);
         }
     }
 }
@@ -209,37 +245,40 @@ mod tests {
     use crate::keymap::Trigger;
 
     /// Every layer a screen or the defaults contributes.
-    fn layers() -> Vec<&'static Layer<Action>> {
-        let mut layers = vec![
-            &defaults::GLOBAL,
-            &defaults::NAVIGATE,
-            &defaults::DIGITS,
-            &defaults::LIST,
-            &defaults::TEXT,
-        ];
-        for screen in [
-            &search::SEARCH,
-            &rename::RENAME,
-            &moving::MOVE,
-            &rewrite::REWRITE,
-            &history::HISTORY,
-            &overlay::MENU_SCREEN,
-            &overlay::CONFIRM_SCREEN,
-            &overlay::HELP_SCREEN,
-        ] {
-            layers.push(&screen.layer);
-            for panel in screen.panels {
-                layers.push(&panel.layer);
+    struct Layers(Vec<&'static Layer<Action>>);
+    impl Layers {
+        fn new() -> Self {
+            let mut layers = vec![
+                &defaults::GLOBAL,
+                &defaults::NAVIGATE,
+                &defaults::DIGITS,
+                &defaults::LIST,
+                &defaults::TEXT,
+            ];
+            for screen in [
+                &search::SEARCH,
+                &rename::RENAME,
+                &moving::MOVE,
+                &rewrite::REWRITE,
+                &history::HISTORY,
+                &overlay::MENU_SCREEN,
+                &overlay::CONFIRM_SCREEN,
+                &overlay::HELP_SCREEN,
+            ] {
+                layers.push(&screen.layer);
+                for panel in screen.panels {
+                    layers.push(&panel.layer);
+                }
             }
+            Self(layers)
         }
-        layers
     }
 
     /// Every layer binds a key at most once per condition, and every bar
     /// label is spelled from the keys of the row it describes.
     #[test]
     fn layers_are_well_formed() {
-        for layer in layers() {
+        for layer in Layers::new().0 {
             for row in layer.rows() {
                 let Some(bar) = row.legend.bar else {
                     continue;

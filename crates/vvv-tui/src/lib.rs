@@ -11,8 +11,10 @@
 
 mod action;
 mod error;
+mod input;
 mod keymap;
 mod model;
+mod modes;
 mod query;
 mod render;
 mod screen;

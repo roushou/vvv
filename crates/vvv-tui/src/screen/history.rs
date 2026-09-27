@@ -6,7 +6,7 @@ use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Widget;
 
-use super::{Panel, Screen};
+use super::{LegacyScreen, Panel, Screen};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
 use crate::model::{HistoryMode, HistoryPanel, Mode, Model, PanelKind};
@@ -55,7 +55,6 @@ static HEADER_PANEL: Panel = Panel {
         bindings: &[],
     },
     kind: None,
-    content: draw_header,
 };
 
 static ENTRIES_PANEL: Panel = Panel {
@@ -64,7 +63,6 @@ static ENTRIES_PANEL: Panel = Panel {
         bindings: &[],
     },
     kind: Some(PanelKind::List),
-    content: draw_entries,
 };
 
 static FILES_PANEL: Panel = Panel {
@@ -73,13 +71,17 @@ static FILES_PANEL: Panel = Panel {
         bindings: &[],
     },
     kind: Some(PanelKind::Text),
-    content: draw_files,
 };
 
 /// The history screen.
 pub(crate) static HISTORY: Screen = Screen {
     layer: MODE,
     panels: &[HEADER_PANEL, ENTRIES_PANEL, FILES_PANEL],
+};
+
+pub(crate) static HISTORY_RENDER: LegacyScreen = LegacyScreen {
+    screen: &HISTORY,
+    content: &[draw_header, draw_entries, draw_files],
     layout,
 };
 

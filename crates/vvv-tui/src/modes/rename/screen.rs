@@ -8,12 +8,13 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::Widget;
 use vvv_engine::{Confidence, Occurrence};
 
-use super::{Panel, Screen};
+use super::{RenameMode, RenamePanel};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
-use crate::model::{Mode, Model, PanelKind, RenameMode, RenamePanel};
+use crate::model::{PanelKind, ReportView};
 use crate::render::Pane;
 use crate::render::{Header, Painter, Region};
+use crate::screen::{BoundScreen, Panel, Screen};
 use vvv_engine::protocol::vocabulary::{Files, Mark};
 
 use Action as A;
@@ -134,25 +135,21 @@ const LIST: Layer<Action> = Layer {
 static NAME_PANEL: Panel = Panel {
     layer: NAME,
     kind: Some(PanelKind::Input),
-    content: draw_name,
 };
 
 static UNSURE_PANEL: Panel = Panel {
     layer: LIST,
     kind: Some(PanelKind::List),
-    content: draw_unsure,
 };
 
 static SURE_PANEL: Panel = Panel {
     layer: LIST,
     kind: Some(PanelKind::List),
-    content: draw_sure,
 };
 
 static OTHER_PANEL: Panel = Panel {
     layer: LIST,
     kind: Some(PanelKind::List),
-    content: draw_other,
 };
 
 static DETAIL_PANEL: Panel = Panel {
@@ -161,7 +158,6 @@ static DETAIL_PANEL: Panel = Panel {
         bindings: &[],
     },
     kind: Some(PanelKind::Text),
-    content: draw_detail,
 };
 
 /// The rename screen.
@@ -174,71 +170,66 @@ pub(crate) static RENAME: Screen = Screen {
         OTHER_PANEL,
         DETAIL_PANEL,
     ],
-    layout,
 };
 
-fn layout(model: &Model, painter: Painter, area: Region) -> Vec<Region> {
-    let Mode::Rename(r) = &model.mode else {
-        return Vec::new();
-    };
-    let (top, body) = RenameView::new(model, r, painter).header().areas(area);
-    let (left, right) = body.columns(model.split);
-    let sizes = [
-        (r.rows(Confidence::Unresolved).len(), 3),
-        (r.rows(Confidence::Resolved).len(), 2),
-        (r.rows(Confidence::Other).len(), 1),
-    ];
-    let mut regions = vec![top];
-    regions.extend(left.rows(&sizes));
-    regions.push(right);
-    regions
-}
-
-fn draw_name(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    if let Mode::Rename(r) = &model.mode {
-        RenameView::new(model, r, painter)
-            .header()
-            .render(area, buf);
-    }
-}
-
-fn draw_unsure(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    if let Mode::Rename(r) = &model.mode {
-        RenameView::new(model, r, painter).verdict_panel(RenamePanel::Unsure, area, buf);
-    }
-}
-
-fn draw_sure(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    if let Mode::Rename(r) = &model.mode {
-        RenameView::new(model, r, painter).verdict_panel(RenamePanel::Sure, area, buf);
-    }
-}
-
-fn draw_other(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    if let Mode::Rename(r) = &model.mode {
-        RenameView::new(model, r, painter).verdict_panel(RenamePanel::Other, area, buf);
-    }
-}
-
-fn draw_detail(model: &Model, painter: Painter, area: Rect, buf: &mut Buffer) {
-    if let Mode::Rename(r) = &model.mode {
-        RenameView::new(model, r, painter).detail(area, buf);
-    }
-}
-
 pub struct RenameView<'a> {
-    model: &'a Model,
+    split: u16,
+    view: ReportView,
     mode: &'a RenameMode,
     painter: Painter,
 }
 
 impl<'a> RenameView<'a> {
-    pub fn new(model: &'a Model, mode: &'a RenameMode, painter: Painter) -> Self {
+    pub fn new(mode: &'a RenameMode, painter: Painter, split: u16, view: ReportView) -> Self {
         Self {
-            model,
+            split,
+            view,
             mode,
             painter,
         }
+    }
+
+    pub fn screen(self) -> BoundScreen<Self, 5> {
+        BoundScreen::new(
+            self,
+            &RENAME,
+            Self::layout,
+            [
+                Self::draw_name,
+                Self::draw_unsure,
+                Self::draw_sure,
+                Self::draw_other,
+                Self::draw_detail,
+            ],
+        )
+    }
+    fn layout(&self, area: Region) -> Vec<Region> {
+        let (top, body) = self.header().areas(area);
+        let (left, right) = body.columns(self.split);
+        let sizes = [
+            (self.mode.rows(Confidence::Unresolved).len(), 3),
+            (self.mode.rows(Confidence::Resolved).len(), 2),
+            (self.mode.rows(Confidence::Other).len(), 1),
+        ];
+        let mut regions = vec![top];
+        regions.extend(left.rows(&sizes));
+        regions.push(right);
+        regions
+    }
+    fn draw_name(&self, area: Rect, buf: &mut Buffer) {
+        self.header().render(area, buf);
+    }
+    fn draw_unsure(&self, area: Rect, buf: &mut Buffer) {
+        self.verdict_panel(RenamePanel::Unsure, area, buf);
+    }
+    fn draw_sure(&self, area: Rect, buf: &mut Buffer) {
+        self.verdict_panel(RenamePanel::Sure, area, buf);
+    }
+    fn draw_other(&self, area: Rect, buf: &mut Buffer) {
+        self.verdict_panel(RenamePanel::Other, area, buf);
+    }
+    fn draw_detail(&self, area: Rect, buf: &mut Buffer) {
+        self.detail(area, buf);
     }
 
     fn header(&self) -> Header<'a> {
@@ -290,7 +281,6 @@ impl<'a> RenameView<'a> {
     /// `▪ ↗ short:line  text`, the detailed one the terminal's numbered row.
     fn row(&self, o: &Occurrence, ordinal: usize, width: usize) -> Line<'static> {
         let row = self
-            .model
             .view
             .view()
             .occurrence(o, ordinal, self.mode.is_ticked(o), width);

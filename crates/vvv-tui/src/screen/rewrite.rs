@@ -8,7 +8,7 @@ use ratatui::text::{Line, Span};
 use ratatui::widgets::Widget;
 use vvv_engine::{CaptureValue, Match};
 
-use super::{Panel, Screen};
+use super::{LegacyScreen, Panel, Screen};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
 use crate::model::{Mode, Model, PanelKind, RewriteMode, RewritePanel};
@@ -124,13 +124,11 @@ const MATCHES: Layer<Action> = Layer {
 static TEMPLATE_PANEL: Panel = Panel {
     layer: TEMPLATE,
     kind: Some(PanelKind::Input),
-    content: draw_template,
 };
 
 static MATCHES_PANEL: Panel = Panel {
     layer: MATCHES,
     kind: Some(PanelKind::List),
-    content: draw_matches,
 };
 
 static DETAIL_PANEL: Panel = Panel {
@@ -139,13 +137,17 @@ static DETAIL_PANEL: Panel = Panel {
         bindings: &[],
     },
     kind: Some(PanelKind::Text),
-    content: draw_detail,
 };
 
 /// The rewrite screen.
 pub(crate) static REWRITE: Screen = Screen {
     layer: MODE,
     panels: &[TEMPLATE_PANEL, MATCHES_PANEL, DETAIL_PANEL],
+};
+
+pub(crate) static REWRITE_RENDER: LegacyScreen = LegacyScreen {
+    screen: &REWRITE,
+    content: &[draw_template, draw_matches, draw_detail],
     layout,
 };
 

@@ -459,13 +459,15 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
   (`Run(A)`, `Type`), `Legend`/`Bar` say how it reads, and `Layer` is a named
   set of bindings with `resolve` and `rows`. `Key::from_event` in `keys.rs`
   turns a crossterm event into a `Key`, folding shift into the character.
-- `screen/` — a `Screen` is the keys that work from any of its panels (`layer`),
-  the `Panel`s it is made of, and a `layout` function. A `Panel` is one region:
-  its own `layer`, the `PanelKind` that selects the shared defaults, and a
-  `content` function. `screen/defaults.rs` holds the shared `Layer`s — `GLOBAL`,
-  `NAVIGATE`, `DIGITS`, `LIST`, `TEXT` — and `default_for(PanelKind)`. Each mode
-  file owns its layers and its panels: `search.rs` defines `SEARCH`, `rename.rs`
-  `RENAME`, and so on; `overlay.rs` defines the three overlay screens.
+- `screen/` — shared key, focus, and help metadata (`Screen`, `Panel`) and
+  the application frame. `BoundScreen<V>` owns a typed view and its layout and panel
+  callbacks; panels render from that view without inspecting `Mode`.
+  `screen/defaults.rs` holds the shared key layers. Rename now owns its state,
+  transitions, metadata, and `RenameView` under `modes/rename/`; other modes use a
+  temporary `LegacyScreen` renderer until their individual migrations.
+- `modes/context.rs` — shared status borrowed by a mode transition, without access
+  to `Model` or another mode. `input.rs` holds `TextInput`, which edits a borrowed
+  string buffer for name, destination, and template inputs.
 - `render/` — the drawing primitives the screens compose. `Painter` owns the
   palette `Theme` and answers the drawing questions with one receiver (`caret`,
   `site`, `hit`, `line`, `source_window`); the colour policy is reachable through
