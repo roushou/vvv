@@ -227,6 +227,19 @@ impl Vfs for DiskVfs {
             .filter(|parent| !parent.as_os_str().is_empty())
             .collect();
         for parent in parents.into_iter().rev() {
+            // Windows can return AccessDenied when asked to create an existing
+            // drive root. Existing ancestors are not directories we own.
+            match std::fs::metadata(parent) {
+                Ok(meta) if meta.is_dir() => continue,
+                Ok(_) => {
+                    return ParentCreation::new(
+                        created,
+                        Err(VfsError::Exists(parent.to_path_buf())),
+                    );
+                }
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+                Err(error) => return ParentCreation::new(created, Err(Self::io(parent, error))),
+            }
             match std::fs::create_dir(parent) {
                 Ok(()) => created.push(parent.to_path_buf()),
                 Err(error) if error.kind() == std::io::ErrorKind::AlreadyExists => {
@@ -314,9 +327,34 @@ impl<'a> DiskMove<'a> {
     }
 
     fn apply(&self) -> Result<(), MoveError> {
+        // Some native rename implementations accept distinct hard links to the
+        // same file as a successful no-op. They are still occupied destinations.
+        match std::fs::symlink_metadata(self.to) {
+            Ok(_) => {
+                return Err(MoveError::new(
+                    VfsError::Exists(self.to.to_path_buf()),
+                    MoveState::Unchanged,
+                ));
+            }
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+            Err(error) => return Err(self.failure(error)),
+        }
         match self.native() {
-            Ok(()) => Ok(()),
+            Ok(()) => self.verify_moved(),
             Err(error) if self.unsupported(&error) => self.link()?.finish(),
+            Err(error) => Err(self.failure(error)),
+        }
+    }
+
+    fn verify_moved(&self) -> Result<(), MoveError> {
+        // The native operation protects against destinations created after the
+        // check above. A racing hard link can also produce a successful no-op;
+        // only source removal satisfies the Vfs success contract.
+        match std::fs::symlink_metadata(self.from) {
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Ok(_) => Err(self.failure(std::io::Error::other(
+                "native move returned success without removing the source",
+            ))),
             Err(error) => Err(self.failure(error)),
         }
     }
@@ -533,7 +571,50 @@ mod tests {
         std::fs::hard_link(&source, &destination).unwrap();
         let error = DiskVfs.move_if_absent(&source, &destination).unwrap_err();
         assert_eq!(error.state, MoveState::Unchanged);
+        assert!(matches!(error.source, VfsError::Exists(_)));
         assert!(source.exists() && destination.exists());
+    }
+
+    #[test]
+    fn a_native_noop_preserves_a_racing_hard_link_and_reports_an_error() {
+        let fixture = Fixture::new();
+        let source = fixture.path("source");
+        let destination = fixture.path("destination");
+        std::fs::write(&source, "source").unwrap();
+        let request = DiskMove::new(&source, &destination).unwrap();
+        std::fs::hard_link(&source, &destination).unwrap();
+        let error = request.verify_moved().unwrap_err();
+        assert_eq!(error.state, MoveState::Unchanged);
+        assert!(matches!(error.source, VfsError::Exists(_)));
+        assert_eq!(std::fs::read_to_string(source).unwrap(), "source");
+        assert_eq!(std::fs::read_to_string(destination).unwrap(), "source");
+    }
+
+    #[test]
+    fn parent_preparation_records_only_new_directories() {
+        let fixture = Fixture::new();
+        let vfs = DiskVfs;
+        let existing = vfs.prepare_parent(&fixture.path("file"));
+        existing.result.unwrap();
+        assert!(existing.created.is_empty());
+
+        let nested = vfs.prepare_parent(&fixture.path("a/b/file"));
+        nested.result.unwrap();
+        assert_eq!(nested.created, vec![fixture.path("a"), fixture.path("a/b")]);
+        let repeated = vfs.prepare_parent(&fixture.path("a/b/other"));
+        repeated.result.unwrap();
+        assert!(repeated.created.is_empty());
+    }
+
+    #[test]
+    fn parent_preparation_preserves_a_file_in_its_ancestry() {
+        let fixture = Fixture::new();
+        let occupied = fixture.path("occupied");
+        std::fs::write(&occupied, "foreign").unwrap();
+        let outcome = DiskVfs.prepare_parent(&occupied.join("child"));
+        assert!(outcome.created.is_empty());
+        assert!(matches!(outcome.result, Err(VfsError::Exists(path)) if path == occupied));
+        assert_eq!(std::fs::read_to_string(occupied).unwrap(), "foreign");
     }
 
     #[cfg(unix)]

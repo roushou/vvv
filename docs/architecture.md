@@ -307,7 +307,11 @@ the destination, rather than guessing from equal contents.
 Disk moves use atomic no-replace renames: rustix's `renameat2(RENAME_NOREPLACE)`
 on Linux and `renamex_np(RENAME_EXCL)` on macOS. Windows uses the safe
 `atomicwrites::move_atomic` wrapper over `MoveFileExW` without replacement or
-cross-volume copy flags. Same-volume local renames are a single native operation;
+cross-volume copy flags. Occupied destinations, including distinct hard links,
+are refused before invoking the native move. After native success, the source
+must be absent: a successful no-op against a racing hard link is an unchanged
+failure. The native operation still enforces destination preservation after the
+initial check. Same-volume local renames are a single native operation;
 remote filesystem errors can leave an uncertain outcome. There is no cross-volume
 copy fallback. Linux/macOS fall back to `hard_link` then `remove_file` only for
 `ENOSYS`, `EOPNOTSUPP`/`ENOTSUP`, or `EINVAL` (unsupported rename flags).
