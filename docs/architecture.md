@@ -90,10 +90,13 @@ its components (`impl Command for RenameIntent` in `capabilities/rename.rs`, `fo
 `capabilities/moves/file.rs`, `for MoveSymbolIntent` in `capabilities/moves/symbol.rs`, the per-file queries in `answers.rs`, the whole-tree ones in
 `understanding.rs`). A mutation answers with `Planned<T>` —
 the answer as a preview (`applied: false`, `files` filled) with the plan(s) kept
-beside it; `Intent` itself is a command answering `Planned<Answer>`, so a batch step,
+beside it; `Intent` itself is a command answering `Planned<MutationAnswer>`, so a batch step,
 the picker or `serve` plans any intent without matching its variants. `Apply` writes,
 records history and hands the same answer back marked applied — it needs the
-`Mutation` capability, which `Answer` has for its mutating variants; `UndoLast` and
+`Mutation` capability, sealed to the five mutation payloads and their closed
+`MutationAnswer` sum. Queries cannot carry a `Planned` or reach `Apply`. Typed plans
+wrap their payload with `into_mutation`; there is no arbitrary result mapping.
+`MutationAnswer` becomes an `Answer` only at the reporting boundary; `UndoLast` and
 `HistoryQuery` are commands too. `FileQuery` gives an interface a file with its highlights; `root()` and
 `language_ids()` are the two facts about the session. Nothing about a command lives
 on the engine: a new capability is a request type and its implementation. A

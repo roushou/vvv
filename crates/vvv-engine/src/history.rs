@@ -155,7 +155,13 @@ impl HistorySnapshot {
 /// A batch's steps go in order, each checked against the state the previous
 /// one left; if a step fails, the ones before it are rolled back. Answers
 /// with the result marked applied.
-pub struct Apply<T>(pub Planned<T>);
+/// Query answers cannot be applied:
+///
+/// ```compile_fail,E0277
+/// use vvv_engine::{Answer, Apply};
+/// let _: Option<Apply<Answer>> = None;
+/// ```
+pub struct Apply<T: Mutation>(pub Planned<T>);
 
 impl<T: Mutation> Command for Apply<T> {
     type Output = T;

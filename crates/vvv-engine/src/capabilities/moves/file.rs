@@ -64,6 +64,10 @@ pub struct Move {
 }
 
 impl Mutation for Move {
+    fn into_mutation(self) -> crate::MutationAnswer {
+        crate::MutationAnswer::Move(self)
+    }
+
     fn intent(&self) -> Intent {
         Intent::Move(self.intent.clone())
     }

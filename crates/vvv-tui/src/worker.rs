@@ -8,7 +8,9 @@ use std::thread;
 use std::error::Error as _;
 
 use vvv_engine::report::{Document, Options};
-use vvv_engine::{Answer, Apply, Engine, EngineError, FileQuery, HistoryQuery, Intent, UndoLast};
+use vvv_engine::{
+    Answer, Apply, Engine, EngineError, FileQuery, HistoryQuery, Intent, MutationAnswer, UndoLast,
+};
 
 use super::action::{Effect, Event, Planned};
 
@@ -121,25 +123,25 @@ impl Runner {
         let engine = &self.engine;
         let answer = engine.run(intent.clone())?.into_inner();
         Ok(match answer {
-            Answer::Rename(r) => Planned::Rename {
+            MutationAnswer::Rename(r) => Planned::Rename {
                 files: r.files,
                 declarations: r.declarations,
                 occurrences: r.occurrences,
             },
-            Answer::Move(mv) => Planned::Move {
+            MutationAnswer::Move(mv) => Planned::Move {
                 files: mv.files,
                 intent,
                 respellings: mv.respellings,
                 notices: mv.notices,
             },
-            Answer::MoveSymbol(mv) => Planned::Move {
+            MutationAnswer::MoveSymbol(mv) => Planned::Move {
                 files: mv.files,
                 intent,
                 respellings: mv.respellings,
                 notices: mv.notices,
             },
-            Answer::Rewrite(rw) => Planned::Rewrite { files: rw.files },
-            _ => {
+            MutationAnswer::Rewrite(rw) => Planned::Rewrite { files: rw.files },
+            MutationAnswer::Batch(_) => {
                 return Err(Failure::Unsupported(
                     "the picker plans one command at a time; use `vvv batch`",
                 ));
@@ -182,7 +184,7 @@ impl Runner {
             }
             Effect::Commit { intent } => {
                 let engine = &self.engine;
-                let answer = engine.run(Apply(engine.run(intent.clone())?))?;
+                let answer: Answer = engine.run(Apply(engine.run(intent.clone())?))?.into();
                 let report = Document::of(&answer, Options::default());
                 Event::Applied {
                     id: answer.history_id().unwrap_or_default(),
@@ -198,5 +200,33 @@ impl Runner {
                 return Err(Failure::Unsupported("not a worker effect"));
             }
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::Arc;
+    use vvv_engine::{BatchIntent, Languages, MemoryVfs, Workspace};
+
+    #[test]
+    fn a_batch_plan_is_rejected_as_a_user_visible_outcome() {
+        let (outbox, inbox) = mpsc::channel();
+        let runner = Runner {
+            engine: Engine::new(
+                Workspace::new("/ws", Arc::new(MemoryVfs::new())),
+                Languages::new(),
+            ),
+            outbox,
+        };
+        runner.run(Effect::Plan {
+            generation: 7,
+            intent: Intent::Batch(BatchIntent::new([])),
+            debounce: false,
+        });
+        assert!(
+            matches!(inbox.recv().unwrap(), Event::PlanFailed { generation: 7, message }
+            if message == "the picker plans one command at a time; use `vvv batch`")
+        );
     }
 }

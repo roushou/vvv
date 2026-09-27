@@ -4,14 +4,29 @@ use std::ops::{Deref, DerefMut};
 
 use super::{FilePreview, Plan};
 use crate::change::Change;
-use crate::{EngineError, FileChange, Workspace};
+use crate::{EngineError, FileChange, Mutation, MutationAnswer, Workspace};
 
 /// What a mutating command returns: the result as a preview — `applied` is
 /// false, `files` shows what would change — and, kept beside it, the plan(s)
 /// [`Apply`](crate::Apply) writes. The plan never leaves the
 /// process: a result that crossed to a client has nothing to apply.
+/// Queries cannot carry executable plans:
+///
+/// ```compile_fail,E0277
+/// use vvv_engine::{Planned, Search};
+/// let _: Option<Planned<Search>> = None;
+/// ```
+///
+/// A query cannot replace a planned mutation's result:
+///
+/// ```compile_fail,E0599
+/// use vvv_engine::{Answer, History, Planned, Rename};
+/// let substitute = |planned: Planned<Rename>| {
+///     planned.map(|_| Answer::History(History { entries: Vec::new() }))
+/// };
+/// ```
 #[derive(Debug, Clone)]
-pub struct Planned<T> {
+pub struct Planned<T: Mutation> {
     result: T,
     /// One plan, or a batch's steps, each bound to the state the previous
     /// one leaves.
@@ -20,7 +35,7 @@ pub struct Planned<T> {
     preview: Vec<FilePreview>,
 }
 
-impl<T> Planned<T> {
+impl<T: Mutation> Planned<T> {
     /// Bind a change to the tree and preview it; `result` gets what the plan
     /// does not carry (notices, respellings) and the per-file changes to
     /// build the command's answer around.
@@ -50,10 +65,10 @@ impl<T> Planned<T> {
         self.result
     }
 
-    /// The result transformed, the plans and preview untouched.
-    pub fn map<U>(self, f: impl FnOnce(T) -> U) -> Planned<U> {
+    /// Preserve this executable plan while wrapping its mutation payload.
+    pub fn into_mutation(self) -> Planned<MutationAnswer> {
         Planned {
-            result: f(self.result),
+            result: self.result.into_mutation(),
             plans: self.plans,
             preview: self.preview,
         }
@@ -78,14 +93,14 @@ impl<T> Planned<T> {
     }
 }
 
-impl<T> Deref for Planned<T> {
+impl<T: Mutation> Deref for Planned<T> {
     type Target = T;
     fn deref(&self) -> &T {
         &self.result
     }
 }
 
-impl<T> DerefMut for Planned<T> {
+impl<T: Mutation> DerefMut for Planned<T> {
     fn deref_mut(&mut self) -> &mut T {
         &mut self.result
     }

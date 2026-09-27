@@ -120,9 +120,21 @@ impl FileChange {
     }
 }
 
-/// A result that can be written: what `Engine::apply` needs from it and
-/// tells it.
-pub trait Mutation {
+/// The closed set of mutation payloads an executable plan can carry.
+/// External payloads cannot authorize writes:
+///
+/// ```compile_fail,E0277
+/// use vvv_engine::{Intent, Mutation, MutationAnswer};
+/// struct External;
+/// impl Mutation for External {
+///     fn into_mutation(self) -> MutationAnswer { unimplemented!() }
+///     fn intent(&self) -> Intent { unimplemented!() }
+///     fn applied(&mut self, _: u64) {}
+/// }
+/// ```
+pub trait Mutation: sealed::Sealed {
+    /// Wrap this payload in the closed mutation result.
+    fn into_mutation(self) -> MutationAnswer;
     /// What is recorded in history.
     fn intent(&self) -> Intent;
     /// Mark the result as written by history entry `id`.
@@ -132,6 +144,9 @@ pub trait Mutation {
 macro_rules! mutation {
     ($t:ty, $variant:ident) => {
         impl Mutation for $t {
+            fn into_mutation(self) -> MutationAnswer {
+                MutationAnswer::$variant(self)
+            }
             fn intent(&self) -> Intent {
                 Intent::$variant(self.intent.clone())
             }
@@ -146,6 +161,9 @@ macro_rules! mutation {
 mutation!(Rewrite, Rewrite);
 
 impl Mutation for Batch {
+    fn into_mutation(self) -> MutationAnswer {
+        MutationAnswer::Batch(self)
+    }
     fn intent(&self) -> Intent {
         Intent::Batch(BatchIntent {
             intents: self.intents.clone(),
@@ -155,4 +173,102 @@ impl Mutation for Batch {
         self.applied = true;
         self.history_id = Some(id);
     }
+}
+
+/// The result of a mutation intent. Queries have no variant here.
+#[derive(Debug, Clone, Serialize)]
+#[serde(untagged)]
+#[allow(clippy::large_enum_variant)]
+pub enum MutationAnswer {
+    Rewrite(Rewrite),
+    Rename(super::Rename),
+    Move(super::Move),
+    MoveSymbol(super::MoveSymbol),
+    Batch(Batch),
+}
+
+impl MutationAnswer {
+    /// Notices retained by a mutation, if any.
+    pub fn notices(&self) -> &[Notice] {
+        match self {
+            Self::Rewrite(_) | Self::Rename(_) => &[],
+            Self::Move(result) => &result.notices,
+            Self::MoveSymbol(result) => &result.notices,
+            Self::Batch(result) => &result.notices,
+        }
+    }
+
+    /// The history entry recorded by an applied mutation.
+    pub fn history_id(&self) -> Option<u64> {
+        match self {
+            Self::Rewrite(result) => result.history_id,
+            Self::Rename(result) => result.history_id,
+            Self::Move(result) => result.history_id,
+            Self::MoveSymbol(result) => result.history_id,
+            Self::Batch(result) => result.history_id,
+        }
+    }
+}
+
+impl Mutation for MutationAnswer {
+    fn into_mutation(self) -> Self {
+        self
+    }
+
+    fn intent(&self) -> Intent {
+        match self {
+            Self::Rewrite(result) => result.intent(),
+            Self::Rename(result) => result.intent(),
+            Self::Move(result) => result.intent(),
+            Self::MoveSymbol(result) => result.intent(),
+            Self::Batch(result) => result.intent(),
+        }
+    }
+
+    fn applied(&mut self, id: u64) {
+        match self {
+            Self::Rewrite(result) => result.applied(id),
+            Self::Rename(result) => result.applied(id),
+            Self::Move(result) => result.applied(id),
+            Self::MoveSymbol(result) => result.applied(id),
+            Self::Batch(result) => result.applied(id),
+        }
+    }
+}
+
+impl From<MutationAnswer> for super::Answer {
+    fn from(result: MutationAnswer) -> Self {
+        match result {
+            MutationAnswer::Rewrite(result) => Self::Rewrite(result),
+            MutationAnswer::Rename(result) => Self::Rename(result),
+            MutationAnswer::Move(result) => Self::Move(result),
+            MutationAnswer::MoveSymbol(result) => Self::MoveSymbol(result),
+            MutationAnswer::Batch(result) => Self::Batch(result),
+        }
+    }
+}
+
+impl TryFrom<super::Answer> for MutationAnswer {
+    type Error = super::Answer;
+
+    fn try_from(answer: super::Answer) -> Result<Self, Self::Error> {
+        match answer {
+            super::Answer::Rewrite(result) => Ok(Self::Rewrite(result)),
+            super::Answer::Rename(result) => Ok(Self::Rename(result)),
+            super::Answer::Move(result) => Ok(Self::Move(result)),
+            super::Answer::MoveSymbol(result) => Ok(Self::MoveSymbol(result)),
+            super::Answer::Batch(result) => Ok(Self::Batch(result)),
+            query => Err(query),
+        }
+    }
+}
+
+mod sealed {
+    pub trait Sealed {}
+    impl Sealed for super::Rewrite {}
+    impl Sealed for super::super::Rename {}
+    impl Sealed for super::super::Move {}
+    impl Sealed for super::super::MoveSymbol {}
+    impl Sealed for super::Batch {}
+    impl Sealed for super::MutationAnswer {}
 }

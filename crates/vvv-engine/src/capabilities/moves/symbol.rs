@@ -70,6 +70,10 @@ pub struct MoveSymbol {
 }
 
 impl Mutation for MoveSymbol {
+    fn into_mutation(self) -> crate::MutationAnswer {
+        crate::MutationAnswer::MoveSymbol(self)
+    }
+
     fn intent(&self) -> Intent {
         Intent::MoveSymbol(self.intent.clone())
     }

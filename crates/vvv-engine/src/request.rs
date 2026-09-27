@@ -3,12 +3,12 @@
 //! A mutation with `apply` runs the intent, then [`Apply`] on what it
 //! planned — one request, one undo — as the CLI's `--apply` does.
 //!
-//! An [`Intent`] is a command too: it plans to the wire [`Answer`], so a
+//! An [`Intent`] is a command too: it plans to a [`MutationAnswer`], so a
 //! caller that holds one never has to match its variants.
 
 use crate::command::{Command, Context};
 use crate::{
-    Answer, Apply, EngineError, HistoryQuery, Intent, Mutation, Planned, Request, UndoLast,
+    Answer, Apply, EngineError, HistoryQuery, Intent, MutationAnswer, Planned, Request, UndoLast,
 };
 
 impl Command for Request {
@@ -47,9 +47,9 @@ impl Request {
     fn mutate(intent: Intent, apply: bool, cx: &mut Context<'_>) -> Result<Answer, EngineError> {
         let planned = intent.run(cx)?;
         if apply {
-            Apply(planned).run(cx)
+            Apply(planned).run(cx).map(Answer::from)
         } else {
-            Ok(planned.into_inner())
+            Ok(planned.into_inner().into())
         }
     }
 }
@@ -58,43 +58,15 @@ impl Request {
 /// `Intent` — a batch step, the picker, `serve` — asks once, without
 /// matching the variant.
 impl Command for Intent {
-    type Output = Planned<Answer>;
+    type Output = Planned<MutationAnswer>;
 
     fn run(self, cx: &mut Context<'_>) -> Result<Self::Output, EngineError> {
         Ok(match self {
-            Self::Rewrite(i) => i.run(cx)?.map(Answer::Rewrite),
-            Self::Rename(i) => i.run(cx)?.map(Answer::Rename),
-            Self::Move(i) => i.run(cx)?.map(Answer::Move),
-            Self::MoveSymbol(i) => i.run(cx)?.map(Answer::MoveSymbol),
-            Self::Batch(i) => i.run(cx)?.map(Answer::Batch),
+            Self::Rewrite(i) => i.run(cx)?.into_mutation(),
+            Self::Rename(i) => i.run(cx)?.into_mutation(),
+            Self::Move(i) => i.run(cx)?.into_mutation(),
+            Self::MoveSymbol(i) => i.run(cx)?.into_mutation(),
+            Self::Batch(i) => i.run(cx)?.into_mutation(),
         })
-    }
-}
-
-/// A written answer records the intent it wrote and the history entry.
-///
-/// Only a mutating answer reaches [`Apply`]: a `Planned<Answer>` is built
-/// from a mutating intent, so the query variants are unreachable here.
-impl Mutation for Answer {
-    fn intent(&self) -> Intent {
-        match self {
-            Self::Rewrite(r) => r.intent(),
-            Self::Rename(r) => r.intent(),
-            Self::Move(r) => r.intent(),
-            Self::MoveSymbol(r) => r.intent(),
-            Self::Batch(b) => b.intent(),
-            _ => unreachable!("a query answer is never written"),
-        }
-    }
-
-    fn applied(&mut self, id: u64) {
-        match self {
-            Self::Rewrite(r) => r.applied(id),
-            Self::Rename(r) => r.applied(id),
-            Self::Move(r) => r.applied(id),
-            Self::MoveSymbol(r) => r.applied(id),
-            Self::Batch(b) => b.applied(id),
-            _ => {}
-        }
     }
 }

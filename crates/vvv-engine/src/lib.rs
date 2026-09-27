@@ -39,12 +39,12 @@ pub use protocol::{
     ErrorCode, ExplainQuery, Explanation, Exposed, Failure, File, FileChange, FileQuery, History,
     HistoryEntry, HistoryQuery, Impact, ImpactQuery, ImportSite, Importer, ImportsQuery,
     ImportsReport, Intent, Locations, Match, MatchId, Move, MoveIntent, MoveSymbol,
-    MoveSymbolIntent, Mutation, Notice, NoticeKind, Occurrence, Outline, OutlineItem, OutlineQuery,
-    Placed, Reach, Reason, Recovery, RecoveryEffect, RecoveryIssue, RecoveryOperation,
-    RecoveryState, RecoveryUnverified, References, ReferencesQuery, Rename, RenameIntent, Reply,
-    Request, Respelling, Rewrite, RewriteIntent, RewriteOf, Search, Selection, SelectionError,
-    Site, Skipped, Surface, SurfaceQuery, Template, TemplateError, Undo, UndoLast, Unreferenced,
-    WhereQuery,
+    MoveSymbolIntent, Mutation, MutationAnswer, Notice, NoticeKind, Occurrence, Outline,
+    OutlineItem, OutlineQuery, Placed, Reach, Reason, Recovery, RecoveryEffect, RecoveryIssue,
+    RecoveryOperation, RecoveryState, RecoveryUnverified, References, ReferencesQuery, Rename,
+    RenameIntent, Reply, Request, Respelling, Rewrite, RewriteIntent, RewriteOf, Search, Selection,
+    SelectionError, Site, Skipped, Surface, SurfaceQuery, Template, TemplateError, Undo, UndoLast,
+    Unreferenced, WhereQuery,
 };
 pub use vfs::{
     DiskVfs, EntryKind, MemoryVfs, MoveError, MoveState, ParentCreation, Stamp, Vfs, VfsError,

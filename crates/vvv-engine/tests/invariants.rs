@@ -12,9 +12,9 @@ use common::Fake;
 use vvv_core::Address;
 use vvv_engine::report::{Detailed, Document, Options, View};
 use vvv_engine::{
-    Answer, Apply, Confidence, DepsQuery, Engine, EngineError, FileQuery, History, HistoryError,
-    Intent, Languages, MemoryVfs, MoveIntent, ReferencesQuery, RenameIntent, Retention, Vfs,
-    WhereQuery, Workspace,
+    Answer, Apply, Confidence, DepsQuery, Engine, EngineError, FileQuery, HistoryError, Intent,
+    Languages, MemoryVfs, MoveIntent, MutationAnswer, ReferencesQuery, RenameIntent, Retention,
+    Vfs, WhereQuery, Workspace,
 };
 
 struct Fixture {
@@ -92,26 +92,16 @@ fn failed_apply_preserves_files_when_history_is_unreadable() {
 }
 
 #[test]
-#[ignore = "known bug: a query substituted into Planned panics after its mutation writes"]
 fn applying_a_query_result_is_rejected_before_writes() {
     let fixture = Fixture::new(&[("a.p", "def foo\nfoo")]);
-    let planned = fixture
+    let _planned = fixture
         .engine
         .run(Intent::Rename(RenameIntent::new("foo", "bar")))
-        .unwrap()
-        .map(|_| {
-            Answer::History(History {
-                entries: Vec::new(),
-            })
-        });
-
-    // This must be an error, not a panic or a successful write. A future
-    // mutation-only result type can make the invalid substitution unrepresentable.
-    let result = fixture.engine.run(Apply(planned));
-    assert!(
-        result.is_err(),
-        "a query result cannot authorize a mutation"
-    );
+        .unwrap();
+    let query = fixture.engine.run(vvv_engine::Request::History).unwrap();
+    let rejected = MutationAnswer::try_from(query);
+    assert!(matches!(rejected, Err(Answer::History(_))));
+    // The original substitution into Planned is now checked by its compile-fail doctest.
     assert_eq!(fixture.read("a.p"), "def foo\nfoo");
     assert!(!fixture.vfs.exists(Path::new("/ws/.vvv/history.json")));
 }
@@ -2763,4 +2753,43 @@ fn undo_recovery_preserves_a_file_created_at_a_removed_directory_path() {
             .any(|issue| issue.path == Path::new("nested")
                 && issue.operation == vvv_engine::RecoveryOperation::RestoreDirectory)
     );
+}
+
+#[test]
+fn every_mutation_intent_keeps_its_result_variant_through_apply() {
+    use vvv_engine::{BatchIntent, HistoryQuery, MoveSymbolIntent, Query, RewriteIntent};
+
+    let rename = RenameIntent::new("helper", "renamed");
+    let intents = [
+        Intent::Rewrite(RewriteIntent::new(Query::pattern("helper"), "renamed")),
+        Intent::Rename(rename.clone()),
+        Intent::Move(MoveIntent::new("a/x.p", "c/z.p")),
+        Intent::MoveSymbol(MoveSymbolIntent::new("helper", "a/x.p", "b/y.p")),
+        Intent::Batch(BatchIntent::new([Intent::Rename(rename)])),
+    ];
+    for intent in intents {
+        let fixture = Fixture::new(&[
+            ("manifest.p", ""),
+            ("a/x.p", "def helper\ndef other\nhelper"),
+            ("b/y.p", "use a/x.p/helper\nhelper"),
+            ("lib.p", "use a/x.p/helper\nhelper"),
+        ]);
+        let planned = fixture.engine.run(intent.clone()).unwrap();
+        assert_eq!(fixture.read("a/x.p"), "def helper\ndef other\nhelper");
+        let preview = planned.clone().into_inner();
+        let value = serde_json::to_value(&preview).unwrap();
+        assert_eq!(value["applied"], false);
+        assert!(value.get("history_id").is_none());
+        let answer = Answer::from(preview);
+        let round_trip = MutationAnswer::try_from(answer).unwrap();
+        assert_eq!(serde_json::to_value(round_trip).unwrap(), value);
+
+        let applied = fixture.engine.run(Apply(planned)).unwrap();
+        assert_eq!(applied.history_id(), Some(1));
+        assert_eq!(serde_json::to_value(&applied).unwrap()["applied"], true);
+        assert_eq!(
+            fixture.engine.run(HistoryQuery).unwrap().entries[0].intent,
+            intent
+        );
+    }
 }

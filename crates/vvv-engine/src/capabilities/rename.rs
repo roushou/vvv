@@ -95,6 +95,10 @@ pub struct Rename {
 }
 
 impl Mutation for Rename {
+    fn into_mutation(self) -> crate::MutationAnswer {
+        crate::MutationAnswer::Rename(self)
+    }
+
     fn intent(&self) -> Intent {
         Intent::Rename(self.intent.clone())
     }
