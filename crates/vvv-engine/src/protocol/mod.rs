@@ -10,7 +10,6 @@ pub mod display;
 mod failure;
 mod intent;
 mod notice;
-mod question;
 mod reach;
 mod references;
 mod request;
@@ -23,11 +22,19 @@ pub mod vocabulary;
 
 use serde::{Deserialize, Serialize};
 
-pub use answer::{
-    Consumer, Dead, Dep, Deps, Explanation, Exposed, File, Impact, ImportSite, Importer,
-    ImportsReport, Locations, Outline, OutlineItem, Placed, References, Site, Surface,
-    Unreferenced,
+pub use crate::capabilities::declarations::{
+    Locations, Outline, OutlineItem, OutlineQuery, Site, WhereQuery,
 };
+pub use crate::capabilities::file::{File, FileQuery};
+pub use crate::capabilities::imports::{
+    Deps, DepsQuery, ExplainQuery, Explanation, ImportSite, ImportsQuery, ImportsReport,
+};
+pub use crate::capabilities::search::{Search, SearchQuery};
+pub use crate::capabilities::surface::{Exposed, Surface, SurfaceQuery};
+pub use crate::capabilities::usage::{
+    Consumer, Dead, DeadQuery, Impact, ImpactQuery, Unreferenced,
+};
+pub use answer::{Dep, Importer, Placed, References};
 pub use diff::{Diff, DiffKind, DiffLine, Hunk, LineRange};
 pub use failure::{
     ErrorCode, Failure, Recovery, RecoveryEffect, RecoveryIssue, RecoveryOperation, RecoveryState,
@@ -35,17 +42,14 @@ pub use failure::{
 };
 pub use intent::{BatchIntent, Intent, RewriteIntent, RewriteOf};
 pub use notice::{Notice, NoticeKind};
-pub use question::{
-    DeadQuery, DepsQuery, ExplainQuery, FileQuery, ImpactQuery, ImportsQuery, OutlineQuery,
-    SearchQuery, SurfaceQuery, WhereQuery,
-};
+
 pub use reach::Reach;
 pub use references::ReferencesQuery;
 pub use request::{Answer, Call, Reply, Request};
 pub use respelling::Respelling;
 pub use result::{
     Batch, FileChange, History, HistoryEntry, Mutation, MutationAnswer, MutationState, Rewrite,
-    Search, Undo,
+    Undo,
 };
 pub use search::{Confidence, Match, MatchId, Occurrence, Reason, Skipped};
 pub use selection::{Selection, SelectionError};

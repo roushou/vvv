@@ -12,13 +12,11 @@ pub use view::{Detailed, Presentation, View};
 
 use vvv_core::RelPath;
 
-use crate::SymbolKind;
 use crate::protocol::display::{Line, Role};
 use crate::protocol::vocabulary::{Files, IntentLine, Mark, Plural};
 use crate::protocol::{
-    Answer, Batch, BatchIntent, Consumer, Dead, Dep, Deps, Explanation, Exposed, Failure, History,
-    Impact, ImportSite, Importer, ImportsReport, Intent, Locations, Outline, OutlineItem,
-    References, Rewrite, Site, Skipped, Surface, Undo, Unreferenced,
+    Answer, Batch, BatchIntent, Consumer, Dep, Explanation, Exposed, Failure, History, ImportSite,
+    Importer, Intent, OutlineItem, References, Rewrite, Site, Undo, Unreferenced,
 };
 use crate::{Confidence, FileChange, HistoryEntry, Match, Notice, Occurrence, Respelling};
 
@@ -113,12 +111,12 @@ impl Document {
     }
 
     /// `warning: …` on the note stream.
-    fn warning(&mut self, line: Line) {
+    pub(crate) fn warning(&mut self, line: Line) {
         self.block_note(Block::Note(Note::Warning(line)));
     }
 
     /// `path`: the file the command opened.
-    fn file_header(&mut self, path: &std::path::Path) {
+    pub(crate) fn file_header(&mut self, path: &std::path::Path) {
         self.body([Line::of(Role::Path, path.display().to_string())]);
     }
 
@@ -232,7 +230,7 @@ impl Document {
     }
 
     /// Lines joined by `separator`.
-    fn join(parts: Vec<Line>, separator: &str) -> Line {
+    pub(crate) fn join(parts: Vec<Line>, separator: &str) -> Line {
         let mut line = Line::new();
         for (i, part) in parts.into_iter().enumerate() {
             if i > 0 {
@@ -241,97 +239,6 @@ impl Document {
             line = line.and_line(part);
         }
         line
-    }
-
-    // ---------------------------------------------------------------- search
-
-    pub fn search(matches: &[Match], skipped: &[Skipped]) -> Self {
-        let mut report = Self::new();
-        report.block_body(Block::Matches(matches.to_vec()));
-        if matches.is_empty() {
-            report.block_note(Block::Summary(
-                Line::mark(Mark::Nothing).and(Role::Plain, " no matches"),
-            ));
-        } else {
-            report.block_note(Block::Summary(Self::search_summary(matches)));
-        }
-        for skipped in skipped {
-            report.warning(l::SkippedLine::new(skipped).line());
-        }
-        report
-    }
-
-    /// `● 1  ○ 59   13 files`: what the search found.
-    fn search_summary(matches: &[Match]) -> Line {
-        let (declarations, uses) = l::Sections::split(matches);
-        let mut counts: Vec<Line> = Vec::new();
-        if !declarations.is_empty() {
-            counts.push(
-                Line::mark(Mark::Declaration)
-                    .and(Role::Plain, " ")
-                    .and(Role::Plain, declarations.len().to_string()),
-            );
-        }
-        if !uses.is_empty() {
-            counts.push(
-                Line::of(Role::Dim, "○")
-                    .and(Role::Plain, " ")
-                    .and(Role::Plain, uses.len().to_string()),
-            );
-        }
-        Self::join(counts, "  ").and(Role::Plain, "  ").and(
-            Role::Dim,
-            Files::among(matches.iter().map(|m| m.path.as_path())).to_string(),
-        )
-    }
-
-    // --------------------------------------------------------------- outline
-
-    fn outline(result: &Outline) -> Self {
-        let mut report = Self::new();
-        report.file_header(&result.path);
-        if result.items.is_empty() {
-            report.block_note(Block::Summary(
-                Line::mark(Mark::Nothing).and(Role::Plain, " no declarations"),
-            ));
-            return report;
-        }
-        report.block_body(Block::Blank);
-        report.block_body(Block::Outline {
-            path: result.path.clone(),
-            items: result.items.clone(),
-        });
-        report.block_note(Block::Summary(Self::outline_summary(result)));
-        report
-    }
-
-    /// `● 14   pub 9  pub(crate) 1  · 4`: how many of each modifier.
-    fn outline_summary(result: &Outline) -> Line {
-        let mut counts: Vec<(String, usize)> = Vec::new();
-        for item in &result.items {
-            if item.symbol.kind == SymbolKind::Impl {
-                continue;
-            }
-            let key = item.symbol.modifier().unwrap_or("·").to_owned();
-            match counts.iter_mut().find(|(k, _)| *k == key) {
-                Some((_, n)) => *n += 1,
-                None => counts.push((key, 1)),
-            }
-        }
-        counts.sort_by_key(|(k, _)| k == "·");
-        let counts: Vec<Line> = counts
-            .iter()
-            .map(|(k, n)| {
-                Line::of(Role::Dim, k.clone())
-                    .and(Role::Plain, " ")
-                    .and(Role::Plain, n.to_string())
-            })
-            .collect();
-        Line::mark(Mark::Declaration)
-            .and(Role::Plain, " ")
-            .and(Role::Plain, result.items.len().to_string())
-            .and(Role::Plain, "   ")
-            .and_line(Self::join(counts, "  "))
     }
 
     // ------------------------------------------------------------ references
@@ -345,218 +252,6 @@ impl Document {
         });
         report.block_note(Block::Summary(Self::verdict_counts(&result.occurrences)));
         report
-    }
-
-    // ------------------------------------------------------------- locations
-
-    fn locations(result: &Locations) -> Self {
-        let mut report = Self::new();
-        report.block_body(Block::Sites(result.sites.clone()));
-        report.block_note(Block::Summary(
-            Line::mark(Mark::Declaration)
-                .and(Role::Plain, " ")
-                .and(Role::Plain, result.sites.len().to_string()),
-        ));
-        report
-    }
-
-    // ------------------------------------------------------------------ deps
-
-    fn deps(result: &Deps) -> Self {
-        let mut report = Self::new();
-        report.file_header(&result.path);
-        report.block_body(Block::Blank);
-        let outgoing = l::DepGroups::statements(&result.imports);
-        report.body([Line::mark(Mark::Import)
-            .and(Role::Plain, " ")
-            .and(Role::Strong, outgoing.to_string())]);
-        if result.imports.is_empty() {
-            report.body([Line::of(Role::Plain, "  ").and_line(Line::mark(Mark::Nothing))]);
-        }
-        let own = result
-            .module
-            .as_ref()
-            .map(|m| m.package().as_str().to_owned());
-        report.block_body(Block::DepGroups {
-            path: result.path.clone(),
-            imports: result.imports.clone(),
-            own,
-        });
-        report.block_body(Block::Blank);
-        let incoming = l::ImporterRows::sites(&result.importers).len();
-        report.body([Line::mark(Mark::ImportedBy)
-            .and(Role::Plain, " ")
-            .and(Role::Strong, incoming.to_string())
-            .and(Role::Plain, "   ")
-            .and(
-                Role::Dim,
-                Files::among(result.importers.iter().map(|i| i.path.as_path())).to_string(),
-            )]);
-        if result.importers.is_empty() {
-            report.body([Line::of(Role::Plain, "  ").and_line(Line::mark(Mark::Nothing))]);
-        }
-        report.block_body(Block::Importers(result.importers.clone()));
-        report.block_note(Block::Summary(Self::deps_summary(outgoing, incoming)));
-        for skipped in &result.skipped {
-            report.warning(l::SkippedLine::new(skipped).line());
-        }
-        report
-    }
-
-    fn deps_summary(outgoing: usize, incoming: usize) -> Line {
-        Line::mark(Mark::Import)
-            .and(Role::Plain, format!(" {outgoing}  "))
-            .and_line(Line::mark(Mark::ImportedBy))
-            .and(Role::Plain, format!(" {incoming}"))
-    }
-
-    // --------------------------------------------------------------- explain
-
-    fn explain(result: &Explanation) -> Self {
-        let mut report = Self::new();
-        report.block_body(Block::Explanation(Box::new(result.clone())));
-        report
-    }
-
-    // --------------------------------------------------------------- surface
-
-    fn surface(result: &Surface) -> Self {
-        let mut report = Self::new();
-        let scope = result
-            .package
-            .as_ref()
-            .map_or_else(|| "every package".to_owned(), ToString::to_string);
-        report.title(format!("surface {scope}"));
-        if result.items.is_empty() {
-            report.block_note(Block::Summary(
-                Line::mark(Mark::Nothing).and(Role::Plain, " nothing exposed"),
-            ));
-            return report;
-        }
-        report.block_body(Block::Exposed(result.items.clone()));
-        report.block_note(Block::Summary(Self::surface_summary(result)));
-        report
-    }
-
-    fn surface_summary(result: &Surface) -> Line {
-        let importers: usize = result.items.iter().map(|i| i.importers).sum();
-        Line::mark(Mark::Declaration)
-            .and(Role::Plain, " ")
-            .and(Role::Strong, result.items.len().to_string())
-            .and(Role::Plain, "   ")
-            .and_line(Line::mark(Mark::ImportedBy))
-            .and(Role::Plain, " ")
-            .and(Role::Dim, format!("{importers} imports"))
-    }
-
-    // ---------------------------------------------------------------- impact
-
-    fn impact(result: &Impact) -> Self {
-        let mut report = Self::new();
-        report.body([Line::of(Role::Title, format!("impact {}", result.name))]);
-        if result.consumers.is_empty() {
-            report.block_note(Block::Summary(
-                Line::mark(Mark::Nothing).and(Role::Plain, " no module imports it"),
-            ));
-            return report;
-        }
-        report.block_body(Block::Consumers(result.consumers.clone()));
-        report.block_note(Block::Summary(
-            Line::mark(Mark::ImportedBy)
-                .and(Role::Plain, " ")
-                .and(Role::Strong, result.consumers.len().to_string())
-                .and(Role::Plain, "   ")
-                .and(
-                    Role::Dim,
-                    Files::among(result.consumers.iter().map(|c| c.path.as_path())).to_string(),
-                ),
-        ));
-        report
-    }
-
-    // ------------------------------------------------------------------ dead
-
-    fn dead(result: &Dead) -> Self {
-        let mut report = Self::new();
-        report.title("dead");
-        if result.items.is_empty() {
-            report.block_note(Block::Summary(
-                Line::mark(Mark::Nothing).and(Role::Plain, " everything is referred to"),
-            ));
-            return report;
-        }
-        report.block_body(Block::Dead(result.items.clone()));
-        report.block_note(Block::Summary(Self::dead_summary(result)));
-        report
-    }
-
-    fn dead_summary(result: &Dead) -> Line {
-        let unsure = result.items.iter().filter(|i| i.unsure > 0).count();
-        Line::mark(Mark::Declaration)
-            .and(Role::Plain, " ")
-            .and(Role::Strong, result.items.len().to_string())
-            .and(Role::Plain, "   ")
-            .and_line(Line::mark(Mark::Unverified))
-            .and(Role::Plain, " ")
-            .and(
-                Role::Dim,
-                format!("{unsure} with tokens that might be uses"),
-            )
-    }
-
-    // --------------------------------------------------------------- imports
-
-    fn imports(result: &ImportsReport) -> Self {
-        let mut report = Self::new();
-        let scope = result.path.as_ref().map_or_else(
-            || "every file".to_owned(),
-            |path| path.display().to_string(),
-        );
-        report.title(format!("imports {scope}"));
-        let sections: [(Mark, &str, &[ImportSite]); 3] = [
-            (Mark::Nothing, "unresolved", &result.unresolved),
-            (Mark::ByHand, "unused", &result.unused),
-            (Mark::ByHand, "redundant", &result.redundant),
-        ];
-        let total: usize = sections.iter().map(|(_, _, s)| s.len()).sum();
-        if total == 0 {
-            report.block_note(Block::Summary(
-                Line::mark(Mark::Nothing).and(Role::Plain, " nothing to look at"),
-            ));
-            return report;
-        }
-        report.block_body(Block::Imports {
-            unresolved: result.unresolved.clone(),
-            unused: result.unused.clone(),
-            redundant: result.redundant.clone(),
-        });
-        report.block_note(Block::Summary(Self::imports_summary(
-            &sections,
-            result.unplaced.len(),
-        )));
-        report
-    }
-
-    fn imports_summary(sections: &[(Mark, &str, &[ImportSite])], unplaced: usize) -> Line {
-        let mut counts: Vec<Line> = sections
-            .iter()
-            .filter(|(_, _, s)| !s.is_empty())
-            .map(|(mark, word, s)| {
-                Line::mark(*mark)
-                    .and(Role::Plain, format!(" {word} "))
-                    .and(Role::Plain, s.len().to_string())
-            })
-            .collect();
-        if unplaced > 0 {
-            counts.push(
-                Line::mark(Mark::Nothing)
-                    .and(Role::Plain, " ")
-                    .and(Role::Dim, "not placed")
-                    .and(Role::Plain, " ")
-                    .and(Role::Dim, unplaced.to_string()),
-            );
-        }
-        Self::join(counts, "   ")
     }
 
     // --------------------------------------------------------------- rewrite

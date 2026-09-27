@@ -30,7 +30,6 @@
 #[cfg(test)]
 extern crate self as vvv_engine;
 
-mod answers;
 mod batch;
 mod capabilities;
 mod change;
@@ -42,7 +41,6 @@ mod plan;
 pub mod protocol;
 pub mod report;
 mod rewrite;
-mod understanding;
 mod vfs;
 mod workspace;
 

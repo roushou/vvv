@@ -4,10 +4,10 @@
 use vvv_core::RelPath;
 
 use serde::{Deserialize, Serialize};
-use vvv_core::{Edit, Query};
+use vvv_core::Edit;
 
 use super::diff::Diff;
-use super::{Intent, Match, Notice, RewriteIntent, Skipped};
+use super::{Intent, Notice, RewriteIntent};
 use crate::capabilities::moves::{Move, MoveSymbol};
 use crate::capabilities::rename::Rename;
 use crate::plan::{FilePreview, Plan};
@@ -69,17 +69,6 @@ enum MutationStateError {
     PreviewWithHistory,
     #[error("an applied mutation requires a history_id")]
     AppliedWithoutHistory,
-}
-
-/// `vvv search`: what was found, and which languages could not be asked.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Search {
-    pub query: Query,
-    pub matches: Vec<Match>,
-    /// Languages whose grammar could not compile the query; their files
-    /// were not searched.
-    #[serde(default, skip_serializing_if = "Vec::is_empty")]
-    pub skipped: Vec<Skipped>,
 }
 
 /// `vvv rewrite`: one edit per selected match.

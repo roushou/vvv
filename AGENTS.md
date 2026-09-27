@@ -56,10 +56,12 @@ docs/          architecture, guide, protocol, report
 ## Rules
 
 - **An engine runs commands.** `Engine` has `new`, `run`, `root` and
-  `language_ids`. A capability may own its request and answer data, typed execution,
-  and report composition in one module. `protocol/` owns shared wire types and
-  the central `Request`/`Answer` contract, and re-exports capability-owned wire
-  types. Keep the data and serialization part independent of `Workspace`; only
+  `language_ids`. Capability-specific request and answer data, typed execution,
+  and report composition belong together; related queries may share a private
+  capability module. The [command ownership index](crates/vvv-engine/src/capabilities/mod.rs)
+  maps every command to its owner; update it when adding or moving a command.
+  `protocol/` owns shared wire types and the central `Request`/`Answer` contract,
+  and preserves existing query re-exports. Keep the data and serialization part independent of `Workspace`; only
   execution may read the tree. A new method on `Engine` is the wrong place for
   a capability.
 - **Library first.** Behaviour lives in `vvv-engine`. `crates/vvv` builds an intent,

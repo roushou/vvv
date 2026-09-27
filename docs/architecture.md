@@ -130,13 +130,24 @@ clearing cached candidates: a session reads contents only when stamps changed. A
 touch arriving during refresh remains pending for the next access.
 
 A capability module owns its request and answer data, typed execution, and report
-composition. `protocol/` keeps shared wire types and the central `Request`/`Answer`
+composition. Related queries share a module when they describe the same concepts:
+declarations (outline and where), imports (deps, explain, and diagnostics), and
+usage (impact and dead); search, file preview, and surface have their own modules.
+The [command ownership index](../crates/vvv-engine/src/capabilities/mod.rs) maps
+every command to its owner. Keep it current when a command is added or moved. `protocol/` keeps shared wire types and the central `Request`/`Answer`
 contract. Capability modules are private; the canonical public paths for the
 mutation types are `vvv_engine::Rename`, `vvv_engine::RenameIntent`,
 `vvv_engine::Move`, `vvv_engine::MoveIntent`, `vvv_engine::MoveSymbol`, and
 `vvv_engine::MoveSymbolIntent`. The crate root re-exports these directly from their
 owning modules; `protocol` provides no aliases for them. Data and serialization
-code do not access `Workspace`. Each `Candidate` (a file with its language) answers
+code do not access `Workspace`.
+
+Deferred API work: query types retain both crate-root and `protocol::` public
+paths for compatibility, while the six mutation types above are root-only.
+Unify this policy in a separate API commit; structural moves preserve both query
+paths and do not restore mutation aliases.
+
+Each `Candidate` (a file with its language) answers
 `find`, `references`, and `imports` for itself, and parses once however many
 questions it is asked: its `Facts` are computed on first use and shared. Per-file
 work runs in parallel with `rayon` and collects in path order.
@@ -332,7 +343,8 @@ needed by every view, without presentation options. Source-bearing blocks retain
 matches or sites; outline and dependency blocks also retain their owning file
 path. Reference verdicts retain a `ReferencePlan` with files and mutation state,
 even when a view hides its patch. Per-capability constructors live on `Document`;
-rename's is implemented beside its request, answer, and execution.
+query composition and rename's constructor are implemented beside their requests,
+answers, and execution. File preview still has no rendered document.
 
 `View::present` turns those blocks into a `Presentation` of rows. `Options` belongs
 to this boundary: the view chooses collapsed or expanded verdicts, reach details,
