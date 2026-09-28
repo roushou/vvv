@@ -579,8 +579,13 @@ is preserved and stays fixed while scrolling. Code uses a fixed left inset.
 Selecting an enum variant previews the whole containing enum and highlights the
 variant's name; `e` opens the enum.
 If no enclosing enum is available, the variant itself is shown.
-A use previews its unique same-named declaration; in an entered scope, only resolved references preview the
-subject. Ambiguous or unrelated rows show a placeholder. The pane fills the left
+A use previews its unique same-named declaration. When names collide, the preview
+asks the engine to check each candidate against the row's imports and re-exports.
+A same-named struct elsewhere in the workspace or an enum variant does not hide
+the definition used by an import, field, function parameter, or return type.
+Only a single confirmed target is shown. In an entered scope,
+only resolved references preview the subject. Rows without a known target show
+“No definition available”. The pane fills the left
 column's width and half its available height, capped at 16 rows including borders.
 That space stays reserved while navigating or loading, even for short bodies.
 When a selection needs another file, the previous definition and scroll

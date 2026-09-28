@@ -116,6 +116,12 @@ mutation intents' and `RewriteOf`'s `plan`, `Apply<T>::apply`, or
 workspace, or registry they use explicitly. Public typed methods acquire the
 same operation guard as the dispatcher; internal bodies do not reacquire it.
 
+For definition previews, `ReferencesQuery::definitions` gathers separate reference
+evidence for every addressable candidate under one operation guard and graph
+snapshot. `Definitions::definition_of` returns a target only when exactly one
+candidate resolves the selected token. Name collisions across files or packages
+do not require picking a declaration before inspecting the use site's imports.
+
 `Engine::run` returns an in-process `Execution`: `Completed(Answer)`,
 `Preview(Planned<MutationAnswer>)`, or `Applied(Applied<MutationAnswer>)`. Only
 mutation previews retain executable plans. `into_preview` and `into_applied`
