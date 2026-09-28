@@ -6,8 +6,8 @@ use vvv_engine::RelPath;
 use crate::modes::context::ModeContext;
 use crate::overlays::{Confirmed, Menu};
 use ratatui::crossterm::event::KeyEvent;
+use vvv_engine::Intent;
 use vvv_engine::protocol::vocabulary::IntentLine;
-use vvv_engine::{Highlight, Intent};
 
 use super::action::{Action, Effect, Event, Planned};
 use super::keymap::{Dispatch, Key, Layer, When};
@@ -308,8 +308,14 @@ impl Model {
                 path,
                 text,
                 highlights,
+                symbols,
             } => {
-                let preview = FilePreview::new(path, text, highlights);
+                let preview = FilePreview::new(vvv_engine::File {
+                    path,
+                    text,
+                    highlights,
+                    symbols,
+                });
                 match &mut self.mode {
                     Mode::Search => self.search.previewed(preview),
                     Mode::Rename(r) => r.previewed(preview),
@@ -349,6 +355,7 @@ impl Model {
             Event::Applied { id, intent, report } => {
                 self.mode = Mode::Search;
                 self.search.preview = None;
+                self.search.body.clear();
                 self.overlay = Some(Overlay::Report {
                     report: Box::new(report),
                     cursor: 0,
@@ -371,6 +378,7 @@ impl Model {
             Event::Undone(entry) => {
                 self.mode = Mode::Search;
                 self.search.preview = None;
+                self.search.body.clear();
                 let effects = self.search();
                 self.status.busy = false;
                 self.status
@@ -530,9 +538,12 @@ impl Model {
     // ------------------------------------------------------------ modes
 
     /// A retained-hub selection follows the active mode's preview.
-    fn navigation(&self, navigation: Navigation) -> Vec<Effect> {
+    fn navigation(&mut self, navigation: Navigation) -> Vec<Effect> {
         match navigation {
-            Navigation::Selection => self.preview_effect(),
+            Navigation::Selection => {
+                self.search.selection_changed();
+                self.preview_effect()
+            }
             Navigation::Effects(effects) => effects,
         }
     }
@@ -631,7 +642,7 @@ impl Model {
             };
         }
         let site = match &self.mode {
-            Mode::Search => self.search.results.current_site(),
+            Mode::Search => self.search.site(),
             Mode::Rename(r) => r.site(),
             Mode::Move(mv) => mv.site(),
             Mode::Rewrite(rw) => rw.site(),
@@ -789,27 +800,30 @@ impl Status {
 /// syntax colouring as byte spans.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FilePreview {
-    pub path: RelPath,
-    text: String,
+    file: vvv_engine::File,
     line_starts: Vec<usize>,
-    pub highlights: Vec<Highlight>,
 }
 
 impl FilePreview {
-    pub fn new(path: RelPath, text: String, highlights: Vec<Highlight>) -> Self {
+    pub fn new(file: vvv_engine::File) -> Self {
         let line_starts = std::iter::once(0)
-            .chain(text.match_indices('\n').map(|(i, _)| i + 1))
+            .chain(file.text.match_indices('\n').map(|(i, _)| i + 1))
             .collect();
-        Self {
-            path,
-            text,
-            line_starts,
-            highlights,
-        }
+        Self { file, line_starts }
     }
 
     pub fn line_count(&self) -> usize {
         self.line_starts.len()
+    }
+
+    /// Lines intersecting a nonempty, valid UTF-8 source range.
+    pub fn lines_in(&self, span: vvv_engine::Span) -> Option<std::ops::Range<usize>> {
+        if span.is_empty() || self.text.get(span.start..span.end).is_none() {
+            return None;
+        }
+        let start = self.line_starts.partition_point(|&i| i <= span.start) - 1;
+        let end = self.line_starts.partition_point(|&i| i < span.end);
+        Some(start..end)
     }
 
     /// Byte range of line `n`, terminator excluded.
@@ -824,6 +838,14 @@ impl FilePreview {
     }
 
     pub fn text(&self) -> &str {
-        &self.text
+        &self.file.text
+    }
+}
+
+impl std::ops::Deref for FilePreview {
+    type Target = vvv_engine::File;
+
+    fn deref(&self) -> &Self::Target {
+        &self.file
     }
 }

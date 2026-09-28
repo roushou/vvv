@@ -29,6 +29,7 @@ pub struct Fake {
     extensions: &'static [&'static str],
     surgery: PathSurgery,
     layout: PathLayout,
+    symbols: Option<Vec<Symbol>>,
 }
 
 impl Fake {
@@ -38,6 +39,7 @@ impl Fake {
             extensions,
             surgery: PathSurgery::default(),
             layout: PathLayout::default(),
+            symbols: None,
         }
     }
 
@@ -54,6 +56,12 @@ impl Fake {
     /// Heads the layout cannot place without another same-file binding.
     pub fn with_unresolved_heads(mut self, heads: &'static [&'static str]) -> Self {
         self.layout.unresolved_heads = heads;
+        self
+    }
+
+    /// Supply declaration facts for tests of structural containment.
+    pub fn with_symbols(mut self, symbols: Vec<Symbol>) -> Self {
+        self.symbols = Some(symbols);
         self
     }
 
@@ -181,6 +189,9 @@ impl Language for Fake {
     }
 
     fn symbols(&self, source: &str) -> Result<Vec<Symbol>, SearchError> {
+        if let Some(symbols) = &self.symbols {
+            return Ok(symbols.clone());
+        }
         Ok(source
             .match_indices("def ")
             .map(|(start, _)| {

@@ -4,6 +4,7 @@ use std::path::Path;
 use std::process::Command;
 use std::time::{Duration, Instant};
 
+use ratatui::crossterm::SynchronizedUpdate;
 use ratatui::crossterm::event::{self, Event as TermEvent, KeyEventKind};
 use vvv_engine::{Engine, Retention};
 
@@ -123,8 +124,13 @@ impl Tui {
             }
 
             let now = vvv_engine::protocol::vocabulary::Ago::now();
-            terminal
-                .draw(|frame| frame.render_widget(App::new(model, painter, now), frame.area()))?;
+            // Present the cell diff as one frame on supporting terminals. The
+            // end marker is sent even when drawing returns an I/O error.
+            std::io::stdout().sync_update(|_| {
+                terminal
+                    .draw(|frame| frame.render_widget(App::new(model, painter, now), frame.area()))
+                    .map(|_| ())
+            })??;
             if model.quit {
                 return Ok(());
             }

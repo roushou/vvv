@@ -1,6 +1,6 @@
 ---
 source: crates/vvv-tui/src/tests.rs
-expression: render(&m)
+expression: "FrameFixture::new(&m).render()"
 ---
 ┌ vvv ~/dev/nx ──────────────────────────────── ● trait Language  ✓ 3  ? 1  ✗ 0  3 files ┐
 │> Language                                                                              │
@@ -12,12 +12,12 @@ expression: render(&m)
 │  3 →   26:16   pub use lang::{Language, La││   62 │ // line 62                         │
 │? unverified 1  1 file                     ││   63 │ // line 63                         │
 │  4     41:5    Language::new()            ││   64 │ pub trait Language: Send + Sync {  │
-│                                           ││   65 │ // line 65                         │
-│                                           ││   66 │ // line 66                         │
-│                                           ││   67 │ // line 67                         │
-│                                           ││   68 │ // line 68                         │
-│                                           ││   69 │ // line 69                         │
-│                                           ││   70 │ // line 70                         │
+└───────────────────────────────────────────┘│   65 │     fn name(&self) -> &str;        │
+┌ definition ───────────────────────────────┐│   66 │     fn extensions(&self) -> &[&str…│
+│ pub trait Language: Send + Sync {         ││   67 │ }                                  │
+│     fn name(&self) -> &str;               ││   68 │ // line 68                         │
+│     fn extensions(&self) -> &[&str];      ││   69 │ // line 69                         │
+│ }                                         ││   70 │ // line 70                         │
 │                                           ││                                           │
 │                                           ││                                           │
 └───────────────────────────────────────────┘└───────────────────────────────────────────┘

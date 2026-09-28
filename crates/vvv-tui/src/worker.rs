@@ -182,6 +182,7 @@ impl Runner {
                 Event::Previewed {
                     text: file.text,
                     highlights: file.highlights,
+                    symbols: file.symbols,
                     path,
                 }
             }

@@ -40,6 +40,7 @@ fn preview(path: &str, lines: &[&str]) -> Event {
     }
     highlights.sort_by_key(|h| h.span.start);
     Event::Previewed {
+        symbols: vec![],
         path: path.into(),
         text,
         highlights,
@@ -84,12 +85,26 @@ fn generation_of(effects: &[Effect]) -> u64 {
 fn searched() -> Model {
     let mut m = model();
     let effects = typed(&mut m, "Language");
+    let lines = numbered(
+        70,
+        &[
+            (64, "pub trait Language: Send + Sync {"),
+            (65, "    fn name(&self) -> &str;"),
+            (66, "    fn extensions(&self) -> &[&str];"),
+            (67, "}"),
+        ],
+    );
+    let text = lines.join("\n");
+    let start = text.find("pub trait").unwrap();
+    let end = text.find("\n}").unwrap() + 2;
+    let mut matches = fx::search().matches;
+    let declaration = &mut matches[0];
+    declaration.symbol.as_mut().unwrap().span = vvv_engine::Span::new(start, end);
     m.on_event(Event::Searched {
         generation: generation_of(&effects),
-        matches: fx::search().matches,
+        matches,
         skipped: vec![],
     });
-    let lines = numbered(70, &[(64, "pub trait Language: Send + Sync {")]);
     let refs: Vec<&str> = lines.iter().map(String::as_str).collect();
     m.on_event(preview("src/lang/mod.rs", &refs));
     m
@@ -301,7 +316,10 @@ impl<'a> FrameFixture<'a> {
         Self { model }
     }
     fn render(&self) -> String {
-        let backend = TestBackend::new(90, 20);
+        self.render_size(90, 20)
+    }
+    fn render_size(&self, width: u16, height: u16) -> String {
+        let backend = TestBackend::new(width, height);
         let mut terminal = Terminal::new(backend).unwrap();
         terminal
             .draw(|f| {
@@ -427,6 +445,8 @@ fn keys_depend_on_the_focused_panel() {
         m.action_for(key(KeyCode::Char('j'))),
         Some(Action::Scroll(1))
     );
+    m.update(Action::FocusNext);
+    assert_eq!(m.search.focus, SearchPanel::Body);
     m.update(Action::FocusNext);
     assert_eq!(m.search.focus, SearchPanel::Query, "tab wraps");
 }
@@ -972,9 +992,12 @@ fn anchored() -> Model {
         Some(Effect::Query { generation, .. }) => *generation,
         other => panic!("expected a read request, got {other:?}"),
     };
+    let mut references = fx::references();
+    references.declarations[0] = m.search.results.matches[0].clone();
+    references.occurrences[0].m = references.declarations[0].clone();
     m.on_event(Event::Answered {
         generation,
-        answer: Box::new(Answer::References(fx::references())),
+        answer: Box::new(Answer::References(references)),
     });
     m
 }
@@ -1080,6 +1103,7 @@ fn the_relation_menu_narrows_references_and_switches_to_impact() {
 fn snapshot_search_anchored_unresolved() {
     let mut m = anchored();
     m.search.results.set_relation(Relation::Unresolved);
+    m.search.selection_changed();
     insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
@@ -1136,6 +1160,7 @@ fn o_jumps_from_a_use_to_its_declaration() {
 fn snapshot_search_definition() {
     let mut m = anchored();
     m.search.results.show_definition(fx::explanation());
+    m.search.selection_changed();
     insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
@@ -1143,13 +1168,15 @@ fn snapshot_search_definition() {
 fn snapshot_search_deps() {
     let mut m = anchored();
     m.search.results.show_deps(fx::deps());
+    m.search.selection_changed();
     insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
 #[test]
 fn rewrite_stays_query_scoped_under_a_relation_filter() {
     let mut m = anchored();
-    m.search.results.set_relation(Relation::Unresolved); // one row shown
+    m.search.results.set_relation(Relation::Unresolved);
+    m.search.selection_changed(); // one row shown
     m.update(Action::Rewrite);
     let Mode::Rewrite(rw) = &m.mode else {
         panic!("expected rewrite mode");
@@ -1166,6 +1193,7 @@ fn rewrite_stays_query_scoped_under_a_relation_filter() {
 fn snapshot_search_impact() {
     let mut m = anchored();
     m.search.results.set_relation(Relation::Impact);
+    m.search.selection_changed();
     m.on_event(Event::Answered {
         generation: m.generation,
         answer: Box::new(Answer::Impact(fx::impact())),
@@ -1339,4 +1367,525 @@ fn report_overlay_opens_declaration_sites_and_skips_suggested_imports() {
         Some((second.path, second.start.line)),
         "the summary is not a source row"
     );
+}
+
+#[test]
+fn body_focus_scroll_and_editor_are_independent_of_context() {
+    let mut m = searched();
+    m.update(Action::Move(1)); // a use in another file
+    m.update(Action::FocusNth(4));
+    assert_eq!(m.search.focus, SearchPanel::Body);
+    assert_eq!(
+        m.action_for(key(KeyCode::Char('j'))),
+        Some(Action::Scroll(1))
+    );
+    m.on_key(key(KeyCode::Char('j')));
+    assert_eq!(m.search.body.scroll, 1);
+    assert_eq!(m.search.preview_scroll, None);
+    assert_eq!(m.search.results.cursor.index, 1);
+    assert!(
+        matches!(m.update(Action::Edit).as_slice(), [Effect::Edit { path, line: 63 }]
+        if path.as_path() == std::path::Path::new("src/lang/mod.rs"))
+    );
+    m.update(Action::Bottom);
+    assert_eq!(m.search.body.scroll, 3);
+    m.update(Action::Top);
+    assert_eq!(m.search.body.scroll, 0);
+    m.on_key(key(KeyCode::Esc));
+    assert_eq!(m.search.focus, SearchPanel::Results);
+    m.update(Action::Move(1));
+    assert_eq!(m.search.body.scroll, 0);
+}
+
+#[test]
+fn body_ignores_unrelated_preview_answers_and_unresolved_references() {
+    let mut m = searched();
+    let before = m.search.body.preview.clone();
+    m.update(Action::Move(1));
+    m.on_event(preview("src/lang/registry.rs", &["use Language;"]));
+    assert_eq!(m.search.body.preview, before);
+    m.on_event(preview("unrelated.rs", &["stale"]));
+    assert_eq!(m.search.body.preview, before);
+    assert_eq!(
+        m.search.preview.as_ref().unwrap().path.as_path(),
+        std::path::Path::new("src/lang/registry.rs")
+    );
+
+    let mut m = anchored();
+    m.update(Action::Move(1));
+    assert!(m.search.results.body_declaration().is_some());
+    m.update(Action::Move(2));
+    assert!(m.search.results.body_declaration().is_none());
+    assert!(m.search.results.has_body(), "space remains reserved");
+}
+
+#[test]
+fn body_ambiguity_and_empty_results_do_not_leave_invisible_focus() {
+    let mut m = searched();
+    let mut other = m.search.results.matches[0].clone();
+    other.path = "other.rs".into();
+    m.search.results.matches.push(other);
+    m.update(Action::Move(1));
+    assert!(m.search.results.body_declaration().is_none());
+    m.update(Action::FocusNth(4));
+    m.search.results.replace(vec![]);
+    m.search.selection_changed();
+    assert_eq!(m.search.focus, SearchPanel::Results);
+    m.update(Action::FocusNth(4));
+    assert_eq!(m.search.focus, SearchPanel::Results);
+    m.update(Action::FocusPrev);
+    m.update(Action::FocusPrev);
+    assert_eq!(m.search.focus, SearchPanel::Context);
+}
+
+#[test]
+fn snapshot_body_focused() {
+    let mut m = searched();
+    m.update(Action::FocusNth(4));
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
+}
+
+#[test]
+fn body_tracks_declarations_and_requests_both_files_when_needed() {
+    let mut m = searched();
+    m.search.preview = None;
+    m.search.body.clear();
+    m.update(Action::Move(1));
+    let effects = m.search.preview_effect();
+    assert_eq!(effects.len(), 2);
+    assert!(matches!(&effects[0], Effect::Preview { path }
+        if path.as_path() == std::path::Path::new("src/lang/registry.rs")));
+    assert!(matches!(&effects[1], Effect::Preview { path }
+        if path.as_path() == std::path::Path::new("src/lang/mod.rs")));
+    m.update(Action::Move(-1));
+    assert_eq!(m.search.preview_effect().len(), 1, "same file read once");
+
+    let text = "struct Other {\n    value: usize,\n}\nfn outside() {}";
+    let mut declaration = fx::decl("other.rs", 0, SymbolKind::Struct, "Other", "struct Other {");
+    declaration.symbol.as_mut().unwrap().span =
+        vvv_engine::Span::new(0, text.find("\nfn").unwrap());
+    m.search.results.matches.push(declaration);
+    m.update(Action::Move(4));
+    assert!(
+        m.search
+            .body
+            .lines(m.search.results.current().unwrap())
+            .is_none()
+    );
+    m.on_event(Event::Previewed {
+        symbols: vec![],
+        path: "other.rs".into(),
+        text: text.into(),
+        highlights: vec![],
+    });
+    assert_eq!(
+        m.search.body.lines(m.search.results.current().unwrap()),
+        Some(0..3)
+    );
+    let frame = FrameFixture::new(&m).render();
+    let body_rows = frame
+        .lines()
+        .skip_while(|line| !line.contains("definition"))
+        .take(7)
+        .map(|line| line.chars().take(45).collect::<String>())
+        .collect::<Vec<_>>()
+        .join("\n");
+    assert!(body_rows.contains("value: usize"));
+    assert!(!body_rows.contains("outside"));
+}
+
+#[test]
+fn body_renders_at_small_terminal_sizes() {
+    let m = searched();
+    for (width, height) in [(1, 1), (20, 6), (40, 10), (90, 20)] {
+        FrameFixture::new(&m).render_size(width, height);
+    }
+}
+
+#[test]
+fn snapshot_body_scrolled() {
+    let mut m = searched();
+    let text = format!(
+        "struct Large {{\n{}\n}}\nfn outside() {{}}",
+        (0..30)
+            .map(|n| format!("    field_{n}: usize,"))
+            .collect::<Vec<_>>()
+            .join("\n")
+    );
+    let mut declaration = fx::decl("large.rs", 0, SymbolKind::Struct, "Large", "struct Large {");
+    declaration.symbol.as_mut().unwrap().span =
+        vvv_engine::Span::new(0, text.find("\nfn").unwrap());
+    m.search.results.replace(vec![declaration]);
+    m.search.selection_changed();
+    m.on_event(Event::Previewed {
+        symbols: vec![],
+        path: "large.rs".into(),
+        text,
+        highlights: vec![],
+    });
+    m.update(Action::FocusNth(4));
+    m.on_key(key(KeyCode::PageDown));
+    assert_eq!(m.search.body.scroll, 20);
+    assert_eq!(m.search.results.cursor.index, 0);
+    insta::assert_snapshot!(FrameFixture::new(&m).render());
+    m.update(Action::Bottom);
+    assert_eq!(m.search.body.scroll, 31);
+    m.on_key(key(KeyCode::Up));
+    assert_eq!(m.search.body.scroll, 30);
+    m.on_key(key(KeyCode::PageUp));
+    assert_eq!(m.search.body.scroll, 10);
+}
+
+#[test]
+fn definition_text_keeps_its_inset_across_loading_and_redraws() {
+    let mut m = searched();
+    let source = m.search.body.preview.clone().unwrap();
+    m.search.body.clear();
+    let event = Event::Previewed {
+        symbols: vec![],
+        path: source.path.clone(),
+        text: source.text().to_owned(),
+        highlights: source.highlights.clone(),
+    };
+    let mut terminal = Terminal::new(TestBackend::new(90, 20)).unwrap();
+    let mut draw = |model: &Model| {
+        terminal
+            .draw(|frame| {
+                App::new(model, Painter::colored(), 0).render(frame.area(), frame.buffer_mut());
+            })
+            .unwrap();
+        terminal.backend().buffer().clone()
+    };
+    let loading = draw(&m);
+    assert_eq!(loading[(2, 12)].symbol(), " ");
+    m.on_event(event.clone());
+    let loaded = draw(&m);
+    assert_eq!(loaded[(1, 12)].symbol(), " ");
+    assert_eq!(loaded[(2, 12)].symbol(), "p");
+    assert_eq!(
+        loaded[(6, 13)].symbol(),
+        "f",
+        "source indentation is preserved"
+    );
+    assert_eq!(loaded[(1, 11)], loading[(1, 11)], "the border stays put");
+    m.on_event(event);
+    assert_eq!(
+        draw(&m),
+        loaded,
+        "a repeated file response cannot shift the text"
+    );
+    m.update(Action::FocusNth(4));
+    m.on_key(key(KeyCode::Down));
+    let scrolled = draw(&m);
+    assert_eq!(scrolled[(6, 12)].symbol(), "f");
+    assert_eq!(scrolled[(1, 12)].symbol(), " ");
+}
+
+#[test]
+fn nested_definitions_keep_the_same_alignment_when_loaded_and_scrolled() {
+    let mut m = searched();
+    for indent in ["", "    ", "        ", "\t", "\t    "] {
+        let text =
+            format!("mod outer {{\n{indent}fn nested() {{\n{indent}    nested();\n{indent}}}");
+        let start = text.find("fn nested").unwrap();
+        let mut declaration = fx::decl(
+            "nested.rs",
+            1,
+            SymbolKind::Function,
+            "nested",
+            "fn nested() {",
+        );
+        declaration.symbol.as_mut().unwrap().span = vvv_engine::Span::new(start, text.len());
+        m.search.results.replace(vec![declaration]);
+        m.search.selection_changed();
+        m.search.body.clear();
+        let loading = FrameFixture::new(&m).render();
+        assert!(
+            loading
+                .lines()
+                .nth(12)
+                .unwrap()
+                .chars()
+                .take(45)
+                .all(|c| c == '│' || c == ' ')
+        );
+        assert!(!loading.contains("Loading"));
+        m.on_event(Event::Previewed {
+            symbols: vec![],
+            path: "nested.rs".into(),
+            text: format!("{text}\n}}"),
+            highlights: vec![vvv_engine::Highlight {
+                span: vvv_engine::Span::new(start, start + 2),
+                kind: vvv_engine::HighlightKind::Keyword,
+            }],
+        });
+        let loaded = FrameFixture::new(&m).render();
+        assert!(
+            loaded
+                .lines()
+                .nth(12)
+                .unwrap()
+                .starts_with("│ fn nested() {"),
+            "indent {indent:?}: {loaded}"
+        );
+        assert!(
+            loaded
+                .lines()
+                .nth(13)
+                .unwrap()
+                .starts_with("│     nested();")
+        );
+        assert!(loaded.lines().nth(14).unwrap().starts_with("│ }"));
+        if indent == "        " {
+            insta::assert_snapshot!("definition_nested", loaded);
+        }
+        m.update(Action::FocusNth(4));
+        m.update(Action::Scroll(1));
+        let scrolled = FrameFixture::new(&m).render();
+        assert!(
+            scrolled
+                .lines()
+                .nth(12)
+                .unwrap()
+                .starts_with("│     nested();")
+        );
+    }
+}
+
+#[test]
+fn enum_variant_shows_its_whole_enum_when_its_file_arrives() {
+    let mut m = searched();
+    let text = "enum Error {\n    Io,\n    #[error(transparent)]\n    Engine(#[from] vvv_engine::EngineError),\n    Editor,\n}";
+    let start = text.find("Engine(").unwrap();
+    let end = start + text[start..].find(",\n").unwrap();
+    let mut declaration = fx::decl(
+        "error.rs",
+        3,
+        SymbolKind::Variant,
+        "Engine",
+        "    Engine(#[from] vvv_engine::EngineError),",
+    );
+    declaration.symbol.as_mut().unwrap().span = vvv_engine::Span::new(start, end);
+    declaration.symbol.as_mut().unwrap().name_span = vvv_engine::Span::new(start, start + 6);
+    let parent = vvv_engine::Symbol::plain(
+        SymbolKind::Enum,
+        "Error",
+        vvv_engine::Span::new(5, 10),
+        vvv_engine::Span::new(0, text.len()),
+    );
+    let variant = declaration.symbol.clone().unwrap();
+    m.search.results.replace(vec![declaration]);
+    m.search.selection_changed();
+    m.search.body.clear();
+    let loading = FrameFixture::new(&m).render();
+    assert!(
+        loading
+            .lines()
+            .nth(12)
+            .unwrap()
+            .chars()
+            .take(45)
+            .all(|c| c == '│' || c == ' ')
+    );
+    assert!(!loading.contains("Loading"));
+    let event = Event::Previewed {
+        symbols: vec![parent, variant],
+        path: "error.rs".into(),
+        text: text.into(),
+        highlights: vec![],
+    };
+    m.on_event(event.clone());
+    let loaded = FrameFixture::new(&m).render();
+    assert!(
+        loaded
+            .lines()
+            .nth(12)
+            .unwrap()
+            .starts_with("│ enum Error {")
+    );
+    assert!(loaded.lines().nth(15).unwrap().starts_with("│     Engine("));
+    m.update(Action::FocusNth(4));
+    assert!(
+        matches!(m.update(Action::Edit).as_slice(), [Effect::Edit { path, line: 0 }]
+        if path.as_path() == std::path::Path::new("error.rs"))
+    );
+    m.update(Action::FocusNth(1));
+    m.on_event(event);
+    assert_eq!(FrameFixture::new(&m).render(), loaded);
+    let mut terminal = Terminal::new(TestBackend::new(90, 20)).unwrap();
+    terminal
+        .draw(|frame| App::new(&m, Painter::colored(), 0).render(frame.area(), frame.buffer_mut()))
+        .unwrap();
+    assert_eq!(terminal.backend().buffer()[(6, 15)].symbol(), "E");
+    let highlighted = terminal.backend().buffer()[(6, 15)].style();
+    assert_eq!(highlighted.fg, Painter::colored().hit.fg);
+    assert_eq!(
+        highlighted.add_modifier,
+        Painter::colored().hit.add_modifier
+    );
+    assert!(loaded.lines().nth(13).unwrap().starts_with("│     Io,"));
+    assert!(loaded.lines().nth(16).unwrap().starts_with("│     Editor,"));
+    assert!(loaded.lines().nth(17).unwrap().starts_with("│ }"));
+    insta::assert_snapshot!("definition_enum_variant", loaded);
+    let mut sibling = fx::decl("error.rs", 1, SymbolKind::Variant, "Io", "    Io,");
+    let sibling_start = text.find("Io,").unwrap();
+    sibling.symbol.as_mut().unwrap().span = vvv_engine::Span::new(sibling_start, sibling_start + 2);
+    sibling.symbol.as_mut().unwrap().name_span = sibling.symbol.as_ref().unwrap().span;
+    m.search.results.matches.push(sibling);
+    assert!(
+        m.update(Action::Move(1)).is_empty(),
+        "the enum source is already cached"
+    );
+    assert_eq!(
+        m.search
+            .body
+            .symbol(m.search.results.current().unwrap())
+            .unwrap()
+            .name,
+        "Error"
+    );
+    m.update(Action::FocusNth(4));
+    m.update(Action::Bottom);
+    assert_eq!(m.search.body.scroll, 5, "scroll bounds cover the full enum");
+}
+
+#[test]
+fn definition_keeps_its_complete_frame_until_the_selected_file_arrives() {
+    let mut m = searched();
+    let pending = "struct Pending {\n    value: usize,\n}";
+    let final_text = "struct Final {\n    ready: bool,\n}";
+    for (path, name, text) in [
+        ("pending.rs", "Pending", pending),
+        ("final.rs", "Final", final_text),
+    ] {
+        let mut declaration = fx::decl(
+            path,
+            0,
+            SymbolKind::Struct,
+            name,
+            text.lines().next().unwrap(),
+        );
+        declaration.symbol.as_mut().unwrap().span = vvv_engine::Span::new(0, text.len());
+        m.search.results.matches.push(declaration);
+    }
+    m.update(Action::FocusNth(4));
+    m.update(Action::Scroll(1));
+    let body = |model: &Model| {
+        FrameFixture::new(model)
+            .render()
+            .lines()
+            .skip(11)
+            .take(8)
+            .map(|line| line.chars().take(45).collect::<String>())
+            .collect::<Vec<_>>()
+            .join("\n")
+    };
+    let before = body(&m);
+    let effects = m.update(Action::Move(4));
+    assert!(matches!(effects.as_slice(), [Effect::Preview { path }]
+        if path.as_path() == std::path::Path::new("pending.rs")));
+    assert_eq!(
+        body(&m),
+        before,
+        "retain source, title, highlight and scroll together"
+    );
+    assert!(!body(&m).contains("Loading"));
+    assert!(
+        matches!(m.update(Action::Edit).as_slice(), [Effect::Edit { path, line: 63 }]
+        if path.as_path() == std::path::Path::new("src/lang/mod.rs")),
+        "editor follows the displayed source"
+    );
+    insta::assert_snapshot!("definition_pending", FrameFixture::new(&m).render());
+
+    m.update(Action::Move(1));
+    m.on_event(Event::Previewed {
+        path: "pending.rs".into(),
+        text: pending.into(),
+        highlights: vec![],
+        symbols: vec![],
+    });
+    assert_eq!(
+        body(&m),
+        before,
+        "a superseded reply must not flash on screen"
+    );
+    m.on_event(Event::Previewed {
+        path: "final.rs".into(),
+        text: final_text.into(),
+        highlights: vec![],
+        symbols: vec![],
+    });
+    assert_eq!(m.search.body.scroll, 0);
+    assert!(body(&m).contains("struct Final"));
+    assert!(!body(&m).contains("Language"));
+    assert!(!body(&m).contains("Loading"));
+    assert!(
+        matches!(m.update(Action::Edit).as_slice(), [Effect::Edit { path, line: 0 }]
+        if path.as_path() == std::path::Path::new("final.rs"))
+    );
+}
+
+#[test]
+fn same_file_definition_switches_immediately_without_fetching() {
+    let mut m = searched();
+    let text = "struct First {}\nstruct Second {}";
+    let second_start = text.find("struct Second").unwrap();
+    let declarations = [
+        ("First", 0, second_start - 1),
+        ("Second", second_start, text.len()),
+    ]
+    .into_iter()
+    .enumerate()
+    .map(|(line, (name, start, end))| {
+        let mut declaration = fx::decl(
+            "both.rs",
+            line as u32,
+            SymbolKind::Struct,
+            name,
+            &text[start..end],
+        );
+        declaration.symbol.as_mut().unwrap().span = vvv_engine::Span::new(start, end);
+        declaration
+    })
+    .collect();
+    m.search.results.replace(declarations);
+    m.search.selection_changed();
+    m.on_event(Event::Previewed {
+        path: "both.rs".into(),
+        text: text.into(),
+        highlights: vec![],
+        symbols: vec![],
+    });
+    assert_eq!(
+        m.search
+            .body
+            .declaration()
+            .unwrap()
+            .symbol
+            .as_ref()
+            .unwrap()
+            .name,
+        "First"
+    );
+    assert!(m.update(Action::Move(1)).is_empty());
+    assert_eq!(
+        m.search
+            .body
+            .declaration()
+            .unwrap()
+            .symbol
+            .as_ref()
+            .unwrap()
+            .name,
+        "Second"
+    );
+    let frame = FrameFixture::new(&m).render();
+    assert!(
+        frame
+            .lines()
+            .nth(12)
+            .unwrap()
+            .starts_with("│ struct Second {}")
+    );
+    assert!(!frame.contains("Loading"));
 }

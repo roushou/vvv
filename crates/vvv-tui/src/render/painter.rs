@@ -9,7 +9,7 @@ use vvv_engine::protocol::display::Line;
 use super::Theme;
 use crate::model::FilePreview;
 
-/// The number gutter every source line carries.
+/// The number gutter in file context views.
 const GUTTER: usize = 8;
 
 /// Drawing with one theme. A screen is handed a `Painter` and asks it for the
@@ -68,6 +68,48 @@ impl Painter {
             .collect()
     }
 
+    /// A declaration without its enclosing indentation or a number gutter.
+    /// The indentation comes from the declaration's first line, never the
+    /// visible window, so scrolling preserves the body's relative indentation.
+    pub fn code_window(
+        &self,
+        preview: &FilePreview,
+        declaration: vvv_engine::Span,
+        visible: std::ops::Range<usize>,
+        width: usize,
+        hit: Option<vvv_engine::Span>,
+    ) -> Vec<TextLine<'static>> {
+        let Some(lines) = preview.lines_in(declaration) else {
+            return Vec::new();
+        };
+        let Some((start, _)) = preview.line_span(lines.start) else {
+            return Vec::new();
+        };
+        let prefix = &preview.text()[start..declaration.start];
+        let indent = if prefix.chars().all(|c| matches!(c, ' ' | '\t')) {
+            prefix
+        } else {
+            ""
+        };
+        (visible.start.max(lines.start)..lines.end.min(visible.end))
+            .filter_map(|n| {
+                let (mut start, end) = preview.line_span(n)?;
+                if preview.text()[start..end].starts_with(indent) {
+                    start += indent.len();
+                }
+                let range = (start.max(declaration.start), end.min(declaration.end));
+                let mut spans = vec![Span::raw(" ")];
+                spans.extend(self.source_spans(
+                    preview,
+                    range,
+                    hit.map(|s| (s.start, s.end)),
+                    width.saturating_sub(1),
+                ));
+                Some(TextLine::from(spans))
+            })
+            .collect()
+    }
+
     /// One source line: number gutter, syntax colours, `hit` bytes and
     /// `marked` line emphasis.
     fn source_line(
@@ -101,6 +143,20 @@ impl Painter {
         let Some((start, end)) = preview.line_span(n) else {
             return Vec::new();
         };
+        self.source_spans(preview, (start, end), hit, width)
+    }
+
+    /// Style original source coordinates even when a view clips indentation.
+    fn source_spans(
+        &self,
+        preview: &FilePreview,
+        (start, end): (usize, usize),
+        hit: Option<(usize, usize)>,
+        width: usize,
+    ) -> Vec<Span<'static>> {
+        if start >= end {
+            return Vec::new();
+        }
         let text = preview.text();
         // Cut points: every highlight boundary and hit boundary inside the line.
         let mut cuts: Vec<usize> = vec![start, end];
@@ -152,5 +208,36 @@ impl Deref for Painter {
 
     fn deref(&self) -> &Theme {
         &self.theme
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use vvv_engine::{Highlight, HighlightKind, Span as SourceSpan};
+
+    #[test]
+    fn declaration_clipping_keeps_original_highlight_coordinates() {
+        let text = "mod outer { fn nested() {} fn neighbor() {} }";
+        let start = text.find("fn nested").unwrap();
+        let end = text.find(" fn neighbor").unwrap();
+        let preview = FilePreview::new(vvv_engine::File {
+            path: "nested.rs".into(),
+            text: text.into(),
+            symbols: vec![],
+            highlights: vec![Highlight {
+                span: SourceSpan::new(start, start + 2),
+                kind: HighlightKind::Keyword,
+            }],
+        });
+        let painter = Painter::colored();
+        let lines = painter.code_window(&preview, SourceSpan::new(start, end), 0..10, 80, None);
+        assert_eq!(lines.len(), 1);
+        assert_eq!(lines[0].to_string(), " fn nested() {}");
+        assert_eq!(lines[0].spans[1].content, "fn");
+        assert_eq!(
+            lines[0].spans[1].style,
+            painter.highlight(HighlightKind::Keyword)
+        );
     }
 }

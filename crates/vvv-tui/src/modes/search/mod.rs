@@ -1,4 +1,5 @@
 //! The retained query hub and its read-only relations.
+mod body;
 pub(crate) mod query;
 pub(crate) mod screen;
 use crate::action::{Action, Effect};
@@ -6,6 +7,7 @@ use crate::model::{Cursor, FilePreview, Panels};
 use crate::modes::context::ModeContext;
 use crate::modes::rename::RenameTarget;
 use crate::overlays::MenuTarget;
+use body::Body;
 use query::Filter;
 use query::QueryBar;
 use vvv_engine::{Answer, DepsQuery, ExplainQuery, ImpactQuery, Request, Skipped};
@@ -22,6 +24,7 @@ pub struct Search {
     pub results: Results,
     pub focus: SearchPanel,
     pub preview: Option<FilePreview>,
+    pub body: Body,
     /// A manual context scroll position; `None` follows the cursor.
     pub preview_scroll: Option<usize>,
 }
@@ -39,6 +42,7 @@ impl Search {
             Err(e) => {
                 self.results.replace(Vec::new());
                 self.results.query = None;
+                self.selection_changed();
                 if self.query.is_empty() {
                     context.status.clear();
                 } else {
@@ -146,7 +150,7 @@ impl Search {
     pub fn goto_declaration(&mut self, context: &mut ModeContext<'_>) -> Navigation {
         if let Some(row) = self.results.declaration_row() {
             self.results.cursor.index = row;
-            self.preview_scroll = None;
+            self.selection_changed();
             return Navigation::Selection;
         }
         if !self.results.is_anchored() && self.results.current().is_some() {
@@ -156,18 +160,50 @@ impl Search {
     }
     pub fn focus_by(&mut self, by: i32) {
         self.focus = self.focus.step(by);
+        if self.focus == SearchPanel::Body && !self.results.has_body() {
+            self.focus = self.focus.step(by);
+        }
     }
     pub fn focus_nth(&mut self, n: u8) {
-        if let Some(p) = SearchPanel::nth(n) {
+        if let Some(p) = SearchPanel::nth(n)
+            && (p != SearchPanel::Body || self.results.has_body())
+        {
             self.focus = p;
         }
     }
     pub fn moved(&mut self, by: i32) {
         let len = self.results.len();
+        let previous = self.results.cursor.index;
         self.results.cursor.move_by(by, len);
+        if previous != self.results.cursor.index {
+            self.selection_changed();
+        }
+    }
+    pub fn selection_changed(&mut self) {
         self.preview_scroll = None;
+        self.body.select(self.results.body_declaration());
+        if self.focus == SearchPanel::Body && !self.results.has_body() {
+            self.focus = SearchPanel::Results;
+        }
+    }
+    pub fn site(&self) -> Option<(RelPath, u32)> {
+        if self.focus == SearchPanel::Body {
+            self.body.declaration().map(|d| {
+                let line = self
+                    .body
+                    .lines(d)
+                    .map_or(d.start.line, |lines| lines.start as u32);
+                (d.path.clone(), line)
+            })
+        } else {
+            self.results.current_site()
+        }
     }
     pub fn scrolled(&mut self, by: i32) {
+        if self.focus == SearchPanel::Body {
+            self.body.scroll_by(by);
+            return;
+        }
         let max = self
             .preview
             .as_ref()
@@ -182,18 +218,33 @@ impl Search {
             .map_or(0, |m| (m.start.line as usize).saturating_sub(5))
     }
     pub fn preview_effect(&self) -> Vec<Effect> {
-        match self.results.current_site().map(|(path, _)| path) {
-            Some(path) if self.preview.as_ref().map(|p| &p.path) != Some(&path) => {
-                vec![Effect::Preview { path }]
-            }
-            _ => Vec::new(),
+        let mut effects = Vec::new();
+        let context = self.results.current_site().map(|(path, _)| path);
+        if let Some(path) = &context
+            && self.preview.as_ref().map(|p| &p.path) != Some(path)
+        {
+            effects.push(Effect::Preview { path: path.clone() });
         }
+        if let Some(declaration) = self.results.body_declaration()
+            && self.body.preview.as_ref().map(|p| &p.path) != Some(&declaration.path)
+            && !effects.iter().any(
+                |effect| matches!(effect, Effect::Preview { path } if *path == declaration.path),
+            )
+        {
+            effects.push(Effect::Preview {
+                path: declaration.path.clone(),
+            });
+        }
+        effects
     }
     pub fn scroll_focused(&self) -> bool {
-        self.focus == SearchPanel::Context
+        matches!(self.focus, SearchPanel::Context | SearchPanel::Body)
     }
     pub fn jump(&mut self, top: bool) -> Vec<Effect> {
-        if self.scroll_focused() {
+        if self.focus == SearchPanel::Body {
+            self.scrolled(if top { i32::MIN } else { i32::MAX });
+            Vec::new()
+        } else if self.scroll_focused() {
             self.preview_scroll = Some(if top {
                 0
             } else {
@@ -208,6 +259,7 @@ impl Search {
     pub fn back(&mut self, context: &mut ModeContext<'_>) -> Vec<Effect> {
         if self.results.is_anchored() {
             self.results.leave();
+            self.selection_changed();
             context.status.clear();
             self.preview_effect()
         } else {
@@ -247,7 +299,7 @@ impl Search {
                         Vec::new()
                     }
                     SearchPanel::Results => self.enter_subject(context),
-                    SearchPanel::Context => Vec::new(),
+                    SearchPanel::Context | SearchPanel::Body => Vec::new(),
                 };
             }
             _ => return Vec::new(),
@@ -255,8 +307,18 @@ impl Search {
         self.preview_effect()
     }
     pub fn previewed(&mut self, preview: FilePreview) {
-        self.preview = Some(preview);
-        self.preview_scroll = None;
+        if let Some(declaration) = self.results.body_declaration()
+            && declaration.path == preview.path
+        {
+            self.body.received(preview.clone(), declaration);
+        }
+        if self
+            .results
+            .current_site()
+            .is_some_and(|(path, _)| path == preview.path)
+        {
+            self.preview = Some(preview);
+        }
     }
     pub fn searched(
         &mut self,
@@ -266,6 +328,7 @@ impl Search {
     ) {
         context.status.busy = false;
         self.results.replace(matches);
+        self.selection_changed();
         if skipped.is_empty() {
             context.status.clear()
         } else {
@@ -285,6 +348,7 @@ impl Search {
             Answer::Deps(deps) => self.results.show_deps(deps),
             _ => return false,
         }
+        self.selection_changed();
         true
     }
 }
@@ -295,10 +359,11 @@ pub enum SearchPanel {
     Query,
     Results,
     Context,
+    Body,
 }
 
 impl Panels for SearchPanel {
-    const ALL: &'static [Self] = &[Self::Query, Self::Results, Self::Context];
+    const ALL: &'static [Self] = &[Self::Query, Self::Results, Self::Context, Self::Body];
 }
 
 /// What the hub shows about the declaration it was narrowed to.
@@ -558,6 +623,31 @@ impl Results {
             Relation::Deps => self.deps.as_ref().map(|d| (d.path.clone(), 0)),
             _ => self.current().map(|m| (m.path.clone(), m.start.line)),
         }
+    }
+
+    /// Reserve space for the whole result set, independent of cursor and loading.
+    pub fn has_body(&self) -> bool {
+        self.declarations()
+            .chain(self.anchored_declarations().iter())
+            .any(|d| d.symbol.is_some())
+    }
+
+    /// A declaration row shows itself; a use needs a unique matching declaration.
+    /// In a judged reference list only resolved occurrences belong to the subject.
+    pub fn body_declaration(&self) -> Option<&Match> {
+        let current = self.current()?;
+        if current.role == Role::Declaration && current.symbol.is_some() {
+            return Some(current);
+        }
+        if self.is_anchored() {
+            let occurrence = *self.shown().get(self.cursor.index)?;
+            if occurrence.confidence != Confidence::Resolved {
+                return None;
+            }
+            let declarations = self.anchored_declarations();
+            return (declarations.len() == 1).then(|| &declarations[0]);
+        }
+        self.declaration_of(current)
     }
 
     /// The declaration a use row names, as an index into the current list:

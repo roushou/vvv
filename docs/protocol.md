@@ -172,6 +172,18 @@ Kinds: `unrewritable_import` (`import`, `replacement`); `redundant_import`
 take — `everyone` when the consumer is in another package, which vvv never grants on
 its own; the plan is still valid, the widening is yours to make).
 
+## `file` (preview)
+
+```json
+{ "path": "src/error.rs", "text": "…",
+  "highlights": [ { "span": Span, "kind": "keyword" }, … ],
+  "symbols": [ Symbol, … ] }
+```
+
+Text, syntax highlights, and declarations come from the same loaded source snapshot.
+`highlights` and `symbols` are omitted when empty; files without a language have neither.
+Clients can use declaration containment to preview an enum when a variant is selected.
+
 ## `vvv search`
 
 ```json

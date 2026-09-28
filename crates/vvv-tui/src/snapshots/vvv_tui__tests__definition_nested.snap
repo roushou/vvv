@@ -1,24 +1,24 @@
 ---
 source: crates/vvv-tui/src/tests.rs
-expression: "FrameFixture::new(&m).render()"
+expression: loaded
 ---
-┌ vvv ~/dev/nx ──────────────────────────────── ● trait Language  ✓ 3  ? 1  ✗ 0  3 files ┐
+┌ vvv ~/dev/nx ───────────────────────────────────────────────────────────── ● 1  1 file ┐
 │> Language                                                                              │
 └────────────────────────────────────────────────────────────────────────────────────────┘
-┌ ●  trait Language ────────────────────────┐┌ src/lib.rs ───────────────────────────────┐
-│? unverified 1  1 file                     ││→ ● trait Language   lang/mod.rs:64        │
-│∅ src/lib.rs:41          Language::new()   ││                                           │
-│                                           ││                                           │
-│                                           ││                                           │
-│                                           ││                                           │
+┌ results ──────────────────────────────────┐┌ nested.rs ────────────────────────────────┐
+│● nested.rs:2            function nested   ││    1 │ mod outer {                        │
+│                                           ││    2 │         fn nested() {              │
+│                                           ││    3 │             nested();              │
+│                                           ││    4 │         }                          │
+│                                           ││    5 │ }                                  │
 │                                           ││                                           │
 └───────────────────────────────────────────┘│                                           │
 ┌ definition ───────────────────────────────┐│                                           │
-│ No unambiguous declaration for this row   ││                                           │
-│                                           ││                                           │
-│                                           ││                                           │
+│ fn nested() {                             ││                                           │
+│     nested();                             ││                                           │
+│ }                                         ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 └───────────────────────────────────────────┘└───────────────────────────────────────────┘
- search r rename  m/M move file/symbol  w rewrite  o declaration  R relation  s kind  L la
+ search ← results  < > resize  j/k scroll  d/u page  e editor  v view

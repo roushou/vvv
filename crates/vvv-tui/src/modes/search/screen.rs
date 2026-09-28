@@ -365,7 +365,7 @@ static CONTEXT_PANEL: Panel = Panel {
 /// The search screen.
 pub(crate) static SEARCH: Screen = Screen {
     layer: MODE,
-    panels: &[QUERY_PANEL, RESULTS_PANEL, CONTEXT_PANEL],
+    panels: &[QUERY_PANEL, RESULTS_PANEL, CONTEXT_PANEL, CONTEXT_PANEL],
 };
 
 pub struct SearchView<'a> {
@@ -396,18 +396,29 @@ impl<'a> SearchView<'a> {
         }
     }
 
-    pub fn screen(self) -> BoundScreen<Self, 3> {
+    pub fn screen(self) -> BoundScreen<Self, 4> {
         BoundScreen::new(
             self,
             &SEARCH,
             Self::layout,
-            [Self::draw_query, Self::draw_results, Self::draw_context],
+            [
+                Self::draw_query,
+                Self::draw_results,
+                Self::draw_context,
+                Self::draw_body,
+            ],
         )
     }
     fn layout(&self, area: Region) -> Vec<Region> {
         let (top, body) = self.header().areas(area);
         let (left, right) = body.columns(self.split);
-        vec![top, left, right]
+        if self.search.results.has_body() {
+            let height = (left.rect().height / 2).min(16);
+            let (results, body) = left.split(left.rect().height.saturating_sub(height));
+            vec![top, results, right, body]
+        } else {
+            vec![top, left, right, Region::new(Rect::default())]
+        }
     }
     fn draw_query(&self, area: Rect, buf: &mut Buffer) {
         self.header().render(area, buf);
@@ -417,6 +428,49 @@ impl<'a> SearchView<'a> {
     }
     fn draw_context(&self, area: Rect, buf: &mut Buffer) {
         self.context(area, buf);
+    }
+    fn draw_body(&self, area: Rect, buf: &mut Buffer) {
+        if area.is_empty() {
+            return;
+        }
+        let (s, t) = (self.search, self.painter);
+        let declaration = s.body.declaration();
+        let title = Line::from(Span::styled("definition", t.title));
+        let mut rows = Vec::new();
+        let mut empty = if s.results.body_declaration().is_some() {
+            ""
+        } else {
+            "No unambiguous declaration for this row"
+        };
+        if let Some(d) = declaration
+            && let Some(preview) = &s.body.preview
+            && preview.path == d.path
+        {
+            empty = "Declaration source unavailable";
+            if let Some(lines) = s.body.lines(d)
+                && let Some(symbol) = s.body.symbol(d)
+            {
+                let height = area.height.saturating_sub(2) as usize;
+                let offset = s.body.scroll.min(lines.len().saturating_sub(1));
+                let first = lines.start + offset;
+                let hit = d
+                    .symbol
+                    .as_ref()
+                    .filter(|selected| selected.span != symbol.span)
+                    .map(|selected| selected.name_span);
+                rows = t.code_window(
+                    preview,
+                    symbol.span,
+                    first..lines.end.min(first.saturating_add(height)),
+                    area.width.saturating_sub(2) as usize,
+                    hit,
+                );
+            }
+        }
+        Pane::new(t, title, s.focus == SearchPanel::Body)
+            .rows(rows)
+            .empty(empty)
+            .render(area, buf);
     }
     fn header(&self) -> Header<'a> {
         let (s, t) = (self.search, self.painter);
@@ -744,5 +798,38 @@ impl<'a> SearchView<'a> {
             ));
         }
         panel.rows(rows).render(area, buf);
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn body_layout_uses_its_full_budget_independent_of_selection_and_loading() {
+        let mut search = Search::default();
+        search.results.replace(crate::fixtures::search().matches);
+        for (height, body_height) in [(24, 10), (60, 16)] {
+            let area = Region::new(Rect::new(0, 0, 100, height));
+            let layout = |s: &Search| {
+                SearchView::new(
+                    s,
+                    "repo",
+                    false,
+                    Painter::plain(),
+                    50,
+                    ReportView::default(),
+                )
+                .layout(area)
+            };
+            let before = layout(&search);
+            assert_eq!(before[3].rect().height, body_height);
+            assert_eq!(before[3].rect().width, before[1].rect().width);
+            search.results.cursor.index = 1;
+            assert_eq!(before, layout(&search));
+            search.results.matches[1].text = "unrelated".into();
+            assert!(search.results.body_declaration().is_none());
+            assert_eq!(before, layout(&search));
+        }
     }
 }

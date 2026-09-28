@@ -572,6 +572,26 @@ switches the rows between the compact list and the full report's result rows —
 search results, a rename's verdict rows, a move's paths and notices. CLI flag
 hints stay in the CLI; the picker shows its own actions.
 
+When the results include declarations, a **definition preview** pane below the list
+shows the selected declaration, including its signature and body, without line numbers or a
+gutter. The declaration's outer indentation is removed; indentation within its body
+is preserved and stays fixed while scrolling. Code uses a fixed left inset.
+Selecting an enum variant previews the whole containing enum and highlights the
+variant's name; `e` opens the enum.
+If no enclosing enum is available, the variant itself is shown.
+A use previews its unique same-named declaration; in an entered scope, only resolved references preview the
+subject. Ambiguous or unrelated rows show a placeholder. The pane fills the left
+column's width and half its available height, capped at 16 rows including borders.
+That space stays reserved while navigating or loading, even for short bodies.
+When a selection needs another file, the previous definition and scroll
+position remain visible until the new source is ready, then change together. The
+first preview stays empty while loading; no loading message flashes between rows.
+The pane title is `definition`. `4` focuses the definition preview; `tab`/`shift-tab`
+include it in the panel cycle. Use `j`/`k` or arrows to scroll, `d`/`u` or Page Down/Up to page, and `g`/`G` or Home/End to
+reach the top/bottom. `esc` returns to results; `e` opens the declaration in the
+editor. Selecting another row resets the scroll position once the new definition
+is ready.
+
 `⏎` on a declaration — or on a use that resolves to exactly one — _enters its scope_:
 the rows become that declaration's judged references, grouped by verdict (`✓ safe`,
 `? unverified`, `✗ another declaration's`), each with the reason's glyph. A name

@@ -260,7 +260,8 @@ Capability execution uses these components:
 - `ImportsQuery` classifies unresolved, repeated, and unused bindings from
   fragments. Re-exports and imports with hidden binding names are excluded from
   unused checks; files without a module address are reported as unplaced.
-- `FileQuery` loads source text and asks the claiming language for highlights.
+- `FileQuery` loads source text and asks the claiming language for facts, returning
+  highlights and declarations from that same snapshot.
 - `Ledger::history` reads validated entries. `Ledger::undo` checks receipt
   fingerprints, restores files, cleans owned directories, and saves the ledger
   through one transaction.

@@ -122,6 +122,7 @@ pub enum Event {
         path: RelPath,
         text: String,
         highlights: Vec<Highlight>,
+        symbols: Vec<vvv_engine::Symbol>,
     },
     Planned {
         generation: u64,

@@ -1,0 +1,24 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: "FrameFixture::new(&m).render()"
+---
+┌ vvv ~/dev/nx ───────────────────────────────────────────────────────────── ● 1  1 file ┐
+│> Language                                                                              │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+┌ results ──────────────────────────────────┐┌ large.rs ─────────────────────────────────┐
+│● large.rs:1             struct Large      ││    1 │ struct Large {                     │
+│                                           ││    2 │     field_0: usize,                │
+│                                           ││    3 │     field_1: usize,                │
+│                                           ││    4 │     field_2: usize,                │
+│                                           ││    5 │     field_3: usize,                │
+│                                           ││    6 │     field_4: usize,                │
+└───────────────────────────────────────────┘│    7 │     field_5: usize,                │
+┌ definition ───────────────────────────────┐│    8 │     field_6: usize,                │
+│     field_19: usize,                      ││    9 │     field_7: usize,                │
+│     field_20: usize,                      ││   10 │     field_8: usize,                │
+│     field_21: usize,                      ││   11 │     field_9: usize,                │
+│     field_22: usize,                      ││   12 │     field_10: usize,               │
+│     field_23: usize,                      ││   13 │     field_11: usize,               │
+│     field_24: usize,                      ││   14 │     field_12: usize,               │
+└───────────────────────────────────────────┘└───────────────────────────────────────────┘
+ search ← results  < > resize  j/k scroll  d/u page  e editor  v view

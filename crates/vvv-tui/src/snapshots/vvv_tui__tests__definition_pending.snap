@@ -1,0 +1,24 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: "FrameFixture::new(&m).render()"
+---
+┌ vvv ~/dev/nx ─────────────────────────────────────────────────────── ● 3  ○ 3  5 files ┐
+│> Language                                                                              │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+┌ results ──────────────────────────────────┐┌ pending.rs ───────────────────────────────┐
+│● lang/mod.rs:64         trait Language    ││                                           │
+│→ lang/registry.rs:4     use super::{Langu…││                                           │
+│→ src/lib.rs:26          pub use lang::{La…││                                           │
+│  src/lib.rs:41          Language::new()   ││                                           │
+│● pending.rs:1           struct Pending    ││                                           │
+│● final.rs:1             struct Final      ││                                           │
+└───────────────────────────────────────────┘│                                           │
+┌ definition ───────────────────────────────┐│                                           │
+│     fn name(&self) -> &str;               ││                                           │
+│     fn extensions(&self) -> &[&str];      ││                                           │
+│ }                                         ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+└───────────────────────────────────────────┘└───────────────────────────────────────────┘
+ search ← results  < > resize  j/k scroll  d/u page  e editor  v view

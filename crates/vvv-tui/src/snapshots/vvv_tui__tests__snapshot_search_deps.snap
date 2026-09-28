@@ -1,6 +1,6 @@
 ---
 source: crates/vvv-tui/src/tests.rs
-expression: render(&m)
+expression: "FrameFixture::new(&m).render()"
 ---
 ┌ vvv ~/dev/nx ─────────────────────────────────────────────── ● trait Language  imports ┐
 │> Language                                                                              │
@@ -12,9 +12,9 @@ expression: render(&m)
 │  ∅                                        ││    4 │ // line 4                          │
 │                                           ││    5 │ // line 5                          │
 │← 0   0 files                              ││    6 │ // line 6                          │
-│  ∅                                        ││    7 │ // line 7                          │
-│                                           ││    8 │ // line 8                          │
-│                                           ││    9 │ // line 9                          │
+└───────────────────────────────────────────┘│    7 │ // line 7                          │
+┌ definition ───────────────────────────────┐│    8 │ // line 8                          │
+│ No unambiguous declaration for this row   ││    9 │ // line 9                          │
 │                                           ││   10 │ // line 10                         │
 │                                           ││   11 │ // line 11                         │
 │                                           ││   12 │ // line 12                         │
