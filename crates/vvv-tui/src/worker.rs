@@ -98,6 +98,21 @@ impl Runner {
             return;
         }
         let event = match effect {
+            Effect::Definition { revision, query } => {
+                let references = match query.clone().definitions(&self.engine) {
+                    Ok(references) => Some(references),
+                    Err(EngineError::AmbiguousSymbol { .. }) => None,
+                    Err(error) => {
+                        let _ = self.outbox.send(Event::Failed(error.to_string()));
+                        None
+                    }
+                };
+                Event::DefinitionResolved {
+                    revision,
+                    query,
+                    references,
+                }
+            }
             // A plan that cannot be made is an answer, not a failure.
             Effect::Plan {
                 generation, intent, ..
@@ -200,7 +215,10 @@ impl Runner {
             Effect::Undo => Event::Undone(Ledger::new(&self.engine).undo()?.undone),
             // Planned above; the loop runs `Edit` itself; `Touched` is
             // handled before anything is answered.
-            Effect::Plan { .. } | Effect::Edit { .. } | Effect::Touched => {
+            Effect::Plan { .. }
+            | Effect::Definition { .. }
+            | Effect::Edit { .. }
+            | Effect::Touched => {
                 return Err(Failure::Unsupported("not a worker effect"));
             }
         })

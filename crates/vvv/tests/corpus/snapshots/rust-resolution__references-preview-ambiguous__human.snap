@@ -1,0 +1,9 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 1
+--- stdout ---
+--- stderr ---
+✗ `Engine` is declared in several places (src/preview_origin.rs:1:1, src/preview_other.rs:1:1); pick one with --in <file>
+hint: for example: --in src/preview_origin.rs

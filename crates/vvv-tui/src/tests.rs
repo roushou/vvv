@@ -1889,3 +1889,160 @@ fn same_file_definition_switches_immediately_without_fetching() {
     );
     assert!(!frame.contains("Loading"));
 }
+
+#[test]
+fn definition_resolves_imports_and_field_types_despite_same_named_variants() {
+    use vvv_engine::{Occurrence, Reason, References};
+
+    let mut m = model();
+    let text = "pub struct Engine {\n    state: usize,\n}";
+    let mut structure = fx::decl("engine.rs", 0, SymbolKind::Struct, "Engine", text);
+    structure.symbol.as_mut().unwrap().span = vvv_engine::Span::new(0, text.len());
+    let mut variant = fx::decl(
+        "error.rs",
+        1,
+        SymbolKind::Variant,
+        "Engine",
+        "Engine(Error)",
+    );
+    variant.address = None;
+    let import = fx::m("app.rs", 0, 14, "Engine", "use library::{Engine};");
+    let other = fx::decl(
+        "other.rs",
+        0,
+        SymbolKind::Struct,
+        "Engine",
+        "pub struct Engine;",
+    );
+    let field = fx::at(fx::m("app.rs", 2, 12, "Engine", "    engine: Engine,"), 50);
+    let unrelated = fx::at(fx::m("app.rs", 4, 8, "Engine", "Other::Engine"), 80);
+    m.search.results.replace(vec![
+        structure.clone(),
+        variant.clone(),
+        other.clone(),
+        import.clone(),
+        field.clone(),
+        unrelated.clone(),
+    ]);
+    m.search.selection_changed();
+    m.on_event(preview("engine.rs", &text.lines().collect::<Vec<_>>()));
+    let before = FrameFixture::new(&m)
+        .render()
+        .lines()
+        .nth(12)
+        .unwrap()
+        .to_owned();
+    let effects = m.update(Action::Move(3));
+    let (revision, query) = effects
+        .iter()
+        .find_map(|effect| match effect {
+            Effect::Definition { revision, query } => Some((*revision, query.clone())),
+            _ => None,
+        })
+        .expect("request reference evidence for the import");
+    assert!(m.search.results.definition_pending());
+    assert_eq!(
+        FrameFixture::new(&m).render().lines().nth(12).unwrap(),
+        before
+    );
+    let references = References {
+        name: "Engine".into(),
+        declarations: vec![structure.clone(), variant],
+        occurrences: vec![
+            Occurrence::judged(import, Reason::ReExport),
+            Occurrence::judged(field, Reason::ReExport),
+            Occurrence::judged(unrelated, Reason::Unresolved),
+        ],
+    };
+    let event = Event::DefinitionResolved {
+        revision,
+        query,
+        references: Some(vvv_engine::Definitions {
+            candidates: vec![
+                References {
+                    name: "Engine".into(),
+                    declarations: vec![other],
+                    occurrences: references
+                        .occurrences
+                        .iter()
+                        .map(|o| Occurrence::judged(o.m.clone(), Reason::OtherDeclaration))
+                        .collect(),
+                },
+                references,
+            ],
+        }),
+    };
+    m.on_event(event.clone());
+    assert_eq!(m.search.results.body_declaration(), Some(&structure));
+    let effects = m.update(Action::Move(1));
+    assert!(
+        !effects
+            .iter()
+            .any(|e| matches!(e, Effect::Definition { .. }))
+    );
+    assert_eq!(m.search.results.body_declaration(), Some(&structure));
+    m.on_event(preview(
+        "app.rs",
+        &[
+            "use library::{Engine};",
+            "struct App {",
+            "    engine: Engine,",
+            "}",
+        ],
+    ));
+    insta::assert_snapshot!("definition_resolved_field", FrameFixture::new(&m).render());
+    m.update(Action::FocusNth(4));
+    m.update(Action::Scroll(1));
+    assert!(m.on_event(event.clone()).is_empty());
+    assert_eq!(
+        m.search.body.scroll, 1,
+        "a duplicate reply preserves scrolling"
+    );
+    assert!(
+        matches!(m.update(Action::Edit).as_slice(), [Effect::Edit { path, line: 0 }]
+        if path.as_path() == std::path::Path::new("engine.rs"))
+    );
+    m.update(Action::Move(1));
+    assert!(m.search.results.body_declaration().is_none());
+    assert!(
+        FrameFixture::new(&m)
+            .render()
+            .contains("No definition available")
+    );
+
+    // A previous result set's reply cannot resolve a new set, even for the same name.
+    let matches = m.search.results.matches.clone();
+    m.search.results.replace(matches);
+    m.search.selection_changed();
+    assert!(m.search.results.definition_pending());
+    assert!(m.on_event(event).is_empty());
+    assert!(m.search.results.definition_pending());
+}
+
+#[test]
+fn ambiguous_definition_answer_finishes_loading_without_guessing() {
+    let mut m = searched();
+    let mut other = m.search.results.matches[0].clone();
+    other.path = "other.rs".into();
+    m.search.results.matches.push(other);
+    let effects = m.update(Action::Move(1));
+    let (revision, query) = effects
+        .into_iter()
+        .find_map(|effect| match effect {
+            Effect::Definition { revision, query } => Some((revision, query)),
+            _ => None,
+        })
+        .unwrap();
+    m.on_event(Event::DefinitionResolved {
+        revision,
+        query,
+        references: None,
+    });
+    assert!(!m.search.results.definition_pending());
+    assert!(m.search.body.declaration().is_none());
+    assert!(
+        FrameFixture::new(&m)
+            .render()
+            .contains("No definition available")
+    );
+}

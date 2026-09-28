@@ -12,8 +12,8 @@ use query::Filter;
 use query::QueryBar;
 use vvv_engine::{Answer, DepsQuery, ExplainQuery, ImpactQuery, Request, Skipped};
 use vvv_engine::{
-    Confidence, Consumer, Deps, Explanation, Impact, Match, Occurrence, Query, References,
-    ReferencesQuery, RelPath, Role,
+    Confidence, Consumer, Definitions, Deps, Explanation, Impact, Match, Occurrence, Query,
+    References, ReferencesQuery, RelPath, Role,
 };
 // ---------------------------------------------------------------- search
 
@@ -181,7 +181,9 @@ impl Search {
     }
     pub fn selection_changed(&mut self) {
         self.preview_scroll = None;
-        self.body.select(self.results.body_declaration());
+        if !self.results.definition_pending() {
+            self.body.select(self.results.body_declaration());
+        }
         if self.focus == SearchPanel::Body && !self.results.has_body() {
             self.focus = SearchPanel::Results;
         }
@@ -219,6 +221,14 @@ impl Search {
     }
     pub fn preview_effect(&self) -> Vec<Effect> {
         let mut effects = Vec::new();
+        if self.results.definition_pending()
+            && let Some(query) = self.results.definition_query()
+        {
+            effects.push(Effect::Definition {
+                revision: self.results.revision,
+                query,
+            });
+        }
         let context = self.results.current_site().map(|(path, _)| path);
         if let Some(path) = &context
             && self.preview.as_ref().map(|p| &p.path) != Some(path)
@@ -454,6 +464,9 @@ impl Relation {
 /// become that declaration's judged occurrences instead of its spellings.
 #[derive(Debug, Default)]
 pub struct Results {
+    /// Reference answers belong to this result set, including its source ranges.
+    revision: u64,
+    definitions: Vec<(ReferencesQuery, Option<Definitions>)>,
     pub query: Option<Query>,
     pub matches: Vec<Match>,
     /// The declaration the rows were narrowed to, when a row was entered:
@@ -475,6 +488,8 @@ pub struct Results {
 
 impl Results {
     pub fn replace(&mut self, matches: Vec<Match>) {
+        self.revision += 1;
+        self.definitions.clear();
         self.matches = matches;
         self.subject = None;
         self.references = None;
@@ -640,14 +655,54 @@ impl Results {
             return Some(current);
         }
         if self.is_anchored() {
-            let occurrence = *self.shown().get(self.cursor.index)?;
-            if occurrence.confidence != Confidence::Resolved {
-                return None;
-            }
-            let declarations = self.anchored_declarations();
-            return (declarations.len() == 1).then(|| &declarations[0]);
+            return self.references.as_ref()?.definition_of(current);
         }
-        self.declaration_of(current)
+        self.declaration_of(current).or_else(|| {
+            let query = self.definition_query()?;
+            self.definitions
+                .iter()
+                .find(|(q, _)| q == &query)?
+                .1
+                .as_ref()?
+                .definition_of(current)
+        })
+    }
+
+    /// Name-only lookup cannot distinguish a type from variants or impl blocks.
+    /// Ask for reference evidence once per name and language in this result set.
+    fn definition_query(&self) -> Option<ReferencesQuery> {
+        if self.is_anchored() {
+            return None;
+        }
+        let current = self.current()?;
+        if current.role == Role::Declaration || self.declaration_of(current).is_some() {
+            return None;
+        }
+        self.declarations()
+            .any(|d| {
+                d.language == current.language
+                    && d.symbol.as_ref().is_some_and(|s| s.name == current.text)
+            })
+            .then(|| ReferencesQuery::new(&current.text).in_language(current.language.clone()))
+    }
+
+    pub fn definition_pending(&self) -> bool {
+        self.definition_query()
+            .is_some_and(|query| !self.definitions.iter().any(|(q, _)| q == &query))
+    }
+
+    pub fn definition_resolved(
+        &mut self,
+        revision: u64,
+        query: ReferencesQuery,
+        references: Option<Definitions>,
+    ) -> bool {
+        if revision != self.revision || self.definitions.iter().any(|(q, _)| q == &query) {
+            return false;
+        }
+        let selected = self.definition_query().as_ref() == Some(&query);
+        self.definitions.push((query, references));
+        selected
     }
 
     /// The declaration a use row names, as an index into the current list:
@@ -680,6 +735,7 @@ impl Results {
     pub fn declaration_of(&self, m: &Match) -> Option<&Match> {
         let mut same = self
             .declarations()
+            .filter(|d| d.language == m.language)
             .filter(|d| d.symbol.as_ref().is_some_and(|s| s.name == m.text));
         let first = same.next()?;
         same.next().is_none().then_some(first)

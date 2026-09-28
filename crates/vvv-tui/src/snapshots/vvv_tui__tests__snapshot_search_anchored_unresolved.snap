@@ -14,7 +14,7 @@ expression: "FrameFixture::new(&m).render()"
 │                                           ││                                           │
 └───────────────────────────────────────────┘│                                           │
 ┌ definition ───────────────────────────────┐│                                           │
-│ No unambiguous declaration for this row   ││                                           │
+│ No definition available                   ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │

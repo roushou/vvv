@@ -52,12 +52,12 @@ pub use graph::Retention;
 pub use history::{Applied, Apply, HistoryError, Ledger};
 pub use plan::{ApplyError, FilePreview, Planned};
 pub use protocol::{
-    Answer, Batch, BatchIntent, Call, Confidence, Consumer, Dead, DeadQuery, Dep, Deps, DepsQuery,
-    ErrorCode, ExplainQuery, Explanation, Exposed, Failure, File, FileChange, FileQuery, History,
-    HistoryEntry, Impact, ImpactQuery, ImportSite, Importer, ImportsQuery, ImportsReport, Intent,
-    Locations, Match, MatchId, Mutation, MutationAnswer, MutationState, Notice, NoticeKind,
-    Occurrence, Outline, OutlineItem, OutlineQuery, Placed, Reach, Reason, Recovery,
-    RecoveryEffect, RecoveryIssue, RecoveryOperation, RecoveryState, RecoveryUnverified,
+    Answer, Batch, BatchIntent, Call, Confidence, Consumer, Dead, DeadQuery, Definitions, Dep,
+    Deps, DepsQuery, ErrorCode, ExplainQuery, Explanation, Exposed, Failure, File, FileChange,
+    FileQuery, History, HistoryEntry, Impact, ImpactQuery, ImportSite, Importer, ImportsQuery,
+    ImportsReport, Intent, Locations, Match, MatchId, Mutation, MutationAnswer, MutationState,
+    Notice, NoticeKind, Occurrence, Outline, OutlineItem, OutlineQuery, Placed, Reach, Reason,
+    Recovery, RecoveryEffect, RecoveryIssue, RecoveryOperation, RecoveryState, RecoveryUnverified,
     References, ReferencesQuery, Reply, Request, Respelling, Rewrite, RewriteIntent, RewriteOf,
     Search, SearchQuery, Selection, SelectionError, Site, Skipped, Surface, SurfaceQuery, Template,
     TemplateError, Undo, Unreferenced, WhereQuery,

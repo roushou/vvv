@@ -81,6 +81,11 @@ pub enum Effect {
     Preview {
         path: RelPath,
     },
+    /// Resolve a preview through the engine's import/reference evidence.
+    Definition {
+        revision: u64,
+        query: vvv_engine::ReferencesQuery,
+    },
     /// Plan an intent and answer with everything a mode shows about it.
     /// `debounce` when typing drives it (the newest wins after a pause);
     /// the plan that opens a mode goes at once.
@@ -108,6 +113,11 @@ pub enum Effect {
 /// The engine's answer to an [`Effect`].
 #[derive(Debug, Clone)]
 pub enum Event {
+    DefinitionResolved {
+        revision: u64,
+        query: vvv_engine::ReferencesQuery,
+        references: Option<vvv_engine::Definitions>,
+    },
     Searched {
         generation: u64,
         matches: Vec<Match>,

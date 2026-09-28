@@ -1,0 +1,22 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● struct Engine   src/preview_origin.rs:1:1
+
+✓ 8  3 files
+   1  src/lib.rs
+   5  src/preview_consumer.rs
+   2  src/preview_origin.rs
+
+? 1  1 file   ∅ unresolved
+src/preview_consumer.rs
+   9     12:12   Error::Engine
+
+✗ 1  1 file   ● other decl
+src/preview_other.rs
+  10      1:12   pub struct Engine;
+--- stderr ---
+✓ 8  ? 1  ✗ 1   4 files

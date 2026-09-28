@@ -60,6 +60,41 @@ impl ReferencesQuery {
         self.execute_in(&mut graph)
     }
 
+    /// Reference evidence for every possible definition, gathered from one tree
+    /// snapshot. Unlike a rename, a definition lookup starts at a use site: each
+    /// candidate must be judged before that site's imports can choose its target.
+    pub fn definitions(self, engine: &crate::Engine) -> Result<Definitions, EngineError> {
+        let _operation = engine.operation();
+        let mut graph = engine.graph()?;
+        let declarations = graph.declarations(&self)?;
+        let mut queries = Vec::new();
+        for declaration in &declarations {
+            let Some(symbol) = &declaration.symbol else {
+                continue;
+            };
+            if declaration.address.is_none() {
+                continue;
+            }
+            let query = self
+                .clone()
+                .in_language(declaration.language.clone())
+                .of_symbol(symbol.kind)
+                .declared_in(declaration.path.clone());
+            if !queries.contains(&query) {
+                queries.push(query);
+            }
+        }
+        if queries.is_empty() {
+            queries.push(self);
+        }
+        Ok(Definitions {
+            candidates: queries
+                .into_iter()
+                .map(|query| query.execute_in(&mut graph))
+                .collect::<Result<_, _>>()?,
+        })
+    }
+
     pub(crate) fn execute_in(
         self,
         graph: &mut crate::graph::Graph,
@@ -81,6 +116,51 @@ pub struct References {
     pub name: String,
     pub declarations: Vec<Match>,
     pub occurrences: Vec<Occurrence>,
+}
+
+impl References {
+    /// The declaration for a token confirmed by this reference query. Same-named
+    /// variants and impl blocks are not competing import targets; the engine's
+    /// placed declarations identify the target that the occurrences were judged
+    /// against. Without placement, only a single declaration can be returned.
+    pub fn definition_of(&self, token: &Match) -> Option<&Match> {
+        if !self.occurrences.iter().any(|o| {
+            o.confidence == Confidence::Resolved
+                && o.m.language == token.language
+                && o.m.path == token.path
+                && o.m.span == token.span
+        }) {
+            return None;
+        }
+        let placed = self
+            .declarations
+            .iter()
+            .any(|d| d.language == token.language && d.address.is_some());
+        let mut declarations = self
+            .declarations
+            .iter()
+            .filter(|d| d.language == token.language && (!placed || d.address.is_some()));
+        let first = declarations.next()?;
+        declarations.next().is_none().then_some(first)
+    }
+}
+
+/// Reference evidence kept separately for each possible definition of a name.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Definitions {
+    pub candidates: Vec<References>,
+}
+
+impl Definitions {
+    /// Return a definition only when exactly one candidate resolves this token.
+    pub fn definition_of(&self, token: &Match) -> Option<&Match> {
+        let mut definitions = self
+            .candidates
+            .iter()
+            .filter_map(|references| references.definition_of(token));
+        let first = definitions.next()?;
+        definitions.next().is_none().then_some(first)
+    }
 }
 
 /// Rename the declaration(s) called `name` and every identifier that spells it.

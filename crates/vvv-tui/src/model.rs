@@ -271,6 +271,21 @@ impl Model {
 
     pub fn on_event(&mut self, event: Event) -> Vec<Effect> {
         match event {
+            Event::DefinitionResolved {
+                revision,
+                query,
+                references,
+            } => {
+                if !self
+                    .search
+                    .results
+                    .definition_resolved(revision, query, references)
+                {
+                    return Vec::new();
+                }
+                self.search.selection_changed();
+                self.preview_effect()
+            }
             Event::Searched {
                 generation,
                 matches,

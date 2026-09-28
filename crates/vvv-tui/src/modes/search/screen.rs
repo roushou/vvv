@@ -437,10 +437,11 @@ impl<'a> SearchView<'a> {
         let declaration = s.body.declaration();
         let title = Line::from(Span::styled("definition", t.title));
         let mut rows = Vec::new();
-        let mut empty = if s.results.body_declaration().is_some() {
+        let mut empty = if s.results.body_declaration().is_some() || s.results.definition_pending()
+        {
             ""
         } else {
-            "No unambiguous declaration for this row"
+            "No definition available"
         };
         if let Some(d) = declaration
             && let Some(preview) = &s.body.preview

@@ -30,6 +30,12 @@ struct Corpus {
 const RUST_RESOLUTION: Corpus = Corpus {
     name: "rust-resolution",
     cases: &[
+        ("search-preview-target", &["search", "Engine"]),
+        (
+            "references-preview-target",
+            &["references", "Engine", "--in", "src/preview_origin.rs"],
+        ),
+        ("references-preview-ambiguous", &["references", "Engine"]),
         (
             "references-parent",
             &["references", "Foo", "--in", "src/a.rs"],
@@ -939,6 +945,44 @@ impl ResolutionFixture {
 #[test]
 fn rust_resolution_golden() {
     golden(&RUST_RESOLUTION);
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn definition_preview_follows_engine_import_and_field_despite_variant_names() {
+    let fixture = ResolutionFixture::new();
+    let references = vvv_engine::ReferencesQuery::new("Engine")
+        .definitions(&fixture.engine)
+        .unwrap();
+    assert_eq!(references.candidates.len(), 2);
+    let search = vvv_engine::SearchQuery::from(Query::pattern("Engine"))
+        .execute(&fixture.engine)
+        .unwrap();
+    let mut checked = 0;
+    for token in search.matches.iter().filter(|m| {
+        m.path.as_path() == Path::new("src/preview_consumer.rs")
+            && ([0, 3].contains(&m.start.line) || m.line.contains("pub fn roundtrip"))
+    }) {
+        let definition = references
+            .definition_of(token)
+            .expect("import and field resolve");
+        assert_eq!(
+            definition.path.as_path(),
+            Path::new("src/preview_origin.rs")
+        );
+        assert_eq!(
+            definition.symbol.as_ref().unwrap().kind,
+            vvv_engine::SymbolKind::Struct
+        );
+        checked += 1;
+    }
+    assert_eq!(checked, 4, "import, field, parameter and return type");
+    let variant_use = search
+        .matches
+        .iter()
+        .find(|m| m.path.as_path() == Path::new("src/preview_consumer.rs") && m.start.line == 11)
+        .unwrap();
+    assert!(references.definition_of(variant_use).is_none());
 }
 
 #[cfg(feature = "rust")]

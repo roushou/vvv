@@ -1,0 +1,31 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● 3  3 files
+src/preview_consumer.rs
+   1 ●    8:5    Engine,
+
+src/preview_origin.rs
+   2 ●    1:12   pub struct Engine {
+
+src/preview_other.rs
+   3 ●    1:12   pub struct Engine;
+
+○ 7  3 files
+src/lib.rs
+   4 →    9:25   pub use preview_origin::Engine;
+
+src/preview_consumer.rs
+   5 →    1:12   use crate::Engine;
+   6      4:17   pub engine: Engine,
+   7     12:12   Error::Engine
+   8     15:26   pub fn roundtrip(engine: Engine) -> Engine {
+   9     15:37   pub fn roundtrip(engine: Engine) -> Engine {
+
+src/preview_origin.rs
+  10      5:6    impl Engine {
+--- stderr ---
+● 3  ○ 7  4 files

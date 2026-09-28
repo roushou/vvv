@@ -29,7 +29,7 @@ pub use crate::capabilities::file::{File, FileQuery};
 pub use crate::capabilities::imports::{
     Deps, DepsQuery, ExplainQuery, Explanation, ImportSite, ImportsQuery, ImportsReport,
 };
-pub use crate::capabilities::rename::{References, ReferencesQuery};
+pub use crate::capabilities::rename::{Definitions, References, ReferencesQuery};
 pub use crate::capabilities::search::{Search, SearchQuery};
 pub use crate::capabilities::surface::{Exposed, Surface, SurfaceQuery};
 pub use crate::capabilities::usage::{
