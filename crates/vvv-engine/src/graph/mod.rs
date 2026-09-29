@@ -843,3 +843,31 @@ impl std::fmt::Debug for Graph {
             .finish()
     }
 }
+
+impl Graph {
+    pub(crate) fn relationship_files(
+        &mut self,
+        language: &crate::LanguageId,
+        scope: &crate::SearchScope,
+    ) -> Result<Vec<Candidate>, EngineError> {
+        let mut files = Vec::new();
+        for file in self.files(Some(language)) {
+            self.check_read()?;
+            if !scope.includes_path(file.path()) {
+                continue;
+            }
+            if !scope.packages.is_empty() {
+                let project = self.project_build(language);
+                if !scope.includes_package(
+                    project
+                        .as_ref()
+                        .and_then(|p| p.packages.containing(file.path())),
+                ) {
+                    continue;
+                }
+            }
+            files.push(file);
+        }
+        Ok(files)
+    }
+}

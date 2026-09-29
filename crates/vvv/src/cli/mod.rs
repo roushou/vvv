@@ -53,6 +53,7 @@ enum Commands {
     /// List commands, supported languages, and context/output budget limits
     Discover,
     Context(commands::context::ContextCmd),
+    Relationships(commands::relationships::RelationshipsCmd),
     Navigate(commands::navigate::NavigateCmd),
     Search(commands::search::SearchCmd),
     Outline(commands::outline::OutlineCmd),
@@ -129,6 +130,7 @@ impl Cli {
                 vvv_engine::DiscoveryQuery::default(),
             )),
             Some(Commands::Context(cmd)) => cmd.run(&ctx),
+            Some(Commands::Relationships(cmd)) => cmd.run(&ctx),
             Some(Commands::Navigate(cmd)) => cmd.run(&ctx),
             Some(Commands::Search(cmd)) => cmd.run(&ctx),
             Some(Commands::Outline(cmd)) => cmd.run(&ctx),

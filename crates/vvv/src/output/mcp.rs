@@ -66,6 +66,9 @@ impl ToolKind {
             Self::Search => {
                 "Search source structure or symbol names. Use scope.paths for file/directory prefixes and scope.packages for owning package names or IDs. Returns bounded pages with stable IDs and a continuation cursor."
             }
+            Self::Relationships => {
+                "Find callers, callees, or references through named imports. Confirmed sites carry targets and evidence; unresolved incoming sites are only possibilities. Inspect coverage for scan limits. No receiver-type, indirect-call, or macro-expansion inference. Narrow scope or increase budgets to inspect more sites."
+            }
             Self::Navigate => {
                 "Resolve an exact source position, occurrence, or symbol to compact locations and evidence. Inspect resolved, ambiguous, or unavailable outcomes. Fetch source bodies with vvv_context."
             }

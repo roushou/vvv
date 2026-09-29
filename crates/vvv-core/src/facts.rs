@@ -14,6 +14,11 @@ use crate::text::Span;
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Facts {
+    #[serde(default)]
+    pub calls: Vec<crate::CallSite>,
+    /// Whether this plugin supplies call classification.
+    #[serde(default)]
+    pub calls_supported: bool,
     /// Tokens whose context permits module/type resolution without local inference.
     #[serde(default)]
     pub navigation: Vec<Span>,

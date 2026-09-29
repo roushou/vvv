@@ -163,6 +163,31 @@ impl<'a> NavigationFacts<'a> {
                     .any(|a| self.grammar.lexical_barriers.contains(&a.kind().as_ref()));
             if supported && !qualified {
                 facts.lexical_tokens.push(span);
+                if self
+                    .grammar
+                    .navigation_values
+                    .contains(&node.kind().as_ref())
+                {
+                    facts.navigation.push(span);
+                }
+            }
+            // Path facts distinguish qualified module uses from receiver members.
+            // A lexical type binding at the head needs associated-item inference.
+            if supported
+                && facts.imports.iter().any(|import| {
+                    !import.declares
+                        && import.span.contains(&span)
+                        && !facts.lexical.iter().any(|binding| {
+                            import
+                                .path
+                                .first()
+                                .is_some_and(|head| head.as_str() == binding.symbol.name)
+                                && binding.namespace == vvv_core::BindingNamespace::Type
+                                && binding.scope.contains(&span)
+                        })
+                })
+            {
+                facts.navigation.push(span);
             }
             if supported && let Some(parent) = node.parent() {
                 for rule in self

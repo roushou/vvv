@@ -41,7 +41,7 @@ impl Client {
             ProtocolVersion::V_2025_11_25
         );
         let tools = service.list_all_tools().await.unwrap();
-        assert_eq!(tools.len(), 6);
+        assert_eq!(tools.len(), 7);
         assert!(
             tools
                 .iter()
@@ -448,6 +448,57 @@ async fn scoped_search_and_compact_context_work_for_real_packages_and_methods() 
             .unwrap()
             .iter()
             .any(|i| &i["target"] == owner && i["relation"] == "enclosing_declaration")
+    );
+    client.close().await;
+}
+
+#[cfg(feature = "rust")]
+#[tokio::test]
+async fn relationships_follow_import_aliases_and_preserve_unresolved_call_sites() {
+    let fixture = Fixture::new();
+    std::fs::write(
+        fixture.root.join("src/lib.rs"),
+        "pub mod origin;\npub mod consumer;\npub mod bridge;\n",
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.root.join("src/origin.rs"),
+        "pub fn work() {}\npub fn other() {}\n",
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.root.join("src/bridge.rs"),
+        "pub use crate::origin::work as task;\n",
+    )
+    .unwrap();
+    std::fs::write(fixture.root.join("src/consumer.rs"), "use crate::bridge::task as execute;\nuse crate::origin::other as ignore;\npub fn caller() { execute(); ignore(); }\npub fn unknown(receiver: Unknown) { receiver.work(); }\npub fn shadow(execute: fn()) { execute(); }\n").unwrap();
+    let client = Client::new(&fixture.root).await;
+    let args = json!({"origin":{"kind":"position","path":"src/origin.rs","position":{"line":0,"column":7}},"kind":"callers","scope":{"paths":["src/consumer.rs"]}});
+    let reply = client.call("vvv_relationships", args.clone()).await;
+    assert_eq!(reply, fixture.engine_call(json!({"command":"relationships","origin":args["origin"],"kind":"callers","scope":args["scope"]})), "{reply}");
+    let items = reply["result"]["items"].as_array().unwrap();
+    assert_eq!(items.len(), 3, "{reply}");
+    assert_eq!(items[0]["spelling"], "execute");
+    assert_eq!(items[0]["outcome"], "confirmed");
+    assert_eq!(items[0]["target"]["declaration"]["path"], "src/origin.rs");
+    assert!(items[0]["evidence"]["addresses"].as_array().unwrap().len() >= 2);
+    assert_eq!(items[1]["outcome"], "unavailable");
+    assert_eq!(items[2]["outcome"], "indirect");
+    assert_eq!(reply["result"]["coverage"]["scan_complete"], true);
+    let limited = client.call("vvv_relationships", json!({"origin":args["origin"],"kind":"callers","scope":args["scope"],"budget":{"max_lookups":1}})).await;
+    assert_eq!(limited["result"]["coverage"]["stopped_by"], "lookups");
+    let references = client
+        .call(
+            "vvv_relationships",
+            json!({"origin":args["origin"],"kind":"references","scope":args["scope"]}),
+        )
+        .await;
+    assert!(
+        references["result"]["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|i| i["spelling"] == "execute" && i["outcome"] == "confirmed")
     );
     client.close().await;
 }

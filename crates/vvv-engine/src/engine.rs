@@ -101,6 +101,9 @@ impl Engine {
                 crate::Request::Context(query) => Execution::Completed(crate::Answer::Context(
                     query.execute_in(&mut *self.graph()?)?,
                 )),
+                crate::Request::Relationships(query) => {
+                    Execution::Completed(crate::Answer::Relationships(query.execute_in(self)?))
+                }
                 crate::Request::Resolve(query) => Execution::Completed(crate::Answer::Resolve(
                     query.execute_in(&mut *self.graph()?)?,
                 )),

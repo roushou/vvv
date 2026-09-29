@@ -1,0 +1,14 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+caller src/consumer.rs:3:1 [64f50ba21af4]
+execute [confirmed] src/consumer.rs:4:5
+work [confirmed] src/consumer.rs:5:20
+callback [indirect] src/consumer.rs:7:5
+other [confirmed] src/consumer.rs:8:5
+--- stderr ---
+4 sites; 1 file scanned; 4 lookups
+Unresolved sites are possible relationships, not confirmed calls. Receiver types, indirect targets, and macro expansion are not inferred.

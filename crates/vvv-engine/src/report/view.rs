@@ -131,6 +131,32 @@ impl View for Detailed {
                     Row::at(line, path.clone(), item.start.line)
                 })
                 .collect(),
+            Block::Relationships(items) => items
+                .iter()
+                .map(|item| {
+                    let status = match &item.resolution {
+                        crate::RelationshipResolution::Confirmed { .. } => "confirmed",
+                        crate::RelationshipResolution::Ambiguous { .. } => "ambiguous",
+                        crate::RelationshipResolution::Unavailable { .. } => "unresolved",
+                        crate::RelationshipResolution::Indirect { .. } => "indirect",
+                    };
+                    Row::at(
+                        Line::of(Role::Plain, &item.spelling)
+                            .and(Role::Dim, format!(" [{status}] "))
+                            .and(
+                                Role::Path,
+                                format!(
+                                    "{}:{}:{}",
+                                    item.site.path,
+                                    item.start.line + 1,
+                                    item.start.column + 1
+                                ),
+                            ),
+                        item.site.path.clone(),
+                        item.start.line,
+                    )
+                })
+                .collect(),
             Block::Locations(locations) => locations
                 .iter()
                 .map(|d| {

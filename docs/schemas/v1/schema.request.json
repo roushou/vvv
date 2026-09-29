@@ -10,6 +10,7 @@
         "discover",
         "context",
         "navigate",
+        "relationships",
         "resolve",
         "search",
         "outline",
@@ -66,7 +67,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:schema:request:66041090020c145a023e3fc01f3f3f35446400939eea8f3d7fca83703556bbcf",
+  "$id": "urn:vvv:schema:1:schema:request:bd8b643a2f09b453fcd2a739e2906f460129336f236f6268ddd33ddde339c1d9",
   "$ref": "#/$defs/SchemaQuery",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {

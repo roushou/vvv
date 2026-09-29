@@ -211,6 +211,7 @@ impl<L: LanguageExt> AstGrepSearcher<L> {
             ImportExtractor::new(&self.grammar.imports, self.lang.clone()).extract(&node)?;
         let highlights = Highlighter::new(self.grammar.highlights).extract(&node);
         let mut facts = Facts::new(symbols, imports, highlights);
+        super::calls::Calls::new(&self.grammar).extract(&node, &mut facts);
         super::navigation::NavigationFacts::new(&self.grammar).extract(&node, &mut facts);
         let kinds: Vec<u16> = self
             .grammar

@@ -9,6 +9,7 @@ pub mod move_file;
 pub mod navigate;
 pub mod outline;
 pub mod references;
+pub mod relationships;
 pub mod rename;
 pub mod rewrite;
 pub mod search;

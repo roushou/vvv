@@ -12,6 +12,7 @@
 //! | `expand` | `capabilities/excerpts.rs` |
 //! | `context` | `capabilities/context.rs` |
 //! | `discover` | `capabilities/discovery.rs` |
+//! | `relationships` | `capabilities/relationships.rs` |
 //! | `resolve` | `capabilities/navigation.rs` |
 //! | `navigate` | `capabilities/navigation.rs` |
 //! | `search` | `capabilities/search.rs` |
@@ -55,3 +56,5 @@ pub(crate) mod schema;
 
 pub(crate) mod excerpts;
 pub(crate) mod pagination;
+
+pub(crate) mod relationships;

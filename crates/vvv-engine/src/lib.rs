@@ -117,3 +117,10 @@ mod cancellation;
 pub use cancellation::ReadCancellation;
 
 pub use protocol::{DefinitionLocation, ResolutionOutcome, ResolutionQuery, ResolutionReply};
+
+pub use crate::capabilities::relationships::{
+    Relationship, RelationshipBudget, RelationshipCoverage, RelationshipKind, RelationshipLimit,
+    RelationshipLimitation, RelationshipResolution, Relationships, RelationshipsQuery,
+};
+
+pub use vvv_core::CallKind;

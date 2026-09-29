@@ -125,6 +125,29 @@ const HIGHLIGHTS: &[HighlightRule] = &[
 ];
 
 pub(crate) const GRAMMAR: Grammar = Grammar {
+    navigation_values: &["identifier"],
+    calls: &[vvv_core::CallRule {
+        node: "call_expression",
+        callee: "function",
+    }],
+    callees: &[
+        vvv_core::CalleeRule {
+            node: "generic_function",
+            field: "function",
+            kind: None,
+        },
+        vvv_core::CalleeRule {
+            node: "scoped_identifier",
+            field: "name",
+            kind: Some(vvv_core::CallKind::Direct),
+        },
+        vvv_core::CalleeRule {
+            node: "field_expression",
+            field: "field",
+            kind: Some(vvv_core::CallKind::Member),
+        },
+    ],
+    anonymous_callables: &["closure_expression"],
     pattern_containers: &[
         "tuple_pattern",
         "slice_pattern",

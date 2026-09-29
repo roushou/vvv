@@ -25,6 +25,7 @@
         "discover",
         "context",
         "navigate",
+        "relationships",
         "resolve",
         "search",
         "outline",
@@ -564,6 +565,83 @@
       "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
       "type": "string"
     },
+    "RelationshipBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_bytes": {
+          "default": 16384,
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 1024,
+          "type": "integer"
+        },
+        "max_files": {
+          "default": 128,
+          "format": "uint",
+          "maximum": 4096,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_items": {
+          "default": 64,
+          "format": "uint",
+          "maximum": 1024,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_lookups": {
+          "default": 1024,
+          "format": "uint",
+          "maximum": 16384,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "RelationshipKind": {
+      "enum": [
+        "callers",
+        "callees",
+        "references"
+      ],
+      "type": "string"
+    },
+    "RelationshipsQuery": {
+      "properties": {
+        "budget": {
+          "$ref": "#/$defs/RelationshipBudget",
+          "default": {
+            "max_bytes": 16384,
+            "max_files": 128,
+            "max_items": 64,
+            "max_lookups": 1024
+          }
+        },
+        "kind": {
+          "$ref": "#/$defs/RelationshipKind"
+        },
+        "origin": {
+          "$ref": "#/$defs/NavigationOrigin"
+        },
+        "scope": {
+          "$ref": "#/$defs/SearchScope",
+          "default": {
+            "packages": [],
+            "paths": []
+          }
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection",
+          "default": "all"
+        }
+      },
+      "required": [
+        "origin",
+        "kind"
+      ],
+      "type": "object"
+    },
     "RenameIntent": {
       "description": "Rename the declaration(s) called `name` and every identifier that spells it.\n\nResolution is syntactic: every occurrence of the identifier in files of\nthe declaring language is an occurrence. The `selection` is how a human or\nagent excludes the ones that are not the same symbol.",
       "properties": {
@@ -942,7 +1020,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:session:call:b2f9f97012e1169e3c2e39c4df12f318945e1f7b6cfd7ac0227e39903cd7247c",
+  "$id": "urn:vvv:schema:1:session:call:7bc93a44bed3937690c4f6e7c63afa10acc665c84b6d1830db08afa49d4ca28e",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "A request on a session's wire (`vvv serve`): the request with whatever\n`id` the caller chose, echoed on the [`Reply`].",
   "oneOf": [
@@ -1119,6 +1197,19 @@
       "properties": {
         "command": {
           "const": "navigate",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "$ref": "#/$defs/RelationshipsQuery",
+      "properties": {
+        "command": {
+          "const": "relationships",
           "type": "string"
         }
       },

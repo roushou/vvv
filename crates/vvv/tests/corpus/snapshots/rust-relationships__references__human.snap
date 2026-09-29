@@ -1,0 +1,19 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+work src/origin.rs:1:1 [e13ad7d38ae1]
+work [confirmed] src/bridge.rs:1:24
+task [confirmed] src/bridge.rs:1:32
+execute [confirmed] src/consumer.rs:1:28
+execute [confirmed] src/consumer.rs:4:5
+work [confirmed] src/consumer.rs:5:20
+execute [confirmed] src/consumer.rs:6:20
+execute [confirmed] src/consumer.rs:9:23
+work [confirmed] src/consumer.rs:10:34
+work [unresolved] src/consumer.rs:12:48
+--- stderr ---
+9 sites; 6 files scanned; 17 lookups
+Unresolved sites are possible relationships, not confirmed calls. Receiver types, indirect targets, and macro expansion are not inferred.

@@ -1,0 +1,359 @@
+{
+  "$defs": {
+    "ContentId": {
+      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "type": "string"
+    },
+    "LanguageId": {
+      "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
+      "type": "string"
+    },
+    "MatchId": {
+      "description": "Content-derived identifier: the same file, range and text yield the same id\nacross runs, so a selection made from one `search` can drive a later command.",
+      "type": "string"
+    },
+    "NavigationOrigin": {
+      "oneOf": [
+        {
+          "properties": {
+            "expected_content": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/ContentId"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "kind": {
+              "const": "position",
+              "type": "string"
+            },
+            "path": {
+              "$ref": "#/$defs/RelPath"
+            },
+            "position": {
+              "$ref": "#/$defs/Position"
+            }
+          },
+          "required": [
+            "kind",
+            "path",
+            "position"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "anchor": {
+              "$ref": "#/$defs/SourceAnchor"
+            },
+            "kind": {
+              "const": "occurrence",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "anchor"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "kind": {
+              "const": "symbol",
+              "type": "string"
+            },
+            "symbol": {
+              "$ref": "#/$defs/SymbolRef"
+            }
+          },
+          "required": [
+            "kind",
+            "symbol"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "Position": {
+      "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
+      "properties": {
+        "column": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "line": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "column"
+      ],
+      "type": "object"
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "RelationshipBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_bytes": {
+          "default": 16384,
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 1024,
+          "type": "integer"
+        },
+        "max_files": {
+          "default": 128,
+          "format": "uint",
+          "maximum": 4096,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_items": {
+          "default": 64,
+          "format": "uint",
+          "maximum": 1024,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_lookups": {
+          "default": 1024,
+          "format": "uint",
+          "maximum": 16384,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "RelationshipKind": {
+      "enum": [
+        "callers",
+        "callees",
+        "references"
+      ],
+      "type": "string"
+    },
+    "RelationshipsQuery": {
+      "properties": {
+        "budget": {
+          "$ref": "#/$defs/RelationshipBudget",
+          "default": {
+            "max_bytes": 16384,
+            "max_files": 128,
+            "max_items": 64,
+            "max_lookups": 1024
+          }
+        },
+        "kind": {
+          "$ref": "#/$defs/RelationshipKind"
+        },
+        "origin": {
+          "$ref": "#/$defs/NavigationOrigin"
+        },
+        "scope": {
+          "$ref": "#/$defs/SearchScope",
+          "default": {
+            "packages": [],
+            "paths": []
+          }
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection",
+          "default": "all"
+        }
+      },
+      "required": [
+        "origin",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "SearchScope": {
+      "additionalProperties": false,
+      "description": "Explicit file/directory prefixes and owning package names or IDs.\nAlternatives within each list are ORed; the two lists are intersected.",
+      "properties": {
+        "packages": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "paths": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RelPath"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "Selection": {
+      "description": "Which matches of a search a later command acts on.\n\nIds are content-derived, so a selection made from `vvv search` can be\nhanded to `vvv rewrite` in a separate process. Ordinals are the 1-based\npositions in the same search's result order, which is what human output\nnumbers rows with. Either kind that no longer resolves means the files\nchanged in between; the selection is then refused rather than silently\nnarrowed.",
+      "oneOf": [
+        {
+          "enum": [
+            "all"
+          ],
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ids": {
+              "items": {
+                "$ref": "#/$defs/MatchId"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ids"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ordinals": {
+              "items": {
+                "format": "uint",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ordinals"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "SourceAnchor": {
+      "properties": {
+        "content": {
+          "$ref": "#/$defs/ContentId"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        }
+      },
+      "required": [
+        "path",
+        "content",
+        "span"
+      ],
+      "type": "object"
+    },
+    "Span": {
+      "description": "Half-open byte range `[start, end)` inside a single file.",
+      "properties": {
+        "end": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "start": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "type": "object"
+    },
+    "SymbolKind": {
+      "description": "What a declaration declares, in vocabulary shared by every language.",
+      "oneOf": [
+        {
+          "enum": [
+            "type-parameter",
+            "parameter",
+            "function",
+            "method",
+            "struct",
+            "class",
+            "enum",
+            "variant",
+            "trait",
+            "interface",
+            "type-alias",
+            "const",
+            "static",
+            "variable",
+            "field",
+            "module",
+            "macro"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "impl",
+          "description": "An `impl` block, named after the type it is for. Not a declaration a\npath can reach; it travels with its type when the type moves.",
+          "type": "string"
+        }
+      ]
+    },
+    "SymbolRef": {
+      "description": "A declaration in one source version, not an identity across edits.",
+      "properties": {
+        "declaration": {
+          "$ref": "#/$defs/SourceAnchor"
+        },
+        "kind": {
+          "$ref": "#/$defs/SymbolKind"
+        },
+        "language": {
+          "$ref": "#/$defs/LanguageId"
+        },
+        "name_span": {
+          "$ref": "#/$defs/Span"
+        }
+      },
+      "required": [
+        "language",
+        "declaration",
+        "name_span",
+        "kind"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "urn:vvv:schema:1:relationships:request:0a32c62b1f62360674d1c2cf0b94be40976204b186bc39ef6388c1eba68059e3",
+  "$ref": "#/$defs/RelationshipsQuery",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "command": {
+      "const": "relationships",
+      "type": "string"
+    }
+  },
+  "required": [
+    "command"
+  ],
+  "title": "relationships request",
+  "type": "object"
+}

@@ -1009,17 +1009,18 @@ rejected during initialization. `serve` retains its existing JSON-lines contract
 Only MCP messages go to stdout, including when `--json` is supplied; startup
 errors go to stderr. The workspace is fixed at launch.
 
-`tools/list` returns all six tools in one response, with generated JSON Schema
+`tools/list` returns all seven tools in one response, with generated JSON Schema
 inputs and per-command `Response` output schemas. A tool-list cursor is invalid.
 
-| MCP tool       | Engine request |
-| -------------- | -------------- |
-| `vvv_discover` | `discover`     |
-| `vvv_search`   | `search_page`  |
-| `vvv_navigate` | `resolve`      |
-| `vvv_context`  | `context_page` |
-| `vvv_continue` | `continue`     |
-| `vvv_expand`   | `expand`       |
+| MCP tool            | Engine request  |
+| ------------------- | --------------- |
+| `vvv_discover`      | `discover`      |
+| `vvv_search`        | `search_page`   |
+| `vvv_navigate`      | `resolve`       |
+| `vvv_relationships` | `relationships` |
+| `vvv_context`       | `context_page`  |
+| `vvv_continue`      | `continue`      |
+| `vvv_expand`        | `expand`        |
 
 Arguments are the command's generated `arguments` schema, extended with
 `max_output_bytes` (default 16384; range 1024–1048576). No `command`, call ID,
@@ -1070,3 +1071,91 @@ for message codecs, lifecycle, and dispatch, following the
 [tool result](https://modelcontextprotocol.io/specification/2025-11-25/server/tools)
 and [cancellation](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/cancellation)
 contracts. The engine and core do not depend on MCP or an async runtime.
+
+## `relationships`
+
+A read-only, bounded relationship query anchored to the same `origin` and
+`selection` contract as `resolve`:
+
+```json
+{
+  "command": "relationships",
+  "origin": {
+    "kind": "position",
+    "path": "src/worker.rs",
+    "position": { "line": 11, "column": 7 }
+  },
+  "kind": "callers",
+  "scope": { "paths": ["src"], "packages": [] },
+  "budget": {
+    "max_items": 64,
+    "max_bytes": 16384,
+    "max_files": 128,
+    "max_lookups": 1024
+  }
+}
+```
+
+`kind` is `callers`, `callees`, or `references`. `scope` and `selection` default to
+unrestricted. Scope filters candidate source files, not target resolution; it uses
+search's path-prefix and owning-package semantics. Callees are restricted to call
+sites whose nearest named callable is the selected declaration. Nested functions
+and anonymous callable bodies are not attributed to the outer callable.
+
+The result contains `snapshot`, `subject` (the complete compact resolution outcome),
+`kind`, `scope`, `items`, and `coverage`. Unavailable or ambiguous subjects produce
+no sites and retain their resolution reason or full selectable candidate set.
+
+Each item has:
+
+- `site`: an exact, versioned `SourceAnchor` for the identifier or callee expression.
+- `start`: zero-based source position; `spelling`: the exact text at `site`.
+- `caller`: the owning named function/method's `SymbolRef`, or null for non-call
+  references, module-level calls, and anonymous callable bodies.
+- `call`: syntactic `direct`, `member`, or `indirect`, or null for a non-call use.
+  Syntactic classification does not itself prove a target.
+- `outcome`: `confirmed` with `target` and `evidence`; `ambiguous` with all compact
+  definition `candidates`; `unavailable` with navigation's `reason`; or `indirect`
+  with a known `binding` or null. A local/parameter/value binding used as a callee
+  does not prove the invoked function. In `references`, a confirmed target denotes
+  the referenced binding, without asserting runtime invocation.
+
+Incoming candidates use the subject's name and local import spellings whose bindings
+resolve to it or include it among ambiguous candidates. Import probes and site
+resolution both count toward `lookups`. Resolution confirms or rejects each site independently,
+including renamed named imports and re-export chains. Resolved different targets
+are excluded; ambiguous incoming sets are retained only when they contain the
+subject, with the whole set intact. Unavailable and indirect incoming sites remain
+possibilities, not confirmed edges. Import bindings that cannot resolve are counted in `unresolved_imports`; their
+spellings are not added to the site scan. Wildcard aliases, renamed namespace
+members, and assignment-based aliases are not exhaustively enumerated.
+
+`coverage` reports `files_scanned`, `files_remaining`, `lookups`, `omitted_items`,
+`unsupported_files`, `unresolved_imports`, `scan_complete`, and `stopped_by` (`files`, `lookups`, `items`,
+`bytes`, or null). A file counts as scanned when entered; a work limit may stop
+within it, so zero `files_remaining` alone does not establish completion.
+`omitted_items` counts whole discovered sites removed to meet the byte budget,
+not unseen relationships. `scan_complete` means the candidate scan finished
+without limits or unsupported call-fact providers, not that a runtime call graph
+is complete. `limitations` explicitly includes `receiver_types`, `indirect_targets`,
+`macro_expansion`, `anonymous_callers`, `unsupported_bindings`, and
+`unenumerated_aliases`, even when the scan completes.
+
+Budgets default to 16,384 bytes, 64 items, 1,024 lookups, and 128 files. Byte bounds
+are 1,024–1,048,576; item bounds 1–1,024; lookup bounds 1–16,384; file bounds 1–4,096.
+The byte count covers the entire compact JSON result. An indivisible first site or
+subject that cannot fit produces `output_limit`; ambiguous candidate sets are never
+partially delivered. The `Call.max_output_bytes` limit also constrains this query's
+byte budget. There are no relationship continuation handles; narrow `scope` or
+increase budgets to repeat a query.
+
+A fresh workspace snapshot captures source contents, manifests, and inventory and
+is revalidated before publication. Observed edits fail with a stale error. Snapshot
+capture and validation, parsing, and source loading are outside relationship work
+counters; budgets do not impose execution deadlines or total-memory limits.
+Cancellation uses the shared cooperative read cancellation contract. Ordering is
+source path then call/identifier position, with repeated sites preserved rather
+than collapsing multiple calls to one target.
+
+The MCP mapping is `vvv_relationships` → `relationships`, with the same arguments,
+result schema, and shared call budgeting as other read-only tools.

@@ -56,6 +56,7 @@ impl Document {
             Answer::Expand(r) => Self::expansion(r),
             Answer::Discover(r) => Self::discovery(r),
             Answer::Context(r) => Self::context(r),
+            Answer::Relationships(r) => Self::relationships(r),
             Answer::Resolve(r) => Self::resolution(r),
             Answer::Navigate(r) => Self::navigation(r),
             Answer::Search(r) => Self::search(&r.matches, &r.skipped),

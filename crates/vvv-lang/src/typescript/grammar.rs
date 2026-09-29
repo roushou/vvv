@@ -92,12 +92,34 @@ const HIGHLIGHTS: &[HighlightRule] = &[
 ];
 
 pub(crate) const GRAMMAR: Grammar = Grammar {
-    pattern_containers: &[],
-    qualified_imports: &[vvv_core::QualifiedImportRule {
-        node: "nested_type_identifier",
-        object: "module",
-        member: "name",
+    navigation_values: &["identifier"],
+    calls: &[vvv_core::CallRule {
+        node: "call_expression",
+        callee: "function",
     }],
+    callees: &[vvv_core::CalleeRule {
+        node: "member_expression",
+        field: "property",
+        kind: Some(vvv_core::CallKind::Member),
+    }],
+    anonymous_callables: &[
+        "arrow_function",
+        "function_expression",
+        "generator_function",
+    ],
+    pattern_containers: &[],
+    qualified_imports: &[
+        vvv_core::QualifiedImportRule {
+            node: "member_expression",
+            object: "object",
+            member: "property",
+        },
+        vvv_core::QualifiedImportRule {
+            node: "nested_type_identifier",
+            object: "module",
+            member: "name",
+        },
+    ],
     bindings: &[
         vvv_core::BindingRule {
             node: "type_parameter",

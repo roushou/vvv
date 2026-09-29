@@ -1,0 +1,446 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "a2644efafbb41d4f00f0a8d525d4dd37d3f42546b4c0cc14bf9fe2df783f7df6",
+    "subject": {
+      "outcome": "resolved",
+      "target": {
+        "language": "typescript",
+        "declaration": {
+          "path": "src/origin.ts",
+          "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
+          "span": {
+            "start": 0,
+            "end": 25
+          }
+        },
+        "name_span": {
+          "start": 16,
+          "end": 20
+        },
+        "kind": "function"
+      },
+      "id": "29c76dfc6edf",
+      "name": "work",
+      "start": {
+        "line": 0,
+        "column": 7
+      },
+      "evidence": {
+        "addresses": []
+      },
+      "container": {
+        "language": "typescript",
+        "declaration": {
+          "path": "src/origin.ts",
+          "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
+          "span": {
+            "start": 0,
+            "end": 25
+          }
+        },
+        "name_span": {
+          "start": 16,
+          "end": 20
+        },
+        "kind": "function"
+      }
+    },
+    "kind": "references",
+    "scope": {
+      "paths": [],
+      "packages": []
+    },
+    "items": [
+      {
+        "site": {
+          "path": "src/bridge.ts",
+          "content": "c99a0f1f9edb240c3346e85cc334cbb461253e204e3fb4a853df0d20485c8a14",
+          "span": {
+            "start": 9,
+            "end": 13
+          }
+        },
+        "start": {
+          "line": 0,
+          "column": 9
+        },
+        "spelling": "work",
+        "caller": null,
+        "call": null,
+        "outcome": "confirmed",
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/origin.ts",
+            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
+            "span": {
+              "start": 0,
+              "end": 25
+            }
+          },
+          "name_span": {
+            "start": 16,
+            "end": 20
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "",
+              "path": [
+                "src",
+                "origin.ts",
+                "work"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/bridge.ts",
+          "content": "c99a0f1f9edb240c3346e85cc334cbb461253e204e3fb4a853df0d20485c8a14",
+          "span": {
+            "start": 17,
+            "end": 21
+          }
+        },
+        "start": {
+          "line": 0,
+          "column": 17
+        },
+        "spelling": "task",
+        "caller": null,
+        "call": null,
+        "outcome": "confirmed",
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/origin.ts",
+            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
+            "span": {
+              "start": 0,
+              "end": 25
+            }
+          },
+          "name_span": {
+            "start": 16,
+            "end": 20
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "",
+              "path": [
+                "src",
+                "origin.ts",
+                "work"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/consumer.ts",
+          "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+          "span": {
+            "start": 17,
+            "end": 24
+          }
+        },
+        "start": {
+          "line": 0,
+          "column": 17
+        },
+        "spelling": "execute",
+        "caller": null,
+        "call": null,
+        "outcome": "confirmed",
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/origin.ts",
+            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
+            "span": {
+              "start": 0,
+              "end": 25
+            }
+          },
+          "name_span": {
+            "start": 16,
+            "end": 20
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "",
+              "path": [
+                "src",
+                "bridge.ts",
+                "task"
+              ]
+            },
+            {
+              "package": "",
+              "path": [
+                "src",
+                "origin.ts",
+                "work"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/consumer.ts",
+          "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+          "span": {
+            "start": 108,
+            "end": 115
+          }
+        },
+        "start": {
+          "line": 3,
+          "column": 4
+        },
+        "spelling": "execute",
+        "caller": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/consumer.ts",
+            "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+            "span": {
+              "start": 77,
+              "end": 136
+            }
+          },
+          "name_span": {
+            "start": 93,
+            "end": 99
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/origin.ts",
+            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
+            "span": {
+              "start": 0,
+              "end": 25
+            }
+          },
+          "name_span": {
+            "start": 16,
+            "end": 20
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "",
+              "path": [
+                "src",
+                "bridge.ts",
+                "task"
+              ]
+            },
+            {
+              "package": "",
+              "path": [
+                "src",
+                "origin.ts",
+                "work"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/consumer.ts",
+          "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+          "span": {
+            "start": 127,
+            "end": 131
+          }
+        },
+        "start": {
+          "line": 4,
+          "column": 8
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/consumer.ts",
+            "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+            "span": {
+              "start": 77,
+              "end": 136
+            }
+          },
+          "name_span": {
+            "start": 93,
+            "end": 99
+          },
+          "kind": "function"
+        },
+        "call": "member",
+        "outcome": "confirmed",
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/origin.ts",
+            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
+            "span": {
+              "start": 0,
+              "end": 25
+            }
+          },
+          "name_span": {
+            "start": 16,
+            "end": 20
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "",
+              "path": [
+                "src",
+                "origin.ts",
+                "work"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/consumer.ts",
+          "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+          "span": {
+            "start": 250,
+            "end": 257
+          }
+        },
+        "start": {
+          "line": 7,
+          "column": 46
+        },
+        "spelling": "execute",
+        "caller": null,
+        "call": "direct",
+        "outcome": "unavailable",
+        "reason": "unsupported_context"
+      },
+      {
+        "site": {
+          "path": "src/consumer.ts",
+          "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+          "span": {
+            "start": 311,
+            "end": 318
+          }
+        },
+        "start": {
+          "line": 8,
+          "column": 48
+        },
+        "spelling": "execute",
+        "caller": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/consumer.ts",
+            "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+            "span": {
+              "start": 291,
+              "end": 323
+            }
+          },
+          "name_span": {
+            "start": 300,
+            "end": 306
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "unavailable",
+        "reason": "unsupported_context"
+      },
+      {
+        "site": {
+          "path": "src/consumer.ts",
+          "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+          "span": {
+            "start": 382,
+            "end": 386
+          }
+        },
+        "start": {
+          "line": 9,
+          "column": 56
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/consumer.ts",
+            "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+            "span": {
+              "start": 326,
+              "end": 391
+            }
+          },
+          "name_span": {
+            "start": 342,
+            "end": 351
+          },
+          "kind": "function"
+        },
+        "call": "member",
+        "outcome": "unavailable",
+        "reason": "unsupported_context"
+      }
+    ],
+    "coverage": {
+      "limitations": [
+        "receiver_types",
+        "indirect_targets",
+        "macro_expansion",
+        "anonymous_callers",
+        "unsupported_bindings",
+        "unenumerated_aliases"
+      ],
+      "files_scanned": 3,
+      "files_remaining": 0,
+      "lookups": 10,
+      "omitted_items": 0,
+      "stopped_by": null,
+      "unsupported_files": 0,
+      "unresolved_imports": 0,
+      "scan_complete": true
+    }
+  }
+}
+--- stderr ---

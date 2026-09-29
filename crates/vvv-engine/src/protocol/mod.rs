@@ -124,3 +124,8 @@ pub use crate::query_store::QueryLimits;
 pub use cursor::Cursor;
 
 pub use failure::ContinuationRecovery;
+
+pub use crate::capabilities::relationships::{
+    Relationship, RelationshipBudget, RelationshipCoverage, RelationshipKind, RelationshipLimit,
+    RelationshipLimitation, RelationshipResolution, Relationships, RelationshipsQuery,
+};

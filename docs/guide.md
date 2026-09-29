@@ -848,10 +848,10 @@ For clients that use an `mcpServers` configuration, add:
 }
 ```
 
-The client must support MCP `2025-11-25`. The six tools are read-only:
-`vvv_discover`, `vvv_search`, `vvv_navigate`, `vvv_context`, `vvv_continue`, and
-`vvv_expand`. Their input and output schemas are available through `tools/list`.
-Discovery describes the engine's full command catalog; only those six tools are
+The client must support MCP `2025-11-25`. The seven tools are read-only:
+`vvv_discover`, `vvv_search`, `vvv_navigate`, `vvv_relationships`, `vvv_context`,
+`vvv_continue`, and `vvv_expand`. Their input and output schemas are available through `tools/list`.
+Discovery describes the engine's full command catalog; only those seven tools are
 exposed through MCP.
 
 For example, call `vvv_search` with
@@ -914,3 +914,49 @@ For `search`, `search_page`, or MCP `vvv_search`, pass the same filters as
 scope is echoed when nonempty and is retained through continuation. Ordinals and
 totals describe only the filtered results. Filtering happens before match
 collection; it does not narrow the workspace snapshot used for stale detection.
+
+## Call and reference relationships
+
+Use an exact source position to inspect a symbol's relationships:
+
+```console
+vvv relationships callers src/worker.rs:12:8
+vvv relationships callees src/worker.rs:12:8
+vvv relationships references src/worker.rs:12:8 --path src --package my-package
+```
+
+`callers` finds candidate call sites pointing into the selected symbol; `callees`
+examines calls owned directly by the selected named function or method.
+`references` also includes imports and non-call uses. Named import aliases and
+renamed re-exports are followed through the same resolver as navigation. For
+example, `use crate::worker::process as execute; execute()` can produce a confirmed
+call to `process`, with the `execute` occurrence as evidence.
+
+Confirmed results carry a target and resolution evidence. Ambiguous sites retain
+all candidates. Receiver calls such as `engine.run()`, unsupported binding scopes,
+and unknown names remain explicit unresolved sites. Calling a function pointer or
+callback parameter does not identify its runtime target; it is reported as indirect
+when the binding is known. A closure's calls are not attributed to its enclosing
+named function. Rust and TypeScript call expressions are supported; constructors,
+macro expansion, inferred receiver types, and indirect target analysis are outside
+this contract.
+
+Incoming scans examine the selected name plus aliases whose import bindings
+resolve to it (or include it among ambiguous targets). Unresolved import probes
+are counted in `coverage.unresolved_imports`. This finds renamed named imports without treating every same-spelled token as
+a confirmed relationship. It does not enumerate every alias: renamed members reached
+through namespace or wildcard imports and aliases assigned through variables may
+be missed. Unresolved incoming sites are possibilities, not assertions that the
+selected symbol is used there.
+
+`--path` and `--package` filter the scanned files using the same semantics as search.
+They do not restrict where a referenced definition may resolve. Increase
+`--max-files`, `--max-lookups`, `--max-items`, or `--max-bytes` when needed; defaults
+are 128 files, 1,024 lookups, 64 sites, and 16,384 compact JSON result bytes. Inspect
+`coverage` in `--json` output: `scan_complete` describes the candidate scan only,
+while `limitations` records the remaining analysis gaps. These queries do not
+return continuation cursors; rerun with a narrower scope or larger budget.
+
+MCP exposes this as `vvv_relationships`, with `kind` set to `callers`, `callees`, or
+`references`. Returned targets and source anchors can be passed to `vvv_navigate`
+or `vvv_context` to inspect the declarations.

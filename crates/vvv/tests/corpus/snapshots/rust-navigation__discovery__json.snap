@@ -18,8 +18,8 @@ exit 0
     "commands": [
       {
         "schemas": {
-          "arguments": "urn:vvv:schema:1:schema:arguments:129a4fdb16d9e592bff18442c397366823e32891a1e05de20434b94bdeb5667d",
-          "request": "urn:vvv:schema:1:schema:request:66041090020c145a023e3fc01f3f3f35446400939eea8f3d7fca83703556bbcf",
+          "arguments": "urn:vvv:schema:1:schema:arguments:302d1d55c7e13bc1f167dee51cfa09ee05776789ecdd981bb75c4b5ffb58a446",
+          "request": "urn:vvv:schema:1:schema:request:bd8b643a2f09b453fcd2a739e2906f460129336f236f6268ddd33ddde339c1d9",
           "result": "urn:vvv:schema:1:schema:result:0cb1e4287c7574a39efe0bd8f791785ba3093dc8fcd23e29a9c4eb8499be5ad3",
           "response": "urn:vvv:schema:1:schema:response:ea76060bc41eb75a4687a087ceca0f86bf98b5f6b098df138795793590ca9479"
         },
@@ -132,6 +132,23 @@ exit 0
         "parameters": [
           "origin",
           "selection"
+        ]
+      },
+      {
+        "schemas": {
+          "arguments": "urn:vvv:schema:1:relationships:arguments:ec256585d7581e0cd891d70f91a4d3cf59dc86f576d0bf16e840552a3a2012d6",
+          "request": "urn:vvv:schema:1:relationships:request:0a32c62b1f62360674d1c2cf0b94be40976204b186bc39ef6388c1eba68059e3",
+          "result": "urn:vvv:schema:1:relationships:result:3733e4bec38876f39db1811101e26b10af91a556dc030e7561cddbcf86625ec9",
+          "response": "urn:vvv:schema:1:relationships:response:ea04f9aa9fc344ae19a30b06e08ed973f1346325c1dbb36c77ce3b139e5d7947"
+        },
+        "command": "relationships",
+        "read_only": true,
+        "parameters": [
+          "origin",
+          "selection",
+          "kind",
+          "scope",
+          "budget"
         ]
       },
       {

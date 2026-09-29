@@ -1,0 +1,1083 @@
+{
+  "$defs": {
+    "Address": {
+      "description": "A position in a language's namespace: the package it belongs to and the\npath within it — `fff :: [grep, types]` for a Rust module, path\ncomponents for a TypeScript file. Prefix relations, which are what a move\ncares about, never hold across packages.",
+      "properties": {
+        "package": {
+          "$ref": "#/$defs/PackageId"
+        },
+        "path": {
+          "items": {
+            "$ref": "#/$defs/Name"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "package",
+        "path"
+      ],
+      "type": "object"
+    },
+    "CallKind": {
+      "enum": [
+        "direct",
+        "member",
+        "indirect"
+      ],
+      "type": "string"
+    },
+    "ContentId": {
+      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "type": "string"
+    },
+    "ContinuationRecovery": {
+      "description": "A recovery action clients can branch on without parsing the error message.",
+      "enum": [
+        "restart_query",
+        "correct_cursor",
+        "increase_budget_or_narrow_query",
+        "narrow_query"
+      ],
+      "type": "string"
+    },
+    "DefinitionLocation": {
+      "description": "Enough information to select, open, or request context for a declaration.",
+      "properties": {
+        "evidence": {
+          "$ref": "#/$defs/ResolutionEvidence"
+        },
+        "id": {
+          "$ref": "#/$defs/MatchId"
+        },
+        "name": {
+          "type": "string"
+        },
+        "start": {
+          "$ref": "#/$defs/Position"
+        },
+        "target": {
+          "$ref": "#/$defs/SymbolRef"
+        }
+      },
+      "required": [
+        "target",
+        "id",
+        "name",
+        "start",
+        "evidence"
+      ],
+      "type": "object"
+    },
+    "ErrorCode": {
+      "description": "The kind of failure, stable across releases; the message is not.",
+      "oneOf": [
+        {
+          "enum": [
+            "cursor_expired",
+            "invalid_cursor",
+            "retention_limit",
+            "output_limit"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "cancelled",
+          "description": "The caller cancelled the operation.",
+          "type": "string"
+        },
+        {
+          "const": "incomplete",
+          "description": "Resolution stopped before a complete answer was available.",
+          "type": "string"
+        },
+        {
+          "const": "bad_request",
+          "description": "The request could not be read: not JSON, or not a known command.",
+          "type": "string"
+        },
+        {
+          "const": "bad_query",
+          "description": "A query with none of pattern, kind, symbol, name.",
+          "type": "string"
+        },
+        {
+          "const": "bad_pattern",
+          "description": "A pattern or node kind the language's grammar rejects.",
+          "type": "string"
+        },
+        {
+          "const": "bad_selection",
+          "description": "A selection naming rows or ids the search did not find.",
+          "type": "string"
+        },
+        {
+          "const": "bad_template",
+          "description": "A template naming a capture the match does not have.",
+          "type": "string"
+        },
+        {
+          "const": "no_such_symbol",
+          "description": "No declaration by that name (and kind).",
+          "type": "string"
+        },
+        {
+          "const": "ambiguous_symbol",
+          "description": "Several declarations share the name; `declared_in` picks one.",
+          "type": "string"
+        },
+        {
+          "const": "no_language",
+          "description": "No registered language claims the file.",
+          "type": "string"
+        },
+        {
+          "const": "no_layout",
+          "description": "The language has no layout: paths cannot be followed, files not moved.",
+          "type": "string"
+        },
+        {
+          "const": "no_such_position",
+          "description": "A position past the end of the file.",
+          "type": "string"
+        },
+        {
+          "const": "exists",
+          "description": "The destination already exists.",
+          "type": "string"
+        },
+        {
+          "const": "not_found",
+          "description": "A file, or the file declaring a name, could not be found.",
+          "type": "string"
+        },
+        {
+          "const": "unmovable",
+          "description": "The layout refuses the move: a root, across packages, into itself.",
+          "type": "string"
+        },
+        {
+          "const": "conflict",
+          "description": "Two edits of one plan overlap, or a file is moved twice.",
+          "type": "string"
+        },
+        {
+          "const": "stale",
+          "description": "A file changed since the plan (or the apply to undo) was made.",
+          "type": "string"
+        },
+        {
+          "const": "no_history",
+          "description": "Nothing to undo, or a history file that cannot be read.",
+          "type": "string"
+        },
+        {
+          "const": "io",
+          "description": "Reading or writing the tree failed.",
+          "type": "string"
+        },
+        {
+          "const": "recovery_failed",
+          "description": "Recovery could not restore or verify every attempted effect.",
+          "type": "string"
+        }
+      ]
+    },
+    "Failure": {
+      "description": "A failed request, as the wire carries it.",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "continuation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContinuationRecovery"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hint": {
+          "description": "What to try instead, when there is something.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "output_limit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OutputLimit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recovery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Recovery"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Effects that could not be restored after a failed mutation."
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "type": "object"
+    },
+    "LanguageId": {
+      "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
+      "type": "string"
+    },
+    "MatchId": {
+      "description": "Content-derived identifier: the same file, range and text yield the same id\nacross runs, so a selection made from one `search` can drive a later command.",
+      "type": "string"
+    },
+    "Name": {
+      "description": "One identifier: a module, a declaration, a file stem. Compared by text.",
+      "type": "string"
+    },
+    "OutputLimit": {
+      "properties": {
+        "anchor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceAnchor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_bytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "required_bytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_bytes",
+        "required_bytes"
+      ],
+      "type": "object"
+    },
+    "PackageId": {
+      "description": "The name a package goes by in paths: a Rust crate's lib name (`fff`, not\n`fff-search`), a TypeScript package's name. The layout decides the spelling.",
+      "type": "string"
+    },
+    "Position": {
+      "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
+      "properties": {
+        "column": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "line": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "column"
+      ],
+      "type": "object"
+    },
+    "ProviderVersion": {
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "revision"
+      ],
+      "type": "object"
+    },
+    "Recovery": {
+      "description": "A recovery result; unknown states are separate from confirmed residual effects.",
+      "properties": {
+        "cause": {
+          "$ref": "#/$defs/Failure"
+        },
+        "failures": {
+          "items": {
+            "$ref": "#/$defs/RecoveryIssue"
+          },
+          "type": "array"
+        },
+        "remaining": {
+          "items": {
+            "$ref": "#/$defs/RecoveryEffect"
+          },
+          "type": "array"
+        },
+        "unverified": {
+          "items": {
+            "$ref": "#/$defs/RecoveryUnverified"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "cause",
+        "failures",
+        "remaining",
+        "unverified"
+      ],
+      "type": "object"
+    },
+    "RecoveryEffect": {
+      "properties": {
+        "expected": {
+          "$ref": "#/$defs/RecoveryState"
+        },
+        "observed": {
+          "$ref": "#/$defs/RecoveryState"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        }
+      },
+      "required": [
+        "path",
+        "expected",
+        "observed"
+      ],
+      "type": "object"
+    },
+    "RecoveryIssue": {
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "message": {
+          "type": "string"
+        },
+        "operation": {
+          "$ref": "#/$defs/RecoveryOperation"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        }
+      },
+      "required": [
+        "operation",
+        "path",
+        "code",
+        "message"
+      ],
+      "type": "object"
+    },
+    "RecoveryOperation": {
+      "enum": [
+        "restore_file",
+        "restore_move",
+        "restore_directory",
+        "remove_file",
+        "remove_directory"
+      ],
+      "type": "string"
+    },
+    "RecoveryState": {
+      "oneOf": [
+        {
+          "properties": {
+            "kind": {
+              "const": "absent",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "fingerprint": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "file",
+              "type": "string"
+            },
+            "spelling": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/RelPath"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "fingerprint"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "kind": {
+              "const": "directory",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "kind": {
+              "const": "other",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "RecoveryUnverified": {
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "expected": {
+          "$ref": "#/$defs/RecoveryState"
+        },
+        "message": {
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        }
+      },
+      "required": [
+        "path",
+        "expected",
+        "code",
+        "message"
+      ],
+      "type": "object"
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "Relationship": {
+      "oneOf": [
+        {
+          "properties": {
+            "evidence": {
+              "$ref": "#/$defs/ResolutionEvidence"
+            },
+            "outcome": {
+              "const": "confirmed",
+              "type": "string"
+            },
+            "target": {
+              "$ref": "#/$defs/SymbolRef"
+            }
+          },
+          "required": [
+            "outcome",
+            "target",
+            "evidence"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "candidates": {
+              "items": {
+                "$ref": "#/$defs/DefinitionLocation"
+              },
+              "type": "array"
+            },
+            "outcome": {
+              "const": "ambiguous",
+              "type": "string"
+            }
+          },
+          "required": [
+            "outcome",
+            "candidates"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "outcome": {
+              "const": "unavailable",
+              "type": "string"
+            },
+            "reason": {
+              "$ref": "#/$defs/UnavailableReason"
+            }
+          },
+          "required": [
+            "outcome",
+            "reason"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "A call to a local/parameter/value binding does not identify the invoked function.",
+          "properties": {
+            "binding": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/SymbolRef"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "outcome": {
+              "const": "indirect",
+              "type": "string"
+            }
+          },
+          "required": [
+            "outcome",
+            "binding"
+          ],
+          "type": "object"
+        }
+      ],
+      "properties": {
+        "call": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CallKind"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "None denotes a non-call reference, including imports and value references."
+        },
+        "caller": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Owner of a call site; absent for non-call references and anonymous callables."
+        },
+        "site": {
+          "$ref": "#/$defs/SourceAnchor",
+          "description": "Exact identifier (or unsupported callee expression) providing the evidence."
+        },
+        "spelling": {
+          "type": "string"
+        },
+        "start": {
+          "$ref": "#/$defs/Position"
+        }
+      },
+      "required": [
+        "site",
+        "start",
+        "spelling",
+        "caller",
+        "call"
+      ],
+      "type": "object"
+    },
+    "RelationshipCoverage": {
+      "properties": {
+        "files_remaining": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "files_scanned": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "limitations": {
+          "description": "Known gaps remain even when the candidate scan finishes.",
+          "items": {
+            "$ref": "#/$defs/RelationshipLimitation"
+          },
+          "type": "array"
+        },
+        "lookups": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "omitted_items": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "scan_complete": {
+          "description": "Completion of the candidate scan, not proof of a complete runtime call graph.",
+          "type": "boolean"
+        },
+        "stopped_by": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelationshipLimit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unresolved_imports": {
+          "description": "Import bindings that could not be resolved while discovering alias spellings.",
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "unsupported_files": {
+          "description": "Files whose plugin does not provide syntactic call facts.",
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "limitations",
+        "files_scanned",
+        "files_remaining",
+        "lookups",
+        "omitted_items",
+        "stopped_by",
+        "unsupported_files",
+        "unresolved_imports",
+        "scan_complete"
+      ],
+      "type": "object"
+    },
+    "RelationshipKind": {
+      "enum": [
+        "callers",
+        "callees",
+        "references"
+      ],
+      "type": "string"
+    },
+    "RelationshipLimit": {
+      "enum": [
+        "files",
+        "lookups",
+        "items",
+        "bytes"
+      ],
+      "type": "string"
+    },
+    "RelationshipLimitation": {
+      "enum": [
+        "receiver_types",
+        "indirect_targets",
+        "macro_expansion",
+        "anonymous_callers",
+        "unsupported_bindings",
+        "unenumerated_aliases"
+      ],
+      "type": "string"
+    },
+    "Relationships": {
+      "properties": {
+        "coverage": {
+          "$ref": "#/$defs/RelationshipCoverage"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/Relationship"
+          },
+          "type": "array"
+        },
+        "kind": {
+          "$ref": "#/$defs/RelationshipKind"
+        },
+        "scope": {
+          "$ref": "#/$defs/SearchScope"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/SnapshotId"
+        },
+        "subject": {
+          "$ref": "#/$defs/ResolutionOutcome"
+        }
+      },
+      "required": [
+        "snapshot",
+        "subject",
+        "kind",
+        "scope",
+        "items",
+        "coverage"
+      ],
+      "type": "object"
+    },
+    "ResolutionEvidence": {
+      "properties": {
+        "addresses": {
+          "description": "The binding's address followed by each re-export address, in order.",
+          "items": {
+            "$ref": "#/$defs/Address"
+          },
+          "type": "array"
+        },
+        "semantic": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProviderVersion"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "addresses"
+      ],
+      "type": "object"
+    },
+    "ResolutionOutcome": {
+      "oneOf": [
+        {
+          "description": "Enough information to select, open, or request context for a declaration.",
+          "properties": {
+            "container": {
+              "$ref": "#/$defs/SymbolRef"
+            },
+            "evidence": {
+              "$ref": "#/$defs/ResolutionEvidence"
+            },
+            "id": {
+              "$ref": "#/$defs/MatchId"
+            },
+            "name": {
+              "type": "string"
+            },
+            "outcome": {
+              "const": "resolved",
+              "type": "string"
+            },
+            "start": {
+              "$ref": "#/$defs/Position"
+            },
+            "target": {
+              "$ref": "#/$defs/SymbolRef"
+            }
+          },
+          "required": [
+            "outcome",
+            "target",
+            "id",
+            "name",
+            "start",
+            "evidence",
+            "container"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "candidates": {
+              "items": {
+                "$ref": "#/$defs/DefinitionLocation"
+              },
+              "type": "array"
+            },
+            "outcome": {
+              "const": "ambiguous",
+              "type": "string"
+            }
+          },
+          "required": [
+            "outcome",
+            "candidates"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "outcome": {
+              "const": "unavailable",
+              "type": "string"
+            },
+            "reason": {
+              "$ref": "#/$defs/UnavailableReason"
+            }
+          },
+          "required": [
+            "outcome",
+            "reason"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "SearchScope": {
+      "additionalProperties": false,
+      "description": "Explicit file/directory prefixes and owning package names or IDs.\nAlternatives within each list are ORed; the two lists are intersected.",
+      "properties": {
+        "packages": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "paths": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RelPath"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "paths",
+        "packages"
+      ],
+      "type": "object"
+    },
+    "SnapshotId": {
+      "$ref": "#/$defs/ContentId",
+      "description": "Opaque identity of captured source and project inputs; not a disk transaction."
+    },
+    "SourceAnchor": {
+      "properties": {
+        "content": {
+          "$ref": "#/$defs/ContentId"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        }
+      },
+      "required": [
+        "path",
+        "content",
+        "span"
+      ],
+      "type": "object"
+    },
+    "Span": {
+      "description": "Half-open byte range `[start, end)` inside a single file.",
+      "properties": {
+        "end": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "start": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "type": "object"
+    },
+    "SymbolKind": {
+      "description": "What a declaration declares, in vocabulary shared by every language.",
+      "oneOf": [
+        {
+          "enum": [
+            "type-parameter",
+            "parameter",
+            "function",
+            "method",
+            "struct",
+            "class",
+            "enum",
+            "variant",
+            "trait",
+            "interface",
+            "type-alias",
+            "const",
+            "static",
+            "variable",
+            "field",
+            "module",
+            "macro"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "impl",
+          "description": "An `impl` block, named after the type it is for. Not a declaration a\npath can reach; it travels with its type when the type moves.",
+          "type": "string"
+        }
+      ]
+    },
+    "SymbolRef": {
+      "description": "A declaration in one source version, not an identity across edits.",
+      "properties": {
+        "declaration": {
+          "$ref": "#/$defs/SourceAnchor"
+        },
+        "kind": {
+          "$ref": "#/$defs/SymbolKind"
+        },
+        "language": {
+          "$ref": "#/$defs/LanguageId"
+        },
+        "name_span": {
+          "$ref": "#/$defs/Span"
+        }
+      },
+      "required": [
+        "language",
+        "declaration",
+        "name_span",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "UnavailableReason": {
+      "enum": [
+        "no_identifier",
+        "unresolved",
+        "unsupported_context",
+        "external_source_unavailable",
+        "cyclic_imports"
+      ],
+      "type": "string"
+    }
+  },
+  "$id": "urn:vvv:schema:1:relationships:response:ea04f9aa9fc344ae19a30b06e08ed973f1346325c1dbb36c77ce3b139e5d7947",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Top-level envelope of every `--json` response.",
+  "oneOf": [
+    {
+      "properties": {
+        "result": {
+          "$ref": "#/$defs/Relationships"
+        },
+        "schema": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "status": {
+          "const": "ok",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "schema",
+        "result"
+      ],
+      "type": "object"
+    },
+    {
+      "description": "A failed request, as the wire carries it.",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "continuation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContinuationRecovery"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hint": {
+          "description": "What to try instead, when there is something.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "output_limit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OutputLimit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recovery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Recovery"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Effects that could not be restored after a failed mutation."
+        },
+        "schema": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "status": {
+          "const": "error",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "schema",
+        "code",
+        "message"
+      ],
+      "type": "object"
+    }
+  ],
+  "title": "relationships response"
+}

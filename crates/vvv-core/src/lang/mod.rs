@@ -70,6 +70,10 @@ impl fmt::Debug for LanguageId {
 /// live. A language module contributes one of these beside its semantics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Grammar {
+    pub navigation_values: &'static [&'static str],
+    pub calls: &'static [crate::CallRule],
+    pub callees: &'static [crate::CalleeRule],
+    pub anonymous_callables: &'static [&'static str],
     pub pattern_containers: &'static [&'static str],
     pub qualified_imports: &'static [crate::QualifiedImportRule],
     pub bindings: &'static [crate::BindingRule],
@@ -95,6 +99,10 @@ pub struct Grammar {
 
 impl Grammar {
     pub const EMPTY: Self = Self {
+        navigation_values: &[],
+        calls: &[],
+        callees: &[],
+        anonymous_callables: &[],
         pattern_containers: &[],
         qualified_imports: &[],
         bindings: &[],

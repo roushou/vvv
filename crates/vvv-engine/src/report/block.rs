@@ -49,6 +49,7 @@ pub enum Block {
     Sites(Vec<Site>),
     /// Compact resolved or candidate declaration locations.
     Locations(Vec<crate::DefinitionLocation>),
+    Relationships(Vec<crate::Relationship>),
     /// Declarations nothing refers to, and the unsure-token count of each.
     Dead(Vec<Unreferenced>),
     /// A package's exposed names, and how many import each.

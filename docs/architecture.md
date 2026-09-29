@@ -172,6 +172,21 @@ compact JSON bytes, preserves UTF-8 source boundaries, and reports omissions; it
 never narrows an ambiguous candidate set to fit. Context does not broaden mutation
 resolution or use the optional semantic provider.
 
+`RelationshipsQuery` owns bounded caller, callee, and reference-site queries. Grammar
+call rules lower call expressions to `CallSite` facts (callee span, syntactic kind,
+and nearest named callable); anonymous callables stop ownership attribution. Value
+navigation is enabled only in understood lexical scopes. Top-level functions in
+the same file contribute declaration evidence even when the layout cannot address
+an integration-test root; competing local and imported candidates remain explicit. Each relationship resolves
+through the shared navigation engine; a called parameter or variable is an indirect
+target, never an inferred function. Incoming candidates include the original spelling
+and explicit local import bindings, so named aliases and re-exports can resolve
+without a language server. Receiver types, indirect targets, and unenumerated aliases
+remain explicit limitations. The capability captures and revalidates a fresh
+`QuerySnapshot`, reports work/coverage limits, and publishes through `relationships`
+and the thin MCP `vvv_relationships` tool. No relationship state or source inference
+lives in an interface, and this query does not change mutation resolution.
+
 `DiscoveryQuery` describes the build's commands, languages, and budgets without a
 tree walk. `Call` retains wire data in `protocol`; its execution lives in
 `capabilities/session.rs`, which enforces optional result budgets before returning

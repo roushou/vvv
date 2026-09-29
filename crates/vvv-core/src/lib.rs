@@ -15,6 +15,7 @@
 //! that ancestor, and the remaining builders (`field`, `leading`,
 //! `visibility`) say where the rest of the declaration lives.
 
+pub mod calls;
 pub mod edit;
 pub mod facts;
 pub mod highlight;
@@ -30,6 +31,7 @@ pub mod semantics;
 pub mod symbol;
 pub mod text;
 
+pub use calls::{CallKind, CallRule, CallSite, CalleeRule};
 pub use edit::{ChangeSet, Edit, EditConflict};
 pub use facts::{Facts, Token};
 pub use highlight::{Highlight, HighlightKind, HighlightRule};

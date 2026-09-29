@@ -390,6 +390,29 @@ impl Navigation<'_, '_> {
             candidate.scope(&ns)?.navigation(span, name, &fragment)
         };
         let mut candidates = Vec::new();
+        // A top-level function in this file is a lexical fact even when the
+        // layout cannot address the file (for example an integration-test root).
+        // Keep all matching declarations and module candidates; do not turn a
+        // same-spelling fallback into proof or discard ambiguity.
+        if namespace == vvv_core::BindingNamespace::Value && facts.lexical_tokens.contains(&span) {
+            for symbol in facts.symbols.iter().filter(|s| {
+                s.name == name
+                    && s.kind == SymbolKind::Function
+                    && !facts
+                        .symbols
+                        .iter()
+                        .any(|outer| outer.span != s.span && outer.span.contains(&s.span))
+            }) {
+                candidates.push(DefinitionCandidate {
+                    target: Self::symbol(&candidate, symbol),
+                    declaration: Self::declaration(&candidate, symbol)?,
+                    evidence: ResolutionEvidence {
+                        semantic: None,
+                        addresses: vec![],
+                    },
+                });
+            }
+        }
         let mut reason = UnavailableReason::Unresolved;
         for addresses in [bindings.direct, bindings.opened] {
             for address in addresses {

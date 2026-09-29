@@ -94,8 +94,11 @@ result caching or changing the interactive preview protocol.
 ## Context and agent interface coverage
 
 Context incoming scans are bounded and same-spelling only. Alias-complete
-references, caller/callee classification, structural test identification, signature
-versus body expansion need dedicated evidence and protocol contracts.
+references, structural test identification, and signature versus body expansion
+need dedicated evidence and protocol contracts. Relationship queries classify call
+expressions and follow named imports, but receiver-dependent targets, wildcard and
+namespace alias enumeration, anonymous caller identities, and resumable relationship
+scans remain open.
 Session output budgets do not impose execution deadlines. MCP cancellation is
 cooperative; parser invocations and individual filesystem operations are not preempted. Measure whole-workspace validation latency for
 paged queries on large repositories before narrowing their invalidation scope.

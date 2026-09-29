@@ -1470,3 +1470,102 @@ fn typescript_navigation_pagination_golden() {
         13,
     );
 }
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_relationships_golden() {
+    golden(&Corpus {
+        name: "rust-relationships",
+        cases: &[
+            (
+                "ambiguous-call",
+                &[
+                    "relationships",
+                    "callers",
+                    "tests/ambiguous.rs:2:4",
+                    "--path",
+                    "tests/ambiguous.rs",
+                ],
+            ),
+            (
+                "test-root",
+                &[
+                    "relationships",
+                    "callers",
+                    "tests/local.rs:1:4",
+                    "--path",
+                    "tests/local.rs",
+                ],
+            ),
+            (
+                "callers",
+                &[
+                    "relationships",
+                    "callers",
+                    "src/origin.rs:1:8",
+                    "--max-bytes",
+                    "32768",
+                ],
+            ),
+            (
+                "callees",
+                &["relationships", "callees", "src/consumer.rs:3:8"],
+            ),
+            (
+                "references",
+                &[
+                    "relationships",
+                    "references",
+                    "src/origin.rs:1:8",
+                    "--max-bytes",
+                    "32768",
+                ],
+            ),
+            (
+                "limited",
+                &[
+                    "relationships",
+                    "callers",
+                    "src/origin.rs:1:8",
+                    "--max-lookups",
+                    "1",
+                ],
+            ),
+        ],
+        mutations: Vec::new,
+    });
+}
+#[cfg(feature = "typescript")]
+#[test]
+fn ts_relationships_golden() {
+    golden(&Corpus {
+        name: "ts-relationships",
+        cases: &[
+            (
+                "callers",
+                &[
+                    "relationships",
+                    "callers",
+                    "src/origin.ts:1:17",
+                    "--max-bytes",
+                    "32768",
+                ],
+            ),
+            (
+                "callees",
+                &["relationships", "callees", "src/consumer.ts:3:17"],
+            ),
+            (
+                "references",
+                &[
+                    "relationships",
+                    "references",
+                    "src/origin.ts:1:17",
+                    "--max-bytes",
+                    "32768",
+                ],
+            ),
+        ],
+        mutations: Vec::new,
+    });
+}

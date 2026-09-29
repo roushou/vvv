@@ -332,3 +332,32 @@ mod lexical_navigation_tests {
         );
     }
 }
+
+#[cfg(test)]
+mod call_tests {
+    use super::*;
+    use vvv_core::{CallKind, Language};
+    #[test]
+    fn call_facts_distinguish_dispatch_and_anonymous_ownership() {
+        let source = "function outer() { work<number>(); api.work(); obj[method](); factory()(); const cb = () => work(); function nested() { work(); } }";
+        let facts = TypeScript::new().facts(source).unwrap();
+        assert!(facts.calls_supported);
+        let outer = facts.symbols.iter().find(|s| s.name == "outer").unwrap();
+        let nested = facts.symbols.iter().find(|s| s.name == "nested").unwrap();
+        let calls = &facts.calls;
+        assert!(
+            calls
+                .iter()
+                .any(|c| c.kind == CallKind::Direct && c.owner == Some(outer.name_span))
+        );
+        assert!(calls.iter().any(|c| c.kind == CallKind::Member));
+        assert!(calls.iter().any(|c| c.kind == CallKind::Indirect));
+        let work: Vec<_> = calls
+            .iter()
+            .filter(|c| &source[c.callee.start..c.callee.end] == "work")
+            .collect();
+        assert!(work.iter().any(|c| c.owner.is_none()));
+        assert!(work.iter().any(|c| c.owner == Some(nested.name_span)));
+        assert!(calls.iter().all(|c| c.span.contains(&c.callee)));
+    }
+}

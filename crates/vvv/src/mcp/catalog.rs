@@ -8,15 +8,17 @@ use vvv_engine::{Call, Command, SchemaContract, SchemaQuery};
 pub(crate) enum ToolKind {
     Discover,
     Search,
+    Relationships,
     Navigate,
     Context,
     Continue,
     Expand,
 }
 impl ToolKind {
-    pub const ALL: [Self; 6] = [
+    pub const ALL: [Self; 7] = [
         Self::Discover,
         Self::Search,
+        Self::Relationships,
         Self::Navigate,
         Self::Context,
         Self::Continue,
@@ -26,6 +28,7 @@ impl ToolKind {
         match self {
             Self::Discover => "vvv_discover",
             Self::Search => "vvv_search",
+            Self::Relationships => "vvv_relationships",
             Self::Navigate => "vvv_navigate",
             Self::Context => "vvv_context",
             Self::Continue => "vvv_continue",
@@ -36,6 +39,7 @@ impl ToolKind {
         match self {
             Self::Discover => Command::Discover,
             Self::Search => Command::SearchPage,
+            Self::Relationships => Command::Relationships,
             Self::Navigate => Command::Resolve,
             Self::Context => Command::ContextPage,
             Self::Continue => Command::Continue,

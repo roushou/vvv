@@ -48,6 +48,10 @@ impl Call {
             }
             if let Some(limit) = self.max_output_bytes {
                 match &mut self.request {
+                    crate::Request::Relationships(query) => {
+                        query.budget.validate()?;
+                        query.budget.max_bytes = query.budget.max_bytes.min(limit);
+                    }
                     crate::Request::SearchPage(query) => {
                         query.page.validate()?;
                         query.page.max_bytes = query.page.max_bytes.min(limit);

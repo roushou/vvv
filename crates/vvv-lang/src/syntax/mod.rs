@@ -5,6 +5,7 @@
 //! module; languages contribute only data (`SymbolRule` tables, an
 //! `ImportGrammar`, identifier kinds).
 
+mod calls;
 mod compiled;
 #[cfg(test)]
 pub(crate) mod fixture;
