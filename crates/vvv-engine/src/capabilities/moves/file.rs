@@ -22,6 +22,7 @@ use crate::{
 
 /// Move a file and make every reference to it follow.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct MoveIntent {
     pub from: PathBuf,
     pub to: PathBuf,
@@ -38,6 +39,7 @@ impl MoveIntent {
 
 /// `vvv move`: a file or directory moved, its importers respelled.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Move {
     pub intent: MoveIntent,
     /// Preview or successful application with its history entry.

@@ -13,6 +13,8 @@ repository = "https://github.com/roushou/vvv"
 rust-version = "1.90"
 
 [workspace.dependencies]
+jsonschema = { version = "0.33.0", default-features = false }
+schemars = "1.2.2"
 vvv-core = { version = "0.1.0", path = "crates/vvv-core" }
 vvv-engine = { version = "0.1.0", path = "crates/vvv-engine" }
 vvv-lang = { version = "0.1.0", path = "crates/vvv-lang" }

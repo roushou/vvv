@@ -1,7 +1,7 @@
 //! The runtime: what holds the graph and runs commands against it.
 
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard};
 
 use vvv_core::{LanguageRegistry, Oracle};
@@ -22,6 +22,9 @@ pub struct Engine {
     operation: Arc<Mutex<()>>,
     /// Invalidation does not acquire or refresh the graph.
     dirty: Arc<AtomicBool>,
+    queries: Arc<Mutex<crate::query_store::QueryStore>>,
+    query_revision: Arc<AtomicU64>,
+    cancellation: Option<crate::ReadCancellation>,
 }
 
 impl std::fmt::Debug for Engine {
@@ -48,6 +51,9 @@ impl Engine {
             graph: Arc::new(Mutex::new(graph)),
             operation: Arc::new(Mutex::new(())),
             dirty: Arc::new(AtomicBool::new(false)),
+            queries: Arc::new(Mutex::new(crate::query_store::QueryStore::default())),
+            query_revision: Arc::new(AtomicU64::new(0)),
+            cancellation: None,
         }
     }
 
@@ -70,87 +76,108 @@ impl Engine {
     /// ```
     pub fn run(&self, request: crate::Request) -> Result<Execution, EngineError> {
         let _operation = self.operation();
-        Ok(match request {
-            crate::Request::Discover(query) => {
-                Execution::Completed(crate::Answer::Discover(query.execute(self)))
-            }
-            crate::Request::Context(query) => Execution::Completed(crate::Answer::Context(
-                query.execute_in(&mut *self.graph()?)?,
-            )),
-            crate::Request::Navigate(query) => Execution::Completed(crate::Answer::Navigate(
-                query.execute_in(&mut *self.graph()?)?,
-            )),
-            crate::Request::Search(query) => Execution::Completed(crate::Answer::Search(
-                crate::SearchQuery::from(query).execute_in(&mut *self.graph()?)?,
-            )),
-            crate::Request::Outline(query) => Execution::Completed(crate::Answer::Outline(
-                query.execute_in(&mut *self.graph()?, self.workspace())?,
-            )),
-            crate::Request::References(query) => Execution::Completed(crate::Answer::References(
-                query.execute_in(&mut *self.graph()?)?,
-            )),
-            crate::Request::Where(query) => Execution::Completed(crate::Answer::Where(
-                query.execute_in(&mut *self.graph()?, self.workspace())?,
-            )),
-            crate::Request::Deps(query) => Execution::Completed(crate::Answer::Deps(
-                query.execute_in(&mut *self.graph()?, self.workspace())?,
-            )),
-            crate::Request::Explain(query) => Execution::Completed(crate::Answer::Explain(
-                query.execute_in(&mut *self.graph()?, self.workspace())?,
-            )),
-            crate::Request::Surface(query) => Execution::Completed(crate::Answer::Surface(
-                query.execute_in(&mut *self.graph()?)?,
-            )),
-            crate::Request::Impact(query) => Execution::Completed(crate::Answer::Impact(
-                query.execute_in(&mut *self.graph()?)?,
-            )),
-            crate::Request::Dead(query) => {
-                Execution::Completed(crate::Answer::Dead(query.execute_in(&mut *self.graph()?)?))
-            }
-            crate::Request::Imports(query) => Execution::Completed(crate::Answer::Imports(
-                query.execute_in(&mut *self.graph()?, self.workspace())?,
-            )),
-            crate::Request::File(query) => Execution::Completed(crate::Answer::File(
-                query.execute_in(self.workspace(), self.languages())?,
-            )),
-            crate::Request::Rename { intent, apply } => {
-                let planned = {
-                    let mut graph = self.graph()?;
-                    intent.plan_in(&mut graph, self.workspace())?
-                };
-                self.mutation(planned, apply)?
-            }
-            crate::Request::Move { intent, apply } => {
-                let planned = {
-                    let mut graph = self.graph()?;
-                    intent.plan_in(&mut graph, self.workspace())?
-                };
-                self.mutation(planned, apply)?
-            }
-            crate::Request::MoveSymbol { intent, apply } => {
-                let planned = {
-                    let mut graph = self.graph()?;
-                    intent.plan_in(&mut graph, self.workspace())?
-                };
-                self.mutation(planned, apply)?
-            }
-            crate::Request::Rewrite { intent, apply } => {
-                let planned = {
-                    let mut graph = self.graph()?;
-                    intent.plan_in(&mut graph, self.workspace())?
-                };
-                self.mutation(planned, apply)?
-            }
-            crate::Request::Batch { intent, apply } => {
-                self.mutation(intent.plan_in(self)?, apply)?
-            }
-            crate::Request::History => Execution::Completed(crate::Answer::History(
-                crate::Ledger::new(self).history_in()?,
-            )),
-            crate::Request::Undo => {
-                Execution::Completed(crate::Answer::Undo(crate::Ledger::new(self).undo_in()?))
-            }
-        })
+        self.check_read()?;
+        let result = (|| {
+            Ok(match request {
+                #[cfg(feature = "schema")]
+                crate::Request::Schema(query) => {
+                    Execution::Completed(crate::Answer::Schema(query.execute()?))
+                }
+                crate::Request::SearchPage(query) => {
+                    Execution::Completed(crate::Answer::SearchPage(query.execute_in(self)?))
+                }
+                crate::Request::ContextPage(query) => {
+                    Execution::Completed(crate::Answer::ContextPage(query.execute_in(self)?))
+                }
+                crate::Request::Continue(query) => {
+                    Execution::Completed(crate::Answer::Continue(query.execute_in(self)?))
+                }
+                crate::Request::Expand(query) => {
+                    Execution::Completed(crate::Answer::Expand(query.execute_in(self)?))
+                }
+                crate::Request::Discover(query) => {
+                    Execution::Completed(crate::Answer::Discover(query.execute(self)))
+                }
+                crate::Request::Context(query) => Execution::Completed(crate::Answer::Context(
+                    query.execute_in(&mut *self.graph()?)?,
+                )),
+                crate::Request::Navigate(query) => Execution::Completed(crate::Answer::Navigate(
+                    query.execute_in(&mut *self.graph()?)?,
+                )),
+                crate::Request::Search(query) => Execution::Completed(crate::Answer::Search(
+                    crate::SearchQuery::from(query).execute_in(&mut *self.graph()?)?,
+                )),
+                crate::Request::Outline(query) => Execution::Completed(crate::Answer::Outline(
+                    query.execute_in(&mut *self.graph()?, self.workspace())?,
+                )),
+                crate::Request::References(query) => Execution::Completed(
+                    crate::Answer::References(query.execute_in(&mut *self.graph()?)?),
+                ),
+                crate::Request::Where(query) => Execution::Completed(crate::Answer::Where(
+                    query.execute_in(&mut *self.graph()?, self.workspace())?,
+                )),
+                crate::Request::Deps(query) => Execution::Completed(crate::Answer::Deps(
+                    query.execute_in(&mut *self.graph()?, self.workspace())?,
+                )),
+                crate::Request::Explain(query) => Execution::Completed(crate::Answer::Explain(
+                    query.execute_in(&mut *self.graph()?, self.workspace())?,
+                )),
+                crate::Request::Surface(query) => Execution::Completed(crate::Answer::Surface(
+                    query.execute_in(&mut *self.graph()?)?,
+                )),
+                crate::Request::Impact(query) => Execution::Completed(crate::Answer::Impact(
+                    query.execute_in(&mut *self.graph()?)?,
+                )),
+                crate::Request::Dead(query) => Execution::Completed(crate::Answer::Dead(
+                    query.execute_in(&mut *self.graph()?)?,
+                )),
+                crate::Request::Imports(query) => Execution::Completed(crate::Answer::Imports(
+                    query.execute_in(&mut *self.graph()?, self.workspace())?,
+                )),
+                crate::Request::File(query) => Execution::Completed(crate::Answer::File(
+                    query.execute_in(self.workspace(), self.languages())?,
+                )),
+                crate::Request::Rename { intent, apply } => {
+                    let planned = {
+                        let mut graph = self.graph()?;
+                        intent.plan_in(&mut graph, self.workspace())?
+                    };
+                    self.mutation(planned, apply)?
+                }
+                crate::Request::Move { intent, apply } => {
+                    let planned = {
+                        let mut graph = self.graph()?;
+                        intent.plan_in(&mut graph, self.workspace())?
+                    };
+                    self.mutation(planned, apply)?
+                }
+                crate::Request::MoveSymbol { intent, apply } => {
+                    let planned = {
+                        let mut graph = self.graph()?;
+                        intent.plan_in(&mut graph, self.workspace())?
+                    };
+                    self.mutation(planned, apply)?
+                }
+                crate::Request::Rewrite { intent, apply } => {
+                    let planned = {
+                        let mut graph = self.graph()?;
+                        intent.plan_in(&mut graph, self.workspace())?
+                    };
+                    self.mutation(planned, apply)?
+                }
+                crate::Request::Batch { intent, apply } => {
+                    self.mutation(intent.plan_in(self)?, apply)?
+                }
+                crate::Request::History => Execution::Completed(crate::Answer::History(
+                    crate::Ledger::new(self).history_in()?,
+                )),
+                crate::Request::Undo => {
+                    Execution::Completed(crate::Answer::Undo(crate::Ledger::new(self).undo_in()?))
+                }
+            })
+        })();
+        self.check_read()?;
+        result
     }
 
     fn mutation<T: crate::Mutation>(
@@ -190,6 +217,7 @@ impl Engine {
     /// say — so its next command walks even within the trusted window.
     pub fn touched(&self) {
         self.dirty.store(true, Ordering::Release);
+        self.query_revision.fetch_add(1, Ordering::AcqRel);
     }
 
     /// The workspace root, absolute.
@@ -200,6 +228,39 @@ impl Engine {
     /// The languages this engine understands.
     pub fn language_ids(&self) -> Vec<LanguageId> {
         self.languages.iter().map(|l| l.id().clone()).collect()
+    }
+
+    pub(crate) fn queries(&self) -> MutexGuard<'_, crate::query_store::QueryStore> {
+        self.queries
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
+    pub(crate) fn query_revision(&self) -> u64 {
+        self.query_revision.load(Ordering::Acquire)
+    }
+
+    pub(crate) fn with_cancellation(&self, cancellation: crate::ReadCancellation) -> Self {
+        Self {
+            cancellation: Some(cancellation),
+            ..self.clone()
+        }
+    }
+    pub(crate) fn cancellation(&self) -> Option<crate::ReadCancellation> {
+        self.cancellation.clone()
+    }
+    pub(crate) fn check_read(&self) -> Result<(), EngineError> {
+        self.cancellation
+            .as_ref()
+            .map_or(Ok(()), crate::ReadCancellation::check)
+    }
+    pub(crate) fn publish_read<T>(
+        &self,
+        publish: impl FnOnce() -> Result<T, EngineError>,
+    ) -> Result<T, EngineError> {
+        match &self.cancellation {
+            Some(c) => c.complete(publish),
+            None => publish(),
+        }
     }
 
     pub(crate) fn workspace(&self) -> &Workspace {
@@ -242,6 +303,7 @@ impl Engine {
                 None => fresh,
             };
         }
+        graph.cancellation = self.cancellation();
         graph.refresh(self.retention)?;
         Ok(graph)
     }

@@ -1,0 +1,28 @@
+{
+  "$id": "urn:vvv:schema:1:move:request:cfb97105767743bdf9d7a3d0efaf88c4e235c6c56b2ae534f8f1c3c028606aca",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Move a file and make every reference to it follow.",
+  "properties": {
+    "apply": {
+      "default": false,
+      "type": "boolean"
+    },
+    "command": {
+      "const": "move",
+      "type": "string"
+    },
+    "from": {
+      "type": "string"
+    },
+    "to": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "command",
+    "from",
+    "to"
+  ],
+  "title": "move request",
+  "type": "object"
+}

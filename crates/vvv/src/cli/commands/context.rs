@@ -11,13 +11,13 @@ pub struct ContextCmd {
     #[arg(long)]
     pub select: Option<String>,
     /// Maximum compact JSON result bytes (excluding the response envelope)
-    #[arg(long, default_value_t = 16_384)]
+    #[arg(long, default_value_t = ContextBudget::DEFAULT_BYTES)]
     pub max_bytes: usize,
-    #[arg(long, default_value_t = 12)]
+    #[arg(long, default_value_t = ContextBudget::DEFAULT_ITEMS)]
     pub max_items: usize,
-    #[arg(long, default_value_t = 64)]
+    #[arg(long, default_value_t = ContextBudget::DEFAULT_LOOKUPS)]
     pub max_lookups: usize,
-    #[arg(long, default_value_t = 64)]
+    #[arg(long, default_value_t = ContextBudget::DEFAULT_FILES)]
     pub max_files: usize,
     /// Also scan for incoming references with the same spelling
     #[arg(long)]

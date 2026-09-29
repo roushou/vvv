@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 /// Zero-based line and character column. Columns count `char`s, not bytes,
 /// so they are safe to show to humans and editors.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Position {
     pub line: u32,
     pub column: u32,

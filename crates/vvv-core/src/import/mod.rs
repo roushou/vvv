@@ -13,6 +13,7 @@ use crate::text::Span;
 
 /// One path in one file. `span` covers exactly the text a rewrite replaces.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ImportRef {
     pub span: Span,
     /// The full path as written (`crate::a::b`, `../x/y`), parsed by the
@@ -94,6 +95,7 @@ impl ImportRef {
 /// Where a grouped entry sits, so a surgery can rewrite it in place or move
 /// it out of the group.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ImportGroup {
     /// Combined prefix of the enclosing groups (`crate::util`).
     pub prefix: ModulePath,

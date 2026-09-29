@@ -17,6 +17,7 @@ use crate::{
 /// each judged against the declaration meant. What `rename` gathers before
 /// it plans, and what `references` answers on its own.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ReferencesQuery {
     pub name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -112,6 +113,7 @@ impl ReferencesQuery {
 /// `references <name>`: the declarations called `name` and every token that
 /// spells it, each judged against the declaration meant.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct References {
     pub name: String,
     pub declarations: Vec<Match>,
@@ -147,6 +149,7 @@ impl References {
 
 /// Reference evidence kept separately for each possible definition of a name.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Definitions {
     pub candidates: Vec<References>,
 }
@@ -169,6 +172,7 @@ impl Definitions {
 /// the declaring language is an occurrence. The `selection` is how a human or
 /// agent excludes the ones that are not the same symbol.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct RenameIntent {
     #[serde(flatten)]
     pub references: ReferencesQuery,
@@ -267,6 +271,7 @@ impl RenameIntent {
 
 /// `vvv rename`: the declaration and every occurrence, each judged.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Rename {
     pub intent: RenameIntent,
     /// Preview or successful application with its history entry.

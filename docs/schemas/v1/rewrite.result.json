@@ -1,0 +1,288 @@
+{
+  "$defs": {
+    "Diff": {
+      "description": "One file's change: the unified diff text (the wire) and its hunks (the\nmodel).",
+      "type": "string"
+    },
+    "Edit": {
+      "description": "Replace the bytes at `span` with `replacement`.",
+      "properties": {
+        "replacement": {
+          "type": "string"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        }
+      },
+      "required": [
+        "span",
+        "replacement"
+      ],
+      "type": "object"
+    },
+    "FileChange": {
+      "description": "One file a plan touches: its edits and the whole-file diff.",
+      "properties": {
+        "diff": {
+          "$ref": "#/$defs/Diff"
+        },
+        "edits": {
+          "items": {
+            "$ref": "#/$defs/Edit"
+          },
+          "type": "array"
+        },
+        "moved_to": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelPath"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Path after, when the file is moved."
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath",
+          "description": "Path before the change."
+        }
+      },
+      "required": [
+        "path",
+        "edits",
+        "diff"
+      ],
+      "type": "object"
+    },
+    "LanguageId": {
+      "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
+      "type": "string"
+    },
+    "MatchId": {
+      "description": "Content-derived identifier: the same file, range and text yield the same id\nacross runs, so a selection made from one `search` can drive a later command.",
+      "type": "string"
+    },
+    "Query": {
+      "properties": {
+        "kind": {
+          "description": "Tree-sitter node kind, e.g. `function_item`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "language": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LanguageId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Restrict to one language; otherwise every registered language is searched."
+        },
+        "name": {
+          "description": "Only declarations with exactly this name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pattern": {
+          "description": "ast-grep style pattern with meta-variables, e.g. `fn $NAME($$$ARGS) { $$$ }`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolKind"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Only declarations of this kind."
+        }
+      },
+      "type": "object"
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "RewriteIntent": {
+      "description": "Replace every selected match of `query` with `template`.",
+      "properties": {
+        "query": {
+          "$ref": "#/$defs/Query"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
+        },
+        "template": {
+          "$ref": "#/$defs/Template"
+        }
+      },
+      "required": [
+        "query",
+        "template"
+      ],
+      "type": "object"
+    },
+    "Selection": {
+      "description": "Which matches of a search a later command acts on.\n\nIds are content-derived, so a selection made from `vvv search` can be\nhanded to `vvv rewrite` in a separate process. Ordinals are the 1-based\npositions in the same search's result order, which is what human output\nnumbers rows with. Either kind that no longer resolves means the files\nchanged in between; the selection is then refused rather than silently\nnarrowed.",
+      "oneOf": [
+        {
+          "enum": [
+            "all"
+          ],
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ids": {
+              "items": {
+                "$ref": "#/$defs/MatchId"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ids"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ordinals": {
+              "items": {
+                "format": "uint",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ordinals"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "Span": {
+      "description": "Half-open byte range `[start, end)` inside a single file.",
+      "properties": {
+        "end": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "start": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "type": "object"
+    },
+    "SymbolKind": {
+      "description": "What a declaration declares, in vocabulary shared by every language.",
+      "oneOf": [
+        {
+          "enum": [
+            "type-parameter",
+            "parameter",
+            "function",
+            "method",
+            "struct",
+            "class",
+            "enum",
+            "variant",
+            "trait",
+            "interface",
+            "type-alias",
+            "const",
+            "static",
+            "variable",
+            "field",
+            "module",
+            "macro"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "impl",
+          "description": "An `impl` block, named after the type it is for. Not a declaration a\npath can reach; it travels with its type when the type moves.",
+          "type": "string"
+        }
+      ]
+    },
+    "Template": {
+      "description": "Replacement text with meta-variable holes: `bar($$$ARGS)`, `$NAME_v2`.\n\nVariables are `$NAME` (single capture) or `$$$NAME` (sequence capture);\na name is `[A-Z_][A-Z0-9_]*`. Anything else is literal.",
+      "type": "string"
+    }
+  },
+  "$id": "urn:vvv:schema:1:rewrite:result:0307af0fbf968a3574d595693e5695411822553bb725bc62fc31174781a9a69b",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "`vvv rewrite`: one edit per selected match.",
+  "oneOf": [
+    {
+      "properties": {
+        "applied": {
+          "const": false
+        },
+        "history_id": false
+      },
+      "required": [
+        "applied"
+      ]
+    },
+    {
+      "properties": {
+        "applied": {
+          "const": true
+        },
+        "history_id": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "applied",
+        "history_id"
+      ]
+    }
+  ],
+  "properties": {
+    "files": {
+      "items": {
+        "$ref": "#/$defs/FileChange"
+      },
+      "type": "array"
+    },
+    "intent": {
+      "$ref": "#/$defs/RewriteIntent"
+    }
+  },
+  "required": [
+    "intent",
+    "files"
+  ],
+  "title": "rewrite result",
+  "type": "object"
+}

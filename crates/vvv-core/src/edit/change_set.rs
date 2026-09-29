@@ -24,6 +24,7 @@ pub enum EditConflict {
 /// Edits to a moved file are keyed by its *current* path; the move is applied
 /// after the edits, so a planner never has to think about ordering.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ChangeSet {
     files: BTreeMap<PathBuf, Vec<Edit>>,
     #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]

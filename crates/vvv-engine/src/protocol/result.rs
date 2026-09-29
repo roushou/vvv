@@ -23,6 +23,40 @@ pub enum MutationState {
     Applied { history_id: u64 },
 }
 
+#[cfg(feature = "schema")]
+impl schemars::JsonSchema for MutationState {
+    fn schema_name() -> std::borrow::Cow<'static, str> {
+        "MutationState".into()
+    }
+
+    fn json_schema(generator: &mut schemars::SchemaGenerator) -> schemars::Schema {
+        let preview_history = if generator.contract().is_deserialize() {
+            serde_json::json!({"type": "null"})
+        } else {
+            serde_json::json!(false)
+        };
+        schemars::json_schema!({
+            "type": "object",
+            "oneOf": [
+                {
+                    "properties": {
+                        "applied": {"const": false},
+                        "history_id": preview_history
+                    },
+                    "required": ["applied"]
+                },
+                {
+                    "properties": {
+                        "applied": {"const": true},
+                        "history_id": generator.subschema_for::<u64>()
+                    },
+                    "required": ["applied", "history_id"]
+                }
+            ]
+        })
+    }
+}
+
 impl MutationState {
     pub fn is_applied(self) -> bool {
         matches!(self, Self::Applied { .. })
@@ -37,6 +71,7 @@ impl MutationState {
 }
 
 #[derive(Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 struct MutationStateFields {
     applied: bool,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -75,6 +110,7 @@ enum MutationStateError {
 
 /// One apply that can still be undone.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct HistoryEntry {
     pub id: u64,
     /// Seconds since the Unix epoch.
@@ -93,6 +129,7 @@ pub struct HistoryEntry {
 
 /// `vvv history`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct History {
     /// Oldest first; the last entry is what `vvv undo` would reverse.
     pub entries: Vec<HistoryEntry>,
@@ -100,6 +137,7 @@ pub struct History {
 
 /// `vvv undo`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Undo {
     pub undone: HistoryEntry,
     /// Files restored to their pre-apply contents, at their pre-apply paths.
@@ -111,6 +149,7 @@ pub struct Undo {
 
 /// One file a plan touches: its edits and the whole-file diff.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct FileChange {
     /// Path before the change.
     pub path: RelPath,
@@ -163,6 +202,7 @@ pub trait Mutation: sealed::Sealed {
 
 /// The result of a mutation intent. Queries have no variant here.
 #[derive(Debug, Clone, Serialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(untagged)]
 #[allow(clippy::large_enum_variant)]
 pub enum MutationAnswer {

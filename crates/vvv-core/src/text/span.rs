@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 
 /// Half-open byte range `[start, end)` inside a single file.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Span {
     pub start: usize,
     pub end: usize,

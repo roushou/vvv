@@ -13,6 +13,7 @@ use crate::text::Span;
 
 /// Replace the bytes at `span` with `replacement`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Edit {
     pub span: Span,
     pub replacement: String,

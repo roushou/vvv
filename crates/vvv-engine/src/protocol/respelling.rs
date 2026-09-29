@@ -9,6 +9,7 @@ use vvv_core::{Position, Span};
 /// diff hunk; an edit no respelling accounts for is structural and shows as
 /// a hunk.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Respelling {
     pub path: RelPath,
     /// The reference's span before the move — the edit that rewrites it.

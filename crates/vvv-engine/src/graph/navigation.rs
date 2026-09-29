@@ -43,6 +43,7 @@ impl Graph {
         semantic: Option<&crate::capabilities::semantic::SemanticNavigation<'_>>,
         observed: &mut Vec<crate::SourceVersion>,
     ) -> Result<NavigationReply, EngineError> {
+        self.check_read()?;
         let result = (|| {
             let mut navigation = Navigation {
                 graph: &mut *self,
@@ -71,6 +72,7 @@ impl Graph {
         versions: &[crate::SourceVersion],
     ) -> Result<(), EngineError> {
         for version in versions {
+            self.check_read()?;
             if self.workspace.load(&version.path)?.content_id() != version.content {
                 self.touched();
                 return Err(EngineError::StaleSource {
@@ -443,6 +445,7 @@ impl Navigation<'_, '_> {
     fn validate_project(&self, ns: &Namespace) -> Result<(), EngineError> {
         let captured = self.graph.project_sources.get(&ns.id());
         for absolute in &self.graph.walked {
+            self.graph.check_read()?;
             if !absolute.file_name().is_some_and(|name| {
                 ns.layout()
                     .manifests()
@@ -510,6 +513,7 @@ impl Navigation<'_, '_> {
         reason: &mut UnavailableReason,
         local_export: bool,
     ) -> Result<(), EngineError> {
+        self.graph.check_read()?;
         self.steps += 1;
         if self.steps > 1024 || trail.len() >= 128 {
             return Err(EngineError::NavigationLimit);
@@ -755,6 +759,7 @@ impl Navigation<'_, '_> {
             .chain(self.graph.project_sources.values().flatten())
             .chain(&self.semantic_inputs)
         {
+            self.graph.check_read()?;
             if !seen.insert(file.path()) {
                 continue;
             }

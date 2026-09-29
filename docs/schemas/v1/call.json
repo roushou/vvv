@@ -1,0 +1,1384 @@
+{
+  "$defs": {
+    "BatchIntent": {
+      "description": "Several intents planned in sequence, each against the state the previous\none leaves, and applied as one.",
+      "properties": {
+        "intents": {
+          "items": {
+            "$ref": "#/$defs/Intent"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "intents"
+      ],
+      "type": "object"
+    },
+    "Command": {
+      "enum": [
+        "schema",
+        "search_page",
+        "context_page",
+        "continue",
+        "expand",
+        "discover",
+        "context",
+        "navigate",
+        "search",
+        "outline",
+        "references",
+        "where",
+        "deps",
+        "explain",
+        "surface",
+        "impact",
+        "dead",
+        "imports",
+        "file",
+        "rewrite",
+        "rename",
+        "move",
+        "move_symbol",
+        "batch",
+        "history",
+        "undo"
+      ],
+      "type": "string"
+    },
+    "ContentId": {
+      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "type": "string"
+    },
+    "ContextBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_bytes": {
+          "default": 16384,
+          "description": "Maximum compact JSON bytes in the result, excluding the response envelope.",
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 1024,
+          "type": "integer"
+        },
+        "max_files": {
+          "default": 64,
+          "description": "Maximum source files examined for incoming same-spelling references.",
+          "format": "uint",
+          "maximum": 1024,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_items": {
+          "default": 12,
+          "format": "uint",
+          "maximum": 64,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_lookups": {
+          "default": 64,
+          "format": "uint",
+          "maximum": 512,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "ContextQuery": {
+      "properties": {
+        "budget": {
+          "$ref": "#/$defs/ContextBudget",
+          "default": {
+            "max_bytes": 16384,
+            "max_files": 64,
+            "max_items": 12,
+            "max_lookups": 64
+          }
+        },
+        "origin": {
+          "$ref": "#/$defs/NavigationOrigin"
+        },
+        "references": {
+          "default": false,
+          "description": "Include incoming references with this exact spelling, validated by navigation.",
+          "type": "boolean"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection",
+          "default": "all"
+        }
+      },
+      "required": [
+        "origin"
+      ],
+      "type": "object"
+    },
+    "DeadQuery": {
+      "description": "`vvv dead`: declarations nothing in the workspace refers to.",
+      "properties": {
+        "language": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LanguageId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "DepsQuery": {
+      "description": "`vvv deps <path>`: what a file imports and who imports it.",
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
+    "DiscoveryQuery": {
+      "type": "object"
+    },
+    "ExplainQuery": {
+      "description": "`vvv explain <path>:<line>:<col>`: what is at a position.",
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        }
+      },
+      "required": [
+        "path",
+        "position"
+      ],
+      "type": "object"
+    },
+    "FileQuery": {
+      "description": "One file as it is now, with its syntax colouring: what a picker shows.",
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
+    "ImpactQuery": {
+      "description": "`vvv impact <name>`: who would feel a change to a declaration.",
+      "properties": {
+        "declared_in": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelPath"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The file declaring the symbol meant, when several share the name."
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "ImportsQuery": {
+      "description": "`vvv imports [path]`: import statements worth a look.",
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelPath"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "Intent": {
+      "description": "Any mutating request, as one value: what history records, what a summary\nrenders, what a remote client sends.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/RewriteIntent",
+          "properties": {
+            "command": {
+              "const": "rewrite",
+              "type": "string"
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "type": "object"
+        },
+        {
+          "$ref": "#/$defs/RenameIntent",
+          "properties": {
+            "command": {
+              "const": "rename",
+              "type": "string"
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "type": "object"
+        },
+        {
+          "$ref": "#/$defs/MoveIntent",
+          "properties": {
+            "command": {
+              "const": "move",
+              "type": "string"
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "type": "object"
+        },
+        {
+          "$ref": "#/$defs/MoveSymbolIntent",
+          "properties": {
+            "command": {
+              "const": "move_symbol",
+              "type": "string"
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "type": "object"
+        },
+        {
+          "$ref": "#/$defs/BatchIntent",
+          "description": "Several intents planned in sequence, each against the state the\nprevious one leaves, and applied as one.",
+          "properties": {
+            "command": {
+              "const": "batch",
+              "type": "string"
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "LanguageId": {
+      "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
+      "type": "string"
+    },
+    "MatchId": {
+      "description": "Content-derived identifier: the same file, range and text yield the same id\nacross runs, so a selection made from one `search` can drive a later command.",
+      "type": "string"
+    },
+    "MoveIntent": {
+      "description": "Move a file and make every reference to it follow.",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
+    "MoveSymbolIntent": {
+      "description": "Move one declaration — with what belongs to it in the text, and for Rust\nits `impl` blocks — from the file declaring it to another file of the\nsame language, and make every reference follow.",
+      "properties": {
+        "from": {
+          "description": "The file declaring it.",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "to": {
+          "description": "The file to declare it in; it must exist.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
+    "NavigationOrigin": {
+      "oneOf": [
+        {
+          "properties": {
+            "expected_content": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/ContentId"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "default": null
+            },
+            "kind": {
+              "const": "position",
+              "type": "string"
+            },
+            "path": {
+              "$ref": "#/$defs/RelPath"
+            },
+            "position": {
+              "$ref": "#/$defs/Position"
+            }
+          },
+          "required": [
+            "kind",
+            "path",
+            "position"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "anchor": {
+              "$ref": "#/$defs/SourceAnchor"
+            },
+            "kind": {
+              "const": "occurrence",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "anchor"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "kind": {
+              "const": "symbol",
+              "type": "string"
+            },
+            "symbol": {
+              "$ref": "#/$defs/SymbolRef"
+            }
+          },
+          "required": [
+            "kind",
+            "symbol"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "NavigationQuery": {
+      "properties": {
+        "origin": {
+          "$ref": "#/$defs/NavigationOrigin"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
+        }
+      },
+      "required": [
+        "origin"
+      ],
+      "type": "object"
+    },
+    "OutlineQuery": {
+      "description": "`vvv outline <path>`: what a file declares.",
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        }
+      },
+      "required": [
+        "path"
+      ],
+      "type": "object"
+    },
+    "PageBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_bytes": {
+          "default": 16384,
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 1024,
+          "type": "integer"
+        },
+        "max_items": {
+          "default": 20,
+          "format": "uint",
+          "maximum": 64,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "Position": {
+      "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
+      "properties": {
+        "column": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "line": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "column"
+      ],
+      "type": "object"
+    },
+    "Query": {
+      "properties": {
+        "kind": {
+          "description": "Tree-sitter node kind, e.g. `function_item`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "language": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LanguageId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Restrict to one language; otherwise every registered language is searched."
+        },
+        "name": {
+          "description": "Only declarations with exactly this name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pattern": {
+          "description": "ast-grep style pattern with meta-variables, e.g. `fn $NAME($$$ARGS) { $$$ }`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolKind"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Only declarations of this kind."
+        }
+      },
+      "type": "object"
+    },
+    "ReferencesQuery": {
+      "description": "The declaration(s) called `name`, and every identifier that spells it,\neach judged against the declaration meant. What `rename` gathers before\nit plans, and what `references` answers on its own.",
+      "properties": {
+        "declared_in": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelPath"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The file declaring the symbol meant, when several share the name."
+        },
+        "language": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LanguageId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolKind"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "RenameIntent": {
+      "description": "Rename the declaration(s) called `name` and every identifier that spells it.\n\nResolution is syntactic: every occurrence of the identifier in files of\nthe declaring language is an occurrence. The `selection` is how a human or\nagent excludes the ones that are not the same symbol.",
+      "properties": {
+        "declared_in": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelPath"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The file declaring the symbol meant, when several share the name."
+        },
+        "language": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LanguageId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolKind"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "to"
+      ],
+      "type": "object"
+    },
+    "RewriteIntent": {
+      "description": "Replace every selected match of `query` with `template`.",
+      "properties": {
+        "query": {
+          "$ref": "#/$defs/Query"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
+        },
+        "template": {
+          "$ref": "#/$defs/Template"
+        }
+      },
+      "required": [
+        "query",
+        "template"
+      ],
+      "type": "object"
+    },
+    "SchemaContract": {
+      "enum": [
+        "arguments",
+        "request",
+        "result",
+        "response",
+        "call",
+        "reply"
+      ],
+      "type": "string"
+    },
+    "SchemaQuery": {
+      "description": "A command contract, or an aggregate session contract without `for_command`.",
+      "properties": {
+        "contract": {
+          "$ref": "#/$defs/SchemaContract"
+        },
+        "for_command": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Command"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    },
+    "Selection": {
+      "description": "Which matches of a search a later command acts on.\n\nIds are content-derived, so a selection made from `vvv search` can be\nhanded to `vvv rewrite` in a separate process. Ordinals are the 1-based\npositions in the same search's result order, which is what human output\nnumbers rows with. Either kind that no longer resolves means the files\nchanged in between; the selection is then refused rather than silently\nnarrowed.",
+      "oneOf": [
+        {
+          "enum": [
+            "all"
+          ],
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ids": {
+              "items": {
+                "$ref": "#/$defs/MatchId"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ids"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ordinals": {
+              "items": {
+                "format": "uint",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ordinals"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "SourceAnchor": {
+      "properties": {
+        "content": {
+          "$ref": "#/$defs/ContentId"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        }
+      },
+      "required": [
+        "path",
+        "content",
+        "span"
+      ],
+      "type": "object"
+    },
+    "Span": {
+      "description": "Half-open byte range `[start, end)` inside a single file.",
+      "properties": {
+        "end": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "start": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "type": "object"
+    },
+    "SurfaceQuery": {
+      "description": "`vvv surface [package]`: what a package offers to everyone.",
+      "properties": {
+        "package": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "SymbolKind": {
+      "description": "What a declaration declares, in vocabulary shared by every language.",
+      "oneOf": [
+        {
+          "enum": [
+            "type-parameter",
+            "parameter",
+            "function",
+            "method",
+            "struct",
+            "class",
+            "enum",
+            "variant",
+            "trait",
+            "interface",
+            "type-alias",
+            "const",
+            "static",
+            "variable",
+            "field",
+            "module",
+            "macro"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "impl",
+          "description": "An `impl` block, named after the type it is for. Not a declaration a\npath can reach; it travels with its type when the type moves.",
+          "type": "string"
+        }
+      ]
+    },
+    "SymbolRef": {
+      "description": "A declaration in one source version, not an identity across edits.",
+      "properties": {
+        "declaration": {
+          "$ref": "#/$defs/SourceAnchor"
+        },
+        "kind": {
+          "$ref": "#/$defs/SymbolKind"
+        },
+        "language": {
+          "$ref": "#/$defs/LanguageId"
+        },
+        "name_span": {
+          "$ref": "#/$defs/Span"
+        }
+      },
+      "required": [
+        "language",
+        "declaration",
+        "name_span",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "Template": {
+      "description": "Replacement text with meta-variable holes: `bar($$$ARGS)`, `$NAME_v2`.\n\nVariables are `$NAME` (single capture) or `$$$NAME` (sequence capture);\na name is `[A-Z_][A-Z0-9_]*`. Anything else is literal.",
+      "type": "string"
+    },
+    "WhereQuery": {
+      "description": "`vvv where <name> [--from <file>]`: where a name is declared, and the\nimport that reaches each site from `from`.",
+      "properties": {
+        "from": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelPath"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    },
+    "WorkBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_files": {
+          "default": 64,
+          "format": "uint",
+          "maximum": 1024,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_lookups": {
+          "default": 64,
+          "format": "uint",
+          "maximum": 512,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "$id": "urn:vvv:schema:1:session:call:baa08c9efb6fc5958d882f4a8ed621a7271ab7741d2a546a3be7d8ecc43fe46a",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "A request on a session's wire (`vvv serve`): the request with whatever\n`id` the caller chose, echoed on the [`Reply`].",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/SchemaQuery",
+      "properties": {
+        "command": {
+          "const": "schema",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "command": {
+          "const": "search_page",
+          "type": "string"
+        },
+        "page": {
+          "$ref": "#/$defs/PageBudget",
+          "default": {
+            "max_bytes": 16384,
+            "max_items": 20
+          }
+        },
+        "query": {
+          "$ref": "#/$defs/Query"
+        }
+      },
+      "required": [
+        "command",
+        "query"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "command": {
+          "const": "context_page",
+          "type": "string"
+        },
+        "origin": {
+          "$ref": "#/$defs/NavigationOrigin"
+        },
+        "page": {
+          "$ref": "#/$defs/PageBudget",
+          "default": {
+            "max_bytes": 16384,
+            "max_items": 20
+          }
+        },
+        "references": {
+          "default": false,
+          "type": "boolean"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection",
+          "default": "all"
+        },
+        "work": {
+          "$ref": "#/$defs/WorkBudget",
+          "default": {
+            "max_files": 64,
+            "max_lookups": 64
+          }
+        }
+      },
+      "required": [
+        "command",
+        "origin"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "command": {
+          "const": "continue",
+          "type": "string"
+        },
+        "cursor": {
+          "type": "string"
+        },
+        "page": {
+          "$ref": "#/$defs/PageBudget",
+          "default": {
+            "max_bytes": 16384,
+            "max_items": 20
+          }
+        },
+        "work": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WorkBudget"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "command",
+        "cursor"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "command": {
+          "const": "expand",
+          "type": "string"
+        },
+        "cursor": {
+          "type": "string"
+        },
+        "max_bytes": {
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 1024,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "command",
+        "cursor",
+        "max_bytes"
+      ],
+      "type": "object"
+    },
+    {
+      "$ref": "#/$defs/DiscoveryQuery",
+      "properties": {
+        "command": {
+          "const": "discover",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "$ref": "#/$defs/ContextQuery",
+      "properties": {
+        "command": {
+          "const": "context",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "$ref": "#/$defs/NavigationQuery",
+      "properties": {
+        "command": {
+          "const": "navigate",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "$ref": "#/$defs/Query",
+      "properties": {
+        "command": {
+          "const": "search",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "$ref": "#/$defs/OutlineQuery",
+      "properties": {
+        "command": {
+          "const": "outline",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "$ref": "#/$defs/ReferencesQuery",
+      "properties": {
+        "command": {
+          "const": "references",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "$ref": "#/$defs/WhereQuery",
+      "properties": {
+        "command": {
+          "const": "where",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "$ref": "#/$defs/DepsQuery",
+      "properties": {
+        "command": {
+          "const": "deps",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "$ref": "#/$defs/ExplainQuery",
+      "properties": {
+        "command": {
+          "const": "explain",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "$ref": "#/$defs/SurfaceQuery",
+      "properties": {
+        "command": {
+          "const": "surface",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "$ref": "#/$defs/ImpactQuery",
+      "properties": {
+        "command": {
+          "const": "impact",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "$ref": "#/$defs/DeadQuery",
+      "properties": {
+        "command": {
+          "const": "dead",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "$ref": "#/$defs/ImportsQuery",
+      "properties": {
+        "command": {
+          "const": "imports",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "$ref": "#/$defs/FileQuery",
+      "properties": {
+        "command": {
+          "const": "file",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "description": "Replace every selected match of `query` with `template`.",
+      "properties": {
+        "apply": {
+          "default": false,
+          "type": "boolean"
+        },
+        "command": {
+          "const": "rewrite",
+          "type": "string"
+        },
+        "query": {
+          "$ref": "#/$defs/Query"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
+        },
+        "template": {
+          "$ref": "#/$defs/Template"
+        }
+      },
+      "required": [
+        "command",
+        "query",
+        "template"
+      ],
+      "type": "object"
+    },
+    {
+      "description": "Rename the declaration(s) called `name` and every identifier that spells it.\n\nResolution is syntactic: every occurrence of the identifier in files of\nthe declaring language is an occurrence. The `selection` is how a human or\nagent excludes the ones that are not the same symbol.",
+      "properties": {
+        "apply": {
+          "default": false,
+          "type": "boolean"
+        },
+        "command": {
+          "const": "rename",
+          "type": "string"
+        },
+        "declared_in": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelPath"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The file declaring the symbol meant, when several share the name."
+        },
+        "language": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LanguageId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolKind"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "command",
+        "name",
+        "to"
+      ],
+      "type": "object"
+    },
+    {
+      "description": "Move a file and make every reference to it follow.",
+      "properties": {
+        "apply": {
+          "default": false,
+          "type": "boolean"
+        },
+        "command": {
+          "const": "move",
+          "type": "string"
+        },
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "command",
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
+    {
+      "description": "Move one declaration — with what belongs to it in the text, and for Rust\nits `impl` blocks — from the file declaring it to another file of the\nsame language, and make every reference follow.",
+      "properties": {
+        "apply": {
+          "default": false,
+          "type": "boolean"
+        },
+        "command": {
+          "const": "move_symbol",
+          "type": "string"
+        },
+        "from": {
+          "description": "The file declaring it.",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "to": {
+          "description": "The file to declare it in; it must exist.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command",
+        "name",
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
+    {
+      "description": "Several intents planned in sequence, each against the state the previous\none leaves, and applied as one.",
+      "properties": {
+        "apply": {
+          "default": false,
+          "type": "boolean"
+        },
+        "command": {
+          "const": "batch",
+          "type": "string"
+        },
+        "intents": {
+          "items": {
+            "$ref": "#/$defs/Intent"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "command",
+        "intents"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "command": {
+          "const": "history",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "command": {
+          "const": "undo",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    }
+  ],
+  "properties": {
+    "id": true,
+    "max_output_bytes": {
+      "format": "uint",
+      "maximum": 1048576,
+      "minimum": 1024,
+      "type": [
+        "integer",
+        "null"
+      ]
+    }
+  },
+  "title": "Call",
+  "type": "object"
+}

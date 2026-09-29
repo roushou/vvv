@@ -7,31 +7,53 @@ use crate::{
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(default, deny_unknown_fields)]
 pub struct ContextBudget {
     /// Maximum compact JSON bytes in the result, excluding the response envelope.
+    #[cfg_attr(feature = "schema", schemars(range(min = Self::MIN_BYTES, max = Self::MAX_BYTES)))]
     pub max_bytes: usize,
+    #[cfg_attr(feature = "schema", schemars(range(min = 1, max = Self::MAX_ITEMS)))]
     pub max_items: usize,
+    #[cfg_attr(feature = "schema", schemars(range(min = 1, max = Self::MAX_LOOKUPS)))]
     pub max_lookups: usize,
     /// Maximum source files examined for incoming same-spelling references.
+    #[cfg_attr(feature = "schema", schemars(range(min = 1, max = Self::MAX_FILES)))]
     pub max_files: usize,
 }
 impl Default for ContextBudget {
     fn default() -> Self {
         Self {
-            max_bytes: 16_384,
-            max_items: 12,
-            max_lookups: 64,
-            max_files: 64,
+            max_bytes: Self::DEFAULT_BYTES,
+            max_items: Self::DEFAULT_ITEMS,
+            max_lookups: Self::DEFAULT_LOOKUPS,
+            max_files: Self::DEFAULT_FILES,
         }
     }
 }
 impl ContextBudget {
+    pub const MIN_BYTES: usize = 1024;
+    pub const MAX_BYTES: usize = 1_048_576;
+    pub const MAX_ITEMS: usize = 64;
+    pub const MAX_LOOKUPS: usize = 512;
+    pub const MAX_FILES: usize = 1024;
+    pub const DEFAULT_BYTES: usize = 16_384;
+    pub const DEFAULT_ITEMS: usize = 12;
+    pub const DEFAULT_LOOKUPS: usize = 64;
+    pub const DEFAULT_FILES: usize = 64;
+
+    pub const MAXIMUM: Self = Self {
+        max_bytes: Self::MAX_BYTES,
+        max_items: Self::MAX_ITEMS,
+        max_lookups: Self::MAX_LOOKUPS,
+        max_files: Self::MAX_FILES,
+    };
+
     pub fn validate(&self) -> Result<(), EngineError> {
-        if !(1024..=1_048_576).contains(&self.max_bytes)
-            || !(1..=64).contains(&self.max_items)
-            || !(1..=512).contains(&self.max_lookups)
-            || !(1..=1024).contains(&self.max_files)
+        if !(Self::MIN_BYTES..=Self::MAX_BYTES).contains(&self.max_bytes)
+            || !(1..=Self::MAX_ITEMS).contains(&self.max_items)
+            || !(1..=Self::MAX_LOOKUPS).contains(&self.max_lookups)
+            || !(1..=Self::MAX_FILES).contains(&self.max_files)
         {
             return Err(EngineError::InvalidBudget);
         }
@@ -40,6 +62,7 @@ impl ContextBudget {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ContextQuery {
     pub origin: NavigationOrigin,
     #[serde(default)]
@@ -113,35 +136,18 @@ impl ContextQuery {
                     None,
                     &self.budget,
                 );
-                if let Some(outer) = preview
-                    .source
-                    .symbols
-                    .iter()
-                    .filter(|s| {
-                        s.extent != target.declaration.span
-                            && s.extent.contains(&target.declaration.span)
-                    })
-                    .min_by_key(|s| s.extent.len())
-                {
-                    let symbol = SymbolRef {
-                        language: target.language.clone(),
-                        declaration: SourceAnchor {
-                            span: outer.extent,
-                            ..target.declaration.clone()
-                        },
-                        name_span: outer.name_span,
-                        kind: outer.kind,
-                    };
+                if let Some(item) = ContextPending::enclosing(&target, &preview.source.symbols) {
                     context.add(
-                        symbol,
+                        item.target,
                         &preview.source.text,
-                        ContextRelation::EnclosingDeclaration,
-                        Some(target.declaration.clone()),
+                        item.relation,
+                        item.via,
                         &self.budget,
                     );
                 }
                 let mut lookups = 0;
                 for anchor in preview.identifiers {
+                    graph.check_read()?;
                     if anchor.span == target.name_span {
                         continue;
                     }
@@ -161,18 +167,15 @@ impl ContextQuery {
                             preview,
                             ..
                         } => {
-                            if related.declaration.path == target.declaration.path
-                                && target.declaration.span.contains(&related.declaration.span)
-                            {
-                                continue;
+                            if let Some(item) = ContextPending::outgoing(&target, related, anchor) {
+                                context.add(
+                                    item.target,
+                                    &preview.source.text,
+                                    item.relation,
+                                    item.via,
+                                    &self.budget,
+                                );
                             }
-                            context.add(
-                                related,
-                                &preview.source.text,
-                                ContextRelation::ReferencedDefinition,
-                                Some(anchor),
-                                &self.budget,
-                            );
                         }
                         other => context.omissions.resolution(&other),
                     }
@@ -211,34 +214,14 @@ impl ContextQuery {
                                 NavigationOutcome::Resolved { target: found, .. }
                                     if found == target =>
                                 {
-                                    if let Some(outer) = file
-                                        .facts()?
-                                        .symbols
-                                        .iter()
-                                        .filter(|s| s.extent.contains(&span))
-                                        .min_by_key(|s| s.extent.len())
+                                    if let Some(item) =
+                                        ContextPending::incoming(&target, anchor, &file)?
                                     {
-                                        let symbol = SymbolRef {
-                                            language: target.language.clone(),
-                                            declaration: SourceAnchor {
-                                                span: outer.extent,
-                                                ..anchor.clone()
-                                            },
-                                            name_span: outer.name_span,
-                                            kind: outer.kind,
-                                        };
-                                        let relation = if file.path().components().any(|c| {
-                                            c.as_os_str() == "tests" || c.as_os_str() == "test"
-                                        }) {
-                                            ContextRelation::ReferenceInTestPath
-                                        } else {
-                                            ContextRelation::Reference
-                                        };
                                         context.add(
-                                            symbol,
+                                            item.target,
                                             file.text(),
-                                            relation,
-                                            Some(anchor),
+                                            item.relation,
+                                            item.via,
                                             &self.budget,
                                         );
                                     } else {
@@ -264,6 +247,7 @@ impl ContextQuery {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ContextReply {
     pub snapshot: SnapshotId,
     #[serde(flatten)]
@@ -274,6 +258,7 @@ pub struct ContextReply {
     pub references_by_name: bool,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum ContextOutcome {
     Resolved,
@@ -281,11 +266,13 @@ pub enum ContextOutcome {
     Unavailable { reason: UnavailableReason },
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ContextCandidate {
     pub id: crate::MatchId,
     pub target: SymbolRef,
 }
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ContextRelation {
     Definition,
@@ -295,6 +282,7 @@ pub enum ContextRelation {
     ReferenceInTestPath,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ContextItem {
     pub target: SymbolRef,
     pub relation: ContextRelation,
@@ -307,6 +295,7 @@ pub struct ContextItem {
     pub complete: bool,
 }
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ContextOmissions {
     pub item_limit: usize,
     pub byte_limit: usize,
@@ -450,5 +439,482 @@ impl crate::report::Document {
             doc.notes([Line::of(Role::Dim, format!("Omitted: {} item limit, {} byte limit, {} lookup limit, {} file limit, {} ambiguous, {} unavailable, {} without a declaration", omissions.item_limit, omissions.byte_limit, omissions.lookup_limit, omissions.file_limit, omissions.ambiguous, omissions.unavailable, omissions.no_container))]);
         }
         doc
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields)]
+pub struct ContextPageQuery {
+    pub origin: NavigationOrigin,
+    #[serde(default)]
+    pub selection: Selection,
+    #[serde(default)]
+    pub references: bool,
+    #[serde(default)]
+    pub page: crate::PageBudget,
+    #[serde(default)]
+    pub work: crate::WorkBudget,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(tag = "kind", rename = "context")]
+pub struct ContextPage {
+    pub snapshot: SnapshotId,
+    #[serde(flatten)]
+    pub outcome: ContextOutcome,
+    pub items: Vec<PagedContextItem>,
+    pub references_by_name: bool,
+    pub work: ContextWork,
+    pub unresolved: ContextUnresolved,
+    pub traversal_complete: bool,
+    pub next_cursor: Option<crate::Cursor>,
+}
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct PagedContextItem {
+    #[serde(flatten)]
+    pub item: ContextItem,
+    pub expansion: Option<crate::Cursor>,
+}
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct ContextWork {
+    pub lookups: usize,
+    pub files: usize,
+}
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct ContextUnresolved {
+    pub ambiguous: usize,
+    pub unavailable: usize,
+    pub no_container: usize,
+}
+impl ContextUnresolved {
+    fn resolution(&mut self, outcome: &NavigationOutcome) {
+        match outcome {
+            NavigationOutcome::Ambiguous { .. } => self.ambiguous += 1,
+            NavigationOutcome::Unavailable { .. } => self.unavailable += 1,
+            _ => {}
+        }
+    }
+}
+#[derive(Debug, Serialize)]
+pub(crate) struct ContextSeed {
+    outcome: ContextOutcome,
+    target: Option<SymbolRef>,
+    name: String,
+    initial: Vec<ContextPending>,
+    outgoing: Vec<SourceAnchor>,
+    incoming: Vec<crate::RelPath>,
+    references: bool,
+}
+#[derive(Debug, Clone, Serialize)]
+struct ContextPending {
+    target: SymbolRef,
+    relation: ContextRelation,
+    via: Option<SourceAnchor>,
+}
+#[derive(Debug, Default, Clone, Serialize)]
+pub(crate) struct ContextSession {
+    initial: usize,
+    outgoing: usize,
+    file: usize,
+    token: usize,
+    seen: Vec<SymbolRef>,
+    pending: Option<ContextPending>,
+}
+impl ContextPageQuery {
+    pub fn execute(self, engine: &Engine) -> Result<ContextPage, EngineError> {
+        let _operation = engine.operation();
+        self.execute_in(engine)
+    }
+    pub(crate) fn execute_in(self, engine: &Engine) -> Result<ContextPage, EngineError> {
+        self.page.validate()?;
+        self.work.validate()?;
+        let (mut graph, snapshot) = crate::graph::query_snapshot::QuerySnapshot::capture(engine)?;
+        let seed = ContextSeed::capture(&mut graph, &self)?;
+        let identity = (&self.origin, &self.selection, self.references);
+        let mut session = super::pagination::PageSession::new(
+            engine,
+            snapshot,
+            &identity,
+            crate::query_store::QueryData::Context(seed),
+        );
+        let result =
+            ContextSession::default().page(engine, &mut graph, &mut session, self.page, self.work);
+        match session.finish(engine, result)? {
+            crate::PageReply::Context(page) => Ok(page),
+            _ => unreachable!("capability returns its own page"),
+        }
+    }
+}
+impl ContextSeed {
+    fn capture(graph: &mut Graph, query: &ContextPageQuery) -> Result<Self, EngineError> {
+        let reply = graph.navigate_observed(
+            NavigationQuery {
+                origin: query.origin.clone(),
+                selection: query.selection.clone(),
+            },
+            &mut vec![],
+        )?;
+        let mut seed = Self {
+            outcome: ContextOutcome::Resolved,
+            target: None,
+            name: String::new(),
+            initial: vec![],
+            outgoing: vec![],
+            incoming: vec![],
+            references: query.references,
+        };
+        match reply.outcome {
+            NavigationOutcome::Unavailable { reason } => {
+                seed.outcome = ContextOutcome::Unavailable { reason }
+            }
+            NavigationOutcome::Ambiguous { candidates } => {
+                seed.outcome = ContextOutcome::Ambiguous {
+                    candidates: candidates
+                        .into_iter()
+                        .map(|c| ContextCandidate {
+                            id: c.declaration.id,
+                            target: c.target,
+                        })
+                        .collect(),
+                }
+            }
+            NavigationOutcome::Resolved {
+                target, preview, ..
+            } => {
+                seed.name = preview
+                    .declaration
+                    .symbol
+                    .as_ref()
+                    .expect("navigation declaration")
+                    .name
+                    .to_string();
+                seed.initial.push(ContextPending {
+                    target: target.clone(),
+                    relation: ContextRelation::Definition,
+                    via: None,
+                });
+                if let Some(item) = ContextPending::enclosing(&target, &preview.source.symbols) {
+                    seed.initial.push(item);
+                }
+                seed.outgoing = preview
+                    .identifiers
+                    .into_iter()
+                    .filter(|a| a.span != target.name_span)
+                    .collect();
+                if query.references {
+                    seed.incoming = graph
+                        .files(Some(&target.language))
+                        .iter()
+                        .map(|f| f.path().into())
+                        .collect();
+                }
+                seed.target = Some(target);
+            }
+        }
+        Ok(seed)
+    }
+}
+impl ContextSession {
+    fn done(&self, seed: &ContextSeed) -> bool {
+        self.pending.is_none()
+            && self.initial == seed.initial.len()
+            && self.outgoing == seed.outgoing.len()
+            && self.file == seed.incoming.len()
+    }
+    /// Resolve at most the additional work budget. A pending item survives delivery stops.
+    fn advance(
+        &mut self,
+        graph: &mut Graph,
+        seed: &ContextSeed,
+        budget: &crate::WorkBudget,
+        page: &mut ContextPage,
+        charged_file: &mut Option<usize>,
+    ) -> Result<(), EngineError> {
+        while self.pending.is_none() && !self.done(seed) {
+            graph.check_read()?;
+            if self.initial < seed.initial.len() {
+                self.pending = Some(seed.initial[self.initial].clone());
+                self.initial += 1;
+            } else if self.outgoing < seed.outgoing.len() {
+                if page.work.lookups == budget.max_lookups {
+                    break;
+                }
+                let anchor = seed.outgoing[self.outgoing].clone();
+                self.outgoing += 1;
+                page.work.lookups += 1;
+                let reply = graph
+                    .navigate_observed(NavigationQuery::occurrence(anchor.clone()), &mut vec![])?;
+                match reply.outcome {
+                    NavigationOutcome::Resolved { target, .. } => {
+                        let original = seed.target.as_ref().expect("resolved context");
+                        self.pending = ContextPending::outgoing(original, target, anchor);
+                    }
+                    other => page.unresolved.resolution(&other),
+                }
+            } else {
+                if *charged_file != Some(self.file) {
+                    if page.work.files == budget.max_files {
+                        break;
+                    }
+                    page.work.files += 1;
+                    *charged_file = Some(self.file);
+                }
+                let file = graph.file(&seed.incoming[self.file])?;
+                let tokens: Vec<_> = file.facts()?.tokens_named(&seed.name).collect();
+                let original = seed.target.as_ref().expect("resolved context");
+                if self.token == tokens.len() {
+                    self.file += 1;
+                    self.token = 0;
+                    continue;
+                }
+                let (span, _) = tokens[self.token];
+                if file.path() == original.declaration.path.as_path() && span == original.name_span
+                {
+                    self.token += 1;
+                    continue;
+                }
+                if page.work.lookups == budget.max_lookups {
+                    break;
+                }
+                self.token += 1;
+                page.work.lookups += 1;
+                let anchor = SourceAnchor {
+                    path: file.path().into(),
+                    content: file.file().content_id(),
+                    span,
+                };
+                let reply = graph
+                    .navigate_observed(NavigationQuery::occurrence(anchor.clone()), &mut vec![])?;
+                match reply.outcome {
+                    NavigationOutcome::Resolved { target, .. } if &target == original => {
+                        self.pending = ContextPending::incoming(original, anchor, &file)?;
+                        if self.pending.is_none() {
+                            page.unresolved.no_container += 1;
+                        }
+                    }
+                    other => page.unresolved.resolution(&other),
+                }
+            }
+            if self
+                .pending
+                .as_ref()
+                .is_some_and(|p| self.seen.contains(&p.target))
+            {
+                self.pending = None;
+            }
+        }
+        Ok(())
+    }
+    pub(crate) fn page(
+        mut self,
+        engine: &Engine,
+        graph: &mut Graph,
+        session: &mut super::pagination::PageSession,
+        budget: crate::PageBudget,
+        work: crate::WorkBudget,
+    ) -> Result<crate::PageReply, EngineError> {
+        use crate::{
+            PageReply,
+            query_store::{Checkpoint, QueryData},
+        };
+        let root = session.root.clone();
+        let QueryData::Context(seed) = &root.data else {
+            return Err(EngineError::InvalidCursor);
+        };
+        let mut page = ContextPage {
+            snapshot: root.identity.clone(),
+            outcome: seed.outcome.clone(),
+            items: vec![],
+            references_by_name: seed.references,
+            work: ContextWork::default(),
+            unresolved: ContextUnresolved::default(),
+            traversal_complete: false,
+            next_cursor: None,
+        };
+        let mut charged_file = None;
+        while page.items.len() < budget.max_items {
+            engine.check_read()?;
+            self.advance(graph, seed, &work, &mut page, &mut charged_file)?;
+            let Some(pending) = self.pending.clone() else {
+                break;
+            };
+            let source = graph.file(&pending.target.declaration.path)?;
+            let extent = pending.target.declaration.span;
+            let text = &source.text()[extent.start..extent.end];
+            let mut end = text.len().min(budget.max_bytes);
+            while !text.is_char_boundary(end) {
+                end -= 1;
+            }
+            let mut after = self.clone();
+            after.pending = None;
+            after.seen.push(pending.target.clone());
+            page.traversal_complete = after.done(seed);
+            page.next_cursor = (!page.traversal_complete)
+                .then(|| session.token(engine, &Checkpoint::Context(after.clone())));
+            let minimum = text.chars().next().map_or(0, char::len_utf8);
+            let mut accepted = None;
+            loop {
+                let excerpt = super::excerpts::Excerpt {
+                    target: pending.target.clone(),
+                    next: extent.start + end,
+                };
+                let expansion = (end < text.len())
+                    .then(|| session.token(engine, &Checkpoint::Excerpt(excerpt.clone())));
+                page.items.push(PagedContextItem {
+                    item: ContextItem {
+                        target: pending.target.clone(),
+                        relation: pending.relation,
+                        via: pending.via.clone(),
+                        excerpt: SourceAnchor {
+                            span: Span::new(extent.start, extent.start + end),
+                            ..pending.target.declaration.clone()
+                        },
+                        start: source.file().source().position(extent.start),
+                        text: text[..end].to_owned(),
+                        complete: end == text.len(),
+                    },
+                    expansion,
+                });
+                match budget.check(&PageReply::Context(page.clone())) {
+                    Ok(()) => {
+                        accepted = Some(excerpt);
+                        break;
+                    }
+                    Err(EngineError::OutputLimit {
+                        max_bytes,
+                        required_bytes,
+                    }) => {
+                        page.items.pop();
+                        if end == minimum {
+                            if page.items.is_empty() {
+                                return Err(EngineError::PageOutputLimit {
+                                    max_bytes,
+                                    required_bytes,
+                                    anchor: Some(pending.target.declaration.clone()),
+                                });
+                            }
+                            break;
+                        }
+                        end = end.saturating_sub(required_bytes - max_bytes).max(minimum);
+                        while !text.is_char_boundary(end) {
+                            end -= 1;
+                        }
+                    }
+                    Err(error) => return Err(error),
+                }
+            }
+            let Some(excerpt) = accepted else {
+                break;
+            };
+            if excerpt.next < extent.end {
+                session.retain(Checkpoint::Excerpt(excerpt));
+            }
+            self = after;
+        }
+        page.traversal_complete = self.done(seed);
+        let checkpoint = Checkpoint::Context(self);
+        page.next_cursor = (!page.traversal_complete).then(|| session.token(engine, &checkpoint));
+        let reply = PageReply::Context(page);
+        budget.check(&reply)?;
+        if reply.next_cursor().is_some() {
+            session.retain(checkpoint);
+        }
+        Ok(reply)
+    }
+}
+impl crate::report::Document {
+    pub(crate) fn context_page(page: &ContextPage) -> Self {
+        let context = ContextReply {
+            snapshot: page.snapshot.clone(),
+            outcome: page.outcome.clone(),
+            items: page.items.iter().map(|p| p.item.clone()).collect(),
+            omissions: ContextOmissions {
+                ambiguous: page.unresolved.ambiguous,
+                unavailable: page.unresolved.unavailable,
+                no_container: page.unresolved.no_container,
+                ..Default::default()
+            },
+            references_by_name: page.references_by_name,
+        };
+        Self::context(&context)
+    }
+}
+
+impl ContextPending {
+    /// Shared relationship rules for one-shot and paged context assembly.
+    fn enclosing(target: &SymbolRef, symbols: &[crate::Symbol]) -> Option<Self> {
+        let outer = symbols
+            .iter()
+            .filter(|s| {
+                s.extent != target.declaration.span && s.extent.contains(&target.declaration.span)
+            })
+            .min_by_key(|s| s.extent.len())?;
+        Some(Self {
+            target: SymbolRef {
+                language: target.language.clone(),
+                declaration: SourceAnchor {
+                    span: outer.extent,
+                    ..target.declaration.clone()
+                },
+                name_span: outer.name_span,
+                kind: outer.kind,
+            },
+            relation: ContextRelation::EnclosingDeclaration,
+            via: Some(target.declaration.clone()),
+        })
+    }
+    fn outgoing(original: &SymbolRef, target: SymbolRef, anchor: SourceAnchor) -> Option<Self> {
+        if target.declaration.path == original.declaration.path
+            && original.declaration.span.contains(&target.declaration.span)
+        {
+            return None;
+        }
+        Some(Self {
+            target,
+            relation: ContextRelation::ReferencedDefinition,
+            via: Some(anchor),
+        })
+    }
+    fn incoming(
+        original: &SymbolRef,
+        anchor: SourceAnchor,
+        file: &crate::Candidate,
+    ) -> Result<Option<Self>, EngineError> {
+        let Some(outer) = file
+            .facts()?
+            .symbols
+            .iter()
+            .filter(|s| s.extent.contains(&anchor.span))
+            .min_by_key(|s| s.extent.len())
+        else {
+            return Ok(None);
+        };
+        let target = SymbolRef {
+            language: original.language.clone(),
+            declaration: SourceAnchor {
+                span: outer.extent,
+                ..anchor.clone()
+            },
+            name_span: outer.name_span,
+            kind: outer.kind,
+        };
+        let relation = if file
+            .path()
+            .components()
+            .any(|c| c.as_os_str() == "test" || c.as_os_str() == "tests")
+        {
+            ContextRelation::ReferenceInTestPath
+        } else {
+            ContextRelation::Reference
+        };
+        Ok(Some(Self {
+            target,
+            relation,
+            via: Some(anchor),
+        }))
     }
 }

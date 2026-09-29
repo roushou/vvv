@@ -11,6 +11,7 @@ use vvv_core::{CaptureValue, SourceText};
 /// Variables are `$NAME` (single capture) or `$$$NAME` (sequence capture);
 /// a name is `[A-Z_][A-Z0-9_]*`. Anything else is literal.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(transparent)]
 pub struct Template {
     source: String,

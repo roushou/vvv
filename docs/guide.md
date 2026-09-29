@@ -321,6 +321,69 @@ result. An oversized read-only result returns a structured `output_limit` error.
 For `context`, this limit also narrows its excerpt budget. Mutation commands reject
 this option before running, so an output limit cannot hide a successful write.
 
+## Paging results in an agent session
+
+For a large search or context request, keep `vvv serve` open and ask for pages:
+
+```json
+{"command":"search_page","query":{"pattern":"Engine"},"page":{"max_items":20,"max_bytes":8192}}
+{"command":"continue","cursor":"<next_cursor>","page":{"max_items":20,"max_bytes":8192}}
+```
+
+Copy `result.next_cursor` into the next request until it is null. Matches retain
+their IDs and original one-based ordinals. A match too large for a page produces
+`output_limit` with the required size rather than a shortened match.
+
+Use `context_page` with the same origin/selection as `context`, separate `page`
+and `work` budgets, and optional `references: true`. Continue its query cursor for
+more relationships. For a shortened definition, use its separate `expansion` token:
+
+```json
+{ "command": "expand", "cursor": "<item.expansion>", "max_bytes": 4096 }
+```
+
+Append each chunk's exact text until `done` is true. Relationship traversal and
+excerpt expansion proceed independently. A short or empty context page can mean
+work found no new declaration; follow its cursor until traversal is complete.
+
+Cursors belong to this session and can be retried. Edits invalidate them, including
+changes in files that did not match earlier. On `stale` or `cursor_expired`, restart
+the original query using a current source position. The engine retains at most
+16 queries for ten minutes, subject to byte limits published by `discover`.
+Pagination bounds result delivery and retained state; each request still verifies
+the workspace contents. See [the protocol](protocol.md#paged-queries-and-exact-source-expansion)
+for request shapes, limits, and structured recovery actions.
+
+## Inspecting API schemas
+
+The default build includes offline JSON Schemas for every command. Discovery adds
+`schemas_available` and, when enabled, schema identifiers on each command entry.
+Retrieve a contract without scanning source files:
+
+```console
+vvv schema context --contract arguments
+vvv schema navigate --contract response --json
+vvv schema --contract call
+vvv schema --contract reply
+```
+
+`arguments` describes command-specific inputs, `request` includes the `command`
+field, `result` describes a successful payload, and `response` includes success
+and error envelopes. `call` and `reply` describe the whole session protocol and
+take no command name. Human output prints the schema document; `--json` returns
+the usual vvv envelope containing its `id` and `document`.
+
+The `schemas` CLI feature is enabled by default. For a minimal build, add it
+explicitly with `--no-default-features --features rust,schemas`. Without it,
+discovery reports `schemas_available: false` and the `schema` command is absent.
+Engine/library consumers opt into the engine's `schema` feature independently.
+
+The generated [schema artifacts](schemas/v1/) include their definitions, so a
+client can validate requests and responses without network access. Schema shape
+validation does not resolve symbols, check source versions, or replace engine
+validation of paths, ranges, and query meaning. See the
+[schema protocol](protocol.md#vvv-schema) for identifiers and regeneration.
+
 ## Choosing what a command acts on
 
 Every row in a search is numbered, and `--select` takes those numbers — single rows,
@@ -753,3 +816,64 @@ want Rust:
 ```console
 cargo install --path crates/vvv --no-default-features --features rust,tui
 ```
+
+## Connecting an AI client with MCP
+
+Install the optional adapter with `cargo install vvv-rs --features mcp`, or use a
+release binary. Default Cargo builds exclude MCP. Start one stdio session for a
+fixed workspace:
+
+```console
+vvv -C /absolute/path/to/repo mcp
+```
+
+For clients that use an `mcpServers` configuration, add:
+
+```json
+{
+  "mcpServers": {
+    "vvv": {
+      "command": "vvv",
+      "args": ["-C", "/absolute/path/to/repo", "mcp"]
+    }
+  }
+}
+```
+
+The client must support MCP `2025-11-25`. The six tools are read-only:
+`vvv_discover`, `vvv_search`, `vvv_navigate`, `vvv_context`, `vvv_continue`, and
+`vvv_expand`. Their input and output schemas are available through `tools/list`.
+Discovery describes the engine's full command catalog; only those six tools are
+exposed through MCP.
+
+For example, call `vvv_search` with `{"query":{"name":"Engine"}}`, then pass a
+result's `path` and `start` as a position origin to `vvv_navigate` or `vvv_context`.
+Include its `content` as `expected_content` to reject an intervening edit. For
+example, this requests context at a zero-based position:
+
+```json
+{
+  "origin": {
+    "kind": "position",
+    "path": "src/engine.rs",
+    "position": { "line": 19, "column": 11 }
+  },
+  "page": { "max_items": 8, "max_bytes": 8192 }
+}
+```
+
+Context's `next_cursor`
+continues related declarations through `vvv_continue`; each item's `expansion`
+handle retrieves more exact source text through `vvv_expand`. Handles belong to
+this session. When an edit makes one stale, restart the original query. Navigation
+can return multiple candidates or an unavailable outcome; inspect that outcome
+before proceeding. A large navigation preview returns `output_limit`; use bounded
+context instead.
+
+Each tool defaults to a 16 KiB engine result budget, configurable with
+`max_output_bytes` up to 1 MiB. Protocol framing has separate limits described in
+[the MCP contract](protocol.md#mcp-stdio-adapter). Cancellation removes queued work
+or stops active work at the next engine checkpoint; a parser invocation or pending
+filesystem operation is not forcibly interrupted. Closing stdin cancels work and
+ends the session. Source resolution uses the same engine and ast-grep plugins as
+the CLI; no language server is launched.

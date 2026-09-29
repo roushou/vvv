@@ -1,0 +1,363 @@
+{
+  "$defs": {
+    "BatchIntent": {
+      "description": "Several intents planned in sequence, each against the state the previous\none leaves, and applied as one.",
+      "properties": {
+        "intents": {
+          "items": {
+            "$ref": "#/$defs/Intent"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "intents"
+      ],
+      "type": "object"
+    },
+    "Intent": {
+      "description": "Any mutating request, as one value: what history records, what a summary\nrenders, what a remote client sends.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/RewriteIntent",
+          "properties": {
+            "command": {
+              "const": "rewrite",
+              "type": "string"
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "type": "object"
+        },
+        {
+          "$ref": "#/$defs/RenameIntent",
+          "properties": {
+            "command": {
+              "const": "rename",
+              "type": "string"
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "type": "object"
+        },
+        {
+          "$ref": "#/$defs/MoveIntent",
+          "properties": {
+            "command": {
+              "const": "move",
+              "type": "string"
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "type": "object"
+        },
+        {
+          "$ref": "#/$defs/MoveSymbolIntent",
+          "properties": {
+            "command": {
+              "const": "move_symbol",
+              "type": "string"
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "type": "object"
+        },
+        {
+          "$ref": "#/$defs/BatchIntent",
+          "description": "Several intents planned in sequence, each against the state the\nprevious one leaves, and applied as one.",
+          "properties": {
+            "command": {
+              "const": "batch",
+              "type": "string"
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "LanguageId": {
+      "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
+      "type": "string"
+    },
+    "MatchId": {
+      "description": "Content-derived identifier: the same file, range and text yield the same id\nacross runs, so a selection made from one `search` can drive a later command.",
+      "type": "string"
+    },
+    "MoveIntent": {
+      "description": "Move a file and make every reference to it follow.",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
+    "MoveSymbolIntent": {
+      "description": "Move one declaration — with what belongs to it in the text, and for Rust\nits `impl` blocks — from the file declaring it to another file of the\nsame language, and make every reference follow.",
+      "properties": {
+        "from": {
+          "description": "The file declaring it.",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "to": {
+          "description": "The file to declare it in; it must exist.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
+    "Query": {
+      "properties": {
+        "kind": {
+          "description": "Tree-sitter node kind, e.g. `function_item`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "language": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LanguageId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Restrict to one language; otherwise every registered language is searched."
+        },
+        "name": {
+          "description": "Only declarations with exactly this name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pattern": {
+          "description": "ast-grep style pattern with meta-variables, e.g. `fn $NAME($$$ARGS) { $$$ }`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolKind"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Only declarations of this kind."
+        }
+      },
+      "type": "object"
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "RenameIntent": {
+      "description": "Rename the declaration(s) called `name` and every identifier that spells it.\n\nResolution is syntactic: every occurrence of the identifier in files of\nthe declaring language is an occurrence. The `selection` is how a human or\nagent excludes the ones that are not the same symbol.",
+      "properties": {
+        "declared_in": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelPath"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The file declaring the symbol meant, when several share the name."
+        },
+        "language": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LanguageId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "name": {
+          "type": "string"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolKind"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "to"
+      ],
+      "type": "object"
+    },
+    "RewriteIntent": {
+      "description": "Replace every selected match of `query` with `template`.",
+      "properties": {
+        "query": {
+          "$ref": "#/$defs/Query"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
+        },
+        "template": {
+          "$ref": "#/$defs/Template"
+        }
+      },
+      "required": [
+        "query",
+        "template"
+      ],
+      "type": "object"
+    },
+    "Selection": {
+      "description": "Which matches of a search a later command acts on.\n\nIds are content-derived, so a selection made from `vvv search` can be\nhanded to `vvv rewrite` in a separate process. Ordinals are the 1-based\npositions in the same search's result order, which is what human output\nnumbers rows with. Either kind that no longer resolves means the files\nchanged in between; the selection is then refused rather than silently\nnarrowed.",
+      "oneOf": [
+        {
+          "enum": [
+            "all"
+          ],
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ids": {
+              "items": {
+                "$ref": "#/$defs/MatchId"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ids"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ordinals": {
+              "items": {
+                "format": "uint",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ordinals"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "SymbolKind": {
+      "description": "What a declaration declares, in vocabulary shared by every language.",
+      "oneOf": [
+        {
+          "enum": [
+            "type-parameter",
+            "parameter",
+            "function",
+            "method",
+            "struct",
+            "class",
+            "enum",
+            "variant",
+            "trait",
+            "interface",
+            "type-alias",
+            "const",
+            "static",
+            "variable",
+            "field",
+            "module",
+            "macro"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "impl",
+          "description": "An `impl` block, named after the type it is for. Not a declaration a\npath can reach; it travels with its type when the type moves.",
+          "type": "string"
+        }
+      ]
+    },
+    "Template": {
+      "description": "Replacement text with meta-variable holes: `bar($$$ARGS)`, `$NAME_v2`.\n\nVariables are `$NAME` (single capture) or `$$$NAME` (sequence capture);\na name is `[A-Z_][A-Z0-9_]*`. Anything else is literal.",
+      "type": "string"
+    }
+  },
+  "$id": "urn:vvv:schema:1:batch:request:d8f1352dc4624ce35615323781b91a54ffd0f799da5030fae648f2b0843ae6cd",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Several intents planned in sequence, each against the state the previous\none leaves, and applied as one.",
+  "properties": {
+    "apply": {
+      "default": false,
+      "type": "boolean"
+    },
+    "command": {
+      "const": "batch",
+      "type": "string"
+    },
+    "intents": {
+      "items": {
+        "$ref": "#/$defs/Intent"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "command",
+    "intents"
+  ],
+  "title": "batch request",
+  "type": "object"
+}

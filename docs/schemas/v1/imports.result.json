@@ -1,0 +1,237 @@
+{
+  "$defs": {
+    "Address": {
+      "description": "A position in a language's namespace: the package it belongs to and the\npath within it — `fff :: [grep, types]` for a Rust module, path\ncomponents for a TypeScript file. Prefix relations, which are what a move\ncares about, never hold across packages.",
+      "properties": {
+        "package": {
+          "$ref": "#/$defs/PackageId"
+        },
+        "path": {
+          "items": {
+            "$ref": "#/$defs/Name"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "package",
+        "path"
+      ],
+      "type": "object"
+    },
+    "ImportGroup": {
+      "description": "Where a grouped entry sits, so a surgery can rewrite it in place or move\nit out of the group.",
+      "properties": {
+        "item": {
+          "$ref": "#/$defs/Span",
+          "description": "The whole entry, alias or nested list included (`parse::Config as Cfg`)."
+        },
+        "items": {
+          "description": "How many entries that list has.",
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "list": {
+          "$ref": "#/$defs/Span",
+          "description": "The innermost list the entry belongs to, braces included."
+        },
+        "prefix": {
+          "$ref": "#/$defs/ModulePath",
+          "description": "Combined prefix of the enclosing groups (`crate::util`)."
+        },
+        "statement": {
+          "$ref": "#/$defs/Span",
+          "description": "The enclosing statement (`pub use crate::util::{…};`)."
+        },
+        "top_level": {
+          "description": "Whether `list` is the statement's own list rather than a nested one.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "prefix",
+        "item",
+        "list",
+        "items",
+        "statement",
+        "top_level"
+      ],
+      "type": "object"
+    },
+    "ImportSite": {
+      "description": "One path in one file. `span` covers exactly the text a rewrite replaces.",
+      "properties": {
+        "address": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Address"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "alias": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Name"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The name the statement binds instead of the path's last segment:\n`Cfg` in `use a::Config as Cfg`."
+        },
+        "declares": {
+          "default": true,
+          "description": "Part of an import statement (`use`, `import`), so it brings its last\nsegment into the file's scope. A qualified path in an expression\n(`fff::GrepMatch` in a type position) is a reference to rewrite on a\nmove, but declares nothing.",
+          "type": "boolean"
+        },
+        "glob": {
+          "description": "`use a::b::*`: every name under the path is brought into scope.",
+          "type": "boolean"
+        },
+        "group": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ImportGroup"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Present when the path is an entry of a grouped import such as\n`use a::{b, c::d}`; replacing `span` alone can then only express\npaths that stay under the group's prefix."
+        },
+        "path": {
+          "$ref": "#/$defs/ModulePath",
+          "description": "The full path as written (`crate::a::b`, `../x/y`), parsed by the\ngrammar's [`PathSyntax`]. For a grouped entry this includes the\ngroup's prefix."
+        },
+        "reexport": {
+          "description": "A `pub use`, an `export … from`: the name it brings in is offered on\nagain under this file's address, so a path to it here reaches the\noriginal declaration.",
+          "type": "boolean"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        },
+        "start": {
+          "$ref": "#/$defs/Position"
+        }
+      },
+      "required": [
+        "path",
+        "span",
+        "start"
+      ],
+      "type": "object"
+    },
+    "ModulePath": {
+      "description": "A path as spelled in source: its head and its segments, with the syntax\nthat spells it. Serialises as the text, so the wire is what the user\nwrote.",
+      "type": "string"
+    },
+    "Name": {
+      "description": "One identifier: a module, a declaration, a file stem. Compared by text.",
+      "type": "string"
+    },
+    "PackageId": {
+      "description": "The name a package goes by in paths: a Rust crate's lib name (`fff`, not\n`fff-search`), a TypeScript package's name. The layout decides the spelling.",
+      "type": "string"
+    },
+    "Position": {
+      "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
+      "properties": {
+        "column": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "line": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "column"
+      ],
+      "type": "object"
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "Span": {
+      "description": "Half-open byte range `[start, end)` inside a single file.",
+      "properties": {
+        "end": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "start": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "urn:vvv:schema:1:imports:result:5936b525bfc0d332d5b5c9e523226d379949d87e5fb447ced6206b0aa9e9643d",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "`imports [path]`: import statements worth a look — unused, unresolved,\nor the same target twice.",
+  "properties": {
+    "path": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RelPath"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The file asked about; every file when absent."
+    },
+    "redundant": {
+      "description": "Declared imports naming an address another statement in the file\nalready brings in.",
+      "items": {
+        "$ref": "#/$defs/ImportSite"
+      },
+      "type": "array"
+    },
+    "unplaced": {
+      "description": "Files whose language has a layout but which it cannot place — a\ncrate's integration tests, say — so their imports were not judged.",
+      "items": {
+        "$ref": "#/$defs/RelPath"
+      },
+      "type": "array"
+    },
+    "unresolved": {
+      "description": "Declared imports the layout could not place.",
+      "items": {
+        "$ref": "#/$defs/ImportSite"
+      },
+      "type": "array"
+    },
+    "unused": {
+      "description": "Declared imports whose bound name the file never spells again.",
+      "items": {
+        "$ref": "#/$defs/ImportSite"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "unused",
+    "unresolved",
+    "redundant",
+    "unplaced"
+  ],
+  "title": "imports result",
+  "type": "object"
+}

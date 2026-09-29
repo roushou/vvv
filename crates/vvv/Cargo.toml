@@ -21,7 +21,9 @@ name = "vvv"
 path = "src/main.rs"
 
 [features]
-default = ["rust", "typescript", "tui"]
+mcp = ["schemas", "dep:rmcp", "dep:tokio", "dep:tokio-util", "dep:futures", "dep:jsonschema"]
+schemas = ["vvv-engine/schema"]
+default = ["rust", "typescript", "tui", "schemas"]
 rust = ["dep:vvv-lang", "vvv-lang/rust"]
 typescript = ["dep:vvv-lang", "vvv-lang/typescript"]
 tui = ["dep:vvv-tui"]
@@ -30,14 +32,22 @@ tui = ["dep:vvv-tui"]
 anstyle = "1.0.14"
 anyhow = "1.0.104"
 clap = { version = "4.6.7", features = ["derive"] }
+futures = { version = "0.3.32", default-features = false, features = ["std"], optional = true }
+jsonschema = { workspace = true, optional = true }
+rmcp = { version = "=1.7.0", default-features = false, features = ["server", "transport-io"], optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
+tokio = { version = "1.52.3", default-features = false, features = ["rt", "sync", "time", "macros"], optional = true }
+tokio-util = { version = "0.7.18", features = ["codec"], optional = true }
 vvv-engine = { workspace = true }
 vvv-lang = { workspace = true, optional = true }
 vvv-tui = { workspace = true, optional = true }
 
 [dev-dependencies]
 insta = "1.48.0"
+jsonschema = { workspace = true }
+rmcp = { version = "=1.7.0", default-features = false, features = ["client"] }
+tokio = { version = "1.52.3", features = ["process", "macros", "rt", "time"] }
 
 [lints]
 workspace = true

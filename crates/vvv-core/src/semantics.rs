@@ -80,6 +80,7 @@ impl VisibilityRule {
 
 /// What a visibility modifier means, relative to the declaring module.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ReachKind {
     /// The declaring module and its descendants (Rust private).

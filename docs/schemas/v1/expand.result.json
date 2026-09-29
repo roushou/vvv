@@ -1,0 +1,179 @@
+{
+  "$defs": {
+    "ContentId": {
+      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "type": "string"
+    },
+    "LanguageId": {
+      "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
+      "type": "string"
+    },
+    "Position": {
+      "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
+      "properties": {
+        "column": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "line": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "column"
+      ],
+      "type": "object"
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "SnapshotId": {
+      "$ref": "#/$defs/ContentId",
+      "description": "Opaque identity of captured source and project inputs; not a disk transaction."
+    },
+    "SourceAnchor": {
+      "properties": {
+        "content": {
+          "$ref": "#/$defs/ContentId"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        }
+      },
+      "required": [
+        "path",
+        "content",
+        "span"
+      ],
+      "type": "object"
+    },
+    "Span": {
+      "description": "Half-open byte range `[start, end)` inside a single file.",
+      "properties": {
+        "end": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "start": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "type": "object"
+    },
+    "SymbolKind": {
+      "description": "What a declaration declares, in vocabulary shared by every language.",
+      "oneOf": [
+        {
+          "enum": [
+            "type-parameter",
+            "parameter",
+            "function",
+            "method",
+            "struct",
+            "class",
+            "enum",
+            "variant",
+            "trait",
+            "interface",
+            "type-alias",
+            "const",
+            "static",
+            "variable",
+            "field",
+            "module",
+            "macro"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "impl",
+          "description": "An `impl` block, named after the type it is for. Not a declaration a\npath can reach; it travels with its type when the type moves.",
+          "type": "string"
+        }
+      ]
+    },
+    "SymbolRef": {
+      "description": "A declaration in one source version, not an identity across edits.",
+      "properties": {
+        "declaration": {
+          "$ref": "#/$defs/SourceAnchor"
+        },
+        "kind": {
+          "$ref": "#/$defs/SymbolKind"
+        },
+        "language": {
+          "$ref": "#/$defs/LanguageId"
+        },
+        "name_span": {
+          "$ref": "#/$defs/Span"
+        }
+      },
+      "required": [
+        "language",
+        "declaration",
+        "name_span",
+        "kind"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "urn:vvv:schema:1:expand:result:c5c5d8637eaa339f0791db9ce4d0809df75ceade826ac96a09ff6171c3d38bb8",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "done": {
+      "type": "boolean"
+    },
+    "excerpt": {
+      "$ref": "#/$defs/SourceAnchor"
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "requested": {
+      "$ref": "#/$defs/SourceAnchor",
+      "description": "Full extent being expanded; the excerpt is the returned subrange."
+    },
+    "snapshot": {
+      "$ref": "#/$defs/SnapshotId"
+    },
+    "start": {
+      "$ref": "#/$defs/Position"
+    },
+    "target": {
+      "$ref": "#/$defs/SymbolRef"
+    },
+    "text": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "snapshot",
+    "target",
+    "requested",
+    "excerpt",
+    "start",
+    "text",
+    "done",
+    "next_cursor"
+  ],
+  "title": "expand result",
+  "type": "object"
+}

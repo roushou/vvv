@@ -7,8 +7,8 @@ Or run `vvv serve` and send the same commands as JSON, one per line (below).
 The wire types are exported by `vvv-engine`. Shared types live in `protocol/`;
 capability-specific requests and answers live with their implementations and are
 exported at the crate root. See [architecture.md](architecture.md) for Rust import
-paths. A Rust client needs only `vvv-engine`. This page specifies serialization. Field order is not significant. Absent optional
-fields are omitted, not `null`.
+paths. A Rust client needs only `vvv-engine`. This page specifies serialization. Field order is not significant. Optional fields follow the per-command contracts
+below; continuation and expansion handles use null to signal completion.
 
 ## Envelope
 
@@ -42,6 +42,7 @@ fields are the command's own, with the same names as the CLI's flags:
 { "command": "imports", "path": "src/plan/mod.rs" }
 { "command": "file", "path": "src/plan/mod.rs" }
 { "command": "discover" }
+{ "command": "schema", "for_command": "context", "contract": "arguments" }
 { "command": "context", "origin": { "kind": "position", "path": "src/engine.rs", "position": { "line": 8, "column": 15 } }, "budget": { "max_bytes": 8192 }, "references": false }
 { "command": "navigate", "origin": { "kind": "position", "path": "src/engine.rs", "position": { "line": 8, "column": 15 } } }
 { "command": "rename", "name": "Config", "to": "Settings", "apply": true }
@@ -103,9 +104,74 @@ This limits output, not parsing, computation time, or in-memory result construct
 `languages`, `commands`, `context_defaults`, `context_maximum`, `min_output_bytes`,
 and `max_output_bytes`. Each command entry has its `command` name, `read_only`
 status (true only when every form is read-only), and accepted top-level `parameters`.
-This is capability metadata, not a complete JSON Schema or a guarantee that every
-construct of a registered language is resolvable. `id` and `max_output_bytes` belong
-to the call envelope rather than individual command parameter lists.
+`schemas_available` says whether this build includes generated schemas. If enabled,
+each command also includes `schemas: { arguments, request, result, response }`,
+with the four schema identifiers. Fetch them with `schema` below. Without schema
+support, these references and the schema command are absent. Language registration
+is not a guarantee that every construct is resolvable. `id` and `max_output_bytes`
+belong to the call envelope rather than individual command parameter lists.
+
+## `vvv schema`
+
+Available with the default CLI `schemas` feature, or the engine's optional `schema`
+feature. The query performs no workspace reads. It accepts `contract` and an
+optional `for_command`:
+
+```json
+{ "command": "schema", "for_command": "context", "contract": "arguments" }
+{ "command": "schema", "for_command": "navigate", "contract": "response" }
+{ "command": "schema", "contract": "call" }
+{ "command": "schema", "contract": "reply" }
+```
+
+| Contract    | Requires `for_command` | Describes                                                  |
+| ----------- | ---------------------- | ---------------------------------------------------------- |
+| `arguments` | Yes                    | Command-specific input fields                              |
+| `request`   | Yes                    | Command inputs including the `command` discriminator       |
+| `result`    | Yes                    | Successful command payload                                 |
+| `response`  | Yes                    | That command's success/error response envelope             |
+| `call`      | No                     | Any session request, including `id` and `max_output_bytes` |
+| `reply`     | No                     | Any session response, including its optional echoed `id`   |
+
+An invalid command/contract combination returns `bad_request`. Unknown command
+names and contract names fail request decoding. The successful result is
+`{ "id": "urn:vvv:schema:…", "document": { … } }`. `document` is a JSON Schema
+Draft 2020-12 object with `$schema`, `$id`, and any needed local `$defs`.
+
+Identifiers take the form
+`urn:vvv:schema:1:<command-or-session>:<contract>:<digest>`. The BLAKE3 digest covers
+the compact serialization of the key-sorted document before adding `$id`. No remote
+resolution is required; these identifiers name documents, not download URLs.
+Identifiers can change for additive contract updates or description changes. The
+envelope's `schema: 1` retains its existing compatibility meaning and is distinct
+from the JSON Schema dialect and document identity.
+
+Inputs reflect Serde defaults and accepted unknown fields, with explicit budget
+ranges; strict objects such as context budgets reject unknown fields. Outputs
+describe serialization rather than input defaults. Mutation results require
+`history_id` exactly when `applied` is true. Untagged result unions use `anyOf`,
+since some result shapes overlap. Source paths/IDs/module paths remain strings,
+and nullable fields retain their actual representation.
+
+Schemas cover wire shape and expressible constraints. Successful validation does
+not guarantee a valid query meaning, current source version, existing path, valid
+in-file range, or permitted output-budget policy for a mutation. Those are still
+engine checks. Schema retrieval itself obeys a session call's output budget and
+can return `output_limit`; request an individual contract instead of an aggregate
+or increase the limit.
+
+Artifacts live in `docs/schemas/v1/`. Regenerate and format them with:
+
+```console
+cargo run -p vvv-engine --features schema --example schemas -- --write
+dprint fmt docs/schemas/v1
+```
+
+Run the same example without `--write` to check artifact content against the
+current types. CI runs that check and dprint; schema tests independently validate
+the documents, requests, and responses, and the corpus validates actual command
+output against per-command response schemas. JSON formatting does not affect
+artifact identity; the catalog hashes canonical generated data.
 
 ## `vvv context`
 
@@ -162,6 +228,113 @@ are revalidated before returning. The context snapshot incorporates those inputs
 and constituent navigation snapshots. Observed changes return `stale`; this does
 not lock external editors or promise filesystem transaction isolation. Expand an
 item with a new context request using its `target` as a symbol origin.
+
+## Paged queries and exact source expansion
+
+`search_page`, `context_page`, `continue`, and `expand` are read-only session and
+library commands. Keep the same `serve` process (or clones of one `Engine`) for
+all continuations. Existing `search`, `context`, and their CLI flags retain their
+one-shot behavior.
+
+```json
+{"command":"search_page","query":{"pattern":"Engine"},"page":{"max_items":20,"max_bytes":8192}}
+{"command":"context_page","origin":{"kind":"position","path":"src/engine.rs","position":{"line":8,"column":15}},"references":true,"page":{"max_items":2,"max_bytes":4096},"work":{"max_lookups":16,"max_files":8}}
+{"command":"continue","cursor":"<next_cursor>","page":{"max_items":20,"max_bytes":8192}}
+{"command":"expand","cursor":"<item.expansion>","max_bytes":4096}
+```
+
+`context_page` accepts `selection` (default `"all"`) and `references` (default
+false). Page and work objects default field by field and reject unknown fields:
+
+| Object | Field         | Default | Range        |
+| ------ | ------------- | ------- | ------------ |
+| `page` | `max_items`   | 20      | 1–64         |
+| `page` | `max_bytes`   | 16384   | 1024–1048576 |
+| `work` | `max_lookups` | 64      | 1–512        |
+| `work` | `max_files`   | 64      | 1–1024       |
+
+`continue` accepts optional `work` for context cursors; search cursors reject it.
+`expand.max_bytes` is required, with the same byte range. The smaller of the
+command's byte budget and `Call.max_output_bytes` is applied before generating a
+result. Counts include the entire compact result JSON: metadata, escaping, and
+cursor strings. The response envelope and echoed ID are excluded.
+
+Search results contain `kind: "search"`, `snapshot`, `query`, `items`, `skipped`,
+`total_items`, and `next_cursor` (null at the end). Each item is a complete `Match`
+with an additional absolute one-based `ordinal`. Declarations-first path/source
+ordering, match IDs, captures, and skipped-language diagnostics match unpaged
+search. Ordinals never restart at one for a new page. An indivisible match that
+cannot fit returns `output_limit`; no match is skipped or truncated.
+
+Context results contain `kind: "context"`, `snapshot`, the existing context
+`outcome`, `items`, `references_by_name`, `work: {lookups, files}`,
+`unresolved: {ambiguous, unavailable, no_container}`, `traversal_complete`, and
+`next_cursor`. Each item has the existing `ContextItem` fields plus `expansion`,
+an independent excerpt cursor or null. Ambiguity candidates remain complete and
+indivisible. `continue` returns the same operation-specific shape, distinguished
+by `kind`.
+
+Context traversal preserves seed, enclosing declaration, outgoing occurrence,
+and incoming path/source order, with first-evidence deduplication across pages.
+Work counters describe additional relationship work in this call; the initial
+seed lookup is excluded. Resuming within an incoming file counts that file once
+in the new call. Deferred traversal is represented by `next_cursor`, independently
+of irreducible `unresolved` counts. Existing one-shot omission counters are not
+redefined. A page can be short or empty when work progresses without yielding a
+new declaration. A terminal empty page can confirm exhaustion; a nonterminal empty
+page always advances the frontier. Complete incoming evidence is still limited
+to the exact spelling, and test-path relationships do not establish test coverage.
+
+Expansion results contain `snapshot`, `target`, `requested` (the full declaration
+anchor), `excerpt` (the returned anchored range), `start`, exact `text`, `done`,
+and `next_cursor`. Concatenating the initial item text and its expansion chunks
+reconstructs the complete declaration, including documentation and indentation.
+Ranges are absolute half-open UTF-8 bytes; `start` is a zero-based line/character
+position. No ellipses or formatting are inserted. `done` marks the final chunk;
+an item's `complete` means that item contains the entire declaration. Continuing
+relationships does not consume an excerpt cursor, or vice versa.
+
+Cursors are opaque, retryable, process-local handles. The same retained cursor
+and budgets return the same page and successor; changing budgets starts at the
+same logical position. `continue` rejects excerpt cursors and `expand` rejects
+query cursors. These tokens are neither authentication credentials nor persistent
+bookmarks. Query scope, selection, snapshot, and ordering cannot change through a
+continuation. Failed validation or budget checks do not advance the checkpoint.
+
+Paged queries capture a sorted workspace inventory, registered language identities,
+all claimed source content hashes (including unmatched files), layout manifests,
+and workspace `.ignore`, `.gitignore`, and `.git/info/exclude` inputs. A fresh walk
+also observes the effects of ancestor/global ignore configuration on inclusion.
+They bypass graph stamp/trust caches, load a fresh graph on each call, and revalidate
+before publishing. Additions, deletions, renames, source changes, and resolution
+configuration changes invalidate the query tree. Internal apply/undo invalidates
+queries even when attempted writes fail. This detects observed changes without
+locking external editors or promising filesystem transaction isolation.
+
+Retention limits are 16 query trees, 32 MiB charged per query, 128 MiB total, and
+a fixed ten-minute lifetime from capture, measured monotonically. Charges
+conservatively include allocation overhead for inventory, query data, checkpoints,
+and tokens; no declaration bodies or full workspace graphs are retained by the
+cursor store. Least recently used whole query trees are evicted when needed.
+Retained-state limits do not bound parser allocations, temporary graph memory,
+execution time, or validation I/O. Whole-workspace validation is performed even
+for small pages. Discovery publishes `page_defaults`, `page_maximum`,
+`work_defaults`, `work_maximum`, and `query_retention`.
+
+Failures carry structured `continuation` recovery actions:
+
+| Code              | `continuation`                    | Meaning                                                  |
+| ----------------- | --------------------------------- | -------------------------------------------------------- |
+| `stale`           | `restart_query`                   | Inputs changed; restart from a current origin            |
+| `cursor_expired`  | `restart_query`                   | State expired, was evicted, or belongs to another engine |
+| `invalid_cursor`  | `correct_cursor`                  | Malformed, unknown checkpoint, or wrong cursor kind      |
+| `output_limit`    | `increase_budget_or_narrow_query` | Increase the byte budget or narrow the query             |
+| `retention_limit` | `narrow_query`                    | Retained query/checkpoints exceed limits                 |
+
+`output_limit` includes `max_bytes`, `required_bytes`, and an optional `anchor`
+identifying an item that cannot fit. An ambiguous candidate set is never shortened
+into apparent certainty. Exceeding retention limits does not consume an existing
+cursor. After a stale result, all query and excerpt cursors in that tree are invalid.
 
 ## Shared types
 
@@ -706,8 +879,11 @@ happened in words and `hint` (when present) what to try, and neither is for pars
 | code               | meaning                                                                           |
 | ------------------ | --------------------------------------------------------------------------------- |
 | `output_limit`     | the complete result exceeds the requested result-byte budget                      |
-| `cancelled`        | navigation was cancelled                                                          |
+| `cancelled`        | a read operation was cancelled                                                    |
 | `incomplete`       | navigation or its provider could not complete within its budget                   |
+| `cursor_expired`   | continuation state expired, was evicted, or belongs to another engine             |
+| `invalid_cursor`   | malformed or wrong-kind continuation handle                                       |
+| `retention_limit`  | retained query state exceeds the advertised limits                                |
 | `bad_request`      | the line is not JSON, or not a known command (`vvv serve`)                        |
 | `bad_query`        | a search with none of pattern, kind, symbol, name                                 |
 | `bad_pattern`      | a pattern or node kind the language's grammar rejects                             |
@@ -770,3 +946,74 @@ can retain its executable plan and an applied completion can retain its committe
 history id. Interfaces consume `Execution::into_answer()` before serializing the
 wire `Answer`. Executable plans and committed completion handles are not
 serialized.
+
+## MCP stdio adapter
+
+`vvv -C <root> mcp` is an optional CLI adapter over the same in-process engine.
+The `mcp` feature enables `schemas` and the pinned official Rust SDK (`rmcp 1.7.0`).
+The supported and tested protocol baseline is `2025-11-25`; other versions are
+rejected during initialization. `serve` retains its existing JSON-lines contract.
+Only MCP messages go to stdout, including when `--json` is supplied; startup
+errors go to stderr. The workspace is fixed at launch.
+
+`tools/list` returns all six tools in one response, with generated JSON Schema
+inputs and per-command `Response` output schemas. A tool-list cursor is invalid.
+
+| MCP tool       | Engine request |
+| -------------- | -------------- |
+| `vvv_discover` | `discover`     |
+| `vvv_search`   | `search_page`  |
+| `vvv_navigate` | `navigate`     |
+| `vvv_context`  | `context_page` |
+| `vvv_continue` | `continue`     |
+| `vvv_expand`   | `expand`       |
+
+Arguments are the command's generated `arguments` schema, extended with
+`max_output_bytes` (default 16384; range 1024–1048576). No `command`, call ID,
+workspace root, or arbitrary command dispatch is accepted. All tools have
+`readOnlyHint: true`, `destructiveHint: false`, and `openWorldHint: false`.
+Discovery still reports the full engine catalog; use `tools/list` as the MCP
+allowlist.
+
+Every tool runs through `Call::execute_with_cancellation`, sharing `Call::execute`'s
+budget policy. `structuredContent` contains the original vvv `Response<Answer>`
+without an MCP request ID. A text block contains the same JSON for compatibility.
+Engine failures set `isError: true` and retain typed recovery fields. Ambiguous and
+unavailable navigation are successful results with `isError: false`. Unknown tools
+and invalid argument shapes are JSON-RPC errors, not vvv failures. Large navigation
+results return `output_limit`; use `vvv_context` for bounded source excerpts.
+
+Limits apply independently:
+
+| Resource                                     | Limit                          |
+| -------------------------------------------- | ------------------------------ |
+| Incoming SDK codec frame                     | 64 KiB                         |
+| JSON-encoded request ID                      | 256 bytes                      |
+| Admitted requests, including pending replies | 32                             |
+| Engine execution                             | One worker, eight queued calls |
+| Serialized engine result                     | 16 KiB default, 1 MiB maximum  |
+| Outgoing JSON-RPC message                    | 8 MiB                          |
+
+The outgoing allowance reserves space for structured content, its escaped text
+copy, envelopes, and IDs before execution. Oversized error payloads become a small
+`output_limit` failure. JSON is never truncated. Oversized input closes the
+session; malformed JSON produces a protocol error and ends the decoder stream.
+Duplicate or oversized IDs receive errors without an ID; capacity errors use the
+rejected request ID. A busy session can be retried after an outstanding call
+finishes. Backpressure retains admitted request slots until responses are written.
+
+Cancellation removes queued jobs immediately. Active read calls check cancellation
+between source reads, search batches, navigation lookups, context phases, and
+publication. Cancellation and publication share one synchronization point: a
+cancelled call cannot publish a cursor, while a call that has already published
+returns its completed result. Existing cursor checkpoints remain replayable.
+Cancellation latency is the next cooperative checkpoint, not a wall-clock limit;
+a single parser invocation, directory walk, or filesystem operation cannot be
+forcibly interrupted. EOF cancels pending work, joins the engine worker, and drops
+the session's retained query handles.
+
+The adapter uses the [official Rust SDK](https://github.com/modelcontextprotocol/rust-sdk)
+for message codecs, lifecycle, and dispatch, following the
+[tool result](https://modelcontextprotocol.io/specification/2025-11-25/server/tools)
+and [cancellation](https://modelcontextprotocol.io/specification/2025-11-25/basic/utilities/cancellation)
+contracts. The engine and core do not depend on MCP or an async runtime.

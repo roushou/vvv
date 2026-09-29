@@ -10,6 +10,11 @@ fn discovery_matches_the_build_and_describes_the_new_requests() {
         Languages::new().with(Fake::default()),
     );
     let discovery = DiscoveryQuery::default().execute(&engine);
+    assert_eq!(discovery.schemas_available, cfg!(feature = "schema"));
+    assert_eq!(
+        discovery.commands.iter().any(|c| c.command == "schema"),
+        cfg!(feature = "schema")
+    );
     assert_eq!(discovery.languages, engine.language_ids());
     let context = discovery
         .commands

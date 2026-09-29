@@ -30,6 +30,7 @@ use crate::{
 /// its `impl` blocks — from the file declaring it to another file of the
 /// same language, and make every reference follow.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct MoveSymbolIntent {
     pub name: String,
     /// The file declaring it.
@@ -50,6 +51,7 @@ impl MoveSymbolIntent {
 
 /// `vvv move --symbol`: one declaration moved between files.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct MoveSymbol {
     pub intent: MoveSymbolIntent,
     /// Preview or successful application with its history entry.

@@ -52,7 +52,8 @@ or core types.
 ### `vvv-core` — the plugin contract
 
 Pure data and traits: what a language is given and what it hands back. No tree-sitter,
-no file system, no lifecycle; `serde` and `thiserror` are its only dependencies. A
+no file system, no lifecycle; `serde` and `thiserror` are its required dependencies.
+The optional `schema` feature adds Schemars metadata beside serializable types. A
 language's rule tables read alike: a `SymbolRule`, `ImportRule` or `HighlightRule` is
 built by `new(..)` or a kind constructor and scoped by `under(kind)` (a direct
 parent) or `within(kind)` (an ancestor).
@@ -167,6 +168,18 @@ tree walk. `Call` retains wire data in `protocol`; its execution lives in
 a reply. Budgeted mutation calls are rejected before dispatch. The CLI session only
 parses lines, delegates execution, and serializes the response. These output limits
 are separate from source-processing memory or time limits.
+
+The optional engine `schema` feature generates Draft 2020-12 contracts from wire
+types. `SchemaQuery` and its catalog belong to `capabilities/schema.rs`; generation
+and retrieval never read the workspace. `protocol::Command` supplies shared command
+identity, parameter metadata, and write policy. Requests map exhaustively to that
+identity; schema generation binds request variants and concrete result types.
+Discovery references generated contracts by content-derived identifiers. The
+catalog is initialized once per process and contains bundled local definitions.
+Serialization and deserialization schemas use separate contracts. Custom mutation
+state and module-path schemas preserve their actual wire representation. The CLI
+enables this through its default `schemas` feature; core and engine consumers opt
+in independently, with no parser or transport dependency added.
 
 `ReferencesQuery::definitions` remains available to typed callers as a separate
 reference-evidence helper. The TUI definition pane uses `NavigationQuery` and does
@@ -485,10 +498,25 @@ Package `vvv-rs` (the bare name is taken on crates.io), binary `vvv`.
 no logic. Applying is the `Request`'s job (`apply: true`), the same path `serve` uses
 — the per-command `--apply` dance is not repeated. `vvv serve`
 is the exception that has none of its own: it reads a `Call` per line of stdin, runs
-its `Request` on a session engine and writes the `Reply` — the transport an MCP or
-editor adapter wraps. Dependencies: `vvv-engine` and, behind the `tui` feature (on by
+its `Request` on a session engine and writes the `Reply` for JSON-lines clients. Dependencies: `vvv-engine` and, behind the `tui` feature (on by
 default), `vvv-tui`; `vvv ui` or bare `vvv` in a terminal hands the engine to the
 picker with the CLI's colour policy and `$VISUAL`/`$EDITOR`.
+
+The optional `mcp` feature adds `mcp/`, a six-tool read-only adapter using the official
+Rust SDK's codec, lifecycle, and dispatch. It calls the engine in process through
+`Call::execute_with_cancellation`, sharing the ordinary call budget policy. A bounded
+queue and one dedicated engine worker keep synchronous parsing off the protocol
+loop; the transport bounds frames, request IDs, and admitted requests. Tool descriptions
+and result/error conversion live in `output/mcp.rs`. SDK and async-runtime dependencies
+remain optional CLI dependencies, with no engine/core dependency changes.
+
+`ReadCancellation` is a single-use engine read-call handle. Checks between reads,
+search batches, navigation lookups, and context phases cooperate with cancellation.
+The final publication gate serializes cancellation against query-store publication:
+cancellation cannot publish a checkpoint; a completed publication ignores late
+cancellation. Existing immutable checkpoints remain retryable. A parser invocation or
+filesystem operation is not preempted. Closing MCP input cancels work and joins the
+worker before releasing the engine and its handles.
 
 `output/` is the CLI's display layer. `mod.rs` is the strategy — `Reporter`
 (`report(&Answer)`, `error(&anyhow::Error)`) and `OutputFormat`, the choice of
@@ -809,3 +837,28 @@ and position) so the numbers a preview prints are the numbers `--select` reads.
    `vvv-engine/src/report/lines.rs`, and `Document::of` delegates to it. A
    mutation's `apply` flag rides on the `Request`.
 4. Update `protocol.md`.
+
+## Retained query checkpoints
+
+`query_store.rs` owns immutable typed checkpoints shared by clones of an engine.
+Search and context execution remains with their capability owners;
+`capabilities/pagination.rs` owns shared delivery budgets and continuation dispatch,
+and `capabilities/excerpts.rs` owns exact source expansion. Query and excerpt tokens
+reference one query root and expire or are evicted together. Failed publication
+never consumes an existing checkpoint. Fixed monotonic lifetimes and conservative
+byte accounting bound retained roots and checkpoint growth.
+
+`graph/query_snapshot.rs` captures the full claimed input universe with content
+identities, manifests, inventory, and walk configuration. Paged calls build fresh
+graphs and revalidate before publication; graph stamp/trust caches cannot prove
+cursor validity. Excerpt checkpoints retain a target and byte offset, loading its
+source only through a validated fresh graph. No full workspace graph or source
+body is retained by the query store. Search collection checks retained-result
+limits incrementally; parsing and temporary graph allocations remain outside that
+limit.
+
+Operation exclusion precedes store access. Store locks are released before graph
+construction, traversal, and validation; publication acquires the store only after
+those succeed. `Engine::touched` increments a shared revision without taking a
+store or graph lock, invalidating queries even after failed mutation attempts.
+Engine dispatch routes typed requests without owning capability behavior.

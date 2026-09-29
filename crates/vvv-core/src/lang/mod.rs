@@ -27,6 +27,7 @@ use crate::symbol::{Symbol, SymbolRule};
 
 /// Stable identifier of a language (`rust`, `typescript`, ...).
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(transparent)]
 pub struct LanguageId(Cow<'static, str>);
 

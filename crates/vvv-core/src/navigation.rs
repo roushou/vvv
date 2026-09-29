@@ -3,6 +3,7 @@ use crate::{ModulePath, Span, Symbol, SymbolKind};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum BindingNamespace {
     Type,
@@ -10,6 +11,7 @@ pub enum BindingNamespace {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct LexicalBinding {
     pub symbol: Symbol,
     pub scope: Span,
@@ -29,6 +31,7 @@ impl LexicalBinding {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct NamedImport {
     pub local: String,
     pub imported: String,
@@ -63,6 +66,7 @@ pub struct NamedImportRule {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct QualifiedImport {
     pub span: Span,
     pub binding: String,

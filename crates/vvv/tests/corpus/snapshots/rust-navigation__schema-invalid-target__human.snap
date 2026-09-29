@@ -1,0 +1,8 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 1
+--- stdout ---
+--- stderr ---
+✗ command schemas require for_command; call and reply schemas do not accept it

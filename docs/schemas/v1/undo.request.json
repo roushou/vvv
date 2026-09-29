@@ -1,0 +1,15 @@
+{
+  "$id": "urn:vvv:schema:1:undo:request:7d7efae6fdd9e3c2d9b3ef0ca99cedf3de77ff21bf058bd1633a22d56856d34c",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "command": {
+      "const": "undo",
+      "type": "string"
+    }
+  },
+  "required": [
+    "command"
+  ],
+  "title": "undo request",
+  "type": "object"
+}

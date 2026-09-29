@@ -1,0 +1,436 @@
+{
+  "$defs": {
+    "Address": {
+      "description": "A position in a language's namespace: the package it belongs to and the\npath within it — `fff :: [grep, types]` for a Rust module, path\ncomponents for a TypeScript file. Prefix relations, which are what a move\ncares about, never hold across packages.",
+      "properties": {
+        "package": {
+          "$ref": "#/$defs/PackageId"
+        },
+        "path": {
+          "items": {
+            "$ref": "#/$defs/Name"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "package",
+        "path"
+      ],
+      "type": "object"
+    },
+    "Dep": {
+      "description": "One import statement in the file and, when the layout can follow it,\nwhere it leads.",
+      "properties": {
+        "address": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Address"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "What the path spells, as the layout places it."
+        },
+        "alias": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Name"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The name the statement binds instead of the path's last segment:\n`Cfg` in `use a::Config as Cfg`."
+        },
+        "declares": {
+          "default": true,
+          "description": "Part of an import statement (`use`, `import`), so it brings its last\nsegment into the file's scope. A qualified path in an expression\n(`fff::GrepMatch` in a type position) is a reference to rewrite on a\nmove, but declares nothing.",
+          "type": "boolean"
+        },
+        "file": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelPath"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The file declaring what the import reaches — the origin's when known."
+        },
+        "glob": {
+          "description": "`use a::b::*`: every name under the path is brought into scope.",
+          "type": "boolean"
+        },
+        "group": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ImportGroup"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Present when the path is an entry of a grouped import such as\n`use a::{b, c::d}`; replacing `span` alone can then only express\npaths that stay under the group's prefix."
+        },
+        "origin": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Address"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The declaration the address reaches through re-exports, when that is\nsomewhere else: `vvv_core::text::span::Span` for `use vvv_core::Span`."
+        },
+        "path": {
+          "$ref": "#/$defs/ModulePath",
+          "description": "The full path as written (`crate::a::b`, `../x/y`), parsed by the\ngrammar's [`PathSyntax`]. For a grouped entry this includes the\ngroup's prefix."
+        },
+        "reexport": {
+          "description": "A `pub use`, an `export … from`: the name it brings in is offered on\nagain under this file's address, so a path to it here reaches the\noriginal declaration.",
+          "type": "boolean"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        },
+        "start": {
+          "$ref": "#/$defs/Position",
+          "description": "Where the import starts, as a line and column."
+        }
+      },
+      "required": [
+        "span",
+        "path",
+        "start"
+      ],
+      "type": "object"
+    },
+    "ImportGroup": {
+      "description": "Where a grouped entry sits, so a surgery can rewrite it in place or move\nit out of the group.",
+      "properties": {
+        "item": {
+          "$ref": "#/$defs/Span",
+          "description": "The whole entry, alias or nested list included (`parse::Config as Cfg`)."
+        },
+        "items": {
+          "description": "How many entries that list has.",
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "list": {
+          "$ref": "#/$defs/Span",
+          "description": "The innermost list the entry belongs to, braces included."
+        },
+        "prefix": {
+          "$ref": "#/$defs/ModulePath",
+          "description": "Combined prefix of the enclosing groups (`crate::util`)."
+        },
+        "statement": {
+          "$ref": "#/$defs/Span",
+          "description": "The enclosing statement (`pub use crate::util::{…};`)."
+        },
+        "top_level": {
+          "description": "Whether `list` is the statement's own list rather than a nested one.",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "prefix",
+        "item",
+        "list",
+        "items",
+        "statement",
+        "top_level"
+      ],
+      "type": "object"
+    },
+    "Modifier": {
+      "description": "A visibility modifier as it appears in the source.",
+      "properties": {
+        "span": {
+          "$ref": "#/$defs/Span"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "span",
+        "text"
+      ],
+      "type": "object"
+    },
+    "ModulePath": {
+      "description": "A path as spelled in source: its head and its segments, with the syntax\nthat spells it. Serialises as the text, so the wire is what the user\nwrote.",
+      "type": "string"
+    },
+    "Name": {
+      "description": "One identifier: a module, a declaration, a file stem. Compared by text.",
+      "type": "string"
+    },
+    "PackageId": {
+      "description": "The name a package goes by in paths: a Rust crate's lib name (`fff`, not\n`fff-search`), a TypeScript package's name. The layout decides the spelling.",
+      "type": "string"
+    },
+    "Position": {
+      "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
+      "properties": {
+        "column": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "line": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "column"
+      ],
+      "type": "object"
+    },
+    "Reach": {
+      "description": "The set of modules that may name a declaration: a kind applied to the\ndeclaring module's address. Never declared, always computed.",
+      "oneOf": [
+        {
+          "enum": [
+            "everyone"
+          ],
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "within": {
+              "$ref": "#/$defs/Address"
+            }
+          },
+          "required": [
+            "within"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "package": {
+              "$ref": "#/$defs/PackageId"
+            }
+          },
+          "required": [
+            "package"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "Span": {
+      "description": "Half-open byte range `[start, end)` inside a single file.",
+      "properties": {
+        "end": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "start": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "type": "object"
+    },
+    "Symbol": {
+      "description": "A declaration found in one file.",
+      "properties": {
+        "extent": {
+          "$ref": "#/$defs/Span",
+          "description": "The declaration with what belongs to it in the text: leading\nattributes and doc comments, an enclosing `export`. What moving the\ndeclaration cuts; what an outline shows."
+        },
+        "kind": {
+          "$ref": "#/$defs/SymbolKind"
+        },
+        "name": {
+          "type": "string"
+        },
+        "name_span": {
+          "$ref": "#/$defs/Span",
+          "description": "The identifier token itself: what a rename replaces."
+        },
+        "span": {
+          "$ref": "#/$defs/Span",
+          "description": "The declaration node."
+        },
+        "visibility": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Modifier"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The visibility as written (`pub(crate)`, `export`); `None` when the\ndeclaration has no modifier. What it means is the language's\n[`Semantics`](crate::Semantics)."
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "name_span",
+        "span",
+        "extent"
+      ],
+      "type": "object"
+    },
+    "SymbolKind": {
+      "description": "What a declaration declares, in vocabulary shared by every language.",
+      "oneOf": [
+        {
+          "enum": [
+            "type-parameter",
+            "parameter",
+            "function",
+            "method",
+            "struct",
+            "class",
+            "enum",
+            "variant",
+            "trait",
+            "interface",
+            "type-alias",
+            "const",
+            "static",
+            "variable",
+            "field",
+            "module",
+            "macro"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "impl",
+          "description": "An `impl` block, named after the type it is for. Not a declaration a\npath can reach; it travels with its type when the type moves.",
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "$id": "urn:vvv:schema:1:explain:result:6bc0f8770c532328e40e9abda5919ac9cc039b73b1ee4cfd41fc24361f5044ed",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "`explain <path>:<line>:<column>`: what is at a position.",
+  "properties": {
+    "address": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Address"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "declared": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Position"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "Where that declaration's name starts, and the source line holding it."
+    },
+    "import": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Dep"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The import statement at the position, when it is inside one: what\nit spells and where that really comes from."
+    },
+    "importers": {
+      "description": "Files whose imports resolve to the declaration, to any address a\nre-export offers it at, or to its module when the declaration itself\nis not addressable.",
+      "items": {
+        "$ref": "#/$defs/RelPath"
+      },
+      "type": "array"
+    },
+    "line": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "module": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Address"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The file's module address, and the declaration's when a path reaches it."
+    },
+    "path": {
+      "$ref": "#/$defs/RelPath"
+    },
+    "position": {
+      "$ref": "#/$defs/Position"
+    },
+    "reach": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Reach"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "symbol": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Symbol"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The innermost declaration whose extent contains the position."
+    },
+    "via": {
+      "description": "Every other address a re-export chain offers the declaration at.",
+      "items": {
+        "$ref": "#/$defs/Address"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "path",
+    "position",
+    "importers"
+  ],
+  "title": "explain result",
+  "type": "object"
+}

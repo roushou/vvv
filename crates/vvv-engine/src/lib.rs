@@ -101,3 +101,17 @@ pub use protocol::{
 };
 
 pub use protocol::{Capability, Discovery, DiscoveryQuery, OutputLimit};
+
+pub use protocol::Command;
+#[cfg(feature = "schema")]
+pub use protocol::{SchemaContract, SchemaDocument, SchemaQuery, SchemaReferences};
+
+mod query_store;
+pub use protocol::{
+    ContextPage, ContextPageQuery, ContextUnresolved, ContextWork, ContinuationRecovery,
+    ContinueQuery, Cursor, ExpandQuery, Expansion, PageBudget, PageReply, PagedContextItem,
+    QueryLimits, SearchPage, SearchPageItem, SearchPageQuery, WorkBudget,
+};
+
+mod cancellation;
+pub use cancellation::ReadCancellation;

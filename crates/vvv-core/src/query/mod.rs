@@ -10,6 +10,7 @@ use crate::lang::LanguageId;
 use crate::symbol::SymbolKind;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Query {
     /// ast-grep style pattern with meta-variables, e.g. `fn $NAME($$$ARGS) { $$$ }`.
     #[serde(default, skip_serializing_if = "Option::is_none")]

@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 
 /// What a declaration declares, in vocabulary shared by every language.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum SymbolKind {
     TypeParameter,

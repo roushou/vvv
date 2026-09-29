@@ -1,0 +1,22 @@
+{
+  "$id": "urn:vvv:schema:1:expand:arguments:0ae1b7dedea0a08f582e416c66426f8810721e28faa503ff0fa644ebabd24f8a",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cursor": {
+      "type": "string"
+    },
+    "max_bytes": {
+      "format": "uint",
+      "maximum": 1048576,
+      "minimum": 1024,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "cursor",
+    "max_bytes"
+  ],
+  "title": "expand arguments",
+  "type": "object"
+}

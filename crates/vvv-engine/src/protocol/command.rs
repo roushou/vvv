@@ -1,0 +1,178 @@
+//! Stable command identity and descriptors shared by discovery and clients.
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum Command {
+    #[cfg(feature = "schema")]
+    Schema,
+    SearchPage,
+    ContextPage,
+    Continue,
+    Expand,
+    Discover,
+    Context,
+    Navigate,
+    Search,
+    Outline,
+    References,
+    Where,
+    Deps,
+    Explain,
+    Surface,
+    Impact,
+    Dead,
+    Imports,
+    File,
+    Rewrite,
+    Rename,
+    Move,
+    MoveSymbol,
+    Batch,
+    History,
+    Undo,
+}
+
+impl Command {
+    pub const ALL: &[Self] = &[
+        #[cfg(feature = "schema")]
+        Self::Schema,
+        Self::SearchPage,
+        Self::ContextPage,
+        Self::Continue,
+        Self::Expand,
+        Self::Discover,
+        Self::Context,
+        Self::Navigate,
+        Self::Search,
+        Self::Outline,
+        Self::References,
+        Self::Where,
+        Self::Deps,
+        Self::Explain,
+        Self::Surface,
+        Self::Impact,
+        Self::Dead,
+        Self::Imports,
+        Self::File,
+        Self::Rewrite,
+        Self::Rename,
+        Self::Move,
+        Self::MoveSymbol,
+        Self::Batch,
+        Self::History,
+        Self::Undo,
+    ];
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            #[cfg(feature = "schema")]
+            Self::Schema => "schema",
+            Self::SearchPage => "search_page",
+            Self::ContextPage => "context_page",
+            Self::Continue => "continue",
+            Self::Expand => "expand",
+            Self::Discover => "discover",
+            Self::Context => "context",
+            Self::Navigate => "navigate",
+            Self::Search => "search",
+            Self::Outline => "outline",
+            Self::References => "references",
+            Self::Where => "where",
+            Self::Deps => "deps",
+            Self::Explain => "explain",
+            Self::Surface => "surface",
+            Self::Impact => "impact",
+            Self::Dead => "dead",
+            Self::Imports => "imports",
+            Self::File => "file",
+            Self::Rewrite => "rewrite",
+            Self::Rename => "rename",
+            Self::Move => "move",
+            Self::MoveSymbol => "move_symbol",
+            Self::Batch => "batch",
+            Self::History => "history",
+            Self::Undo => "undo",
+        }
+    }
+
+    pub fn parameters(self) -> &'static [&'static str] {
+        match self {
+            #[cfg(feature = "schema")]
+            Self::Schema => &["for_command", "contract"],
+            Self::SearchPage => &["query", "page"],
+            Self::ContextPage => &["origin", "selection", "references", "page", "work"],
+            Self::Continue => &["cursor", "page", "work"],
+            Self::Expand => &["cursor", "max_bytes"],
+            Self::Discover => &[],
+            Self::Context => &["origin", "selection", "budget", "references"],
+            Self::Navigate => &["origin", "selection"],
+            Self::Search => &["pattern", "kind", "symbol", "name", "language"],
+            Self::Outline => &["path"],
+            Self::References => &["name", "symbol", "language", "declared_in"],
+            Self::Where => &["name", "from"],
+            Self::Deps => &["path"],
+            Self::Explain => &["path", "position"],
+            Self::Surface => &["package"],
+            Self::Impact => &["name", "declared_in"],
+            Self::Dead => &["language"],
+            Self::Imports => &["path"],
+            Self::File => &["path"],
+            Self::Rewrite => &["query", "template", "selection", "apply"],
+            Self::Rename => &[
+                "name",
+                "to",
+                "symbol",
+                "language",
+                "declared_in",
+                "selection",
+                "apply",
+            ],
+            Self::Move => &["from", "to", "apply"],
+            Self::MoveSymbol => &["name", "from", "to", "apply"],
+            Self::Batch => &["intents", "apply"],
+            Self::History => &[],
+            Self::Undo => &[],
+        }
+    }
+
+    pub fn is_read_only(self) -> bool {
+        match self {
+            #[cfg(feature = "schema")]
+            Self::Schema => true,
+            Self::SearchPage => true,
+            Self::ContextPage => true,
+            Self::Continue => true,
+            Self::Expand => true,
+            Self::Discover => true,
+            Self::Context => true,
+            Self::Navigate => true,
+            Self::Search => true,
+            Self::Outline => true,
+            Self::References => true,
+            Self::Where => true,
+            Self::Deps => true,
+            Self::Explain => true,
+            Self::Surface => true,
+            Self::Impact => true,
+            Self::Dead => true,
+            Self::Imports => true,
+            Self::File => true,
+            Self::Rewrite => false,
+            Self::Rename => false,
+            Self::Move => false,
+            Self::MoveSymbol => false,
+            Self::Batch => false,
+            Self::History => true,
+            Self::Undo => false,
+        }
+    }
+}
+
+impl std::str::FromStr for Command {
+    type Err = serde_json::Error;
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        serde_json::from_value(serde_json::Value::String(value.into()))
+    }
+}

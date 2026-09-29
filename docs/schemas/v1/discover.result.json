@@ -1,0 +1,259 @@
+{
+  "$defs": {
+    "Capability": {
+      "properties": {
+        "command": {
+          "type": "string"
+        },
+        "parameters": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "read_only": {
+          "description": "Whether this command is always read-only, including every supported option.",
+          "type": "boolean"
+        },
+        "schemas": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SchemaReferences"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "command",
+        "read_only",
+        "parameters"
+      ],
+      "type": "object"
+    },
+    "ContextBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_bytes": {
+          "default": 16384,
+          "description": "Maximum compact JSON bytes in the result, excluding the response envelope.",
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 1024,
+          "type": "integer"
+        },
+        "max_files": {
+          "default": 64,
+          "description": "Maximum source files examined for incoming same-spelling references.",
+          "format": "uint",
+          "maximum": 1024,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_items": {
+          "default": 12,
+          "format": "uint",
+          "maximum": 64,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_lookups": {
+          "default": 64,
+          "format": "uint",
+          "maximum": 512,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_bytes",
+        "max_items",
+        "max_lookups",
+        "max_files"
+      ],
+      "type": "object"
+    },
+    "LanguageId": {
+      "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
+      "type": "string"
+    },
+    "PageBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_bytes": {
+          "default": 16384,
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 1024,
+          "type": "integer"
+        },
+        "max_items": {
+          "default": 20,
+          "format": "uint",
+          "maximum": 64,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_items",
+        "max_bytes"
+      ],
+      "type": "object"
+    },
+    "QueryLimits": {
+      "properties": {
+        "lifetime_seconds": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_queries": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_query_bytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_total_bytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_queries",
+        "max_query_bytes",
+        "max_total_bytes",
+        "lifetime_seconds"
+      ],
+      "type": "object"
+    },
+    "SchemaReferences": {
+      "description": "Identifiers of bundled, locally retrievable command contracts.",
+      "properties": {
+        "arguments": {
+          "type": "string"
+        },
+        "request": {
+          "type": "string"
+        },
+        "response": {
+          "type": "string"
+        },
+        "result": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "arguments",
+        "request",
+        "result",
+        "response"
+      ],
+      "type": "object"
+    },
+    "WorkBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_files": {
+          "default": 64,
+          "format": "uint",
+          "maximum": 1024,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_lookups": {
+          "default": 64,
+          "format": "uint",
+          "maximum": 512,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_lookups",
+        "max_files"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "urn:vvv:schema:1:discover:result:5b51cd63342972f09e1658d18b064970c2a7b90dafa32c7ccff55f8811e52e86",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "commands": {
+      "items": {
+        "$ref": "#/$defs/Capability"
+      },
+      "type": "array"
+    },
+    "context_defaults": {
+      "$ref": "#/$defs/ContextBudget"
+    },
+    "context_maximum": {
+      "$ref": "#/$defs/ContextBudget"
+    },
+    "languages": {
+      "items": {
+        "$ref": "#/$defs/LanguageId"
+      },
+      "type": "array"
+    },
+    "max_output_bytes": {
+      "format": "uint",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "min_output_bytes": {
+      "format": "uint",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "page_defaults": {
+      "$ref": "#/$defs/PageBudget"
+    },
+    "page_maximum": {
+      "$ref": "#/$defs/PageBudget"
+    },
+    "query_retention": {
+      "$ref": "#/$defs/QueryLimits"
+    },
+    "schema": {
+      "format": "uint32",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "schemas_available": {
+      "default": false,
+      "type": "boolean"
+    },
+    "work_defaults": {
+      "$ref": "#/$defs/WorkBudget"
+    },
+    "work_maximum": {
+      "$ref": "#/$defs/WorkBudget"
+    }
+  },
+  "required": [
+    "schemas_available",
+    "schema",
+    "languages",
+    "commands",
+    "page_defaults",
+    "page_maximum",
+    "work_defaults",
+    "work_maximum",
+    "query_retention",
+    "context_defaults",
+    "context_maximum",
+    "min_output_bytes",
+    "max_output_bytes"
+  ],
+  "title": "discover result",
+  "type": "object"
+}

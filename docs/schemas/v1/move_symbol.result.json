@@ -1,0 +1,363 @@
+{
+  "$defs": {
+    "Address": {
+      "description": "A position in a language's namespace: the package it belongs to and the\npath within it — `fff :: [grep, types]` for a Rust module, path\ncomponents for a TypeScript file. Prefix relations, which are what a move\ncares about, never hold across packages.",
+      "properties": {
+        "package": {
+          "$ref": "#/$defs/PackageId"
+        },
+        "path": {
+          "items": {
+            "$ref": "#/$defs/Name"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "package",
+        "path"
+      ],
+      "type": "object"
+    },
+    "Diff": {
+      "description": "One file's change: the unified diff text (the wire) and its hunks (the\nmodel).",
+      "type": "string"
+    },
+    "Edit": {
+      "description": "Replace the bytes at `span` with `replacement`.",
+      "properties": {
+        "replacement": {
+          "type": "string"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        }
+      },
+      "required": [
+        "span",
+        "replacement"
+      ],
+      "type": "object"
+    },
+    "FileChange": {
+      "description": "One file a plan touches: its edits and the whole-file diff.",
+      "properties": {
+        "diff": {
+          "$ref": "#/$defs/Diff"
+        },
+        "edits": {
+          "items": {
+            "$ref": "#/$defs/Edit"
+          },
+          "type": "array"
+        },
+        "moved_to": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelPath"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Path after, when the file is moved."
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath",
+          "description": "Path before the change."
+        }
+      },
+      "required": [
+        "path",
+        "edits",
+        "diff"
+      ],
+      "type": "object"
+    },
+    "MoveSymbolIntent": {
+      "description": "Move one declaration — with what belongs to it in the text, and for Rust\nits `impl` blocks — from the file declaring it to another file of the\nsame language, and make every reference follow.",
+      "properties": {
+        "from": {
+          "description": "The file declaring it.",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "to": {
+          "description": "The file to declare it in; it must exist.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
+    "Name": {
+      "description": "One identifier: a module, a declaration, a file stem. Compared by text.",
+      "type": "string"
+    },
+    "Notice": {
+      "description": "Something a plan could not do and a human should look at. Never fatal:\nthe rest of the plan is still valid. Data only; the display layer words it.",
+      "oneOf": [
+        {
+          "description": "An import the layout understood but the surgery could not rewrite in place;\n`replacement` is what it should become.",
+          "properties": {
+            "import": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "unrewritable_import",
+              "type": "string"
+            },
+            "replacement": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "import",
+            "replacement"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "After the move, `from` references `item` but may not see it, and the\nwidening it would take is not one vvv makes on its own (making a\ndeclaration public across packages is the author's call).",
+          "properties": {
+            "from": {
+              "$ref": "#/$defs/Address"
+            },
+            "item": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "unreachable",
+              "type": "string"
+            },
+            "needs": {
+              "$ref": "#/$defs/ReachKind"
+            }
+          },
+          "required": [
+            "kind",
+            "item",
+            "from",
+            "needs"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "An import that now names a declaration in its own file, inside a\ngrouped statement vvv does not split for this; remove the entry.",
+          "properties": {
+            "import": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "redundant_import",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "import"
+          ],
+          "type": "object"
+        }
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "start": {
+          "$ref": "#/$defs/Position"
+        }
+      },
+      "required": [
+        "path",
+        "start"
+      ],
+      "type": "object"
+    },
+    "PackageId": {
+      "description": "The name a package goes by in paths: a Rust crate's lib name (`fff`, not\n`fff-search`), a TypeScript package's name. The layout decides the spelling.",
+      "type": "string"
+    },
+    "Position": {
+      "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
+      "properties": {
+        "column": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "line": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "column"
+      ],
+      "type": "object"
+    },
+    "ReachKind": {
+      "description": "What a visibility modifier means, relative to the declaring module.",
+      "oneOf": [
+        {
+          "const": "declaring",
+          "description": "The declaring module and its descendants (Rust private).",
+          "type": "string"
+        },
+        {
+          "const": "parent",
+          "description": "The parent module and its descendants (`pub(super)`).",
+          "type": "string"
+        },
+        {
+          "const": "package",
+          "description": "The whole package (`pub(crate)`).",
+          "type": "string"
+        },
+        {
+          "const": "everyone",
+          "description": "Everyone (`pub`, `export`).",
+          "type": "string"
+        },
+        {
+          "const": "path",
+          "description": "A module named in the modifier (`pub(in a::b)`); the layout resolves it.",
+          "type": "string"
+        }
+      ]
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "Respelling": {
+      "description": "A reference a move re-spelled in place: where it is, what it said and\nwhat it says now. A preview lists these as one row each instead of a\ndiff hunk; an edit no respelling accounts for is structural and shows as\na hunk.",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "span": {
+          "$ref": "#/$defs/Span",
+          "description": "The reference's span before the move — the edit that rewrites it."
+        },
+        "start": {
+          "$ref": "#/$defs/Position"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "span",
+        "start",
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
+    "Span": {
+      "description": "Half-open byte range `[start, end)` inside a single file.",
+      "properties": {
+        "end": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "start": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "urn:vvv:schema:1:move_symbol:result:7bb4e5095f77973e777fb00189080743004b4dc5b8ab14915ebab3b53846c614",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "`vvv move --symbol`: one declaration moved between files.",
+  "oneOf": [
+    {
+      "properties": {
+        "applied": {
+          "const": false
+        },
+        "history_id": false
+      },
+      "required": [
+        "applied"
+      ]
+    },
+    {
+      "properties": {
+        "applied": {
+          "const": true
+        },
+        "history_id": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "applied",
+        "history_id"
+      ]
+    }
+  ],
+  "properties": {
+    "files": {
+      "items": {
+        "$ref": "#/$defs/FileChange"
+      },
+      "type": "array"
+    },
+    "from": {
+      "$ref": "#/$defs/Address",
+      "description": "The declaration's address before and after."
+    },
+    "intent": {
+      "$ref": "#/$defs/MoveSymbolIntent"
+    },
+    "notices": {
+      "items": {
+        "$ref": "#/$defs/Notice"
+      },
+      "type": "array"
+    },
+    "respellings": {
+      "description": "Consumers rewritten in place; every other edit in `files` is the\ndeclaration itself moving.",
+      "items": {
+        "$ref": "#/$defs/Respelling"
+      },
+      "type": "array"
+    },
+    "to": {
+      "$ref": "#/$defs/Address"
+    }
+  },
+  "required": [
+    "intent",
+    "from",
+    "to",
+    "files"
+  ],
+  "title": "move_symbol result",
+  "type": "object"
+}

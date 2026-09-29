@@ -6,6 +6,7 @@ use vvv_core::{Address, PackageId, ReachKind};
 /// The set of modules that may name a declaration: a kind applied to the
 /// declaring module's address. Never declared, always computed.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum Reach {
     Within(Address),

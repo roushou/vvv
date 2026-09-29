@@ -1,0 +1,859 @@
+{
+  "$defs": {
+    "Address": {
+      "description": "A position in a language's namespace: the package it belongs to and the\npath within it — `fff :: [grep, types]` for a Rust module, path\ncomponents for a TypeScript file. Prefix relations, which are what a move\ncares about, never hold across packages.",
+      "properties": {
+        "package": {
+          "$ref": "#/$defs/PackageId"
+        },
+        "path": {
+          "items": {
+            "$ref": "#/$defs/Name"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "package",
+        "path"
+      ],
+      "type": "object"
+    },
+    "ContentId": {
+      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "type": "string"
+    },
+    "ContinuationRecovery": {
+      "description": "A recovery action clients can branch on without parsing the error message.",
+      "enum": [
+        "restart_query",
+        "correct_cursor",
+        "increase_budget_or_narrow_query",
+        "narrow_query"
+      ],
+      "type": "string"
+    },
+    "Diff": {
+      "description": "One file's change: the unified diff text (the wire) and its hunks (the\nmodel).",
+      "type": "string"
+    },
+    "Edit": {
+      "description": "Replace the bytes at `span` with `replacement`.",
+      "properties": {
+        "replacement": {
+          "type": "string"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        }
+      },
+      "required": [
+        "span",
+        "replacement"
+      ],
+      "type": "object"
+    },
+    "ErrorCode": {
+      "description": "The kind of failure, stable across releases; the message is not.",
+      "oneOf": [
+        {
+          "enum": [
+            "cursor_expired",
+            "invalid_cursor",
+            "retention_limit",
+            "output_limit"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "cancelled",
+          "description": "The caller cancelled the operation.",
+          "type": "string"
+        },
+        {
+          "const": "incomplete",
+          "description": "Resolution stopped before a complete answer was available.",
+          "type": "string"
+        },
+        {
+          "const": "bad_request",
+          "description": "The request could not be read: not JSON, or not a known command.",
+          "type": "string"
+        },
+        {
+          "const": "bad_query",
+          "description": "A query with none of pattern, kind, symbol, name.",
+          "type": "string"
+        },
+        {
+          "const": "bad_pattern",
+          "description": "A pattern or node kind the language's grammar rejects.",
+          "type": "string"
+        },
+        {
+          "const": "bad_selection",
+          "description": "A selection naming rows or ids the search did not find.",
+          "type": "string"
+        },
+        {
+          "const": "bad_template",
+          "description": "A template naming a capture the match does not have.",
+          "type": "string"
+        },
+        {
+          "const": "no_such_symbol",
+          "description": "No declaration by that name (and kind).",
+          "type": "string"
+        },
+        {
+          "const": "ambiguous_symbol",
+          "description": "Several declarations share the name; `declared_in` picks one.",
+          "type": "string"
+        },
+        {
+          "const": "no_language",
+          "description": "No registered language claims the file.",
+          "type": "string"
+        },
+        {
+          "const": "no_layout",
+          "description": "The language has no layout: paths cannot be followed, files not moved.",
+          "type": "string"
+        },
+        {
+          "const": "no_such_position",
+          "description": "A position past the end of the file.",
+          "type": "string"
+        },
+        {
+          "const": "exists",
+          "description": "The destination already exists.",
+          "type": "string"
+        },
+        {
+          "const": "not_found",
+          "description": "A file, or the file declaring a name, could not be found.",
+          "type": "string"
+        },
+        {
+          "const": "unmovable",
+          "description": "The layout refuses the move: a root, across packages, into itself.",
+          "type": "string"
+        },
+        {
+          "const": "conflict",
+          "description": "Two edits of one plan overlap, or a file is moved twice.",
+          "type": "string"
+        },
+        {
+          "const": "stale",
+          "description": "A file changed since the plan (or the apply to undo) was made.",
+          "type": "string"
+        },
+        {
+          "const": "no_history",
+          "description": "Nothing to undo, or a history file that cannot be read.",
+          "type": "string"
+        },
+        {
+          "const": "io",
+          "description": "Reading or writing the tree failed.",
+          "type": "string"
+        },
+        {
+          "const": "recovery_failed",
+          "description": "Recovery could not restore or verify every attempted effect.",
+          "type": "string"
+        }
+      ]
+    },
+    "Failure": {
+      "description": "A failed request, as the wire carries it.",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "continuation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContinuationRecovery"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hint": {
+          "description": "What to try instead, when there is something.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "output_limit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OutputLimit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recovery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Recovery"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Effects that could not be restored after a failed mutation."
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "type": "object"
+    },
+    "FileChange": {
+      "description": "One file a plan touches: its edits and the whole-file diff.",
+      "properties": {
+        "diff": {
+          "$ref": "#/$defs/Diff"
+        },
+        "edits": {
+          "items": {
+            "$ref": "#/$defs/Edit"
+          },
+          "type": "array"
+        },
+        "moved_to": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelPath"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Path after, when the file is moved."
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath",
+          "description": "Path before the change."
+        }
+      },
+      "required": [
+        "path",
+        "edits",
+        "diff"
+      ],
+      "type": "object"
+    },
+    "MoveSymbol": {
+      "description": "`vvv move --symbol`: one declaration moved between files.",
+      "oneOf": [
+        {
+          "properties": {
+            "applied": {
+              "const": false
+            },
+            "history_id": false
+          },
+          "required": [
+            "applied"
+          ]
+        },
+        {
+          "properties": {
+            "applied": {
+              "const": true
+            },
+            "history_id": {
+              "format": "uint64",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "applied",
+            "history_id"
+          ]
+        }
+      ],
+      "properties": {
+        "files": {
+          "items": {
+            "$ref": "#/$defs/FileChange"
+          },
+          "type": "array"
+        },
+        "from": {
+          "$ref": "#/$defs/Address",
+          "description": "The declaration's address before and after."
+        },
+        "intent": {
+          "$ref": "#/$defs/MoveSymbolIntent"
+        },
+        "notices": {
+          "items": {
+            "$ref": "#/$defs/Notice"
+          },
+          "type": "array"
+        },
+        "respellings": {
+          "description": "Consumers rewritten in place; every other edit in `files` is the\ndeclaration itself moving.",
+          "items": {
+            "$ref": "#/$defs/Respelling"
+          },
+          "type": "array"
+        },
+        "to": {
+          "$ref": "#/$defs/Address"
+        }
+      },
+      "required": [
+        "intent",
+        "from",
+        "to",
+        "files"
+      ],
+      "type": "object"
+    },
+    "MoveSymbolIntent": {
+      "description": "Move one declaration — with what belongs to it in the text, and for Rust\nits `impl` blocks — from the file declaring it to another file of the\nsame language, and make every reference follow.",
+      "properties": {
+        "from": {
+          "description": "The file declaring it.",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "to": {
+          "description": "The file to declare it in; it must exist.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
+    "Name": {
+      "description": "One identifier: a module, a declaration, a file stem. Compared by text.",
+      "type": "string"
+    },
+    "Notice": {
+      "description": "Something a plan could not do and a human should look at. Never fatal:\nthe rest of the plan is still valid. Data only; the display layer words it.",
+      "oneOf": [
+        {
+          "description": "An import the layout understood but the surgery could not rewrite in place;\n`replacement` is what it should become.",
+          "properties": {
+            "import": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "unrewritable_import",
+              "type": "string"
+            },
+            "replacement": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "import",
+            "replacement"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "After the move, `from` references `item` but may not see it, and the\nwidening it would take is not one vvv makes on its own (making a\ndeclaration public across packages is the author's call).",
+          "properties": {
+            "from": {
+              "$ref": "#/$defs/Address"
+            },
+            "item": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "unreachable",
+              "type": "string"
+            },
+            "needs": {
+              "$ref": "#/$defs/ReachKind"
+            }
+          },
+          "required": [
+            "kind",
+            "item",
+            "from",
+            "needs"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "An import that now names a declaration in its own file, inside a\ngrouped statement vvv does not split for this; remove the entry.",
+          "properties": {
+            "import": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "redundant_import",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "import"
+          ],
+          "type": "object"
+        }
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "start": {
+          "$ref": "#/$defs/Position"
+        }
+      },
+      "required": [
+        "path",
+        "start"
+      ],
+      "type": "object"
+    },
+    "OutputLimit": {
+      "properties": {
+        "anchor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceAnchor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_bytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "required_bytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_bytes",
+        "required_bytes"
+      ],
+      "type": "object"
+    },
+    "PackageId": {
+      "description": "The name a package goes by in paths: a Rust crate's lib name (`fff`, not\n`fff-search`), a TypeScript package's name. The layout decides the spelling.",
+      "type": "string"
+    },
+    "Position": {
+      "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
+      "properties": {
+        "column": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "line": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "column"
+      ],
+      "type": "object"
+    },
+    "ReachKind": {
+      "description": "What a visibility modifier means, relative to the declaring module.",
+      "oneOf": [
+        {
+          "const": "declaring",
+          "description": "The declaring module and its descendants (Rust private).",
+          "type": "string"
+        },
+        {
+          "const": "parent",
+          "description": "The parent module and its descendants (`pub(super)`).",
+          "type": "string"
+        },
+        {
+          "const": "package",
+          "description": "The whole package (`pub(crate)`).",
+          "type": "string"
+        },
+        {
+          "const": "everyone",
+          "description": "Everyone (`pub`, `export`).",
+          "type": "string"
+        },
+        {
+          "const": "path",
+          "description": "A module named in the modifier (`pub(in a::b)`); the layout resolves it.",
+          "type": "string"
+        }
+      ]
+    },
+    "Recovery": {
+      "description": "A recovery result; unknown states are separate from confirmed residual effects.",
+      "properties": {
+        "cause": {
+          "$ref": "#/$defs/Failure"
+        },
+        "failures": {
+          "items": {
+            "$ref": "#/$defs/RecoveryIssue"
+          },
+          "type": "array"
+        },
+        "remaining": {
+          "items": {
+            "$ref": "#/$defs/RecoveryEffect"
+          },
+          "type": "array"
+        },
+        "unverified": {
+          "items": {
+            "$ref": "#/$defs/RecoveryUnverified"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "cause",
+        "failures",
+        "remaining",
+        "unverified"
+      ],
+      "type": "object"
+    },
+    "RecoveryEffect": {
+      "properties": {
+        "expected": {
+          "$ref": "#/$defs/RecoveryState"
+        },
+        "observed": {
+          "$ref": "#/$defs/RecoveryState"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        }
+      },
+      "required": [
+        "path",
+        "expected",
+        "observed"
+      ],
+      "type": "object"
+    },
+    "RecoveryIssue": {
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "message": {
+          "type": "string"
+        },
+        "operation": {
+          "$ref": "#/$defs/RecoveryOperation"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        }
+      },
+      "required": [
+        "operation",
+        "path",
+        "code",
+        "message"
+      ],
+      "type": "object"
+    },
+    "RecoveryOperation": {
+      "enum": [
+        "restore_file",
+        "restore_move",
+        "restore_directory",
+        "remove_file",
+        "remove_directory"
+      ],
+      "type": "string"
+    },
+    "RecoveryState": {
+      "oneOf": [
+        {
+          "properties": {
+            "kind": {
+              "const": "absent",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "fingerprint": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "file",
+              "type": "string"
+            },
+            "spelling": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/RelPath"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "fingerprint"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "kind": {
+              "const": "directory",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "kind": {
+              "const": "other",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "RecoveryUnverified": {
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "expected": {
+          "$ref": "#/$defs/RecoveryState"
+        },
+        "message": {
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        }
+      },
+      "required": [
+        "path",
+        "expected",
+        "code",
+        "message"
+      ],
+      "type": "object"
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "Respelling": {
+      "description": "A reference a move re-spelled in place: where it is, what it said and\nwhat it says now. A preview lists these as one row each instead of a\ndiff hunk; an edit no respelling accounts for is structural and shows as\na hunk.",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "span": {
+          "$ref": "#/$defs/Span",
+          "description": "The reference's span before the move — the edit that rewrites it."
+        },
+        "start": {
+          "$ref": "#/$defs/Position"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "span",
+        "start",
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
+    "SourceAnchor": {
+      "properties": {
+        "content": {
+          "$ref": "#/$defs/ContentId"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        }
+      },
+      "required": [
+        "path",
+        "content",
+        "span"
+      ],
+      "type": "object"
+    },
+    "Span": {
+      "description": "Half-open byte range `[start, end)` inside a single file.",
+      "properties": {
+        "end": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "start": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "urn:vvv:schema:1:move_symbol:response:1bd6d0d0383b309ec7e337099d870bbb91e6fb4e827e71a1f51a0a6fb6bc7872",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Top-level envelope of every `--json` response.",
+  "oneOf": [
+    {
+      "properties": {
+        "result": {
+          "$ref": "#/$defs/MoveSymbol"
+        },
+        "schema": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "status": {
+          "const": "ok",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "schema",
+        "result"
+      ],
+      "type": "object"
+    },
+    {
+      "description": "A failed request, as the wire carries it.",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "continuation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContinuationRecovery"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hint": {
+          "description": "What to try instead, when there is something.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "output_limit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OutputLimit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recovery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Recovery"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Effects that could not be restored after a failed mutation."
+        },
+        "schema": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "status": {
+          "const": "error",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "schema",
+        "code",
+        "message"
+      ],
+      "type": "object"
+    }
+  ],
+  "title": "move_symbol response"
+}

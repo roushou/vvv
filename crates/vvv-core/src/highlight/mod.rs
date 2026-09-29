@@ -9,6 +9,7 @@ use crate::text::Span;
 /// The classes a display distinguishes. Coarse on purpose: enough to read
 /// code, not enough to argue about.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum HighlightKind {
     Keyword,
@@ -22,6 +23,7 @@ pub enum HighlightKind {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Highlight {
     pub span: Span,
     pub kind: HighlightKind,

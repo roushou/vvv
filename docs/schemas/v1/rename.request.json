@@ -1,0 +1,153 @@
+{
+  "$defs": {
+    "LanguageId": {
+      "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
+      "type": "string"
+    },
+    "MatchId": {
+      "description": "Content-derived identifier: the same file, range and text yield the same id\nacross runs, so a selection made from one `search` can drive a later command.",
+      "type": "string"
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "Selection": {
+      "description": "Which matches of a search a later command acts on.\n\nIds are content-derived, so a selection made from `vvv search` can be\nhanded to `vvv rewrite` in a separate process. Ordinals are the 1-based\npositions in the same search's result order, which is what human output\nnumbers rows with. Either kind that no longer resolves means the files\nchanged in between; the selection is then refused rather than silently\nnarrowed.",
+      "oneOf": [
+        {
+          "enum": [
+            "all"
+          ],
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ids": {
+              "items": {
+                "$ref": "#/$defs/MatchId"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ids"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ordinals": {
+              "items": {
+                "format": "uint",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ordinals"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "SymbolKind": {
+      "description": "What a declaration declares, in vocabulary shared by every language.",
+      "oneOf": [
+        {
+          "enum": [
+            "type-parameter",
+            "parameter",
+            "function",
+            "method",
+            "struct",
+            "class",
+            "enum",
+            "variant",
+            "trait",
+            "interface",
+            "type-alias",
+            "const",
+            "static",
+            "variable",
+            "field",
+            "module",
+            "macro"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "impl",
+          "description": "An `impl` block, named after the type it is for. Not a declaration a\npath can reach; it travels with its type when the type moves.",
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "$id": "urn:vvv:schema:1:rename:request:837044ef2244a44e91ec63bf7e2da6a3767d4c260eb1a2b15e90e96753eaa5d4",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Rename the declaration(s) called `name` and every identifier that spells it.\n\nResolution is syntactic: every occurrence of the identifier in files of\nthe declaring language is an occurrence. The `selection` is how a human or\nagent excludes the ones that are not the same symbol.",
+  "properties": {
+    "apply": {
+      "default": false,
+      "type": "boolean"
+    },
+    "command": {
+      "const": "rename",
+      "type": "string"
+    },
+    "declared_in": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/RelPath"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The file declaring the symbol meant, when several share the name."
+    },
+    "language": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/LanguageId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "name": {
+      "type": "string"
+    },
+    "selection": {
+      "$ref": "#/$defs/Selection"
+    },
+    "symbol": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SymbolKind"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "to": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "command",
+    "name",
+    "to"
+  ],
+  "title": "rename request",
+  "type": "object"
+}

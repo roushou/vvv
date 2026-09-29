@@ -14,6 +14,7 @@ pub use crate::rewrite::{RewriteIntent, RewriteOf};
 /// Any mutating request, as one value: what history records, what a summary
 /// renders, what a remote client sends.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "command", rename_all = "snake_case")]
 pub enum Intent {
     Rewrite(RewriteIntent),

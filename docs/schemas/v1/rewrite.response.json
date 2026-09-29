@@ -1,0 +1,784 @@
+{
+  "$defs": {
+    "ContentId": {
+      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "type": "string"
+    },
+    "ContinuationRecovery": {
+      "description": "A recovery action clients can branch on without parsing the error message.",
+      "enum": [
+        "restart_query",
+        "correct_cursor",
+        "increase_budget_or_narrow_query",
+        "narrow_query"
+      ],
+      "type": "string"
+    },
+    "Diff": {
+      "description": "One file's change: the unified diff text (the wire) and its hunks (the\nmodel).",
+      "type": "string"
+    },
+    "Edit": {
+      "description": "Replace the bytes at `span` with `replacement`.",
+      "properties": {
+        "replacement": {
+          "type": "string"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        }
+      },
+      "required": [
+        "span",
+        "replacement"
+      ],
+      "type": "object"
+    },
+    "ErrorCode": {
+      "description": "The kind of failure, stable across releases; the message is not.",
+      "oneOf": [
+        {
+          "enum": [
+            "cursor_expired",
+            "invalid_cursor",
+            "retention_limit",
+            "output_limit"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "cancelled",
+          "description": "The caller cancelled the operation.",
+          "type": "string"
+        },
+        {
+          "const": "incomplete",
+          "description": "Resolution stopped before a complete answer was available.",
+          "type": "string"
+        },
+        {
+          "const": "bad_request",
+          "description": "The request could not be read: not JSON, or not a known command.",
+          "type": "string"
+        },
+        {
+          "const": "bad_query",
+          "description": "A query with none of pattern, kind, symbol, name.",
+          "type": "string"
+        },
+        {
+          "const": "bad_pattern",
+          "description": "A pattern or node kind the language's grammar rejects.",
+          "type": "string"
+        },
+        {
+          "const": "bad_selection",
+          "description": "A selection naming rows or ids the search did not find.",
+          "type": "string"
+        },
+        {
+          "const": "bad_template",
+          "description": "A template naming a capture the match does not have.",
+          "type": "string"
+        },
+        {
+          "const": "no_such_symbol",
+          "description": "No declaration by that name (and kind).",
+          "type": "string"
+        },
+        {
+          "const": "ambiguous_symbol",
+          "description": "Several declarations share the name; `declared_in` picks one.",
+          "type": "string"
+        },
+        {
+          "const": "no_language",
+          "description": "No registered language claims the file.",
+          "type": "string"
+        },
+        {
+          "const": "no_layout",
+          "description": "The language has no layout: paths cannot be followed, files not moved.",
+          "type": "string"
+        },
+        {
+          "const": "no_such_position",
+          "description": "A position past the end of the file.",
+          "type": "string"
+        },
+        {
+          "const": "exists",
+          "description": "The destination already exists.",
+          "type": "string"
+        },
+        {
+          "const": "not_found",
+          "description": "A file, or the file declaring a name, could not be found.",
+          "type": "string"
+        },
+        {
+          "const": "unmovable",
+          "description": "The layout refuses the move: a root, across packages, into itself.",
+          "type": "string"
+        },
+        {
+          "const": "conflict",
+          "description": "Two edits of one plan overlap, or a file is moved twice.",
+          "type": "string"
+        },
+        {
+          "const": "stale",
+          "description": "A file changed since the plan (or the apply to undo) was made.",
+          "type": "string"
+        },
+        {
+          "const": "no_history",
+          "description": "Nothing to undo, or a history file that cannot be read.",
+          "type": "string"
+        },
+        {
+          "const": "io",
+          "description": "Reading or writing the tree failed.",
+          "type": "string"
+        },
+        {
+          "const": "recovery_failed",
+          "description": "Recovery could not restore or verify every attempted effect.",
+          "type": "string"
+        }
+      ]
+    },
+    "Failure": {
+      "description": "A failed request, as the wire carries it.",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "continuation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContinuationRecovery"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hint": {
+          "description": "What to try instead, when there is something.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "output_limit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OutputLimit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recovery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Recovery"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Effects that could not be restored after a failed mutation."
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "type": "object"
+    },
+    "FileChange": {
+      "description": "One file a plan touches: its edits and the whole-file diff.",
+      "properties": {
+        "diff": {
+          "$ref": "#/$defs/Diff"
+        },
+        "edits": {
+          "items": {
+            "$ref": "#/$defs/Edit"
+          },
+          "type": "array"
+        },
+        "moved_to": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelPath"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Path after, when the file is moved."
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath",
+          "description": "Path before the change."
+        }
+      },
+      "required": [
+        "path",
+        "edits",
+        "diff"
+      ],
+      "type": "object"
+    },
+    "LanguageId": {
+      "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
+      "type": "string"
+    },
+    "MatchId": {
+      "description": "Content-derived identifier: the same file, range and text yield the same id\nacross runs, so a selection made from one `search` can drive a later command.",
+      "type": "string"
+    },
+    "OutputLimit": {
+      "properties": {
+        "anchor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceAnchor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_bytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "required_bytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_bytes",
+        "required_bytes"
+      ],
+      "type": "object"
+    },
+    "Query": {
+      "properties": {
+        "kind": {
+          "description": "Tree-sitter node kind, e.g. `function_item`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "language": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LanguageId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Restrict to one language; otherwise every registered language is searched."
+        },
+        "name": {
+          "description": "Only declarations with exactly this name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pattern": {
+          "description": "ast-grep style pattern with meta-variables, e.g. `fn $NAME($$$ARGS) { $$$ }`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolKind"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Only declarations of this kind."
+        }
+      },
+      "type": "object"
+    },
+    "Recovery": {
+      "description": "A recovery result; unknown states are separate from confirmed residual effects.",
+      "properties": {
+        "cause": {
+          "$ref": "#/$defs/Failure"
+        },
+        "failures": {
+          "items": {
+            "$ref": "#/$defs/RecoveryIssue"
+          },
+          "type": "array"
+        },
+        "remaining": {
+          "items": {
+            "$ref": "#/$defs/RecoveryEffect"
+          },
+          "type": "array"
+        },
+        "unverified": {
+          "items": {
+            "$ref": "#/$defs/RecoveryUnverified"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "cause",
+        "failures",
+        "remaining",
+        "unverified"
+      ],
+      "type": "object"
+    },
+    "RecoveryEffect": {
+      "properties": {
+        "expected": {
+          "$ref": "#/$defs/RecoveryState"
+        },
+        "observed": {
+          "$ref": "#/$defs/RecoveryState"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        }
+      },
+      "required": [
+        "path",
+        "expected",
+        "observed"
+      ],
+      "type": "object"
+    },
+    "RecoveryIssue": {
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "message": {
+          "type": "string"
+        },
+        "operation": {
+          "$ref": "#/$defs/RecoveryOperation"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        }
+      },
+      "required": [
+        "operation",
+        "path",
+        "code",
+        "message"
+      ],
+      "type": "object"
+    },
+    "RecoveryOperation": {
+      "enum": [
+        "restore_file",
+        "restore_move",
+        "restore_directory",
+        "remove_file",
+        "remove_directory"
+      ],
+      "type": "string"
+    },
+    "RecoveryState": {
+      "oneOf": [
+        {
+          "properties": {
+            "kind": {
+              "const": "absent",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "fingerprint": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "file",
+              "type": "string"
+            },
+            "spelling": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/RelPath"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "kind",
+            "fingerprint"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "kind": {
+              "const": "directory",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "kind": {
+              "const": "other",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "RecoveryUnverified": {
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "expected": {
+          "$ref": "#/$defs/RecoveryState"
+        },
+        "message": {
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        }
+      },
+      "required": [
+        "path",
+        "expected",
+        "code",
+        "message"
+      ],
+      "type": "object"
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "Rewrite": {
+      "description": "`vvv rewrite`: one edit per selected match.",
+      "oneOf": [
+        {
+          "properties": {
+            "applied": {
+              "const": false
+            },
+            "history_id": false
+          },
+          "required": [
+            "applied"
+          ]
+        },
+        {
+          "properties": {
+            "applied": {
+              "const": true
+            },
+            "history_id": {
+              "format": "uint64",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "applied",
+            "history_id"
+          ]
+        }
+      ],
+      "properties": {
+        "files": {
+          "items": {
+            "$ref": "#/$defs/FileChange"
+          },
+          "type": "array"
+        },
+        "intent": {
+          "$ref": "#/$defs/RewriteIntent"
+        }
+      },
+      "required": [
+        "intent",
+        "files"
+      ],
+      "type": "object"
+    },
+    "RewriteIntent": {
+      "description": "Replace every selected match of `query` with `template`.",
+      "properties": {
+        "query": {
+          "$ref": "#/$defs/Query"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
+        },
+        "template": {
+          "$ref": "#/$defs/Template"
+        }
+      },
+      "required": [
+        "query",
+        "template"
+      ],
+      "type": "object"
+    },
+    "Selection": {
+      "description": "Which matches of a search a later command acts on.\n\nIds are content-derived, so a selection made from `vvv search` can be\nhanded to `vvv rewrite` in a separate process. Ordinals are the 1-based\npositions in the same search's result order, which is what human output\nnumbers rows with. Either kind that no longer resolves means the files\nchanged in between; the selection is then refused rather than silently\nnarrowed.",
+      "oneOf": [
+        {
+          "enum": [
+            "all"
+          ],
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ids": {
+              "items": {
+                "$ref": "#/$defs/MatchId"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ids"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ordinals": {
+              "items": {
+                "format": "uint",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ordinals"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "SourceAnchor": {
+      "properties": {
+        "content": {
+          "$ref": "#/$defs/ContentId"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        }
+      },
+      "required": [
+        "path",
+        "content",
+        "span"
+      ],
+      "type": "object"
+    },
+    "Span": {
+      "description": "Half-open byte range `[start, end)` inside a single file.",
+      "properties": {
+        "end": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "start": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "type": "object"
+    },
+    "SymbolKind": {
+      "description": "What a declaration declares, in vocabulary shared by every language.",
+      "oneOf": [
+        {
+          "enum": [
+            "type-parameter",
+            "parameter",
+            "function",
+            "method",
+            "struct",
+            "class",
+            "enum",
+            "variant",
+            "trait",
+            "interface",
+            "type-alias",
+            "const",
+            "static",
+            "variable",
+            "field",
+            "module",
+            "macro"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "impl",
+          "description": "An `impl` block, named after the type it is for. Not a declaration a\npath can reach; it travels with its type when the type moves.",
+          "type": "string"
+        }
+      ]
+    },
+    "Template": {
+      "description": "Replacement text with meta-variable holes: `bar($$$ARGS)`, `$NAME_v2`.\n\nVariables are `$NAME` (single capture) or `$$$NAME` (sequence capture);\na name is `[A-Z_][A-Z0-9_]*`. Anything else is literal.",
+      "type": "string"
+    }
+  },
+  "$id": "urn:vvv:schema:1:rewrite:response:6499aad0652b89b531eb8c99cb75d7762ddefb53880ec94123fcfb26a142e14f",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Top-level envelope of every `--json` response.",
+  "oneOf": [
+    {
+      "properties": {
+        "result": {
+          "$ref": "#/$defs/Rewrite"
+        },
+        "schema": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "status": {
+          "const": "ok",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "schema",
+        "result"
+      ],
+      "type": "object"
+    },
+    {
+      "description": "A failed request, as the wire carries it.",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "continuation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContinuationRecovery"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hint": {
+          "description": "What to try instead, when there is something.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "output_limit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OutputLimit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recovery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Recovery"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Effects that could not be restored after a failed mutation."
+        },
+        "schema": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "status": {
+          "const": "error",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "schema",
+        "code",
+        "message"
+      ],
+      "type": "object"
+    }
+  ],
+  "title": "rewrite response"
+}

@@ -1,0 +1,74 @@
+{
+  "$defs": {
+    "PageBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_bytes": {
+          "default": 16384,
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 1024,
+          "type": "integer"
+        },
+        "max_items": {
+          "default": 20,
+          "format": "uint",
+          "maximum": 64,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "WorkBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_files": {
+          "default": 64,
+          "format": "uint",
+          "maximum": 1024,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "max_lookups": {
+          "default": 64,
+          "format": "uint",
+          "maximum": 512,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "$id": "urn:vvv:schema:1:continue:arguments:abb1881777d39e1e9e0fc9236bb7087212cc2f55753d9881620bf451d742527d",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "cursor": {
+      "type": "string"
+    },
+    "page": {
+      "$ref": "#/$defs/PageBudget",
+      "default": {
+        "max_bytes": 16384,
+        "max_items": 20
+      }
+    },
+    "work": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/WorkBudget"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "cursor"
+  ],
+  "title": "continue arguments",
+  "type": "object"
+}

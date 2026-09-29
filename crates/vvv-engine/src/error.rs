@@ -9,6 +9,29 @@ use crate::history::HistoryError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EngineError {
+    #[error("request cancelled")]
+    ReadCancelled,
+    #[error("a cancellation handle can execute only one read-only call")]
+    ReusedCancellation,
+    #[error("cooperative cancellation is only supported for read-only calls")]
+    MutationCancellation,
+    #[error("query sources changed; start a new query")]
+    StaleQuery,
+    #[error("cursor expired or belongs to another session; start a new query")]
+    CursorExpired,
+    #[error("invalid cursor or wrong cursor kind")]
+    InvalidCursor,
+    #[error("query exceeds retained-state limits; narrow the request")]
+    RetentionLimit,
+    #[error("result needs {required_bytes} bytes; output budget is {max_bytes}")]
+    PageOutputLimit {
+        max_bytes: usize,
+        required_bytes: usize,
+        anchor: Option<crate::SourceAnchor>,
+    },
+    #[cfg(feature = "schema")]
+    #[error("command schemas require for_command; call and reply schemas do not accept it")]
+    InvalidSchemaQuery,
     #[error("invalid output or context budget")]
     InvalidBudget,
     #[error("output budgets are only supported for read-only requests")]
@@ -102,8 +125,16 @@ impl EngineError {
     /// The stable code a client branches on.
     pub fn code(&self) -> ErrorCode {
         match self {
+            Self::ReadCancelled => ErrorCode::Cancelled,
+            Self::ReusedCancellation | Self::MutationCancellation => ErrorCode::BadRequest,
+            #[cfg(feature = "schema")]
+            Self::InvalidSchemaQuery => ErrorCode::BadRequest,
             Self::InvalidBudget | Self::MutationBudget => ErrorCode::BadRequest,
-            Self::OutputLimit { .. } => ErrorCode::OutputLimit,
+            Self::StaleQuery => ErrorCode::Stale,
+            Self::CursorExpired => ErrorCode::CursorExpired,
+            Self::InvalidCursor => ErrorCode::InvalidCursor,
+            Self::RetentionLimit => ErrorCode::RetentionLimit,
+            Self::PageOutputLimit { .. } | Self::OutputLimit { .. } => ErrorCode::OutputLimit,
             Self::NavigationCancelled => ErrorCode::Cancelled,
             Self::StaleSemantic => ErrorCode::Stale,
             Self::InvalidSemantic => ErrorCode::BadRequest,

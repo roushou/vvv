@@ -65,6 +65,7 @@ jobs:
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
           bin: vvv
+          features: mcp
           target: ${{ matrix.target }}
           archive: $bin-$target
           checksum: sha256

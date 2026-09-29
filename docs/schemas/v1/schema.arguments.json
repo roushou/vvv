@@ -1,0 +1,75 @@
+{
+  "$defs": {
+    "Command": {
+      "enum": [
+        "schema",
+        "search_page",
+        "context_page",
+        "continue",
+        "expand",
+        "discover",
+        "context",
+        "navigate",
+        "search",
+        "outline",
+        "references",
+        "where",
+        "deps",
+        "explain",
+        "surface",
+        "impact",
+        "dead",
+        "imports",
+        "file",
+        "rewrite",
+        "rename",
+        "move",
+        "move_symbol",
+        "batch",
+        "history",
+        "undo"
+      ],
+      "type": "string"
+    },
+    "SchemaContract": {
+      "enum": [
+        "arguments",
+        "request",
+        "result",
+        "response",
+        "call",
+        "reply"
+      ],
+      "type": "string"
+    },
+    "SchemaQuery": {
+      "description": "A command contract, or an aggregate session contract without `for_command`.",
+      "properties": {
+        "contract": {
+          "$ref": "#/$defs/SchemaContract"
+        },
+        "for_command": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Command"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "contract"
+      ],
+      "type": "object"
+    }
+  },
+  "$id": "urn:vvv:schema:1:schema:arguments:969767df0009704058c661b7c8470c39b5d0ccefcd3799de59efe1ba0562d6b7",
+  "$ref": "#/$defs/SchemaQuery",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {},
+  "required": [],
+  "title": "schema arguments",
+  "type": "object"
+}

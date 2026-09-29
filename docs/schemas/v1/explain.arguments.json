@@ -1,0 +1,51 @@
+{
+  "$defs": {
+    "ExplainQuery": {
+      "description": "`vvv explain <path>:<line>:<col>`: what is at a position.",
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        }
+      },
+      "required": [
+        "path",
+        "position"
+      ],
+      "type": "object"
+    },
+    "Position": {
+      "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
+      "properties": {
+        "column": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "line": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "column"
+      ],
+      "type": "object"
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    }
+  },
+  "$id": "urn:vvv:schema:1:explain:arguments:bf9d3463fd1c418a04fcbabef8831f209b75fbcff2eb9448572422794a779950",
+  "$ref": "#/$defs/ExplainQuery",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {},
+  "required": [],
+  "title": "explain arguments",
+  "type": "object"
+}

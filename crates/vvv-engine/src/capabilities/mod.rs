@@ -5,6 +5,11 @@
 //!
 //! | Command | Owning module (relative to `src/`) |
 //! | --- | --- |
+//! | `schema` | `capabilities/schema.rs` |
+//! | `search_page` | `capabilities/search.rs` |
+//! | `context_page` | `capabilities/context.rs` |
+//! | `continue` | `capabilities/pagination.rs` |
+//! | `expand` | `capabilities/excerpts.rs` |
 //! | `context` | `capabilities/context.rs` |
 //! | `discover` | `capabilities/discovery.rs` |
 //! | `navigate` | `capabilities/navigation.rs` |
@@ -43,3 +48,9 @@ pub(crate) mod context;
 
 pub(crate) mod discovery;
 pub(crate) mod session;
+
+#[cfg(feature = "schema")]
+pub(crate) mod schema;
+
+pub(crate) mod excerpts;
+pub(crate) mod pagination;

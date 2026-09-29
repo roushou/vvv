@@ -137,6 +137,18 @@ mod tests {
         )
     }
 
+    #[cfg(feature = "schemas")]
+    #[test]
+    fn schema_document() {
+        let schema = vvv_engine::SchemaQuery {
+            for_command: Some(vvv_engine::Command::History),
+            contract: vvv_engine::SchemaContract::Arguments,
+        }
+        .execute()
+        .unwrap();
+        insta::assert_snapshot!(render(|r| r.report(&Answer::Schema(schema)).unwrap()));
+    }
+
     #[test]
     fn navigation_outcomes() {
         use vvv_engine::{

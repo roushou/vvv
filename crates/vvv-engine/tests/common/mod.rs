@@ -573,6 +573,8 @@ impl Language for Counting {
 pub struct FaultVfs {
     pub base: std::sync::Arc<dyn vvv_engine::Vfs>,
     rules: std::sync::Mutex<Vec<FaultRule>>,
+    fixed_stamp: Option<vvv_engine::Stamp>,
+    cancel_read: std::sync::Mutex<Option<(PathBuf, usize, vvv_engine::ReadCancellation)>>,
     trace: std::sync::Mutex<Vec<(FaultOperation, PathBuf)>>,
 }
 
@@ -597,6 +599,7 @@ pub enum FaultAction {
     After,
     Always,
     Occupy(String),
+    ReadThenReplace(String),
     Uncertain,
 }
 
@@ -621,8 +624,19 @@ impl FaultVfs {
         Self {
             base,
             rules: Default::default(),
+            fixed_stamp: None,
+            cancel_read: Default::default(),
             trace: Default::default(),
         }
+    }
+
+    pub fn cancel_on_read(&self, path: &Path, skip: usize, token: vvv_engine::ReadCancellation) {
+        *self.cancel_read.lock().unwrap() = Some((path.to_owned(), skip, token));
+    }
+
+    pub fn with_fixed_stamp(mut self, stamp: vvv_engine::Stamp) -> Self {
+        self.fixed_stamp = Some(stamp);
+        self
     }
 
     pub fn arm(&self, operation: FaultOperation, path: &Path, skip: usize, action: FaultAction) {
@@ -665,14 +679,34 @@ impl FaultVfs {
 
 impl vvv_engine::Vfs for FaultVfs {
     fn read(&self, path: &Path) -> Result<String, vvv_engine::VfsError> {
+        let mut cancel = self.cancel_read.lock().unwrap();
+        if let Some((target, skip, token)) = cancel.as_mut()
+            && target == path
+        {
+            if *skip == 0 {
+                token.cancel();
+                *cancel = None;
+            } else {
+                *skip -= 1;
+            }
+        }
+        drop(cancel);
         if let Some(action) = self.action(FaultOperation::Read, path) {
+            if let FaultAction::ReadThenReplace(contents) = action {
+                let captured = self.base.read(path)?;
+                self.base.write(path, &contents)?;
+                return Ok(captured);
+            }
             return Err(action.error(path));
         }
         self.base.read(path)
     }
 
     fn stamp(&self, path: &Path) -> Result<vvv_engine::Stamp, vvv_engine::VfsError> {
-        self.base.stamp(path)
+        match self.fixed_stamp {
+            Some(stamp) => Ok(stamp),
+            None => self.base.stamp(path),
+        }
     }
 
     fn write(&self, path: &Path, contents: &str) -> Result<(), vvv_engine::VfsError> {
@@ -688,9 +722,11 @@ impl vvv_engine::Vfs for FaultVfs {
                 }
                 Err(action.error(path))
             }
-            Some(action @ (FaultAction::Occupy(_) | FaultAction::Uncertain)) => {
-                Err(action.error(path))
-            }
+            Some(
+                action @ (FaultAction::Occupy(_)
+                | FaultAction::ReadThenReplace(_)
+                | FaultAction::Uncertain),
+            ) => Err(action.error(path)),
             None => self.base.write(path, contents),
         }
     }
@@ -727,6 +763,7 @@ impl vvv_engine::Vfs for FaultVfs {
                 action @ (FaultAction::Before
                 | FaultAction::Always
                 | FaultAction::Partial(_)
+                | FaultAction::ReadThenReplace(_)
                 | FaultAction::Occupy(_)
                 | FaultAction::Uncertain),
             ) => vvv_engine::ParentCreation::new(Vec::new(), Err(action.error(path))),
@@ -782,9 +819,11 @@ impl vvv_engine::Vfs for FaultVfs {
             .action(FaultOperation::Rename, from)
             .or_else(|| self.action(FaultOperation::RenameDestination, to))
         {
-            Some(action @ (FaultAction::Before | FaultAction::Always)) => {
-                Err(MoveError::new(action.error(from), MoveState::Unchanged))
-            }
+            Some(
+                action @ (FaultAction::Before
+                | FaultAction::Always
+                | FaultAction::ReadThenReplace(_)),
+            ) => Err(MoveError::new(action.error(from), MoveState::Unchanged)),
             Some(action @ FaultAction::After) => {
                 self.base.move_if_absent(from, to)?;
                 Err(MoveError::new(action.error(from), MoveState::Moved))

@@ -1,0 +1,27 @@
+{
+  "$id": "urn:vvv:schema:1:expand:request:0090dae5ba96d8c44ce17c72aa26a83bfb306e8e5ade15a9556aaed3b7bdb71c",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "command": {
+      "const": "expand",
+      "type": "string"
+    },
+    "cursor": {
+      "type": "string"
+    },
+    "max_bytes": {
+      "format": "uint",
+      "maximum": 1048576,
+      "minimum": 1024,
+      "type": "integer"
+    }
+  },
+  "required": [
+    "command",
+    "cursor",
+    "max_bytes"
+  ],
+  "title": "expand request",
+  "type": "object"
+}

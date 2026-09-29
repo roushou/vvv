@@ -1,0 +1,34 @@
+{
+  "$id": "urn:vvv:schema:1:move_symbol:request:9372202bab6f4337af2eebf0a8bbb9eec4e98d8a84c011c26d887ad2bcdfa54b",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Move one declaration — with what belongs to it in the text, and for Rust\nits `impl` blocks — from the file declaring it to another file of the\nsame language, and make every reference follow.",
+  "properties": {
+    "apply": {
+      "default": false,
+      "type": "boolean"
+    },
+    "command": {
+      "const": "move_symbol",
+      "type": "string"
+    },
+    "from": {
+      "description": "The file declaring it.",
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "to": {
+      "description": "The file to declare it in; it must exist.",
+      "type": "string"
+    }
+  },
+  "required": [
+    "command",
+    "name",
+    "from",
+    "to"
+  ],
+  "title": "move_symbol request",
+  "type": "object"
+}

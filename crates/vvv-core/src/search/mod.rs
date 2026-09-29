@@ -28,6 +28,7 @@ pub enum SearchError {
     Debug, Clone, Copy, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize,
 )]
 #[serde(rename_all = "lowercase")]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub enum Role {
     Declaration,
     Import,
@@ -37,6 +38,7 @@ pub enum Role {
 
 /// One meta-variable binding.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Capture {
     pub span: Span,
     pub text: String,
@@ -44,6 +46,7 @@ pub struct Capture {
 
 /// `$A` binds one node; `$$$A` binds a sequence.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(untagged)]
 pub enum CaptureValue {
     Single(Capture),
@@ -52,6 +55,7 @@ pub enum CaptureValue {
 
 /// A match within a single text, before it is tied to a file.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct RawMatch {
     pub span: Span,
     /// Tree-sitter node kind of the matched node.

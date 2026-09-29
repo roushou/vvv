@@ -8,6 +8,7 @@ use vvv_core::{Address, Position, RelPath, Symbol};
 
 /// `vvv outline <path>`: what a file declares.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct OutlineQuery {
     pub path: RelPath,
 }
@@ -15,6 +16,7 @@ pub struct OutlineQuery {
 /// `vvv where <name> [--from <file>]`: where a name is declared, and the
 /// import that reaches each site from `from`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct WhereQuery {
     pub name: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -23,6 +25,7 @@ pub struct WhereQuery {
 
 /// `outline <path>`: what a file declares, in order.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Outline {
     pub path: RelPath,
     /// The file's own module address, when the language has one.
@@ -32,6 +35,7 @@ pub struct Outline {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct OutlineItem {
     #[serde(flatten)]
     pub symbol: Symbol,
@@ -49,12 +53,14 @@ pub struct OutlineItem {
 
 /// `where <name>`: where `name` is declared and how to reach each site.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Locations {
     pub name: String,
     pub sites: Vec<Site>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Site {
     pub declaration: Match,
     #[serde(default, skip_serializing_if = "Option::is_none")]

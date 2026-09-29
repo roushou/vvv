@@ -5,12 +5,14 @@ use vvv_core::{Highlight, RelPath, Span, Symbol, SymbolKind};
 
 /// One file as it is now, with its syntax colouring: what a picker shows.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct FileQuery {
     pub path: RelPath,
 }
 
 /// One file as it is, with syntax colouring and declaration ranges.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct File {
     pub path: RelPath,
     pub text: String,

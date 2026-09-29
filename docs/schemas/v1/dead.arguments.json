@@ -1,0 +1,31 @@
+{
+  "$defs": {
+    "DeadQuery": {
+      "description": "`vvv dead`: declarations nothing in the workspace refers to.",
+      "properties": {
+        "language": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LanguageId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "LanguageId": {
+      "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
+      "type": "string"
+    }
+  },
+  "$id": "urn:vvv:schema:1:dead:arguments:f72485f6d21be7d308f3b020f24329a468dc308b4e20c59b1fce35d60a64a3cd",
+  "$ref": "#/$defs/DeadQuery",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {},
+  "required": [],
+  "title": "dead arguments",
+  "type": "object"
+}

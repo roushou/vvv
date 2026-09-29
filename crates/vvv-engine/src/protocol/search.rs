@@ -14,6 +14,7 @@ use crate::SourceFile;
 
 /// How sure a rename is that an occurrence refers to its target declaration.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum Confidence {
     /// Declared, imported, or reached by a path that resolves to the target.
@@ -27,6 +28,7 @@ pub enum Confidence {
 /// What the file's imports and paths said about an occurrence: the ground
 /// for its [`Confidence`]. Views tag `?` and `✗` sections with it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "kebab-case")]
 pub enum Reason {
     /// Written in the module that declares the target.
@@ -73,6 +75,7 @@ impl Reason {
 
 /// A token spelling the renamed name, with what the imports could tell.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Occurrence {
     #[serde(flatten)]
     pub m: Match,
@@ -100,6 +103,7 @@ impl Reason {
 /// query (a Rust pattern on a TypeScript tree). Never fatal; the other
 /// languages' matches are complete. Data only; the display layer words it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Skipped {
     pub language: LanguageId,
     pub reason: String,
@@ -108,6 +112,7 @@ pub struct Skipped {
 /// Content-derived identifier: the same file, range and text yield the same id
 /// across runs, so a selection made from one `search` can drive a later command.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(transparent)]
 pub struct MatchId(String);
 
@@ -151,6 +156,7 @@ impl fmt::Debug for MatchId {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Match {
     /// Complete source version; absent only in older serialized matches.
     #[serde(default, skip_serializing_if = "Option::is_none")]

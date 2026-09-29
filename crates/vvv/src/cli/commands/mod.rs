@@ -18,3 +18,9 @@ pub mod undo;
 pub mod wherever;
 
 pub mod context;
+
+#[cfg(feature = "schemas")]
+pub mod schema;
+
+#[cfg(feature = "mcp")]
+pub mod mcp;

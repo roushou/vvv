@@ -1,5 +1,7 @@
 mod cli;
 mod context;
+#[cfg(feature = "mcp")]
+mod mcp;
 mod output;
 
 use crate::cli::Cli;

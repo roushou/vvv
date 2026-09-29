@@ -11,6 +11,7 @@ use vvv_core::{Address, ImportRef, Position, Symbol};
 /// One import statement in the file and, when the layout can follow it,
 /// where it leads.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Dep {
     #[serde(flatten)]
     pub import: ImportRef,
@@ -30,6 +31,7 @@ pub struct Dep {
 
 /// A file that imports from the one asked about.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Importer {
     pub path: RelPath,
     #[serde(flatten)]
@@ -39,6 +41,7 @@ pub struct Importer {
 
 /// A declaration as the graph holds it: placed, with its reach.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Placed {
     pub path: RelPath,
     #[serde(flatten)]

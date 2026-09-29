@@ -293,6 +293,10 @@ impl Corpus {
             command.arg("--json");
         }
         let output = command.args(args).output().expect("vvv runs");
+        #[cfg(feature = "schemas")]
+        if json {
+            Self::validate_response(args, &output.stdout);
+        }
         // Windows spells its path separator as `\`, which JSON escapes as
         // two characters; the snapshots are taken with `/`.
         let text = |bytes: Vec<u8>| {
@@ -311,6 +315,45 @@ impl Corpus {
             text(output.stdout),
             text(output.stderr)
         )
+    }
+
+    #[cfg(feature = "schemas")]
+    fn validate_response(args: &[&str], bytes: &[u8]) {
+        static VALIDATORS: std::sync::OnceLock<
+            BTreeMap<vvv_engine::Command, jsonschema::Validator>,
+        > = std::sync::OnceLock::new();
+        let validators = VALIDATORS.get_or_init(|| {
+            vvv_engine::Command::ALL
+                .iter()
+                .map(|&command| {
+                    let schema = vvv_engine::SchemaQuery {
+                        for_command: Some(command),
+                        contract: vvv_engine::SchemaContract::Response,
+                    }
+                    .execute()
+                    .unwrap();
+                    (
+                        command,
+                        jsonschema::validator_for(&serde_json::Value::Object(schema.document))
+                            .unwrap(),
+                    )
+                })
+                .collect()
+        });
+        let command = if args[0] == "move" && args.contains(&"--symbol") {
+            vvv_engine::Command::MoveSymbol
+        } else {
+            args[0].parse().unwrap()
+        };
+        let value: serde_json::Value = serde_json::from_slice(bytes).unwrap();
+        let errors: Vec<_> = validators[&command]
+            .iter_errors(&value)
+            .map(|e| e.to_string())
+            .collect();
+        assert!(
+            errors.is_empty(),
+            "schema mismatch for {args:?}: {errors:?}"
+        );
     }
 
     /// The corpus as an in-memory tree, so a property can write to it.
@@ -1149,6 +1192,13 @@ fn rust_navigation_golden() {
                 ],
             ),
             ("discovery", &["discover"]),
+            #[cfg(feature = "schemas")]
+            ("schema-history", &["schema", "history"]),
+            #[cfg(feature = "schemas")]
+            (
+                "schema-invalid-target",
+                &["schema", "history", "--contract", "call"],
+            ),
             ("lexical-generic", &["navigate", "src/lexical.rs:2:27"]),
             ("lexical-parameter", &["navigate", "src/lexical.rs:2:47"]),
             ("lexical-initializer", &["navigate", "src/lexical.rs:4:17"]),
@@ -1248,4 +1298,144 @@ fn ts_navigation_golden() {
         ],
         mutations: Vec::new,
     });
+}
+
+/// Protocol paging over real grammars; only opaque cursor bytes are normalized.
+#[cfg(any(feature = "rust", feature = "typescript"))]
+struct PageTranscript {
+    replies: Vec<serde_json::Value>,
+    cursors: BTreeMap<String, String>,
+}
+#[cfg(any(feature = "rust", feature = "typescript"))]
+impl PageTranscript {
+    fn normalize(&mut self, value: &mut serde_json::Value) {
+        match value {
+            serde_json::Value::Object(object) => {
+                for (key, value) in object {
+                    if (key == "next_cursor" || key == "expansion") && value.is_string() {
+                        let next = format!("cursor-{}", self.cursors.len() + 1);
+                        let name = self
+                            .cursors
+                            .entry(value.as_str().unwrap().into())
+                            .or_insert(next);
+                        *value = serde_json::Value::String(name.clone());
+                    } else {
+                        self.normalize(value);
+                    }
+                }
+            }
+            serde_json::Value::Array(values) => {
+                for value in values {
+                    self.normalize(value);
+                }
+            }
+            _ => {}
+        }
+    }
+    fn call(&mut self, engine: &Engine, request: serde_json::Value) -> serde_json::Value {
+        #[cfg(feature = "schemas")]
+        let command = request["command"].as_str().unwrap().to_owned();
+        let reply = serde_json::to_value(
+            serde_json::from_value::<vvv_engine::Call>(request)
+                .unwrap()
+                .execute(engine),
+        )
+        .unwrap();
+        #[cfg(feature = "schemas")]
+        Corpus::validate_response(&[&command], &serde_json::to_vec(&reply).unwrap());
+        assert_eq!(reply["status"], "ok", "{reply}");
+        let mut normalized = reply.clone();
+        self.normalize(&mut normalized);
+        self.replies.push(normalized);
+        reply
+    }
+    fn corpus(corpus: Corpus, path: &str, line: u32, column: u32) {
+        let (_, engine) = corpus.engine();
+        let mut transcript = Self {
+            replies: vec![],
+            cursors: BTreeMap::new(),
+        };
+        let first = transcript.call(&engine, serde_json::json!({"command":"search_page","query":{"pattern":"Engine"},"page":{"max_items":1,"max_bytes":4096}}));
+        let mut cursor = first["result"]["next_cursor"].clone();
+        let mut items = first["result"]["items"].as_array().unwrap().clone();
+        while !cursor.is_null() {
+            let reply = transcript.call(&engine, serde_json::json!({"command":"continue","cursor":cursor,"page":{"max_items":3,"max_bytes":4096}}));
+            cursor = reply["result"]["next_cursor"].clone();
+            items.extend(reply["result"]["items"].as_array().unwrap().clone());
+        }
+        let expected = vvv_engine::SearchQuery(Query::pattern("Engine"))
+            .execute(&engine)
+            .unwrap();
+        let matches = items
+            .iter()
+            .map(|item| serde_json::from_value::<vvv_engine::Match>(item.clone()).unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(matches, expected.matches);
+        let origin = serde_json::json!({"kind":"position","path":path,"position":{"line":line,"column":column}});
+        let first = transcript.call(&engine, serde_json::json!({"command":"context_page","origin":origin,"references":true,"page":{"max_items":1,"max_bytes":4096},"work":{"max_lookups":4,"max_files":2}}));
+        let mut cursor = first["result"]["next_cursor"].clone();
+        let mut items = first["result"]["items"].as_array().unwrap().clone();
+        let mut pages = 0;
+        while !cursor.is_null() {
+            pages += 1;
+            assert!(pages < 100);
+            let reply = transcript.call(&engine, serde_json::json!({"command":"continue","cursor":cursor,"page":{"max_items":2,"max_bytes":4096},"work":{"max_lookups":4,"max_files":2}}));
+            cursor = reply["result"]["next_cursor"].clone();
+            items.extend(reply["result"]["items"].as_array().unwrap().clone());
+        }
+        let expected = vvv_engine::ContextQuery {
+            origin: serde_json::from_value(origin).unwrap(),
+            selection: vvv_engine::Selection::All,
+            references: true,
+            budget: vvv_engine::ContextBudget::MAXIMUM,
+        }
+        .execute(&engine)
+        .unwrap();
+        assert_eq!(
+            items
+                .iter()
+                .map(
+                    |item| serde_json::from_value::<vvv_engine::ContextItem>(item.clone()).unwrap()
+                )
+                .collect::<Vec<_>>(),
+            expected.items
+        );
+        let mut settings = insta::Settings::clone_current();
+        settings.set_snapshot_path("corpus/snapshots");
+        settings.set_prepend_module_to_snapshot(false);
+        settings.bind(|| {
+            insta::assert_snapshot!(
+                format!("{}__pagination__json", corpus.name),
+                serde_json::to_string_pretty(&transcript.replies).unwrap()
+            )
+        });
+    }
+}
+#[cfg(feature = "rust")]
+#[test]
+fn rust_navigation_pagination_golden() {
+    PageTranscript::corpus(
+        Corpus {
+            name: "rust-navigation",
+            cases: &[],
+            mutations: Vec::new,
+        },
+        "src/origin.rs",
+        1,
+        11,
+    );
+}
+#[cfg(feature = "typescript")]
+#[test]
+fn typescript_navigation_pagination_golden() {
+    PageTranscript::corpus(
+        Corpus {
+            name: "ts-navigation",
+            cases: &[],
+            mutations: Vec::new,
+        },
+        "src/origin.ts",
+        0,
+        13,
+    );
 }

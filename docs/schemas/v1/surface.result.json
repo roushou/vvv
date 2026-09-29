@@ -1,0 +1,258 @@
+{
+  "$defs": {
+    "Address": {
+      "description": "A position in a language's namespace: the package it belongs to and the\npath within it — `fff :: [grep, types]` for a Rust module, path\ncomponents for a TypeScript file. Prefix relations, which are what a move\ncares about, never hold across packages.",
+      "properties": {
+        "package": {
+          "$ref": "#/$defs/PackageId"
+        },
+        "path": {
+          "items": {
+            "$ref": "#/$defs/Name"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "package",
+        "path"
+      ],
+      "type": "object"
+    },
+    "Exposed": {
+      "description": "A declaration as the graph holds it: placed, with its reach.",
+      "properties": {
+        "address": {
+          "$ref": "#/$defs/Address"
+        },
+        "extent": {
+          "$ref": "#/$defs/Span",
+          "description": "The declaration with what belongs to it in the text: leading\nattributes and doc comments, an enclosing `export`. What moving the\ndeclaration cuts; what an outline shows."
+        },
+        "importers": {
+          "description": "Files in the workspace importing it, at any of its addresses.",
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "kind": {
+          "$ref": "#/$defs/SymbolKind"
+        },
+        "name": {
+          "type": "string"
+        },
+        "name_span": {
+          "$ref": "#/$defs/Span",
+          "description": "The identifier token itself: what a rename replaces."
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "reach": {
+          "$ref": "#/$defs/Reach"
+        },
+        "span": {
+          "$ref": "#/$defs/Span",
+          "description": "The declaration node."
+        },
+        "start": {
+          "$ref": "#/$defs/Position",
+          "description": "Where the declaration's name starts, as a line and column."
+        },
+        "via": {
+          "description": "The other addresses it is offered at, through re-exports.",
+          "items": {
+            "$ref": "#/$defs/Address"
+          },
+          "type": "array"
+        },
+        "visibility": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Modifier"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The visibility as written (`pub(crate)`, `export`); `None` when the\ndeclaration has no modifier. What it means is the language's\n[`Semantics`](crate::Semantics)."
+        }
+      },
+      "required": [
+        "path",
+        "kind",
+        "name",
+        "name_span",
+        "span",
+        "extent",
+        "start",
+        "address",
+        "reach",
+        "importers"
+      ],
+      "type": "object"
+    },
+    "Modifier": {
+      "description": "A visibility modifier as it appears in the source.",
+      "properties": {
+        "span": {
+          "$ref": "#/$defs/Span"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "span",
+        "text"
+      ],
+      "type": "object"
+    },
+    "Name": {
+      "description": "One identifier: a module, a declaration, a file stem. Compared by text.",
+      "type": "string"
+    },
+    "PackageId": {
+      "description": "The name a package goes by in paths: a Rust crate's lib name (`fff`, not\n`fff-search`), a TypeScript package's name. The layout decides the spelling.",
+      "type": "string"
+    },
+    "Position": {
+      "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
+      "properties": {
+        "column": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "line": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "column"
+      ],
+      "type": "object"
+    },
+    "Reach": {
+      "description": "The set of modules that may name a declaration: a kind applied to the\ndeclaring module's address. Never declared, always computed.",
+      "oneOf": [
+        {
+          "enum": [
+            "everyone"
+          ],
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "within": {
+              "$ref": "#/$defs/Address"
+            }
+          },
+          "required": [
+            "within"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "package": {
+              "$ref": "#/$defs/PackageId"
+            }
+          },
+          "required": [
+            "package"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "Span": {
+      "description": "Half-open byte range `[start, end)` inside a single file.",
+      "properties": {
+        "end": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "start": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "type": "object"
+    },
+    "SymbolKind": {
+      "description": "What a declaration declares, in vocabulary shared by every language.",
+      "oneOf": [
+        {
+          "enum": [
+            "type-parameter",
+            "parameter",
+            "function",
+            "method",
+            "struct",
+            "class",
+            "enum",
+            "variant",
+            "trait",
+            "interface",
+            "type-alias",
+            "const",
+            "static",
+            "variable",
+            "field",
+            "module",
+            "macro"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "impl",
+          "description": "An `impl` block, named after the type it is for. Not a declaration a\npath can reach; it travels with its type when the type moves.",
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "$id": "urn:vvv:schema:1:surface:result:72ffa6c0cf0fd165fa53b3c81b15c4b816700facbdf4c366a51ebf7aa4dde878",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "`surface [package]`: what a package offers to everyone, and who takes it.",
+  "properties": {
+    "items": {
+      "items": {
+        "$ref": "#/$defs/Exposed"
+      },
+      "type": "array"
+    },
+    "package": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PackageId"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "description": "The package asked about; every package when absent."
+    }
+  },
+  "required": [
+    "items"
+  ],
+  "title": "surface result",
+  "type": "object"
+}

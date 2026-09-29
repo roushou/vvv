@@ -14,6 +14,7 @@ use crate::text::Span;
 
 /// A declaration found in one file.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Symbol {
     pub kind: SymbolKind,
     pub name: String,
@@ -52,6 +53,7 @@ impl Symbol {
 
 /// A visibility modifier as it appears in the source.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Modifier {
     pub span: Span,
     pub text: String,

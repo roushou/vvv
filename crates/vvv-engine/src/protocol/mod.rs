@@ -5,6 +5,8 @@
 //! only speaks JSON depends on this crate alone.
 
 mod answer;
+mod command;
+pub use command::Command;
 mod diff;
 pub mod display;
 mod failure;
@@ -62,6 +64,7 @@ pub const SCHEMA: u32 = 1;
 
 /// Top-level envelope of every `--json` response.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "status", rename_all = "lowercase")]
 pub enum Response<T> {
     Ok {
@@ -103,3 +106,20 @@ pub use crate::capabilities::context::{
 };
 
 pub use crate::capabilities::discovery::{Capability, Discovery, DiscoveryQuery};
+
+#[cfg(feature = "schema")]
+pub use crate::capabilities::schema::{
+    SchemaContract, SchemaDocument, SchemaQuery, SchemaReferences,
+};
+
+mod cursor;
+pub use crate::capabilities::context::{
+    ContextPage, ContextPageQuery, ContextUnresolved, ContextWork, PagedContextItem,
+};
+pub use crate::capabilities::excerpts::{ExpandQuery, Expansion};
+pub use crate::capabilities::pagination::{ContinueQuery, PageBudget, PageReply, WorkBudget};
+pub use crate::capabilities::search::{SearchPage, SearchPageItem, SearchPageQuery};
+pub use crate::query_store::QueryLimits;
+pub use cursor::Cursor;
+
+pub use failure::ContinuationRecovery;

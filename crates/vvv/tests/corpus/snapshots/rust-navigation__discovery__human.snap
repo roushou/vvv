@@ -5,6 +5,11 @@ expression: "corpus.run(args, false)"
 exit 0
 --- stdout ---
 Available commands
+schema (read-only)
+search_page (read-only)
+context_page (read-only)
+continue (read-only)
+expand (read-only)
 discover (read-only)
 context (read-only)
 navigate (read-only)

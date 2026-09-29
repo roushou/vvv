@@ -1,0 +1,20 @@
+{
+  "$id": "urn:vvv:schema:1:schema:result:0cb1e4287c7574a39efe0bd8f791785ba3093dc8fcd23e29a9c4eb8499be5ad3",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "A Draft 2020-12 schema, including all definitions needed to use it offline.",
+  "properties": {
+    "document": {
+      "additionalProperties": true,
+      "type": "object"
+    },
+    "id": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "id",
+    "document"
+  ],
+  "title": "schema result",
+  "type": "object"
+}

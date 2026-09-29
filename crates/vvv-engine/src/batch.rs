@@ -15,6 +15,7 @@ use crate::{
 /// Several intents planned in sequence, each against the state the previous
 /// one leaves, and applied as one.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct BatchIntent {
     pub intents: Vec<Intent>,
 }
@@ -29,6 +30,7 @@ impl BatchIntent {
 
 /// `vvv batch`: several intents planned in sequence and applied as one.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Batch {
     pub intents: Vec<Intent>,
     /// Preview or successful application with its history entry.

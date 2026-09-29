@@ -40,3 +40,6 @@ pub trait Reporter {
     fn report(&mut self, answer: &Answer) -> anyhow::Result<()>;
     fn error(&mut self, error: &anyhow::Error);
 }
+
+#[cfg(feature = "mcp")]
+pub(crate) mod mcp;

@@ -4,6 +4,7 @@ use vvv_core::{LanguageId, RelPath, Span, SymbolKind};
 
 /// Digest of the complete UTF-8 source text, independent of its path.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(transparent)]
 pub struct ContentId(String);
 
@@ -18,6 +19,7 @@ impl ContentId {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct SourceAnchor {
     pub path: RelPath,
     pub content: ContentId,
@@ -26,6 +28,7 @@ pub struct SourceAnchor {
 
 /// A declaration in one source version, not an identity across edits.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct SymbolRef {
     pub language: LanguageId,
     pub declaration: SourceAnchor,

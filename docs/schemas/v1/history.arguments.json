@@ -1,0 +1,8 @@
+{
+  "$id": "urn:vvv:schema:1:history:arguments:c25e2767619054110dab6753f461574ebebbc91dd79bdacf1051b05091c16f8d",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {},
+  "required": [],
+  "title": "history arguments",
+  "type": "object"
+}

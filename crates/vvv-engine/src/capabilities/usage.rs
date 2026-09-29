@@ -11,6 +11,7 @@ use vvv_core::{Address, LanguageId, RelPath};
 
 /// `vvv impact <name>`: who would feel a change to a declaration.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ImpactQuery {
     pub name: String,
     /// The file declaring the symbol meant, when several share the name.
@@ -20,6 +21,7 @@ pub struct ImpactQuery {
 
 /// `vvv dead`: declarations nothing in the workspace refers to.
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct DeadQuery {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub language: Option<vvv_core::LanguageId>,
@@ -28,6 +30,7 @@ pub struct DeadQuery {
 /// `impact <name>`: every module that would feel a change to a declaration —
 /// those importing it, then those importing them, outward.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Impact {
     pub name: String,
     pub address: Address,
@@ -36,6 +39,7 @@ pub struct Impact {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Consumer {
     pub module: Address,
     pub path: RelPath,
@@ -48,11 +52,13 @@ pub struct Consumer {
 /// `dead [--lang]`: declarations nothing in the workspace refers to, with
 /// how many tokens might.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Dead {
     pub items: Vec<Unreferenced>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Unreferenced {
     #[serde(flatten)]
     pub declaration: Placed,

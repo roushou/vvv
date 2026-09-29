@@ -7,6 +7,7 @@ use vvv_core::{Address, Position, ReachKind};
 /// Something a plan could not do and a human should look at. Never fatal:
 /// the rest of the plan is still valid. Data only; the display layer words it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Notice {
     pub path: RelPath,
     pub start: Position,
@@ -15,6 +16,7 @@ pub struct Notice {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum NoticeKind {
     /// An import the layout understood but the surgery could not rewrite in place;

@@ -1,0 +1,15 @@
+{
+  "$id": "urn:vvv:schema:1:history:request:1f0e7b6f009743514df9df9b7a43cdfb05adb32f34ff38b08b6ad1851d71f42c",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "command": {
+      "const": "history",
+      "type": "string"
+    }
+  },
+  "required": [
+    "command"
+  ],
+  "title": "history request",
+  "type": "object"
+}

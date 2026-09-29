@@ -12,6 +12,7 @@ use crate::symbol::Symbol;
 use crate::text::Span;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Facts {
     /// Tokens whose context permits module/type resolution without local inference.
     #[serde(default)]
@@ -47,6 +48,7 @@ pub struct Facts {
 /// One identifier token: which name it spells, what the grammar calls it,
 /// where it is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Token {
     name: u32,
     kind: u16,

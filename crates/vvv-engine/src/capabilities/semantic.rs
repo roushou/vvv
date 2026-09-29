@@ -7,6 +7,7 @@ use std::sync::{
 };
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ProviderVersion {
     pub provider: String,
     pub revision: String,

@@ -48,6 +48,12 @@ impl Document {
     /// Compose one answer into the blocks its command prints.
     pub fn of(answer: &Answer) -> Self {
         match answer {
+            #[cfg(feature = "schema")]
+            Answer::Schema(r) => Self::schema(r),
+            Answer::SearchPage(r) => Self::search_page(r),
+            Answer::ContextPage(r) => Self::context_page(r),
+            Answer::Continue(r) => Self::page(r),
+            Answer::Expand(r) => Self::expansion(r),
             Answer::Discover(r) => Self::discovery(r),
             Answer::Context(r) => Self::context(r),
             Answer::Navigate(r) => Self::navigation(r),

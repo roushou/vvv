@@ -6,8 +6,12 @@ use serde::{Deserialize, Serialize};
 
 /// The kind of failure, stable across releases; the message is not.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ErrorCode {
+    CursorExpired,
+    InvalidCursor,
+    RetentionLimit,
     OutputLimit,
     /// The caller cancelled the operation.
     Cancelled,
@@ -53,7 +57,10 @@ pub enum ErrorCode {
 
 /// A failed request, as the wire carries it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Failure {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub continuation: Option<ContinuationRecovery>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub output_limit: Option<OutputLimit>,
     pub code: ErrorCode,
@@ -74,6 +81,7 @@ impl Failure {
             hint: None,
             recovery: None,
             output_limit: None,
+            continuation: None,
         }
     }
 
@@ -102,8 +110,32 @@ impl From<&EngineError> for Failure {
             failure.output_limit = Some(OutputLimit {
                 max_bytes: *max_bytes,
                 required_bytes: *required_bytes,
+                anchor: None,
             });
         }
+        failure.continuation = match error {
+            EngineError::StaleQuery | EngineError::CursorExpired => {
+                Some(ContinuationRecovery::RestartQuery)
+            }
+            EngineError::InvalidCursor => Some(ContinuationRecovery::CorrectCursor),
+            EngineError::RetentionLimit => Some(ContinuationRecovery::NarrowQuery),
+            EngineError::PageOutputLimit {
+                max_bytes,
+                required_bytes,
+                anchor,
+            } => {
+                failure.output_limit = Some(OutputLimit {
+                    max_bytes: *max_bytes,
+                    required_bytes: *required_bytes,
+                    anchor: anchor.clone().map(Box::new),
+                });
+                Some(ContinuationRecovery::IncreaseBudgetOrNarrowQuery)
+            }
+            EngineError::OutputLimit { .. } => {
+                Some(ContinuationRecovery::IncreaseBudgetOrNarrowQuery)
+            }
+            _ => None,
+        };
         match error.hint() {
             Some(hint) => failure.with_hint(hint),
             None => failure,
@@ -113,6 +145,7 @@ impl From<&EngineError> for Failure {
 
 /// A recovery result; unknown states are separate from confirmed residual effects.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Recovery {
     pub cause: Box<Failure>,
     pub failures: Vec<RecoveryIssue>,
@@ -121,6 +154,7 @@ pub struct Recovery {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct RecoveryIssue {
     pub operation: RecoveryOperation,
     pub path: crate::RelPath,
@@ -129,6 +163,7 @@ pub struct RecoveryIssue {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct RecoveryUnverified {
     pub path: crate::RelPath,
     pub expected: RecoveryState,
@@ -137,6 +172,7 @@ pub struct RecoveryUnverified {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum RecoveryOperation {
     RestoreFile,
@@ -147,6 +183,7 @@ pub enum RecoveryOperation {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct RecoveryEffect {
     pub path: crate::RelPath,
     pub expected: RecoveryState,
@@ -154,6 +191,7 @@ pub struct RecoveryEffect {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum RecoveryState {
     Absent,
@@ -182,6 +220,9 @@ mod tests {
     #[test]
     fn every_code_keeps_its_wire_spelling() {
         for code in [
+            ErrorCode::CursorExpired,
+            ErrorCode::InvalidCursor,
+            ErrorCode::RetentionLimit,
             ErrorCode::OutputLimit,
             ErrorCode::Cancelled,
             ErrorCode::Incomplete,
@@ -205,6 +246,9 @@ mod tests {
             ErrorCode::RecoveryFailed,
         ] {
             let documented = match code {
+                ErrorCode::CursorExpired => "cursor_expired",
+                ErrorCode::InvalidCursor => "invalid_cursor",
+                ErrorCode::RetentionLimit => "retention_limit",
                 ErrorCode::OutputLimit => "output_limit",
                 ErrorCode::Cancelled => "cancelled",
                 ErrorCode::Incomplete => "incomplete",
@@ -237,7 +281,21 @@ mod tests {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct OutputLimit {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub anchor: Option<Box<crate::SourceAnchor>>,
     pub max_bytes: usize,
     pub required_bytes: usize,
+}
+
+/// A recovery action clients can branch on without parsing the error message.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum ContinuationRecovery {
+    RestartQuery,
+    CorrectCursor,
+    IncreaseBudgetOrNarrowQuery,
+    NarrowQuery,
 }

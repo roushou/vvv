@@ -1,0 +1,8 @@
+{
+  "$id": "urn:vvv:schema:1:undo:arguments:643f1c8ce655df87150ef659e5c9d5a77573e7f162196242d72665b5fa76575a",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {},
+  "required": [],
+  "title": "undo arguments",
+  "type": "object"
+}

@@ -12,6 +12,7 @@ use crate::text::SourceText;
 /// to. What a [`Layout`](crate::Layout) and a [`Surgery`](crate::Surgery)
 /// see instead of a file system.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Project {
     pub packages: Packages,
     pub files: FileSet,
@@ -19,6 +20,7 @@ pub struct Project {
 
 /// Every file of the workspace, workspace-relative.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(transparent)]
 pub struct FileSet(BTreeSet<PathBuf>);
 

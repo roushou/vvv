@@ -9,6 +9,7 @@ use vvv_core::{Address, PackageId};
 
 /// `vvv surface [package]`: what a package offers to everyone.
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct SurfaceQuery {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub package: Option<String>,
@@ -16,6 +17,7 @@ pub struct SurfaceQuery {
 
 /// `surface [package]`: what a package offers to everyone, and who takes it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Surface {
     /// The package asked about; every package when absent.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -24,6 +26,7 @@ pub struct Surface {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Exposed {
     #[serde(flatten)]
     pub declaration: Placed,

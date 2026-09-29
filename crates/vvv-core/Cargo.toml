@@ -13,7 +13,11 @@ repository.workspace = true
 rust-version.workspace = true
 description = "Domain types and plugin traits for vvv"
 
+[features]
+schema = ["dep:schemars"]
+
 [dependencies]
+schemars = { workspace = true, optional = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 

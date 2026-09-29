@@ -16,6 +16,7 @@ use serde::{Deserialize, Serialize};
 
 /// One identifier: a module, a declaration, a file stem. Compared by text.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(transparent)]
 pub struct Name(String);
 
@@ -117,6 +118,7 @@ impl fmt::Debug for Name {
 /// file is actually read), but it cannot spell a separator the host's way:
 /// `Display`, serde and the stored bytes are always `/`.
 #[derive(Clone, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(transparent)]
 pub struct RelPath(String);
 
@@ -281,6 +283,7 @@ impl fmt::Debug for RelPath {
 /// Where a path starts: the part before its segments that says what they
 /// are relative to.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum PathHead {
     /// The root of the package the file belongs to: Rust's `crate::`.
@@ -304,6 +307,7 @@ pub enum PathHead {
 /// words it uses for a head. A grammar declares one; it parses import text
 /// into [`ModulePath`]s and spells them back.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum PathSyntax {
     /// `crate::a::b`, `self::a`, `super::super::a`, `Self::A`, `serde::X`.
@@ -427,6 +431,8 @@ impl PathSyntax {
 /// that spells it. Serialises as the text, so the wire is what the user
 /// wrote.
 #[derive(Clone, PartialEq, Eq, Hash, PartialOrd, Ord)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "schema", schemars(with = "String"))]
 pub struct ModulePath {
     syntax: PathSyntax,
     pub head: PathHead,

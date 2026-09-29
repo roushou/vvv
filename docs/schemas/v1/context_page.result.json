@@ -1,0 +1,360 @@
+{
+  "$defs": {
+    "ContentId": {
+      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "type": "string"
+    },
+    "ContextCandidate": {
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/MatchId"
+        },
+        "target": {
+          "$ref": "#/$defs/SymbolRef"
+        }
+      },
+      "required": [
+        "id",
+        "target"
+      ],
+      "type": "object"
+    },
+    "ContextRelation": {
+      "enum": [
+        "definition",
+        "enclosing_declaration",
+        "referenced_definition",
+        "reference",
+        "reference_in_test_path"
+      ],
+      "type": "string"
+    },
+    "ContextUnresolved": {
+      "properties": {
+        "ambiguous": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "no_container": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "unavailable": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "ambiguous",
+        "unavailable",
+        "no_container"
+      ],
+      "type": "object"
+    },
+    "ContextWork": {
+      "properties": {
+        "files": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "lookups": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "lookups",
+        "files"
+      ],
+      "type": "object"
+    },
+    "LanguageId": {
+      "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
+      "type": "string"
+    },
+    "MatchId": {
+      "description": "Content-derived identifier: the same file, range and text yield the same id\nacross runs, so a selection made from one `search` can drive a later command.",
+      "type": "string"
+    },
+    "PagedContextItem": {
+      "properties": {
+        "complete": {
+          "type": "boolean"
+        },
+        "excerpt": {
+          "$ref": "#/$defs/SourceAnchor",
+          "description": "Range of the returned text, which can be shorter than the target extent."
+        },
+        "expansion": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "relation": {
+          "$ref": "#/$defs/ContextRelation"
+        },
+        "start": {
+          "$ref": "#/$defs/Position"
+        },
+        "target": {
+          "$ref": "#/$defs/SymbolRef"
+        },
+        "text": {
+          "type": "string"
+        },
+        "via": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SourceAnchor"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The exact occurrence establishing this relationship; absent for the seed."
+        }
+      },
+      "required": [
+        "target",
+        "relation",
+        "via",
+        "excerpt",
+        "start",
+        "text",
+        "complete",
+        "expansion"
+      ],
+      "type": "object"
+    },
+    "Position": {
+      "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
+      "properties": {
+        "column": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "line": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "column"
+      ],
+      "type": "object"
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "SnapshotId": {
+      "$ref": "#/$defs/ContentId",
+      "description": "Opaque identity of captured source and project inputs; not a disk transaction."
+    },
+    "SourceAnchor": {
+      "properties": {
+        "content": {
+          "$ref": "#/$defs/ContentId"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        }
+      },
+      "required": [
+        "path",
+        "content",
+        "span"
+      ],
+      "type": "object"
+    },
+    "Span": {
+      "description": "Half-open byte range `[start, end)` inside a single file.",
+      "properties": {
+        "end": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "start": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "type": "object"
+    },
+    "SymbolKind": {
+      "description": "What a declaration declares, in vocabulary shared by every language.",
+      "oneOf": [
+        {
+          "enum": [
+            "type-parameter",
+            "parameter",
+            "function",
+            "method",
+            "struct",
+            "class",
+            "enum",
+            "variant",
+            "trait",
+            "interface",
+            "type-alias",
+            "const",
+            "static",
+            "variable",
+            "field",
+            "module",
+            "macro"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "impl",
+          "description": "An `impl` block, named after the type it is for. Not a declaration a\npath can reach; it travels with its type when the type moves.",
+          "type": "string"
+        }
+      ]
+    },
+    "SymbolRef": {
+      "description": "A declaration in one source version, not an identity across edits.",
+      "properties": {
+        "declaration": {
+          "$ref": "#/$defs/SourceAnchor"
+        },
+        "kind": {
+          "$ref": "#/$defs/SymbolKind"
+        },
+        "language": {
+          "$ref": "#/$defs/LanguageId"
+        },
+        "name_span": {
+          "$ref": "#/$defs/Span"
+        }
+      },
+      "required": [
+        "language",
+        "declaration",
+        "name_span",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "UnavailableReason": {
+      "enum": [
+        "no_identifier",
+        "unresolved",
+        "unsupported_context",
+        "external_source_unavailable",
+        "cyclic_imports"
+      ],
+      "type": "string"
+    }
+  },
+  "$id": "urn:vvv:schema:1:context_page:result:f2a103df081d65520a788ca42f8e8ca2f4a37af8091450e6800296dc462db92f",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "oneOf": [
+    {
+      "properties": {
+        "outcome": {
+          "const": "resolved",
+          "type": "string"
+        }
+      },
+      "required": [
+        "outcome"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "candidates": {
+          "items": {
+            "$ref": "#/$defs/ContextCandidate"
+          },
+          "type": "array"
+        },
+        "outcome": {
+          "const": "ambiguous",
+          "type": "string"
+        }
+      },
+      "required": [
+        "outcome",
+        "candidates"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "outcome": {
+          "const": "unavailable",
+          "type": "string"
+        },
+        "reason": {
+          "$ref": "#/$defs/UnavailableReason"
+        }
+      },
+      "required": [
+        "outcome",
+        "reason"
+      ],
+      "type": "object"
+    }
+  ],
+  "properties": {
+    "items": {
+      "items": {
+        "$ref": "#/$defs/PagedContextItem"
+      },
+      "type": "array"
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "references_by_name": {
+      "type": "boolean"
+    },
+    "snapshot": {
+      "$ref": "#/$defs/SnapshotId"
+    },
+    "traversal_complete": {
+      "type": "boolean"
+    },
+    "unresolved": {
+      "$ref": "#/$defs/ContextUnresolved"
+    },
+    "work": {
+      "$ref": "#/$defs/ContextWork"
+    }
+  },
+  "required": [
+    "snapshot",
+    "items",
+    "references_by_name",
+    "work",
+    "unresolved",
+    "traversal_complete",
+    "next_cursor"
+  ],
+  "title": "context_page result",
+  "type": "object"
+}

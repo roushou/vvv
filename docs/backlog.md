@@ -95,6 +95,7 @@ result caching or changing the interactive preview protocol.
 
 Context incoming scans are bounded and same-spelling only. Alias-complete
 references, caller/callee classification, structural test identification, signature
-versus body expansion, and pagination need dedicated evidence and protocol contracts.
-Discovery lists command metadata; published JSON Schemas and an MCP adapter remain
-separate work. Session output budgets do not provide cancellation or execution limits.
+versus body expansion need dedicated evidence and protocol contracts.
+Session output budgets do not impose execution deadlines. MCP cancellation is
+cooperative; parser invocations and individual filesystem operations are not preempted. Measure whole-workspace validation latency for
+paged queries on large repositories before narrowing their invalidation scope.

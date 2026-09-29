@@ -74,6 +74,70 @@ jobs:
       - run: cargo test -p vvv-lang --no-default-features --features rust
       - run: cargo test -p vvv-lang --no-default-features --features typescript
       - run: cargo test -p vvv-core -p vvv-engine --no-default-features
+      - run: cargo test -p vvv-engine --no-default-features --features schema --test schema
+      - run: cargo build -p vvv-rs --no-default-features --features schemas
+      - run: cargo build -p vvv-rs --no-default-features --features rust,schemas
+      - run: cargo build -p vvv-rs --no-default-features --features typescript,schemas
+
+  mcp:
+    name: MCP (${{ matrix.features }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        features: [mcp, 'mcp,rust', 'mcp,typescript']
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test -p vvv-rs --no-default-features --features ${{ matrix.features }} --test mcp
+
+  mcp-targets:
+    name: MCP release target (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: x86_64-apple-darwin
+            os: macos-latest
+          - target: aarch64-apple-darwin
+            os: macos-latest
+          - target: x86_64-pc-windows-msvc
+            os: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/setup-cross-toolchain-action@v1
+        with:
+          target: ${{ matrix.target }}
+          runner: none
+        if: startsWith(matrix.os, 'ubuntu')
+      - run: cargo check -p vvv-rs --features mcp --locked --target ${{ matrix.target }}
+
+  mcp-msrv:
+    name: MCP MSRV
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.90.0
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo check -p vvv-rs --no-default-features --features mcp --locked
+
+  schemas:
+    name: published schemas
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo run -p vvv-engine --features schema --example schemas
 
   docs:
     name: rustdoc

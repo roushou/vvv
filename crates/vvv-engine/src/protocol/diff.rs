@@ -104,6 +104,7 @@ impl Hunk {
 /// One file's change: the unified diff text (the wire) and its hunks (the
 /// model).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(into = "String", from = "String")]
 pub struct Diff {
     text: String,

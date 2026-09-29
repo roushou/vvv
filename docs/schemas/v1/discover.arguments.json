@@ -1,0 +1,14 @@
+{
+  "$defs": {
+    "DiscoveryQuery": {
+      "type": "object"
+    }
+  },
+  "$id": "urn:vvv:schema:1:discover:arguments:1899a90b309d6b08c0ad257967384158accb68eeff9593d5b5ae15eac7a3b60d",
+  "$ref": "#/$defs/DiscoveryQuery",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {},
+  "required": [],
+  "title": "discover arguments",
+  "type": "object"
+}

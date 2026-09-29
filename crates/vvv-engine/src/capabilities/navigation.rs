@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use vvv_core::{Address, Position, RelPath, Span};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum NavigationOrigin {
     Position {
@@ -24,6 +25,7 @@ pub enum NavigationOrigin {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct NavigationQuery {
     pub origin: NavigationOrigin,
     #[serde(default, skip_serializing_if = "crate::Selection::is_all")]
@@ -32,6 +34,7 @@ pub struct NavigationQuery {
 
 /// Opaque identity of captured source and project inputs; not a disk transaction.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(transparent)]
 pub struct SnapshotId(pub(crate) ContentId);
 
@@ -42,6 +45,7 @@ impl From<ContentId> for SnapshotId {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct NavigationReply {
     pub snapshot: SnapshotId,
     #[serde(flatten)]
@@ -49,6 +53,7 @@ pub struct NavigationReply {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "outcome", rename_all = "snake_case")]
 pub enum NavigationOutcome {
     Resolved {
@@ -65,6 +70,7 @@ pub enum NavigationOutcome {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct DefinitionCandidate {
     pub target: SymbolRef,
     pub declaration: Match,
@@ -72,6 +78,7 @@ pub struct DefinitionCandidate {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ResolutionEvidence {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub semantic: Option<crate::ProviderVersion>,
@@ -80,6 +87,7 @@ pub struct ResolutionEvidence {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct DefinitionPreview {
     pub container: SymbolRef,
     pub declaration: Match,
@@ -90,6 +98,7 @@ pub struct DefinitionPreview {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum UnavailableReason {
     NoIdentifier,

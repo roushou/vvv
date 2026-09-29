@@ -13,6 +13,7 @@ use crate::{Match, MatchId};
 /// changed in between; the selection is then refused rather than silently
 /// narrowed.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "lowercase")]
 pub enum Selection {
     #[default]

@@ -20,8 +20,15 @@ use super::{
 /// its [`Intent`](super::Intent) plus `apply`: false previews, true writes
 /// and records one undo — exactly what the CLI's `--apply` does.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "command", rename_all = "snake_case")]
 pub enum Request {
+    #[cfg(feature = "schema")]
+    Schema(crate::SchemaQuery),
+    SearchPage(crate::SearchPageQuery),
+    ContextPage(crate::ContextPageQuery),
+    Continue(crate::ContinueQuery),
+    Expand(crate::ExpandQuery),
     Discover(crate::DiscoveryQuery),
     Context(crate::ContextQuery),
     Navigate(crate::NavigationQuery),
@@ -74,28 +81,38 @@ impl Request {
     /// Whether running this request can write. The picker's hub asks only
     /// these; a mutation goes through an `Intent` and `Apply`.
     pub fn is_read_only(&self) -> bool {
+        self.command().is_read_only()
+    }
+
+    pub fn command(&self) -> super::Command {
         match self {
-            Self::Discover(_)
-            | Self::Context(_)
-            | Self::Navigate(_)
-            | Self::Search(_)
-            | Self::Outline(_)
-            | Self::References(_)
-            | Self::Where(_)
-            | Self::Deps(_)
-            | Self::Explain(_)
-            | Self::Surface(_)
-            | Self::Impact(_)
-            | Self::Dead(_)
-            | Self::Imports(_)
-            | Self::File(_)
-            | Self::History => true,
-            Self::Rewrite { .. }
-            | Self::Rename { .. }
-            | Self::Move { .. }
-            | Self::MoveSymbol { .. }
-            | Self::Batch { .. }
-            | Self::Undo => false,
+            #[cfg(feature = "schema")]
+            Self::Schema(_) => super::Command::Schema,
+            Self::SearchPage(_) => super::Command::SearchPage,
+            Self::ContextPage(_) => super::Command::ContextPage,
+            Self::Continue(_) => super::Command::Continue,
+            Self::Expand(_) => super::Command::Expand,
+            Self::Discover(_) => super::Command::Discover,
+            Self::Context(_) => super::Command::Context,
+            Self::Navigate(_) => super::Command::Navigate,
+            Self::Search(_) => super::Command::Search,
+            Self::Outline(_) => super::Command::Outline,
+            Self::References(_) => super::Command::References,
+            Self::Where(_) => super::Command::Where,
+            Self::Deps(_) => super::Command::Deps,
+            Self::Explain(_) => super::Command::Explain,
+            Self::Surface(_) => super::Command::Surface,
+            Self::Impact(_) => super::Command::Impact,
+            Self::Dead(_) => super::Command::Dead,
+            Self::Imports(_) => super::Command::Imports,
+            Self::File(_) => super::Command::File,
+            Self::Rewrite { .. } => super::Command::Rewrite,
+            Self::Rename { .. } => super::Command::Rename,
+            Self::Move { .. } => super::Command::Move,
+            Self::MoveSymbol { .. } => super::Command::MoveSymbol,
+            Self::Batch { .. } => super::Command::Batch,
+            Self::History => super::Command::History,
+            Self::Undo => super::Command::Undo,
         }
     }
 }
@@ -104,11 +121,18 @@ impl Request {
 /// the wire it is that type's shape alone — a client knows what it asked —
 /// so it serialises without a tag and is read back by the command's type.
 #[derive(Debug, Clone, Serialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(untagged)]
 // Built once and serialised once: the largest result's size is not a cost
 // worth a `Box` in every client's match.
 #[allow(clippy::large_enum_variant)]
 pub enum Answer {
+    #[cfg(feature = "schema")]
+    Schema(crate::SchemaDocument),
+    SearchPage(crate::SearchPage),
+    ContextPage(crate::ContextPage),
+    Continue(crate::PageReply),
+    Expand(crate::Expansion),
     Discover(crate::Discovery),
     Context(crate::ContextReply),
     Navigate(crate::NavigationReply),
@@ -171,8 +195,10 @@ impl From<MutationAnswer> for Answer {
 /// A request on a session's wire (`vvv serve`): the request with whatever
 /// `id` the caller chose, echoed on the [`Reply`].
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Call {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[cfg_attr(feature = "schema", schemars(range(min = crate::ContextBudget::MIN_BYTES, max = crate::ContextBudget::MAX_BYTES)))]
     pub max_output_bytes: Option<usize>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub id: Option<serde_json::Value>,
@@ -182,6 +208,7 @@ pub struct Call {
 
 /// The reply to a [`Call`]: its `id`, then the usual envelope.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Reply<T> {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub id: Option<serde_json::Value>,

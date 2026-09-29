@@ -2,19 +2,32 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct DiscoveryQuery {}
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Discovery {
+    #[serde(default)]
+    pub schemas_available: bool,
     pub schema: u32,
     pub languages: Vec<crate::LanguageId>,
     pub commands: Vec<Capability>,
+    pub page_defaults: crate::PageBudget,
+    pub page_maximum: crate::PageBudget,
+    pub work_defaults: crate::WorkBudget,
+    pub work_maximum: crate::WorkBudget,
+    pub query_retention: crate::QueryLimits,
     pub context_defaults: crate::ContextBudget,
     pub context_maximum: crate::ContextBudget,
     pub min_output_bytes: usize,
     pub max_output_bytes: usize,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Capability {
+    #[cfg(feature = "schema")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub schemas: Option<crate::SchemaReferences>,
     pub command: String,
     /// Whether this command is always read-only, including every supported option.
     pub read_only: bool,
@@ -22,77 +35,29 @@ pub struct Capability {
 }
 impl DiscoveryQuery {
     pub fn execute(self, engine: &crate::Engine) -> Discovery {
-        let entries: &[(&str, bool, &[&str])] = &[
-            ("discover", true, &[]),
-            (
-                "context",
-                true,
-                &["origin", "selection", "budget", "references"],
-            ),
-            ("navigate", true, &["origin", "selection"]),
-            (
-                "search",
-                true,
-                &["pattern", "kind", "symbol", "name", "language"],
-            ),
-            ("outline", true, &["path"]),
-            (
-                "references",
-                true,
-                &["name", "symbol", "language", "declared_in"],
-            ),
-            ("where", true, &["name", "from"]),
-            ("deps", true, &["path"]),
-            ("explain", true, &["path", "position"]),
-            ("surface", true, &["package"]),
-            ("impact", true, &["name", "declared_in"]),
-            ("dead", true, &["language"]),
-            ("imports", true, &["path"]),
-            ("file", true, &["path"]),
-            (
-                "rewrite",
-                false,
-                &["query", "template", "selection", "apply"],
-            ),
-            (
-                "rename",
-                false,
-                &[
-                    "name",
-                    "to",
-                    "symbol",
-                    "language",
-                    "declared_in",
-                    "selection",
-                    "apply",
-                ],
-            ),
-            ("move", false, &["from", "to", "apply"]),
-            ("move_symbol", false, &["name", "from", "to", "apply"]),
-            ("batch", false, &["intents", "apply"]),
-            ("history", true, &[]),
-            ("undo", false, &[]),
-        ];
         Discovery {
             schema: crate::protocol::SCHEMA,
             languages: engine.language_ids(),
-            commands: entries
+            schemas_available: cfg!(feature = "schema"),
+            commands: crate::Command::ALL
                 .iter()
-                .map(|(command, read_only, parameters)| Capability {
-                    command: (*command).into(),
-                    read_only: *read_only,
-                    parameters: parameters.iter().map(|s| (*s).into()).collect(),
+                .map(|&command| Capability {
+                    command: command.as_str().into(),
+                    read_only: command.is_read_only(),
+                    parameters: command.parameters().iter().map(|p| (*p).into()).collect(),
+                    #[cfg(feature = "schema")]
+                    schemas: Some(crate::SchemaReferences::for_command(command)),
                 })
                 .collect(),
+            page_defaults: crate::PageBudget::default(),
+            page_maximum: crate::PageBudget::MAXIMUM,
+            work_defaults: crate::WorkBudget::default(),
+            work_maximum: crate::WorkBudget::MAXIMUM,
+            query_retention: crate::QueryLimits::default(),
             context_defaults: crate::ContextBudget::default(),
-            context_maximum: crate::ContextBudget {
-                max_bytes: 1_048_576,
-                max_items: 64,
-                max_lookups: 512,
-                max_files: 1024,
-            },
-            min_output_bytes: 1024,
-            max_output_bytes: 1_048_576,
+            context_maximum: crate::ContextBudget::MAXIMUM,
+            min_output_bytes: crate::ContextBudget::MIN_BYTES,
+            max_output_bytes: crate::ContextBudget::MAX_BYTES,
         }
     }
 }

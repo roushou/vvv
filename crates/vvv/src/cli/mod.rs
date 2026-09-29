@@ -46,6 +46,10 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
+    #[cfg(feature = "mcp")]
+    Mcp(commands::mcp::McpCmd),
+    #[cfg(feature = "schemas")]
+    Schema(commands::schema::SchemaCmd),
     /// List commands, supported languages, and context/output budget limits
     Discover,
     Context(commands::context::ContextCmd),
@@ -79,6 +83,10 @@ impl Cli {
     }
 
     pub fn output_format(&self) -> OutputFormat {
+        #[cfg(feature = "mcp")]
+        if matches!(self.command, Some(Commands::Mcp(_))) {
+            return OutputFormat::Human;
+        }
         if self.json {
             OutputFormat::Json
         } else {
@@ -113,6 +121,10 @@ impl Cli {
             self.diff,
         )?;
         match self.command {
+            #[cfg(feature = "mcp")]
+            Some(Commands::Mcp(cmd)) => cmd.run(&ctx),
+            #[cfg(feature = "schemas")]
+            Some(Commands::Schema(cmd)) => cmd.run(&ctx),
             Some(Commands::Discover) => ctx.run(vvv_engine::Request::Discover(
                 vvv_engine::DiscoveryQuery::default(),
             )),

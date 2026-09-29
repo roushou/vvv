@@ -16,6 +16,7 @@ mod candidate;
 mod fragment;
 mod namespace;
 mod navigation;
+pub(crate) mod query_snapshot;
 mod references;
 mod scope;
 
@@ -43,6 +44,7 @@ use crate::{
 };
 
 pub struct Graph {
+    pub(crate) cancellation: Option<crate::ReadCancellation>,
     workspace: Workspace,
     languages: LanguageRegistry,
     /// Every file of the last walk, absolute, in path order. Only a project
@@ -110,6 +112,7 @@ impl Retention {
 impl Graph {
     pub fn new(workspace: Workspace, languages: LanguageRegistry) -> Self {
         Self {
+            cancellation: None,
             workspace,
             languages,
             walked: Vec::new(),
@@ -122,16 +125,23 @@ impl Graph {
         }
     }
 
+    pub(crate) fn check_read(&self) -> Result<(), EngineError> {
+        self.cancellation
+            .as_ref()
+            .map_or(Ok(()), crate::ReadCancellation::check)
+    }
     /// Walk the tree; load files that appeared or changed, forget files that
     /// vanished, keep the rest. A graph kept for a session stamps what it
     /// loads so the next refresh can tell; one built per call does not.
     pub fn refresh(&mut self, retention: Retention) -> Result<(), EngineError> {
+        self.check_read()?;
         if let Retention::Session { trust } = retention
             && self.walked_at.is_some_and(|at| at.elapsed() < trust)
         {
             return Ok(());
         }
         let walked = self.workspace.files()?;
+        self.check_read()?;
         let claimed: Vec<(&Path, Arc<dyn Language>)> = walked
             .iter()
             .filter_map(|abs| Some((abs.as_path(), self.languages.for_path(abs)?)))
@@ -144,6 +154,7 @@ impl Graph {
         let now: Vec<Entry> = claimed
             .into_par_iter()
             .map(|(abs, language)| {
+                self.check_read()?;
                 let stamp = stamping.then(|| vfs.stamp(abs)).transpose()?;
                 let known = stamp.and_then(|stamp| {
                     before
@@ -156,6 +167,7 @@ impl Graph {
                     Some(known) => known.candidate.clone(),
                     None => Candidate::new(workspace.load(abs)?, language),
                 };
+                self.check_read()?;
                 Ok(Entry {
                     path: abs.to_path_buf(),
                     stamp,
@@ -240,8 +252,12 @@ impl Graph {
             .collect();
         let sources: Vec<_> = manifests
             .into_par_iter()
-            .filter_map(|manifest| self.workspace.load(manifest).ok())
+            .filter_map(|manifest| {
+                self.check_read().ok()?;
+                self.workspace.load(manifest).ok()
+            })
             .collect();
+        self.check_read().ok()?;
         let packages: Vec<Package> = sources
             .iter()
             .filter_map(|file| layout.package(file.path(), file.text()))
@@ -318,6 +334,57 @@ impl Graph {
     /// one, then everything else by path and position — the order human
     /// output prints and numbers.
     pub fn search(&mut self, query: &Query) -> Result<Search, EngineError> {
+        let (candidates, skipped) = self.search_candidates(query);
+        let per_file: Vec<Vec<Match>> = candidates
+            .par_iter()
+            .map(|c| {
+                self.check_read()?;
+                c.find(query)
+            })
+            .collect::<Result<_, _>>()?;
+        // Candidates come in path order and each file's matches in position
+        // order, so moving declarations to the front is all the ordering
+        // there is to do.
+        let mut matches: Vec<Match> = per_file.into_iter().flatten().collect();
+        self.address_declarations(&mut matches);
+        matches.sort_by_key(|m| m.role != Role::Declaration);
+        Ok(Search {
+            query: query.clone(),
+            matches,
+            skipped,
+        })
+    }
+
+    /// Bound retained search results during collection, before a whole-tree vector exists.
+    pub(crate) fn search_bounded(
+        &mut self,
+        query: &Query,
+        maximum: usize,
+    ) -> Result<Search, EngineError> {
+        let (candidates, skipped) = self.search_candidates(query);
+        let mut result = Search {
+            query: query.clone(),
+            matches: vec![],
+            skipped,
+        };
+        let mut bytes = crate::query_store::QueryStore::weight(&result);
+        for candidate in candidates {
+            self.check_read()?;
+            let mut matches = candidate.find(query)?;
+            self.address_declarations(&mut matches);
+            for found in matches {
+                bytes = bytes.saturating_add(crate::query_store::QueryStore::weight(&found));
+                if bytes > maximum {
+                    return Err(EngineError::RetentionLimit);
+                }
+                result.matches.push(found);
+            }
+        }
+        result.matches.sort_by_key(|m| m.role != Role::Declaration);
+        Ok(result)
+    }
+
+    fn search_candidates(&self, query: &Query) -> (Vec<Candidate>, Vec<Skipped>) {
         let mut skipped = Vec::new();
         let mut accepted: Vec<LanguageId> = Vec::new();
         for language in self.languages.iter() {
@@ -332,26 +399,12 @@ impl Graph {
                 }),
             }
         }
-        let candidates: Vec<Candidate> = self
+        let candidates = self
             .containing(query.language(), &query.literals())
             .into_iter()
             .filter(|c| accepted.contains(&c.language()))
             .collect();
-        let per_file: Vec<Vec<Match>> = candidates
-            .par_iter()
-            .map(|c| c.find(query))
-            .collect::<Result<_, _>>()?;
-        // Candidates come in path order and each file's matches in position
-        // order, so moving declarations to the front is all the ordering
-        // there is to do.
-        let mut matches: Vec<Match> = per_file.into_iter().flatten().collect();
-        self.address_declarations(&mut matches);
-        matches.sort_by_key(|m| m.role != Role::Declaration);
-        Ok(Search {
-            query: query.clone(),
-            matches,
-            skipped,
-        })
+        (candidates, skipped)
     }
 
     /// Give each declaration the address `outline` would: its file's module

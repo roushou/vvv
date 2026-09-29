@@ -25,6 +25,7 @@ pub struct RewriteOf {
 
 /// Replace every selected match of `query` with `template`.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct RewriteIntent {
     pub query: Query,
     pub template: Template,
@@ -65,6 +66,7 @@ impl RewriteIntent {
 
 /// `vvv rewrite`: one edit per selected match.
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Rewrite {
     pub intent: RewriteIntent,
     /// Preview or successful application with its history entry.

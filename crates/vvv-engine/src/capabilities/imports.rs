@@ -11,12 +11,14 @@ use vvv_core::{Address, ImportRef, Parsed, Position, RelPath, Symbol};
 
 /// `vvv deps <path>`: what a file imports and who imports it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct DepsQuery {
     pub path: RelPath,
 }
 
 /// `vvv explain <path>:<line>:<col>`: what is at a position.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ExplainQuery {
     pub path: RelPath,
     pub position: Position,
@@ -24,6 +26,7 @@ pub struct ExplainQuery {
 
 /// `vvv imports [path]`: import statements worth a look.
 #[derive(Debug, Clone, PartialEq, Eq, Default, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ImportsQuery {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub path: Option<RelPath>,
@@ -31,6 +34,7 @@ pub struct ImportsQuery {
 
 /// `deps <path>`: what a file imports and who imports it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Deps {
     pub path: RelPath,
     /// The file's own module address, when the language has one.
@@ -44,6 +48,7 @@ pub struct Deps {
 
 /// `explain <path>:<line>:<column>`: what is at a position.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Explanation {
     pub path: RelPath,
     pub position: Position,
@@ -78,6 +83,7 @@ pub struct Explanation {
 /// `imports [path]`: import statements worth a look — unused, unresolved,
 /// or the same target twice.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ImportsReport {
     /// The file asked about; every file when absent.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -95,6 +101,7 @@ pub struct ImportsReport {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct ImportSite {
     pub path: RelPath,
     #[serde(flatten)]

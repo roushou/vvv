@@ -9,6 +9,7 @@ use crate::paths::Name;
 /// The name a package goes by in paths: a Rust crate's lib name (`fff`, not
 /// `fff-search`), a TypeScript package's name. The layout decides the spelling.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(transparent)]
 pub struct PackageId(String);
 
@@ -39,6 +40,7 @@ impl fmt::Display for PackageId {
 /// components for a TypeScript file. Prefix relations, which are what a move
 /// cares about, never hold across packages.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Address {
     package: PackageId,
     path: Vec<Name>,
@@ -161,6 +163,7 @@ impl fmt::Display for Address {
 
 /// A package a layout found: where it is and what it depends on.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Package {
     /// How paths name it by default.
     pub id: PackageId,
@@ -177,6 +180,7 @@ pub struct Package {
 /// One dependency as a manifest states it: the name paths use for it, and
 /// the package that name stands for (`fff = { package = "fff-search" }`).
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Dependency {
     pub used_as: PackageId,
     pub package: String,
@@ -185,6 +189,7 @@ pub struct Dependency {
 /// Every package in a workspace, looked up by the deepest root containing a
 /// path or by name.
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Packages {
     by_root: BTreeMap<PathBuf, Package>,
 }

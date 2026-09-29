@@ -1,0 +1,23 @@
+{
+  "$defs": {
+    "SurfaceQuery": {
+      "description": "`vvv surface [package]`: what a package offers to everyone.",
+      "properties": {
+        "package": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    }
+  },
+  "$id": "urn:vvv:schema:1:surface:arguments:3c3ce0ac62674180f754cd984ff075655f37a7d3aa2c13d1a6ea61970c29a22a",
+  "$ref": "#/$defs/SurfaceQuery",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {},
+  "required": [],
+  "title": "surface arguments",
+  "type": "object"
+}

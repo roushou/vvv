@@ -1,0 +1,38 @@
+{
+  "$defs": {
+    "ImportsQuery": {
+      "description": "`vvv imports [path]`: import statements worth a look.",
+      "properties": {
+        "path": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelPath"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    }
+  },
+  "$id": "urn:vvv:schema:1:imports:request:fc2662b661b07ecc39495d823ea87f560022ca9ccd619a79f9b7a47c59d94198",
+  "$ref": "#/$defs/ImportsQuery",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "command": {
+      "const": "imports",
+      "type": "string"
+    }
+  },
+  "required": [
+    "command"
+  ],
+  "title": "imports request",
+  "type": "object"
+}

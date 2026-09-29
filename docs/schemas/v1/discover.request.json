@@ -1,0 +1,21 @@
+{
+  "$defs": {
+    "DiscoveryQuery": {
+      "type": "object"
+    }
+  },
+  "$id": "urn:vvv:schema:1:discover:request:a7a3660b5e362bffa977133bf48b4b42ac7bffb7c62013985e404e701fc8562d",
+  "$ref": "#/$defs/DiscoveryQuery",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "command": {
+      "const": "discover",
+      "type": "string"
+    }
+  },
+  "required": [
+    "command"
+  ],
+  "title": "discover request",
+  "type": "object"
+}
