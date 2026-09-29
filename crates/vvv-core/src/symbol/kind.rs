@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum SymbolKind {
+    TypeParameter,
+    Parameter,
     Function,
     Method,
     Struct,
@@ -28,7 +30,7 @@ pub enum SymbolKind {
 }
 
 impl SymbolKind {
-    pub const ALL: [SymbolKind; 16] = [
+    pub const ALL: [SymbolKind; 18] = [
         Self::Function,
         Self::Method,
         Self::Struct,
@@ -45,6 +47,8 @@ impl SymbolKind {
         Self::Module,
         Self::Macro,
         Self::Impl,
+        Self::TypeParameter,
+        Self::Parameter,
     ];
 
     /// Comma-separated list of every kind, for help and error messages.
@@ -54,6 +58,8 @@ impl SymbolKind {
 
     pub const fn as_str(self) -> &'static str {
         match self {
+            Self::TypeParameter => "type-parameter",
+            Self::Parameter => "parameter",
             Self::Function => "function",
             Self::Method => "method",
             Self::Struct => "struct",

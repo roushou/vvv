@@ -1,0 +1,205 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "schema": 1,
+    "languages": [
+      "rust",
+      "typescript",
+      "tsx"
+    ],
+    "commands": [
+      {
+        "command": "discover",
+        "read_only": true,
+        "parameters": []
+      },
+      {
+        "command": "context",
+        "read_only": true,
+        "parameters": [
+          "origin",
+          "selection",
+          "budget",
+          "references"
+        ]
+      },
+      {
+        "command": "navigate",
+        "read_only": true,
+        "parameters": [
+          "origin",
+          "selection"
+        ]
+      },
+      {
+        "command": "search",
+        "read_only": true,
+        "parameters": [
+          "pattern",
+          "kind",
+          "symbol",
+          "name",
+          "language"
+        ]
+      },
+      {
+        "command": "outline",
+        "read_only": true,
+        "parameters": [
+          "path"
+        ]
+      },
+      {
+        "command": "references",
+        "read_only": true,
+        "parameters": [
+          "name",
+          "symbol",
+          "language",
+          "declared_in"
+        ]
+      },
+      {
+        "command": "where",
+        "read_only": true,
+        "parameters": [
+          "name",
+          "from"
+        ]
+      },
+      {
+        "command": "deps",
+        "read_only": true,
+        "parameters": [
+          "path"
+        ]
+      },
+      {
+        "command": "explain",
+        "read_only": true,
+        "parameters": [
+          "path",
+          "position"
+        ]
+      },
+      {
+        "command": "surface",
+        "read_only": true,
+        "parameters": [
+          "package"
+        ]
+      },
+      {
+        "command": "impact",
+        "read_only": true,
+        "parameters": [
+          "name",
+          "declared_in"
+        ]
+      },
+      {
+        "command": "dead",
+        "read_only": true,
+        "parameters": [
+          "language"
+        ]
+      },
+      {
+        "command": "imports",
+        "read_only": true,
+        "parameters": [
+          "path"
+        ]
+      },
+      {
+        "command": "file",
+        "read_only": true,
+        "parameters": [
+          "path"
+        ]
+      },
+      {
+        "command": "rewrite",
+        "read_only": false,
+        "parameters": [
+          "query",
+          "template",
+          "selection",
+          "apply"
+        ]
+      },
+      {
+        "command": "rename",
+        "read_only": false,
+        "parameters": [
+          "name",
+          "to",
+          "symbol",
+          "language",
+          "declared_in",
+          "selection",
+          "apply"
+        ]
+      },
+      {
+        "command": "move",
+        "read_only": false,
+        "parameters": [
+          "from",
+          "to",
+          "apply"
+        ]
+      },
+      {
+        "command": "move_symbol",
+        "read_only": false,
+        "parameters": [
+          "name",
+          "from",
+          "to",
+          "apply"
+        ]
+      },
+      {
+        "command": "batch",
+        "read_only": false,
+        "parameters": [
+          "intents",
+          "apply"
+        ]
+      },
+      {
+        "command": "history",
+        "read_only": true,
+        "parameters": []
+      },
+      {
+        "command": "undo",
+        "read_only": false,
+        "parameters": []
+      }
+    ],
+    "context_defaults": {
+      "max_bytes": 16384,
+      "max_items": 12,
+      "max_lookups": 64,
+      "max_files": 64
+    },
+    "context_maximum": {
+      "max_bytes": 1048576,
+      "max_items": 64,
+      "max_lookups": 512,
+      "max_files": 1024
+    },
+    "min_output_bytes": 1024,
+    "max_output_bytes": 1048576
+  }
+}
+--- stderr ---

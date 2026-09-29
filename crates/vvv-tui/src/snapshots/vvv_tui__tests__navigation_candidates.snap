@@ -1,0 +1,24 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: "FrameFixture::new(&m).render()"
+---
+┌ vvv ~/dev/nx ───────────────────────────────────────────────────────────── ● 1  1 file ┐
+│> Al┌ Choose definition · ↑/↓ choose · enter follow · esc cancel ───────────────────┐   │
+└────│Filter:   (1 choice)                                                           │───┘
+┌ res│struct Beta  one.rs:1:1                                                        │───┐
+│● a.│                                                                               │   │
+│    │                                                                               │   │
+│    │                                                                               │   │
+│    │                                                                               │   │
+│    │                                                                               │   │
+│    │                                                                               │   │
+└────│                                                                               │   │
+┌ def│                                                                               │   │
+│ str│                                                                               │   │
+│    │                                                                               │   │
+│    │                                                                               │   │
+│ }  │                                                                               │   │
+│    │                                                                               │   │
+│    │                                                                               │   │
+└────└───────────────────────────────────────────────────────────────────────────────┘───┘
+ search

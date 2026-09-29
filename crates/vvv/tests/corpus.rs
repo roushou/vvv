@@ -1129,3 +1129,123 @@ fn child_modules_follow_private_module_aliases_imported_from_their_parent() {
         .unwrap();
     assert_eq!(occurrence.confidence, Confidence::Resolved);
 }
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_navigation_golden() {
+    golden(&Corpus {
+        name: "rust-navigation",
+        cases: &[
+            (
+                "context-tests",
+                &[
+                    "context",
+                    "src/origin.rs:2:12",
+                    "--references",
+                    "--max-items",
+                    "32",
+                    "--max-lookups",
+                    "128",
+                ],
+            ),
+            ("discovery", &["discover"]),
+            ("lexical-generic", &["navigate", "src/lexical.rs:2:27"]),
+            ("lexical-parameter", &["navigate", "src/lexical.rs:2:47"]),
+            ("lexical-initializer", &["navigate", "src/lexical.rs:4:17"]),
+            ("lexical-shadow", &["navigate", "src/lexical.rs:5:30"]),
+            ("lexical-outer", &["navigate", "src/lexical.rs:6:13"]),
+            ("lexical-nested-item", &["navigate", "src/lexical.rs:8:46"]),
+            (
+                "lexical-pattern-limit",
+                &["navigate", "src/lexical.rs:9:67"],
+            ),
+            (
+                "navigate-type-namespace",
+                &["navigate", "src/namespaces.rs:3:19"],
+            ),
+            (
+                "navigate-method-parameter",
+                &["navigate", "src/consumer.rs:14:34"],
+            ),
+            (
+                "navigate-method-return",
+                &["navigate", "src/consumer.rs:14:45"],
+            ),
+            (
+                "navigate-selected",
+                &["navigate", "src/ambiguous.rs:3:26", "--select", "2"],
+            ),
+            (
+                "navigate-bad-selection",
+                &["navigate", "src/ambiguous.rs:3:26", "--select", "3"],
+            ),
+            ("navigate-import", &["navigate", "src/consumer.rs:2:20"]),
+            ("navigate-field", &["navigate", "src/consumer.rs:5:13"]),
+            (
+                "bounded-context",
+                &["context", "src/consumer.rs:5:13", "--max-bytes", "2048"],
+            ),
+            (
+                "context-relations",
+                &[
+                    "context",
+                    "src/consumer.rs:4:12",
+                    "--references",
+                    "--max-items",
+                    "5",
+                ],
+            ),
+            ("context-ambiguous", &["context", "src/ambiguous.rs:3:26"]),
+            ("tuple-parameter", &["navigate", "src/bindings.rs:1:45"]),
+            ("closure-parameter", &["navigate", "src/bindings.rs:2:41"]),
+            ("local-annotation", &["navigate", "src/bindings.rs:5:30"]),
+            ("tuple-local", &["navigate", "src/bindings.rs:3:68"]),
+            ("navigate-alias", &["navigate", "src/consumer.rs:6:14"]),
+            ("navigate-parameter", &["navigate", "src/consumer.rs:9:26"]),
+            ("navigate-return", &["navigate", "src/consumer.rs:9:37"]),
+            ("navigate-generic", &["navigate", "src/consumer.rs:10:32"]),
+            ("navigate-local", &["navigate", "src/consumer.rs:11:47"]),
+            ("navigate-unicode", &["navigate", "src/consumer.rs:12:31"]),
+            ("navigate-variant", &["navigate", "src/origin.rs:6:5"]),
+            ("navigate-ambiguous", &["navigate", "src/ambiguous.rs:3:26"]),
+            ("navigate-cycle", &["navigate", "src/cyclic.rs:2:25"]),
+        ],
+        mutations: Vec::new,
+    });
+}
+
+#[cfg(feature = "typescript")]
+#[test]
+fn ts_navigation_golden() {
+    golden(&Corpus {
+        name: "ts-navigation",
+        cases: &[
+            ("named-import", &["navigate", "src/consumer.ts:1:10"]),
+            (
+                "context-default-import",
+                &["context", "src/bindings.ts:4:19"],
+            ),
+            ("default-import", &["navigate", "src/bindings.ts:4:19"]),
+            ("namespace-import", &["navigate", "src/bindings.ts:5:25"]),
+            (
+                "forwarded-local-export",
+                &["navigate", "src/bindings.ts:12:16"],
+            ),
+            ("direct-local-export", &["navigate", "src/bindings.ts:8:26"]),
+            ("unknown-namespace", &["navigate", "src/bindings.ts:10:31"]),
+            ("local-export", &["navigate", "src/bindings.ts:6:23"]),
+            ("import-alias", &["navigate", "src/consumer.ts:1:19"]),
+            ("reexport-alias", &["navigate", "src/consumer.ts:4:12"]),
+            ("not-imported", &["navigate", "src/consumer.ts:5:16"]),
+            ("private", &["navigate", "src/consumer.ts:6:16"]),
+            ("generic", &["navigate", "src/consumer.ts:7:34"]),
+            ("parameter", &["navigate", "src/consumer.ts:7:61"]),
+            ("interface-field", &["navigate", "src/consumer.ts:8:24"]),
+            (
+                "default-is-not-named",
+                &["navigate", "src/consumer.ts:10:17"],
+            ),
+        ],
+        mutations: Vec::new,
+    });
+}

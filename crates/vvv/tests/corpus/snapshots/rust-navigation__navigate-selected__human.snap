@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● struct Engine   src/other.rs:1:1
+
+pub struct Engine;
+--- stderr ---

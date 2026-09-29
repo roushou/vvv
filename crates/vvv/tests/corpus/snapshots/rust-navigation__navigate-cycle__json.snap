@@ -1,0 +1,16 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "abff2466a8149ae695b2741fd4bef62a8b910efd19f0831e0206a2f34f3d92cf",
+    "outcome": "unavailable",
+    "reason": "cyclic_imports"
+  }
+}
+--- stderr ---

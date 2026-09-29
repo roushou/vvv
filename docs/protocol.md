@@ -41,6 +41,9 @@ fields are the command's own, with the same names as the CLI's flags:
 { "command": "dead", "language": "rust" }
 { "command": "imports", "path": "src/plan/mod.rs" }
 { "command": "file", "path": "src/plan/mod.rs" }
+{ "command": "discover" }
+{ "command": "context", "origin": { "kind": "position", "path": "src/engine.rs", "position": { "line": 8, "column": 15 } }, "budget": { "max_bytes": 8192 }, "references": false }
+{ "command": "navigate", "origin": { "kind": "position", "path": "src/engine.rs", "position": { "line": 8, "column": 15 } } }
 { "command": "rename", "name": "Config", "to": "Settings", "apply": true }
 { "command": "rewrite", "query": { "pattern": "$A.unwrap()" }, "template": "$A?" }
 { "command": "move", "from": "src/a.rs", "to": "src/b.rs" }
@@ -70,6 +73,95 @@ $ printf '%s\n' '{"id": 1, "command": "where", "name": "Plan"}' '{"id": 2, "comm
 
 Replies are compact (one line); a line that is not a request is answered with
 `bad_request`. `vvv serve` runs the workspace given by `-C` for the whole session.
+
+Calls optionally accept `max_output_bytes` (1,024 through 1,048,576). It counts the
+compact UTF-8 JSON serialization of `result`, including escaped characters, but
+excludes the envelope, echoed ID, and terminating newline. Without it, existing
+commands retain their previous output behavior. Budgets apply to read-only commands;
+mutation commands, including previews and undo, reject the option before execution.
+They never write and then lose their receipt to an output-size error.
+
+```json
+{
+  "id": 7,
+  "command": "file",
+  "path": "src/engine.rs",
+  "max_output_bytes": 2048
+}
+```
+
+An oversized result returns `code: "output_limit"` and
+`output_limit: { "max_bytes": 2048, "required_bytes": 9012 }`. It is not a truncated
+success. Increase the limit, narrow the request, or use bounded `context`. Error
+envelopes are not subject to this result budget. For a context call, the effective
+`budget.max_bytes` is the smaller of its requested/default budget and the call limit.
+This limits output, not parsing, computation time, or in-memory result construction.
+
+## `vvv discover`
+
+`{ "command": "discover" }` returns the envelope schema version, registered
+`languages`, `commands`, `context_defaults`, `context_maximum`, `min_output_bytes`,
+and `max_output_bytes`. Each command entry has its `command` name, `read_only`
+status (true only when every form is read-only), and accepted top-level `parameters`.
+This is capability metadata, not a complete JSON Schema or a guarantee that every
+construct of a registered language is resolvable. `id` and `max_output_bytes` belong
+to the call envelope rather than individual command parameter lists.
+
+## `vvv context`
+
+The request accepts the same `origin` and `selection` as `navigate`, an optional
+`budget`, and `references` (default false). Budget fields default independently:
+
+| Field         | Default | Allowed range |
+| ------------- | ------- | ------------- |
+| `max_bytes`   | 16384   | 1024–1048576  |
+| `max_items`   | 12      | 1–64          |
+| `max_lookups` | 64      | 1–512         |
+| `max_files`   | 64      | 1–1024        |
+
+The result contains `snapshot`, `outcome`, `items`, `omissions`, and
+`references_by_name`. Outcomes are `resolved`, `ambiguous` (with complete
+`candidates: [{id, target}]`), or `unavailable` (with a navigation `reason`). An
+ambiguous candidate set exceeding the byte limit returns `output_limit`; the
+engine does not discard candidates or pick one to satisfy a budget.
+
+Each item has:
+
+- `target`: the complete versioned `SymbolRef`, including its full declaration range.
+- `relation`: `definition`, `enclosing_declaration`, `referenced_definition`,
+  `reference`, or `reference_in_test_path`.
+- `via`: the exact occurrence establishing the relationship, or null for the seed.
+- `excerpt`: a `SourceAnchor` for precisely the returned bytes.
+- `start`: the excerpt's zero-based line/character position.
+- `text`: the source substring, without added ellipses or reformatted indentation.
+- `complete`: whether the entire target extent is present.
+
+Items are ordered seed first, enclosing declaration second, outgoing occurrences
+in source order, then incoming files/tokens in path/source order. Each target
+appears once, keeping its first relationship evidence. Outgoing declarations
+already contained in the seed are not duplicated. Documentation attached to a
+declaration belongs to its extent; there is no separate generated summary.
+
+`omissions` counts `item_limit`, `byte_limit`, `lookup_limit`, `file_limit`,
+`ambiguous`, `unavailable`, and `no_container`. Counts describe items or occurrence
+attempts as appropriate; they are not a total count of unseen relationships.
+The seed lookup is outside `max_lookups`; that budget bounds subsequent resolution.
+`max_files` bounds incoming reference scanning. Source output is bounded even when
+an individual declaration is much larger than the budget; partial excerpts end at
+UTF-8 boundaries and retain exact ranges. A result with omissions is useful partial
+context, not evidence that no other dependencies or references exist.
+
+Incoming scanning is opt-in and only considers the target's exact spelling, then
+validates each occurrence through navigation. `reference_in_test_path` means a
+confirmed reference with a `test` or `tests` path component; it does not claim that
+the enclosing declaration is a test or that it covers the target's behavior.
+No inferred caller/callee classification or alias-complete reference set is promised.
+
+All consulted source/manifest versions from constituent lookups and scanned files
+are revalidated before returning. The context snapshot incorporates those inputs
+and constituent navigation snapshots. Observed changes return `stale`; this does
+not lock external editors or promise filesystem transaction isolation. Expand an
+item with a new context request using its `target` as a symbol origin.
 
 ## Shared types
 
@@ -105,6 +197,7 @@ written; absent when there is none.
 ```json
 {
   "id": "21fcff22333d",
+  "content": "<BLAKE3 digest of the complete source text>",
   "path": "crates/vvv-core/src/lang/registry.rs",
   "language": "rust",
   "span": { "start": 288, "end": 340 },
@@ -120,6 +213,9 @@ written; absent when there is none.
 }
 ```
 
+- `content` is the complete source version. Engine-produced matches always include
+  it; older serialized matches without it still deserialize. It is independent of
+  `id`, which retains its existing selection semantics.
 - `path` is relative to the workspace root.
 - `kind` is the tree-sitter node kind; `symbol` is the language-neutral view (above).
 - `role` is where the match sits: `"declaration"` (it is the declared item — `symbol`
@@ -177,12 +273,146 @@ its own; the plan is still valid, the widening is yours to make).
 ```json
 { "path": "src/error.rs", "text": "…",
   "highlights": [ { "span": Span, "kind": "keyword" }, … ],
-  "symbols": [ Symbol, … ] }
+  "symbols": [ Symbol, … ],
+  "identifiers": [ SourceAnchor, … ] }
 ```
 
-Text, syntax highlights, and declarations come from the same loaded source snapshot.
-`highlights` and `symbols` are omitted when empty; files without a language have neither.
+Text, syntax highlights, declarations, and identifier anchors come from the same
+loaded source snapshot. `identifiers` includes every grammar-recognized identifier
+in the file, with the path, complete-file `ContentId`, and absolute UTF-8 byte span
+used by `navigate`. Arrays are omitted when empty; files without a language have
+no syntax data. Older payloads without `identifiers` deserialize to an empty list.
+Adding this field changes Rust `File` struct literals.
 Clients can use declaration containment to preview an enum when a variant is selected.
+
+## `navigate`
+
+`NavigationQuery` contains `origin` and an optional `selection` using the existing
+`Selection` shape (`"all"`, `{ "ordinals": [2] }`, or `{ "ids": ["…"] }`). An explicit
+selection must keep exactly one candidate. The CLI accepts `--select ROW_OR_ID`.
+Origins are tagged by `kind`:
+
+```json
+{ "kind": "position", "path": "src/app.rs",
+  "position": { "line": 3, "column": 12 }, "expected_content": "…" }
+{ "kind": "occurrence", "anchor": SourceAnchor }
+{ "kind": "symbol", "symbol": SymbolRef }
+```
+
+`expected_content` may be omitted for a position request. Occurrence and symbol
+anchors always identify a source version. A `SourceAnchor` is:
+
+```json
+{
+  "path": "src/app.rs",
+  "content": "<BLAKE3 digest>",
+  "span": { "start": 42, "end": 48 }
+}
+```
+
+An occurrence span must identify an exact identifier token. A position can be
+inside that token. A `SymbolRef` is:
+
+```json
+{ "language": "rust", "declaration": SourceAnchor,
+  "name_span": Span, "kind": "struct" }
+```
+
+Its declaration anchor covers the symbol's extent; `name_span` identifies its name
+in the same file. It is not a persistent identity across edits or moves. A client's
+symbol request is checked against the captured declaration facts.
+
+The answer has a `snapshot` digest and an `outcome` tag:
+
+```json
+{ "snapshot": "…", "outcome": "resolved", "target": SymbolRef,
+  "evidence": { "addresses": [ Address, … ] },
+  "preview": {
+    "container": SymbolRef, "declaration": Match,
+    "source": { "path": "src/engine.rs", "text": "…",
+                "highlights": [ Highlight, … ], "symbols": [ Symbol, … ] },
+    "selection": Span, "identifiers": [ SourceAnchor, … ]
+  } }
+{ "snapshot": "…", "outcome": "ambiguous", "candidates": [
+  { "target": SymbolRef, "declaration": Match,
+    "evidence": { "addresses": [ Address, … ] } }, … ] }
+{ "snapshot": "…", "outcome": "unavailable", "reason": "unsupported_context" }
+```
+
+The target and display container differ for an enum variant: the target is the
+variant; the container is its enum. All ranges are absolute half-open UTF-8 byte
+ranges. The preview supplies a **complete captured file**, not a clipped excerpt;
+clients render the container's range and can scroll through it without another
+read. Source, highlights, selection, declaration, and identifier anchors refer to
+the same content version. Identifier anchors are not pre-resolved links.
+
+Evidence lists the initial binding address and subsequent re-export addresses.
+Self-resolution and lexical resolution have an empty address list. Candidates are ordered by relative
+path and name offset; their declaration match IDs support explicit selection.
+Clients may alternatively send a candidate's `SymbolRef` as a new origin.
+
+Unavailable reasons are `no_identifier`, `unresolved`, `unsupported_context`,
+`external_source_unavailable`, and `cyclic_imports`. Syntax-only navigation is
+conservative: Rust supports module/type bindings plus parameters, tuple/slice
+bindings, closure captures, generic type parameters, locals, and local type/function
+items with modeled scopes. TypeScript supports named/default imports, namespace
+qualified types, aliases/re-exports/local export lists, generic type parameters,
+and simple function/method parameters. Unsupported scopes
+and patterns do not fall back to a same-named outer declaration. Default exports
+are not named exports. See the [guide](guide.md) for remaining coverage limits.
+The unversioned oracle is not consulted by this capability.
+
+Navigation sources can include `parameter` and `type-parameter` symbols in addition
+to the ordinary declaration kinds. These navigation-only symbols do not expand
+search results, references, or rename scope.
+
+Invalid ranges or forged symbol identities return `bad_request`; out-of-range
+positions return `no_such_position`; changed source returns `stale`; exhausted
+traversal budgets return `incomplete`. I/O failures remain errors. These failures
+are not converted into an unavailable outcome.
+
+The snapshot identifies consulted source versions and manifests plus the captured
+workspace file set. Navigation reuses graph facts and scope caches under the
+engine's retention policy and revalidates consulted contents before returning.
+It invalidates the retained graph after detecting stale contents. This does not
+lock out external editors or promise an atomic filesystem snapshot. There is no
+persistent navigation-result cache; each request resolves its exact occurrence.
+
+### Semantic navigation providers
+
+Library hosts can call `NavigationQuery::execute_with(&engine, &provider,
+&cancellation)`. Normal `Engine::run`, CLI, TUI, and `serve` requests remain
+syntax-only. There is no built-in language-server adapter. The independent
+`NavigationProvider` contract leaves the existing `Oracle` API unchanged.
+
+- `ProviderVersion` has nonempty `provider` and `revision` strings. The revision
+  must change for every semantic input change, including build options and external
+  dependencies.
+- `SemanticRequest` carries that version, a `SourceAnchor`, and the complete exact
+  source. All spans are absolute half-open UTF-8 byte ranges. A language-server
+  adapter must convert its negotiated position encoding against these bytes.
+- `SemanticReply` echoes version and origin, lists every additional consulted
+  workspace source/configuration as `{path, content}`, and returns the complete
+  target set. Workspace targets carry a `SymbolRef`; external targets carry
+  `{uri, content, span}`. The engine never fetches provider URIs.
+- Workspace targets must match an extracted declaration's language, content, kind,
+  extent, and name span. Paths must be workspace-relative, with no parent traversal.
+  Multiple targets remain candidates; explicit selection uses their match IDs.
+  Any external target, including a mixed workspace/external set, returns
+  `external_source_unavailable` rather than confirming a partial set.
+- Confirmed semantic results add `evidence.semantic: {provider, revision}`; syntax
+  results omit it. Snapshot identity includes the consulted provider revision and
+  dependency contents. Sources and revision are checked again before returning.
+- `SemanticFailure::Unavailable` retains the syntax outcome. `Incomplete` returns
+  `incomplete`, and cancellation returns `cancelled`. Changed revisions or sources
+  return `stale`; malformed origins or target identities return `bad_request`.
+  Replies are limited to 1,024 targets and 1,024 additional dependencies.
+
+Providers must bound their work, cooperate with `NavigationCancellation`, and never
+re-enter the engine while answering under its operation guard. Cancellation checks
+cannot interrupt an uncooperative blocking provider. The engine only accepts
+workspace declarations represented by language facts; generated declarations and
+external source previews require further source-provider support.
 
 ## `vvv search`
 
@@ -475,6 +705,9 @@ happened in words and `hint` (when present) what to try, and neither is for pars
 
 | code               | meaning                                                                           |
 | ------------------ | --------------------------------------------------------------------------------- |
+| `output_limit`     | the complete result exceeds the requested result-byte budget                      |
+| `cancelled`        | navigation was cancelled                                                          |
+| `incomplete`       | navigation or its provider could not complete within its budget                   |
 | `bad_request`      | the line is not JSON, or not a known command (`vvv serve`)                        |
 | `bad_query`        | a search with none of pattern, kind, symbol, name                                 |
 | `bad_pattern`      | a pattern or node kind the language's grammar rejects                             |
@@ -489,7 +722,7 @@ happened in words and `hint` (when present) what to try, and neither is for pars
 | `not_found`        | a file, or the file declaring a name, could not be found                          |
 | `unmovable`        | the layout refuses the move: a root, across packages, into itself                 |
 | `conflict`         | two edits of one plan overlap, or a file is moved twice                           |
-| `stale`            | a file changed since the plan (or the apply to undo) was made                     |
+| `stale`            | a source anchor, navigation input/provider revision, plan, or undo source changed |
 | `no_history`       | nothing to undo, or a history file that cannot be read                            |
 | `io`               | reading or writing the tree failed                                                |
 | `recovery_failed`  | recovery could not restore or verify all attempted effects                        |

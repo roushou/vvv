@@ -1,0 +1,33 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+Definition  src/origin.rs:1:1
+/// Runtime state.
+pub struct Engine {
+    pub running: bool,
+}
+Confirmed reference  src/bindings.rs:5:1
+fn annotated() { let engine: Engine; }
+Confirmed reference  src/consumer.rs:5:5
+engine: Engine
+Confirmed reference  src/consumer.rs:9:1
+pub fn roundtrip(engine: Engine) -> Engine { engine }
+Confirmed reference  src/consumer.rs:12:1
+pub fn unicode(é: u8, engine: Engine) {}
+Confirmed reference  src/consumer.rs:14:12
+pub fn method(engine: Engine) -> Engine { engine }
+Confirmed reference  src/lexical.rs:3:1
+fn shadow(value: Engine) {
+    let value = value;
+    { let value = 1; consume(value); }
+    consume(value);
+}
+Confirmed reference  src/lexical.rs:9:1
+fn destructured(value: Engine, (left, right): (u8, u8)) { consume(value); }
+Confirmed reference in a test path  src/test/check.rs:2:1
+fn related(value: Engine) {}
+--- stderr ---
+Omitted: 0 item limit, 0 byte limit, 0 lookup limit, 0 file limit, 1 ambiguous, 0 unavailable, 5 without a declaration

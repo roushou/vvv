@@ -40,6 +40,7 @@ fn preview(path: &str, lines: &[&str]) -> Event {
     }
     highlights.sort_by_key(|h| h.span.start);
     Event::Previewed {
+        identifiers: vec![],
         symbols: vec![],
         path: path.into(),
         text,
@@ -106,8 +107,97 @@ fn searched() -> Model {
         skipped: vec![],
     });
     let refs: Vec<&str> = lines.iter().map(String::as_str).collect();
-    m.on_event(preview("src/lang/mod.rs", &refs));
+    m.definition_preview(preview("src/lang/mod.rs", &refs));
     m
+}
+
+// Source fixtures stand in for the worker's already-resolved navigation reply.
+impl Model {
+    fn definition_reply(&mut self, event: Event) -> Event {
+        let Event::Previewed {
+            identifiers,
+            path,
+            text,
+            highlights,
+            mut symbols,
+        } = event
+        else {
+            panic!("expected source fixture")
+        };
+        self.search.selection_changed();
+        let declaration = self
+            .search
+            .results
+            .current()
+            .filter(|m| m.symbol.is_some() && m.path == path)
+            .or_else(|| self.search.results.declarations().find(|m| m.path == path))
+            .unwrap()
+            .clone();
+        let mut declaration = declaration;
+        let symbol = declaration.symbol.as_mut().unwrap();
+        symbol.extent = symbol.span;
+        let symbol = declaration.symbol.as_ref().unwrap();
+        if !symbols
+            .iter()
+            .any(|s| s.name_span == symbol.name_span && s.kind == symbol.kind)
+        {
+            symbols.push(symbol.clone());
+        }
+        let container = if symbol.kind == SymbolKind::Variant {
+            symbols
+                .iter()
+                .find(|s| s.kind == SymbolKind::Enum)
+                .unwrap_or(symbol)
+        } else {
+            symbol
+        };
+        let reference = |symbol: &vvv_engine::Symbol| vvv_engine::SymbolRef {
+            language: declaration.language.clone(),
+            declaration: vvv_engine::SourceAnchor {
+                path: path.clone(),
+                content: vvv_engine::ContentId::of(&text),
+                span: symbol.extent,
+            },
+            name_span: symbol.name_span,
+            kind: symbol.kind,
+        };
+        let target = reference(declaration.symbol.as_ref().unwrap());
+        let container = reference(container);
+        let (ticket, query) = self.search.body.pending().unwrap();
+        Event::DefinitionResolved {
+            ticket,
+            query,
+            reply: Ok(vvv_engine::NavigationReply {
+                snapshot: vvv_engine::ContentId::of(&text).into(),
+                outcome: vvv_engine::NavigationOutcome::Resolved {
+                    target,
+                    evidence: vvv_engine::ResolutionEvidence {
+                        semantic: None,
+                        addresses: vec![],
+                    },
+                    preview: Box::new(vvv_engine::DefinitionPreview {
+                        selection: declaration.symbol.as_ref().unwrap().name_span,
+                        container,
+                        declaration,
+                        source: vvv_engine::File {
+                            identifiers,
+                            path,
+                            text,
+                            highlights,
+                            symbols,
+                        },
+                        identifiers: vec![],
+                    }),
+                },
+            }),
+        }
+    }
+
+    fn definition_preview(&mut self, event: Event) {
+        let reply = self.definition_reply(event.clone());
+        self.on_event(event);
+        self.on_event(reply);
+    }
 }
 
 /// `searched()`, then `r` on the declaration and the judge's answer.
@@ -399,8 +489,8 @@ fn keys_depend_on_the_focused_panel() {
     assert_eq!(m.action_for(key(KeyCode::Tab)), Some(Action::FocusNext));
     assert_eq!(
         m.action_for(ctrl('r')),
-        None,
-        "no control key is a mode accelerator"
+        Some(Action::Refresh),
+        "refresh is available from every search panel"
     );
     assert_eq!(
         m.action_for(ctrl('n')),
@@ -545,18 +635,21 @@ fn moving_the_cursor_asks_for_the_row_file_once() {
     assert!(m.update(Action::Move(0)).is_empty());
     let effects = m.update(Action::Move(1));
     assert!(
-        matches!(&effects[..], [Effect::Preview { path }] if path.ends_with("registry.rs")),
+        matches!(&effects[..], [Effect::Definition { .. }, Effect::Preview { path }] if path.ends_with("registry.rs")),
         "{effects:?}"
     );
     let effects = m.update(Action::Move(1));
     assert!(
-        matches!(&effects[..], [Effect::Preview { path }] if path.ends_with("lib.rs")),
+        matches!(&effects[..], [Effect::Definition { .. }, Effect::Preview { path }] if path.ends_with("lib.rs")),
         "a third file"
     );
     m.on_event(preview("src/lib.rs", &["a"]));
     assert!(
-        m.update(Action::Move(1)).is_empty(),
-        "same file, already shown"
+        matches!(
+            m.update(Action::Move(1)).as_slice(),
+            [Effect::Definition { .. }]
+        ),
+        "context file is already shown; definition belongs to the occurrence"
     );
 }
 
@@ -1104,6 +1197,17 @@ fn snapshot_search_anchored_unresolved() {
     let mut m = anchored();
     m.search.results.set_relation(Relation::Unresolved);
     m.search.selection_changed();
+    let (ticket, query) = m.search.body.pending().unwrap();
+    m.on_event(Event::DefinitionResolved {
+        ticket,
+        query,
+        reply: Ok(vvv_engine::NavigationReply {
+            snapshot: vvv_engine::ContentId::of("").into(),
+            outcome: vvv_engine::NavigationOutcome::Unavailable {
+                reason: vvv_engine::UnavailableReason::UnsupportedContext,
+            },
+        }),
+    });
     insta::assert_snapshot!(FrameFixture::new(&m).render());
 }
 
@@ -1148,12 +1252,16 @@ fn the_relation_menu_asks_for_definition_and_deps() {
 }
 
 #[test]
-fn o_jumps_from_a_use_to_its_declaration() {
+fn o_resolves_the_selected_occurrence_without_moving_before_success() {
     let mut m = searched();
     m.update(Action::Enter); // into the results
     m.update(Action::Move(3)); // onto a use
-    m.update(Action::Jump);
-    assert_eq!(m.search.results.cursor.index, 0, "the declaration row");
+    let effects = m.update(Action::Follow);
+    assert!(matches!(effects.as_slice(), [Effect::Follow { .. }]));
+    assert_eq!(
+        m.search.results.cursor.index, 3,
+        "keep the origin until success"
+    );
 }
 
 #[test]
@@ -1413,9 +1521,9 @@ fn body_ignores_unrelated_preview_answers_and_unresolved_references() {
 
     let mut m = anchored();
     m.update(Action::Move(1));
-    assert!(m.search.results.body_declaration().is_some());
+    assert!(m.search.body.pending().is_some());
     m.update(Action::Move(2));
-    assert!(m.search.results.body_declaration().is_none());
+    assert!(m.search.body.pending().is_some());
     assert!(m.search.results.has_body(), "space remains reserved");
 }
 
@@ -1424,9 +1532,9 @@ fn body_ambiguity_and_empty_results_do_not_leave_invisible_focus() {
     let mut m = searched();
     let mut other = m.search.results.matches[0].clone();
     other.path = "other.rs".into();
-    m.search.results.matches.push(other);
+    std::sync::Arc::make_mut(&mut m.search.results.matches).push(other);
     m.update(Action::Move(1));
-    assert!(m.search.results.body_declaration().is_none());
+    assert!(m.search.body.pending().is_some());
     m.update(Action::FocusNth(4));
     m.search.results.replace(vec![]);
     m.search.selection_changed();
@@ -1453,18 +1561,21 @@ fn body_tracks_declarations_and_requests_both_files_when_needed() {
     m.update(Action::Move(1));
     let effects = m.search.preview_effect();
     assert_eq!(effects.len(), 2);
-    assert!(matches!(&effects[0], Effect::Preview { path }
-        if path.as_path() == std::path::Path::new("src/lang/registry.rs")));
+    assert!(matches!(&effects[0], Effect::Definition { .. }));
     assert!(matches!(&effects[1], Effect::Preview { path }
-        if path.as_path() == std::path::Path::new("src/lang/mod.rs")));
+        if path.as_path() == std::path::Path::new("src/lang/registry.rs")));
     m.update(Action::Move(-1));
-    assert_eq!(m.search.preview_effect().len(), 1, "same file read once");
+    assert_eq!(
+        m.search.preview_effect().len(),
+        2,
+        "context and coherent definition requests"
+    );
 
     let text = "struct Other {\n    value: usize,\n}\nfn outside() {}";
     let mut declaration = fx::decl("other.rs", 0, SymbolKind::Struct, "Other", "struct Other {");
     declaration.symbol.as_mut().unwrap().span =
         vvv_engine::Span::new(0, text.find("\nfn").unwrap());
-    m.search.results.matches.push(declaration);
+    std::sync::Arc::make_mut(&mut m.search.results.matches).push(declaration);
     m.update(Action::Move(4));
     assert!(
         m.search
@@ -1472,7 +1583,8 @@ fn body_tracks_declarations_and_requests_both_files_when_needed() {
             .lines(m.search.results.current().unwrap())
             .is_none()
     );
-    m.on_event(Event::Previewed {
+    m.definition_preview(Event::Previewed {
+        identifiers: vec![],
         symbols: vec![],
         path: "other.rs".into(),
         text: text.into(),
@@ -1517,7 +1629,8 @@ fn snapshot_body_scrolled() {
         vvv_engine::Span::new(0, text.find("\nfn").unwrap());
     m.search.results.replace(vec![declaration]);
     m.search.selection_changed();
-    m.on_event(Event::Previewed {
+    m.definition_preview(Event::Previewed {
+        identifiers: vec![],
         symbols: vec![],
         path: "large.rs".into(),
         text,
@@ -1542,11 +1655,13 @@ fn definition_text_keeps_its_inset_across_loading_and_redraws() {
     let source = m.search.body.preview.clone().unwrap();
     m.search.body.clear();
     let event = Event::Previewed {
+        identifiers: vec![],
         symbols: vec![],
         path: source.path.clone(),
         text: source.text().to_owned(),
         highlights: source.highlights.clone(),
     };
+    let event = m.definition_reply(event);
     let mut terminal = Terminal::new(TestBackend::new(90, 20)).unwrap();
     let mut draw = |model: &Model| {
         terminal
@@ -1610,7 +1725,8 @@ fn nested_definitions_keep_the_same_alignment_when_loaded_and_scrolled() {
                 .all(|c| c == '│' || c == ' ')
         );
         assert!(!loading.contains("Loading"));
-        m.on_event(Event::Previewed {
+        m.definition_preview(Event::Previewed {
+            identifiers: vec![],
             symbols: vec![],
             path: "nested.rs".into(),
             text: format!("{text}\n}}"),
@@ -1689,11 +1805,14 @@ fn enum_variant_shows_its_whole_enum_when_its_file_arrives() {
     );
     assert!(!loading.contains("Loading"));
     let event = Event::Previewed {
+        identifiers: vec![],
         symbols: vec![parent, variant],
         path: "error.rs".into(),
         text: text.into(),
         highlights: vec![],
     };
+    m.on_event(event.clone());
+    let event = m.definition_reply(event);
     m.on_event(event.clone());
     let loaded = FrameFixture::new(&m).render();
     assert!(
@@ -1706,7 +1825,7 @@ fn enum_variant_shows_its_whole_enum_when_its_file_arrives() {
     assert!(loaded.lines().nth(15).unwrap().starts_with("│     Engine("));
     m.update(Action::FocusNth(4));
     assert!(
-        matches!(m.update(Action::Edit).as_slice(), [Effect::Edit { path, line: 0 }]
+        matches!(m.update(Action::Edit).as_slice(), [Effect::Edit { path, line: 3 }]
         if path.as_path() == std::path::Path::new("error.rs"))
     );
     m.update(Action::FocusNth(1));
@@ -1731,10 +1850,12 @@ fn enum_variant_shows_its_whole_enum_when_its_file_arrives() {
     let sibling_start = text.find("Io,").unwrap();
     sibling.symbol.as_mut().unwrap().span = vvv_engine::Span::new(sibling_start, sibling_start + 2);
     sibling.symbol.as_mut().unwrap().name_span = sibling.symbol.as_ref().unwrap().span;
-    m.search.results.matches.push(sibling);
+    std::sync::Arc::make_mut(&mut m.search.results.matches).push(sibling);
     assert!(
-        m.update(Action::Move(1)).is_empty(),
-        "the enum source is already cached"
+        m.update(Action::Move(1))
+            .iter()
+            .any(|e| matches!(e, Effect::Definition { .. })),
+        "a new occurrence requests coherent metadata"
     );
     assert_eq!(
         m.search
@@ -1750,299 +1871,579 @@ fn enum_variant_shows_its_whole_enum_when_its_file_arrives() {
 }
 
 #[test]
-fn definition_keeps_its_complete_frame_until_the_selected_file_arrives() {
+fn definition_replies_are_ticketed_and_keep_the_previous_frame_while_pending() {
     let mut m = searched();
-    let pending = "struct Pending {\n    value: usize,\n}";
-    let final_text = "struct Final {\n    ready: bool,\n}";
-    for (path, name, text) in [
-        ("pending.rs", "Pending", pending),
-        ("final.rs", "Final", final_text),
-    ] {
-        let mut declaration = fx::decl(
-            path,
-            0,
-            SymbolKind::Struct,
-            name,
-            text.lines().next().unwrap(),
-        );
-        declaration.symbol.as_mut().unwrap().span = vvv_engine::Span::new(0, text.len());
-        m.search.results.matches.push(declaration);
-    }
     m.update(Action::FocusNth(4));
     m.update(Action::Scroll(1));
-    let body = |model: &Model| {
-        FrameFixture::new(model)
-            .render()
-            .lines()
-            .skip(11)
-            .take(8)
-            .map(|line| line.chars().take(45).collect::<String>())
-            .collect::<Vec<_>>()
-            .join("\n")
+    let before = m.search.body.preview.clone();
+    m.update(Action::Move(1));
+    let (old_ticket, old_query) = m.search.body.pending().unwrap();
+    m.update(Action::Move(1));
+    let (ticket, query) = m.search.body.pending().unwrap();
+    assert_ne!(ticket, old_ticket);
+    let failed = |ticket, query| Event::DefinitionResolved {
+        ticket,
+        query,
+        reply: Err(vvv_engine::Failure::new(
+            vvv_engine::ErrorCode::Stale,
+            "Source changed; refresh the search",
+        )),
     };
-    let before = body(&m);
-    let effects = m.update(Action::Move(4));
-    assert!(matches!(effects.as_slice(), [Effect::Preview { path }]
-        if path.as_path() == std::path::Path::new("pending.rs")));
-    assert_eq!(
-        body(&m),
-        before,
-        "retain source, title, highlight and scroll together"
-    );
-    assert!(!body(&m).contains("Loading"));
-    assert!(
-        matches!(m.update(Action::Edit).as_slice(), [Effect::Edit { path, line: 63 }]
-        if path.as_path() == std::path::Path::new("src/lang/mod.rs")),
-        "editor follows the displayed source"
-    );
+    m.on_event(failed(old_ticket, old_query));
+    assert_eq!(m.search.body.preview, before);
+    assert_eq!(m.search.body.scroll, 1);
+    assert!(m.search.body.pending().is_some());
+    assert!(!FrameFixture::new(&m).render().contains("Loading"));
     insta::assert_snapshot!("definition_pending", FrameFixture::new(&m).render());
-
-    m.update(Action::Move(1));
-    m.on_event(Event::Previewed {
-        path: "pending.rs".into(),
-        text: pending.into(),
-        highlights: vec![],
-        symbols: vec![],
-    });
-    assert_eq!(
-        body(&m),
-        before,
-        "a superseded reply must not flash on screen"
-    );
-    m.on_event(Event::Previewed {
-        path: "final.rs".into(),
-        text: final_text.into(),
-        highlights: vec![],
-        symbols: vec![],
-    });
-    assert_eq!(m.search.body.scroll, 0);
-    assert!(body(&m).contains("struct Final"));
-    assert!(!body(&m).contains("Language"));
-    assert!(!body(&m).contains("Loading"));
-    assert!(
-        matches!(m.update(Action::Edit).as_slice(), [Effect::Edit { path, line: 0 }]
-        if path.as_path() == std::path::Path::new("final.rs"))
-    );
-}
-
-#[test]
-fn same_file_definition_switches_immediately_without_fetching() {
-    let mut m = searched();
-    let text = "struct First {}\nstruct Second {}";
-    let second_start = text.find("struct Second").unwrap();
-    let declarations = [
-        ("First", 0, second_start - 1),
-        ("Second", second_start, text.len()),
-    ]
-    .into_iter()
-    .enumerate()
-    .map(|(line, (name, start, end))| {
-        let mut declaration = fx::decl(
-            "both.rs",
-            line as u32,
-            SymbolKind::Struct,
-            name,
-            &text[start..end],
-        );
-        declaration.symbol.as_mut().unwrap().span = vvv_engine::Span::new(start, end);
-        declaration
-    })
-    .collect();
-    m.search.results.replace(declarations);
-    m.search.selection_changed();
-    m.on_event(Event::Previewed {
-        path: "both.rs".into(),
-        text: text.into(),
-        highlights: vec![],
-        symbols: vec![],
-    });
-    assert_eq!(
-        m.search
-            .body
-            .declaration()
-            .unwrap()
-            .symbol
-            .as_ref()
-            .unwrap()
-            .name,
-        "First"
-    );
-    assert!(m.update(Action::Move(1)).is_empty());
-    assert_eq!(
-        m.search
-            .body
-            .declaration()
-            .unwrap()
-            .symbol
-            .as_ref()
-            .unwrap()
-            .name,
-        "Second"
-    );
-    let frame = FrameFixture::new(&m).render();
-    assert!(
-        frame
-            .lines()
-            .nth(12)
-            .unwrap()
-            .starts_with("│ struct Second {}")
-    );
-    assert!(!frame.contains("Loading"));
-}
-
-#[test]
-fn definition_resolves_imports_and_field_types_despite_same_named_variants() {
-    use vvv_engine::{Occurrence, Reason, References};
-
-    let mut m = model();
-    let text = "pub struct Engine {\n    state: usize,\n}";
-    let mut structure = fx::decl("engine.rs", 0, SymbolKind::Struct, "Engine", text);
-    structure.symbol.as_mut().unwrap().span = vvv_engine::Span::new(0, text.len());
-    let mut variant = fx::decl(
-        "error.rs",
-        1,
-        SymbolKind::Variant,
-        "Engine",
-        "Engine(Error)",
-    );
-    variant.address = None;
-    let import = fx::m("app.rs", 0, 14, "Engine", "use library::{Engine};");
-    let other = fx::decl(
-        "other.rs",
-        0,
-        SymbolKind::Struct,
-        "Engine",
-        "pub struct Engine;",
-    );
-    let field = fx::at(fx::m("app.rs", 2, 12, "Engine", "    engine: Engine,"), 50);
-    let unrelated = fx::at(fx::m("app.rs", 4, 8, "Engine", "Other::Engine"), 80);
-    m.search.results.replace(vec![
-        structure.clone(),
-        variant.clone(),
-        other.clone(),
-        import.clone(),
-        field.clone(),
-        unrelated.clone(),
-    ]);
-    m.search.selection_changed();
-    m.on_event(preview("engine.rs", &text.lines().collect::<Vec<_>>()));
-    let before = FrameFixture::new(&m)
-        .render()
-        .lines()
-        .nth(12)
-        .unwrap()
-        .to_owned();
-    let effects = m.update(Action::Move(3));
-    let (revision, query) = effects
-        .iter()
-        .find_map(|effect| match effect {
-            Effect::Definition { revision, query } => Some((*revision, query.clone())),
-            _ => None,
-        })
-        .expect("request reference evidence for the import");
-    assert!(m.search.results.definition_pending());
-    assert_eq!(
-        FrameFixture::new(&m).render().lines().nth(12).unwrap(),
-        before
-    );
-    let references = References {
-        name: "Engine".into(),
-        declarations: vec![structure.clone(), variant],
-        occurrences: vec![
-            Occurrence::judged(import, Reason::ReExport),
-            Occurrence::judged(field, Reason::ReExport),
-            Occurrence::judged(unrelated, Reason::Unresolved),
-        ],
-    };
-    let event = Event::DefinitionResolved {
-        revision,
-        query,
-        references: Some(vvv_engine::Definitions {
-            candidates: vec![
-                References {
-                    name: "Engine".into(),
-                    declarations: vec![other],
-                    occurrences: references
-                        .occurrences
-                        .iter()
-                        .map(|o| Occurrence::judged(o.m.clone(), Reason::OtherDeclaration))
-                        .collect(),
-                },
-                references,
-            ],
-        }),
-    };
-    m.on_event(event.clone());
-    assert_eq!(m.search.results.body_declaration(), Some(&structure));
-    let effects = m.update(Action::Move(1));
-    assert!(
-        !effects
-            .iter()
-            .any(|e| matches!(e, Effect::Definition { .. }))
-    );
-    assert_eq!(m.search.results.body_declaration(), Some(&structure));
-    m.on_event(preview(
-        "app.rs",
-        &[
-            "use library::{Engine};",
-            "struct App {",
-            "    engine: Engine,",
-            "}",
-        ],
-    ));
-    insta::assert_snapshot!("definition_resolved_field", FrameFixture::new(&m).render());
-    m.update(Action::FocusNth(4));
-    m.update(Action::Scroll(1));
-    assert!(m.on_event(event.clone()).is_empty());
-    assert_eq!(
-        m.search.body.scroll, 1,
-        "a duplicate reply preserves scrolling"
-    );
-    assert!(
-        matches!(m.update(Action::Edit).as_slice(), [Effect::Edit { path, line: 0 }]
-        if path.as_path() == std::path::Path::new("engine.rs"))
-    );
-    m.update(Action::Move(1));
-    assert!(m.search.results.body_declaration().is_none());
-    assert!(
-        FrameFixture::new(&m)
-            .render()
-            .contains("No definition available")
-    );
-
-    // A previous result set's reply cannot resolve a new set, even for the same name.
-    let matches = m.search.results.matches.clone();
-    m.search.results.replace(matches);
-    m.search.selection_changed();
-    assert!(m.search.results.definition_pending());
-    assert!(m.on_event(event).is_empty());
-    assert!(m.search.results.definition_pending());
-}
-
-#[test]
-fn ambiguous_definition_answer_finishes_loading_without_guessing() {
-    let mut m = searched();
-    let mut other = m.search.results.matches[0].clone();
-    other.path = "other.rs".into();
-    m.search.results.matches.push(other);
-    let effects = m.update(Action::Move(1));
-    let (revision, query) = effects
-        .into_iter()
-        .find_map(|effect| match effect {
-            Effect::Definition { revision, query } => Some((revision, query)),
-            _ => None,
-        })
-        .unwrap();
-    m.on_event(Event::DefinitionResolved {
-        revision,
-        query,
-        references: None,
-    });
-    assert!(!m.search.results.definition_pending());
+    m.on_event(failed(ticket, query));
+    assert!(m.search.body.pending().is_none());
     assert!(m.search.body.declaration().is_none());
     assert!(
-        FrameFixture::new(&m)
-            .render()
-            .contains("No definition available")
+        m.search
+            .body
+            .message
+            .as_deref()
+            .unwrap()
+            .contains("Source changed")
+    );
+}
+
+#[test]
+fn old_success_cannot_replace_a_new_selection_or_result_set() {
+    let mut m = searched();
+    let file = m.search.body.preview.clone().unwrap();
+    m.update(Action::Move(1));
+    let reply = m.definition_reply(Event::Previewed {
+        identifiers: vec![],
+        path: file.path.clone(),
+        text: file.text.clone(),
+        highlights: file.highlights.clone(),
+        symbols: file.symbols.clone(),
+    });
+    m.update(Action::Move(1));
+    let pending = m.search.body.pending();
+    m.on_event(reply.clone());
+    assert_eq!(m.search.body.pending(), pending);
+    m.search.results.replace(m.search.results.matches.to_vec());
+    m.search.selection_changed();
+    let pending = m.search.body.pending();
+    m.on_event(reply);
+    assert_eq!(m.search.body.pending(), pending);
+}
+
+#[test]
+fn same_definition_keeps_scroll_and_duplicate_success_has_no_effect() {
+    let mut m = searched();
+    m.update(Action::FocusNth(4));
+    m.update(Action::Scroll(2));
+    let file = m.search.body.preview.clone().unwrap();
+    m.update(Action::Move(1));
+    let reply = m.definition_reply(Event::Previewed {
+        identifiers: vec![],
+        path: file.path.clone(),
+        text: file.text.clone(),
+        highlights: file.highlights.clone(),
+        symbols: file.symbols.clone(),
+    });
+    m.on_event(reply.clone());
+    assert_eq!(m.search.body.scroll, 2);
+    m.update(Action::Scroll(1));
+    m.on_event(reply);
+    assert_eq!(m.search.body.scroll, 3);
+}
+
+#[test]
+fn ambiguous_and_unavailable_answers_settle_without_guessing() {
+    for outcome in [
+        vvv_engine::NavigationOutcome::Ambiguous { candidates: vec![] },
+        vvv_engine::NavigationOutcome::Unavailable {
+            reason: vvv_engine::UnavailableReason::UnsupportedContext,
+        },
+    ] {
+        let mut m = searched();
+        m.update(Action::Move(1));
+        let (ticket, query) = m.search.body.pending().unwrap();
+        m.on_event(Event::DefinitionResolved {
+            ticket,
+            query,
+            reply: Ok(vvv_engine::NavigationReply {
+                snapshot: vvv_engine::ContentId::of("").into(),
+                outcome,
+            }),
+        });
+        assert!(m.search.body.pending().is_none());
+        assert!(m.search.body.declaration().is_none());
+        assert!(m.search.results.has_body());
+        assert!(m.search.body.message.is_some());
+    }
+}
+
+#[test]
+fn variant_navigation_reveals_the_selection_using_the_actual_pane_height() {
+    let text = format!(
+        "enum State {{\n{}\n}}",
+        (0..20)
+            .map(|i| format!("    V{i},"))
+            .collect::<Vec<_>>()
+            .join("\n")
+    );
+    let start = text.find("V19,").unwrap();
+    let mut declaration = fx::decl("state.rs", 20, SymbolKind::Variant, "V19", "    V19,");
+    let variant = vvv_engine::Symbol::plain(
+        SymbolKind::Variant,
+        "V19",
+        vvv_engine::Span::new(start, start + 3),
+        vvv_engine::Span::new(start, start + 3),
+    );
+    declaration.symbol = Some(variant.clone());
+    let parent = vvv_engine::Symbol::plain(
+        SymbolKind::Enum,
+        "State",
+        vvv_engine::Span::new(5, 10),
+        vvv_engine::Span::new(0, text.len()),
+    );
+    let mut m = model();
+    m.search.results.replace(vec![declaration]);
+    m.search.selection_changed();
+    m.on_event(Event::Viewport {
+        width: 90,
+        height: 20,
+    });
+    let event = m.definition_reply(Event::Previewed {
+        identifiers: vec![],
+        path: "state.rs".into(),
+        text,
+        highlights: vec![],
+        symbols: vec![parent, variant],
+    });
+    m.on_event(event.clone());
+    m.search.focus = SearchPanel::Results;
+    let effects = m.update(Action::Follow);
+    let Event::DefinitionResolved { reply, .. } = event else {
+        panic!()
+    };
+    m.on_event(FollowFixture { effects }.reply(reply));
+    assert!(
+        matches!(m.update(Action::Edit).as_slice(), [Effect::Edit { path, line: 20 }] if path.as_path() == std::path::Path::new("state.rs"))
+    );
+    let height = m.search.body.viewport.unwrap();
+    assert_eq!(m.search.body.scroll, 20 - (height - 1));
+    let frame = FrameFixture::new(&m).render();
+    assert!(
+        frame.lines().skip(12).any(|line| line
+            .chars()
+            .take(45)
+            .collect::<String>()
+            .contains("V19"))
+    );
+}
+
+struct DefinitionFixture {
+    reply: vvv_engine::NavigationReply,
+}
+impl DefinitionFixture {
+    fn new(name: &str, path: &str, text: &str) -> Self {
+        use vvv_engine::{
+            ContentId, DefinitionPreview, NavigationOutcome, NavigationReply, ResolutionEvidence,
+            SourceAnchor, Span, SymbolRef,
+        };
+        let mut declaration = fx::decl(path, 0, SymbolKind::Struct, name, text);
+        let start = text.find(name).unwrap();
+        let symbol = declaration.symbol.as_mut().unwrap();
+        symbol.span = Span::new(0, text.len());
+        symbol.extent = symbol.span;
+        symbol.name_span = Span::new(start, start + name.len());
+        declaration.content = Some(ContentId::of(text));
+        let symbol = symbol.clone();
+        let target = SymbolRef {
+            language: declaration.language.clone(),
+            kind: symbol.kind,
+            name_span: symbol.name_span,
+            declaration: SourceAnchor {
+                path: path.into(),
+                content: ContentId::of(text),
+                span: symbol.extent,
+            },
+        };
+        let identifiers = [name, "Beta"]
+            .into_iter()
+            .flat_map(|name| {
+                text.match_indices(name)
+                    .map(move |(start, _)| SourceAnchor {
+                        path: path.into(),
+                        content: ContentId::of(text),
+                        span: Span::new(start, start + name.len()),
+                    })
+            })
+            .collect::<Vec<_>>();
+        Self {
+            reply: NavigationReply {
+                snapshot: ContentId::of(text).into(),
+                outcome: NavigationOutcome::Resolved {
+                    target: target.clone(),
+                    evidence: ResolutionEvidence {
+                        semantic: None,
+                        addresses: vec![],
+                    },
+                    preview: Box::new(DefinitionPreview {
+                        container: target,
+                        declaration,
+                        selection: symbol.name_span,
+                        identifiers: identifiers.clone(),
+                        source: vvv_engine::File {
+                            path: path.into(),
+                            text: text.into(),
+                            symbols: vec![symbol],
+                            highlights: vec![],
+                            identifiers,
+                        },
+                    }),
+                },
+            },
+        }
+    }
+    fn reply(&self) -> vvv_engine::NavigationReply {
+        self.reply.clone()
+    }
+    fn browsing(&self) -> (Model, vvv_engine::NavigationReply) {
+        let reply = self.reply();
+        let vvv_engine::NavigationOutcome::Resolved { preview, .. } = &reply.outcome else {
+            unreachable!()
+        };
+        let mut m = model();
+        let effects = typed(&mut m, "Alpha");
+        m.on_event(Event::Searched {
+            generation: generation_of(&effects),
+            matches: vec![preview.declaration.clone()],
+            skipped: vec![],
+        });
+        let (ticket, query) = m.search.body.pending().unwrap();
+        m.on_event(Event::DefinitionResolved {
+            ticket,
+            query,
+            reply: Ok(reply.clone()),
+        });
+        m.search.preview = m.search.body.preview.clone();
+        m.search.focus = SearchPanel::Body;
+        (m, reply)
+    }
+}
+impl Default for DefinitionFixture {
+    fn default() -> Self {
+        Self::new(
+            "Alpha",
+            "a.rs",
+            "struct Alpha {\n    first: Beta,\n    second: Beta,\n}",
+        )
+    }
+}
+struct FollowFixture {
+    effects: Vec<Effect>,
+}
+impl FollowFixture {
+    fn reply(self, reply: Result<vvv_engine::NavigationReply, vvv_engine::Failure>) -> Event {
+        let [Effect::Follow { ticket, query }] = self.effects.as_slice() else {
+            panic!("expected follow: {:?}", self.effects)
+        };
+        Event::Followed {
+            ticket: *ticket,
+            query: query.clone(),
+            reply,
+        }
+    }
+}
+impl Model {
+    fn pick_identifier(&mut self, name: &str) -> Vec<Effect> {
+        self.update(Action::Follow);
+        for c in name.chars() {
+            self.update(Action::Input(c));
+        }
+        self.update(Action::MenuChoose)
+    }
+}
+
+#[test]
+fn identifier_picker_filters_repeated_names_and_follows_exact_anchors() {
+    let (mut m, _) = DefinitionFixture::default().browsing();
+    m.update(Action::Follow);
+    for c in "Beta".chars() {
+        m.update(Action::Input(c));
+    }
+    let Some(Overlay::Navigation(picker)) = &m.overlay else {
+        panic!()
+    };
+    assert_eq!(picker.visible().len(), 2);
+    assert!(picker.visible()[0].label.contains("first:"));
+    insta::assert_snapshot!("navigation_identifiers", FrameFixture::new(&m).render());
+    m.update(Action::Move(1));
+    let expected = match &m.overlay {
+        Some(Overlay::Navigation(p)) => p.chosen().unwrap(),
+        _ => panic!(),
+    };
+    let effects = m.update(Action::MenuChoose);
+    assert!(matches!(&effects[0], Effect::Follow { query, .. } if query == &expected));
+    assert_eq!(m.search.query.text(), "Alpha");
+}
+
+#[test]
+fn following_restores_both_scrolls_focus_query_and_shared_results() {
+    let (mut m, original) = DefinitionFixture::default().browsing();
+    m.search.body.scroll = 1;
+    m.search.preview_scroll = Some(2);
+    let matches = m.search.results.matches.clone();
+    let effects = m.pick_identifier("Beta");
+    let destination = DefinitionFixture::new("Beta", "b.rs", "struct Beta {}").reply();
+    let event = FollowFixture { effects }.reply(Ok(destination.clone()));
+    m.on_event(event.clone());
+    assert_eq!(
+        m.search.body.declaration().unwrap().path.as_path(),
+        std::path::Path::new("b.rs")
+    );
+    assert!(
+        matches!(m.update(Action::Edit).as_slice(), [Effect::Edit { path, line: 0 }] if path.as_path() == std::path::Path::new("b.rs"))
+    );
+    insta::assert_snapshot!("navigation_destination", FrameFixture::new(&m).render());
+    let effects = m.update(Action::BrowseBack);
+    assert_eq!(m.search.query.text(), "Alpha");
+    assert_eq!(m.search.focus, SearchPanel::Body);
+    assert_eq!(m.search.body.scroll, 1);
+    assert_eq!(m.search.preview_scroll, Some(2));
+    assert!(std::sync::Arc::ptr_eq(&matches, &m.search.results.matches));
+    assert!(m.search.stale);
+    m.on_event(event); // late duplicate from the page we just left
+    assert!(m.search.stale);
+    m.on_event(FollowFixture { effects }.reply(Ok(original)));
+    assert!(!m.search.stale);
+    assert_eq!(m.search.body.scroll, 1);
+    let effects = m.update(Action::BrowseForward);
+    m.on_event(FollowFixture { effects }.reply(Ok(destination)));
+    assert_eq!(
+        m.search.body.declaration().unwrap().path.as_path(),
+        std::path::Path::new("b.rs")
+    );
+}
+
+#[test]
+fn cancelled_failed_and_ambiguous_follows_do_not_add_history() {
+    let (mut m, _) = DefinitionFixture::default().browsing();
+    m.update(Action::Follow);
+    m.update(Action::Back);
+    assert!(m.update(Action::BrowseBack).is_empty());
+    let effects = m.pick_identifier("Beta");
+    m.on_event(
+        FollowFixture { effects }.reply(Err(vvv_engine::Failure::new(
+            vvv_engine::ErrorCode::Io,
+            "unreadable",
+        ))),
+    );
+    assert!(m.update(Action::BrowseBack).is_empty());
+    let reply = DefinitionFixture::new("Beta", "one.rs", "struct Beta {}").reply();
+    let vvv_engine::NavigationOutcome::Resolved {
+        target,
+        preview,
+        evidence,
+    } = reply.outcome
+    else {
+        unreachable!()
+    };
+    let candidate = vvv_engine::DefinitionCandidate {
+        target,
+        declaration: preview.declaration,
+        evidence,
+    };
+    let effects = m.pick_identifier("Beta");
+    let query = match &effects[0] {
+        Effect::Follow { query, .. } => query.clone(),
+        _ => panic!(),
+    };
+    m.on_event(
+        FollowFixture { effects }.reply(Ok(vvv_engine::NavigationReply {
+            snapshot: reply.snapshot,
+            outcome: vvv_engine::NavigationOutcome::Ambiguous {
+                candidates: vec![candidate.clone()],
+            },
+        })),
+    );
+    insta::assert_snapshot!("navigation_candidates", FrameFixture::new(&m).render());
+    let effects = m.update(Action::MenuChoose);
+    assert!(
+        matches!(&effects[0], Effect::Follow { query: selected, .. } if selected.origin == query.origin && selected.selection == Selection::ids([candidate.declaration.id]))
+    );
+    // Cancelling the in-flight follow also makes its failure harmless.
+    m.update(Action::Back);
+    let before = m.status.clone();
+    m.on_event(
+        FollowFixture { effects }.reply(Err(vvv_engine::Failure::new(
+            vvv_engine::ErrorCode::Io,
+            "late",
+        ))),
+    );
+    assert_eq!(m.status, before);
+    assert!(m.update(Action::BrowseBack).is_empty());
+}
+
+#[test]
+fn stale_history_keeps_old_bytes_and_requires_refresh() {
+    let (mut m, _) = DefinitionFixture::default().browsing();
+    let effects = m.pick_identifier("Beta");
+    m.on_event(FollowFixture { effects }.reply(Ok(
+        DefinitionFixture::new("Beta", "b.rs", "struct Beta {}").reply(),
+    )));
+    let effects = m.update(Action::BrowseBack);
+    m.on_event(
+        FollowFixture { effects }.reply(Err(vvv_engine::Failure::new(
+            vvv_engine::ErrorCode::Stale,
+            "a.rs changed",
+        ))),
+    );
+    assert!(m.search.stale);
+    let old = m.search.body.preview.as_ref().unwrap().text().to_owned();
+    assert!(m.update(Action::Follow).is_empty());
+    assert!(m.overlay.is_none());
+    assert_eq!(m.search.body.preview.as_ref().unwrap().text(), old);
+    insta::assert_snapshot!("navigation_stale", FrameFixture::new(&m).render());
+    assert!(matches!(
+        m.update(Action::Refresh).as_slice(),
+        [Effect::Search { .. }]
+    ));
+}
+
+#[test]
+fn new_success_after_back_replaces_forward_but_failure_preserves_it() {
+    let (mut m, original) = DefinitionFixture::default().browsing();
+    let beta = DefinitionFixture::new("Beta", "b.rs", "struct Beta {}").reply();
+    let effects = m.pick_identifier("Beta");
+    m.on_event(FollowFixture { effects }.reply(Ok(beta.clone())));
+    let back = m.update(Action::BrowseBack);
+    m.on_event(FollowFixture { effects: back }.reply(Ok(original.clone())));
+    let effects = m.pick_identifier("Beta");
+    m.on_event(
+        FollowFixture { effects }.reply(Err(vvv_engine::Failure::new(
+            vvv_engine::ErrorCode::Io,
+            "failed",
+        ))),
+    );
+    let forward = m.update(Action::BrowseForward);
+    m.on_event(FollowFixture { effects: forward }.reply(Ok(beta)));
+    let back = m.update(Action::BrowseBack);
+    m.on_event(FollowFixture { effects: back }.reply(Ok(original)));
+    let effects = m.pick_identifier("Beta");
+    m.on_event(FollowFixture { effects }.reply(Ok(
+        DefinitionFixture::new("Beta", "new.rs", "struct Beta {}").reply(),
+    )));
+    assert!(m.update(Action::BrowseForward).is_empty());
+}
+
+#[test]
+fn context_picker_and_navigation_keys_use_the_displayed_source() {
+    let (mut m, _) = DefinitionFixture::default().browsing();
+    m.search.focus = SearchPanel::Context;
+    m.search.preview_scroll = Some(2);
+    assert_eq!(m.action_for(key(KeyCode::Enter)), Some(Action::Follow));
+    assert_eq!(
+        m.action_for(KeyEvent::new(KeyCode::Left, KeyModifiers::ALT)),
+        Some(Action::BrowseBack)
+    );
+    assert_eq!(
+        m.action_for(KeyEvent::new(KeyCode::Right, KeyModifiers::ALT)),
+        Some(Action::BrowseForward)
+    );
+    m.on_key(key(KeyCode::Enter));
+    let Some(Overlay::Navigation(picker)) = &m.overlay else {
+        panic!()
+    };
+    let query = picker.chosen().unwrap();
+    assert!(
+        matches!(query.origin, vvv_engine::NavigationOrigin::Occurrence { anchor } if anchor.span.start == m.search.preview.as_ref().unwrap().text().rfind("Beta").unwrap())
+    );
+    m.update(Action::Top);
+    m.update(Action::Bottom);
+    assert!(
+        matches!(&m.overlay, Some(Overlay::Navigation(p)) if p.cursor.index == p.items.len() - 1)
+    );
+    m.on_event(Event::SourcesChanged);
+    assert!(m.overlay.is_none());
+    assert!(m.search.stale);
+    assert!(m.update(Action::Follow).is_empty());
+}
+
+#[test]
+fn a_reply_cannot_enter_a_page_after_selection_or_mode_changes() {
+    let (mut m, _) = DefinitionFixture::default().browsing();
+    let effects = m.pick_identifier("Beta");
+    let reply = FollowFixture { effects }.reply(Ok(DefinitionFixture::new(
+        "Beta",
+        "b.rs",
+        "struct Beta {}",
+    )
+    .reply()));
+    m.update(Action::Help);
+    let status = m.status.clone();
+    m.on_event(reply);
+    assert!(matches!(m.overlay, Some(Overlay::Help { .. })));
+    assert_eq!(m.status, status);
+    assert_eq!(
+        m.search.body.declaration().unwrap().path.as_path(),
+        std::path::Path::new("a.rs")
+    );
+}
+
+#[test]
+fn restored_references_keep_their_filter_and_selected_occurrence() {
+    let (mut m, original) = DefinitionFixture::default().browsing();
+    m.search.results.entered(fx::references());
+    m.search.results.set_relation(Relation::Resolved);
+    m.search.results.cursor.index = 1;
+    m.search.page = crate::modes::search::browse::BrowsePage::References;
+    let references = m.search.results.references.clone().unwrap();
+    let selected = m.search.results.current().unwrap().id.clone();
+    let effects = m.pick_identifier("Beta");
+    m.on_event(FollowFixture { effects }.reply(Ok(
+        DefinitionFixture::new("Beta", "b.rs", "struct Beta {}").reply(),
+    )));
+    let effects = m.update(Action::BrowseBack);
+    assert!(matches!(
+        m.search.page,
+        crate::modes::search::browse::BrowsePage::References
+    ));
+    assert_eq!(m.search.results.relation, Relation::Resolved);
+    assert_eq!(m.search.results.current().unwrap().id, selected);
+    assert!(std::sync::Arc::ptr_eq(
+        m.search.results.references.as_ref().unwrap(),
+        &references
+    ));
+    m.on_event(FollowFixture { effects }.reply(Ok(original)));
+}
+
+#[test]
+fn back_to_an_ambiguous_origin_validates_without_opening_a_picker() {
+    let (mut m, original) = DefinitionFixture::default().browsing();
+    let vvv_engine::NavigationOutcome::Resolved { preview, .. } = &original.outcome else {
+        panic!()
+    };
+    let ambiguous = vvv_engine::NavigationReply {
+        snapshot: original.snapshot.clone(),
+        outcome: vvv_engine::NavigationOutcome::Ambiguous { candidates: vec![] },
+    };
+    m.search.results.replace(vec![preview.declaration.clone()]);
+    m.search.selection_changed();
+    let (ticket, query) = m.search.body.pending().unwrap();
+    m.on_event(Event::DefinitionResolved {
+        ticket,
+        query,
+        reply: Ok(ambiguous.clone()),
+    });
+    m.search.focus = SearchPanel::Results;
+    let effects = m.update(Action::Follow);
+    m.on_event(FollowFixture { effects }.reply(Ok(
+        DefinitionFixture::new("Beta", "b.rs", "struct Beta {}").reply(),
+    )));
+    let back = m.update(Action::BrowseBack);
+    m.on_event(FollowFixture { effects: back }.reply(Ok(ambiguous)));
+    assert!(!m.search.stale);
+    assert!(m.overlay.is_none());
+    assert_eq!(
+        m.search.body.message.as_deref(),
+        Some("Several definitions match")
     );
 }

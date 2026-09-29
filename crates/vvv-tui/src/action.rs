@@ -59,8 +59,11 @@ pub enum Action {
     View,
     /// Open `$EDITOR` at the cursor's line.
     Edit,
-    /// Move the cursor from a use to the declaration it names.
-    Jump,
+    /// Follow a result, or pick an identifier in the focused source pane.
+    Follow,
+    Refresh,
+    BrowseBack,
+    BrowseForward,
 }
 
 /// Work for the engine, run off the UI thread — except `Edit`, which the
@@ -81,10 +84,15 @@ pub enum Effect {
     Preview {
         path: RelPath,
     },
-    /// Resolve a preview through the engine's import/reference evidence.
+    /// Resolve an exact occurrence and capture its complete definition preview.
     Definition {
-        revision: u64,
-        query: vvv_engine::ReferencesQuery,
+        ticket: u64,
+        query: vvv_engine::NavigationQuery,
+    },
+    /// Explicit navigation is never coalesced with row previews.
+    Follow {
+        ticket: u64,
+        query: vvv_engine::NavigationQuery,
     },
     /// Plan an intent and answer with everything a mode shows about it.
     /// `debounce` when typing drives it (the newest wins after a pause);
@@ -113,11 +121,21 @@ pub enum Effect {
 /// The engine's answer to an [`Effect`].
 #[derive(Debug, Clone)]
 pub enum Event {
-    DefinitionResolved {
-        revision: u64,
-        query: vvv_engine::ReferencesQuery,
-        references: Option<vvv_engine::Definitions>,
+    Viewport {
+        width: u16,
+        height: u16,
     },
+    DefinitionResolved {
+        ticket: u64,
+        query: vvv_engine::NavigationQuery,
+        reply: Result<vvv_engine::NavigationReply, vvv_engine::Failure>,
+    },
+    Followed {
+        ticket: u64,
+        query: vvv_engine::NavigationQuery,
+        reply: Result<vvv_engine::NavigationReply, vvv_engine::Failure>,
+    },
+    SourcesChanged,
     Searched {
         generation: u64,
         matches: Vec<Match>,
@@ -133,6 +151,7 @@ pub enum Event {
         text: String,
         highlights: Vec<Highlight>,
         symbols: Vec<vvv_engine::Symbol>,
+        identifiers: Vec<vvv_engine::SourceAnchor>,
     },
     Planned {
         generation: u64,

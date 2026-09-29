@@ -222,6 +222,7 @@ mod tests {
         let start = text.find("fn nested").unwrap();
         let end = text.find(" fn neighbor").unwrap();
         let preview = FilePreview::new(vvv_engine::File {
+            identifiers: vec![],
             path: "nested.rs".into(),
             text: text.into(),
             symbols: vec![],

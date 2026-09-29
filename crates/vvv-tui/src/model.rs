@@ -201,7 +201,40 @@ impl Model {
     }
 
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
+        if let Some(Overlay::Navigation(picker)) = &mut self.overlay {
+            match action {
+                Action::Input(c) => {
+                    picker.input(Some(c));
+                    return Vec::new();
+                }
+                Action::Backspace => {
+                    picker.input(None);
+                    return Vec::new();
+                }
+                _ => {}
+            }
+        }
+        if matches!(
+            action,
+            Action::Help
+                | Action::OpenMenu(_)
+                | Action::Back
+                | Action::Rename
+                | Action::MoveFile
+                | Action::MoveSymbol
+                | Action::Rewrite
+                | Action::History
+                | Action::Edit
+                | Action::Refresh
+                | Action::Input(_)
+                | Action::Backspace
+                | Action::Clear
+                | Action::Enter
+        ) {
+            self.search.trail.cancel();
+        }
         match action {
+            Action::Follow => self.follow(),
             Action::Start => Vec::new(),
             Action::Quit => {
                 self.quit = true;
@@ -251,7 +284,6 @@ impl Model {
                 Vec::new()
             }
             Action::Edit => self.edit(),
-            Action::Jump => self.goto_declaration(),
             _ => self.mode_update(action),
         }
     }
@@ -271,20 +303,60 @@ impl Model {
 
     pub fn on_event(&mut self, event: Event) -> Vec<Effect> {
         match event {
-            Event::DefinitionResolved {
-                revision,
+            Event::SourcesChanged => {
+                self.next_generation();
+                self.search.trail.cancel();
+                self.search.body.reticket(self.search.body.next_ticket());
+                self.search.stale = true;
+                self.status.busy = false;
+                self.overlay = None;
+                self.status
+                    .info("Source may have changed; refresh with ctrl+r");
+                Vec::new()
+            }
+            Event::Followed {
+                ticket,
                 query,
-                references,
+                reply,
             } => {
-                if !self
-                    .search
-                    .results
-                    .definition_resolved(revision, query, references)
-                {
-                    return Vec::new();
+                let picker = self.search.followed(
+                    ticket,
+                    query,
+                    reply,
+                    &mut ModeContext {
+                        status: &mut self.status,
+                        generation: &mut self.generation,
+                    },
+                );
+                if let Some(picker) = picker {
+                    self.overlay = Some(Overlay::Navigation(picker));
                 }
-                self.search.selection_changed();
-                self.preview_effect()
+                Vec::new()
+            }
+            Event::Viewport { width, height } => {
+                let view = crate::modes::search::screen::SearchView::new(
+                    &self.search,
+                    &self.root,
+                    self.status.busy,
+                    crate::render::Painter::plain(),
+                    self.split,
+                    self.view,
+                );
+                self.search.body.viewport = Some(view.definition_rows(ratatui::layout::Rect::new(
+                    0,
+                    0,
+                    width,
+                    height.saturating_sub(1),
+                )));
+                Vec::new()
+            }
+            Event::DefinitionResolved {
+                ticket,
+                query,
+                reply,
+            } => {
+                self.search.body.resolved(ticket, &query, reply);
+                Vec::new()
             }
             Event::Searched {
                 generation,
@@ -324,12 +396,14 @@ impl Model {
                 text,
                 highlights,
                 symbols,
+                identifiers,
             } => {
                 let preview = FilePreview::new(vvv_engine::File {
                     path,
                     text,
                     highlights,
                     symbols,
+                    identifiers,
                 });
                 match &mut self.mode {
                     Mode::Search => self.search.previewed(preview),
@@ -369,6 +443,7 @@ impl Model {
             }
             Event::Applied { id, intent, report } => {
                 self.mode = Mode::Search;
+                self.search.trail.cancel();
                 self.search.preview = None;
                 self.search.body.clear();
                 self.overlay = Some(Overlay::Report {
@@ -392,6 +467,7 @@ impl Model {
             }
             Event::Undone(entry) => {
                 self.mode = Mode::Search;
+                self.search.trail.cancel();
                 self.search.preview = None;
                 self.search.body.clear();
                 let effects = self.search();
@@ -444,7 +520,10 @@ impl Model {
     // ------------------------------------------------------------ cursors
 
     fn moved(&mut self, by: i32) -> Vec<Effect> {
-        if let Some(Overlay::Menu(menu)) = &mut self.overlay {
+        if let Some(Overlay::Navigation(picker)) = &mut self.overlay {
+            picker.moved(by);
+            Vec::new()
+        } else if let Some(Overlay::Menu(menu)) = &mut self.overlay {
             menu.move_cursor(by);
             Vec::new()
         } else {
@@ -453,7 +532,10 @@ impl Model {
     }
 
     fn jump(&mut self, top: bool) -> Vec<Effect> {
-        if matches!(self.mode, Mode::Search) && self.search.scroll_focused() {
+        if self.overlay.is_none()
+            && matches!(self.mode, Mode::Search)
+            && self.search.scroll_focused()
+        {
             self.search.jump(top)
         } else {
             self.moved(if top { i32::MIN / 2 } else { i32::MAX / 2 })
@@ -563,14 +645,6 @@ impl Model {
         }
     }
 
-    fn goto_declaration(&mut self) -> Vec<Effect> {
-        let navigation = self.search.goto_declaration(&mut ModeContext {
-            status: &mut self.status,
-            generation: &mut self.generation,
-        });
-        self.navigation(navigation)
-    }
-
     fn enter_rename(&mut self) -> Vec<Effect> {
         let r = match RenameMode::from_results(&self.search.results) {
             Ok(r) => r,
@@ -616,7 +690,34 @@ impl Model {
         Vec::new()
     }
 
+    fn follow(&mut self) -> Vec<Effect> {
+        if !matches!(self.mode, Mode::Search) {
+            return Vec::new();
+        }
+        let (picker, effects) = self.search.follow(&mut ModeContext {
+            status: &mut self.status,
+            generation: &mut self.generation,
+        });
+        if let Some(picker) = picker {
+            self.overlay = Some(Overlay::Navigation(picker));
+        }
+        effects
+    }
+
     fn choose_menu(&mut self) -> Vec<Effect> {
+        if let Some(Overlay::Navigation(picker)) = &self.overlay {
+            let Some(query) = picker.chosen() else {
+                return Vec::new();
+            };
+            self.overlay = None;
+            return self.search.follow_query(
+                query,
+                &mut ModeContext {
+                    status: &mut self.status,
+                    generation: &mut self.generation,
+                },
+            );
+        }
         let Some(Overlay::Menu(menu)) = &self.overlay else {
             return Vec::new();
         };
@@ -815,8 +916,8 @@ impl Status {
 /// syntax colouring as byte spans.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FilePreview {
-    file: vvv_engine::File,
-    line_starts: Vec<usize>,
+    file: std::sync::Arc<vvv_engine::File>,
+    line_starts: std::sync::Arc<Vec<usize>>,
 }
 
 impl FilePreview {
@@ -824,7 +925,21 @@ impl FilePreview {
         let line_starts = std::iter::once(0)
             .chain(file.text.match_indices('\n').map(|(i, _)| i + 1))
             .collect();
-        Self { file, line_starts }
+        Self {
+            file: std::sync::Arc::new(file),
+            line_starts: std::sync::Arc::new(line_starts),
+        }
+    }
+
+    /// A conservative payload charge, including syntax and anchor metadata.
+    pub fn retained_bytes(&self) -> usize {
+        let mut bytes = RetainedBytes::default();
+        if serde_json::to_writer(&mut bytes, &*self.file).is_err() {
+            return usize::MAX / 128;
+        }
+        bytes
+            .estimate()
+            .saturating_add(self.line_starts.len() * std::mem::size_of::<usize>())
     }
 
     pub fn line_count(&self) -> usize {
@@ -862,5 +977,25 @@ impl std::ops::Deref for FilePreview {
 
     fn deref(&self) -> &Self::Target {
         &self.file
+    }
+}
+
+/// Counts encoded payload without allocating a second copy. The multiplier
+/// reserves space for collection elements, capacities and allocation overhead;
+/// this is an estimated retention budget, not a process RSS measurement.
+#[derive(Default)]
+pub struct RetainedBytes(usize);
+impl RetainedBytes {
+    pub fn estimate(&self) -> usize {
+        self.0.saturating_mul(4)
+    }
+}
+impl std::io::Write for RetainedBytes {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        self.0 = self.0.saturating_add(bytes.len());
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
     }
 }

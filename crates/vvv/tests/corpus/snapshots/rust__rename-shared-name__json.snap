@@ -15,6 +15,7 @@ exit 0
     "applied": false,
     "declarations": [
       {
+        "content": "1c01fd4543776a4fba8e20a5b85a39db9697ae231eea6d1a3b21209b6ad6fa8d",
         "id": "32ec29cb6c03",
         "path": "core/src/geometry/shape.rs",
         "language": "rust",
@@ -59,6 +60,7 @@ exit 0
         "role": "declaration"
       },
       {
+        "content": "2dec45417c4094592bf5b6158fd1efbbc2ce9350841e716ac62e58628e842d3a",
         "id": "3a3b9573ec14",
         "path": "core/src/util.rs",
         "language": "rust",
@@ -112,6 +114,7 @@ exit 0
     ],
     "occurrences": [
       {
+        "content": "2dec45417c4094592bf5b6158fd1efbbc2ce9350841e716ac62e58628e842d3a",
         "id": "bdd6f19b0e8a",
         "path": "core/src/util.rs",
         "language": "rust",
@@ -135,6 +138,7 @@ exit 0
         "reason": "declaring"
       },
       {
+        "content": "2dec45417c4094592bf5b6158fd1efbbc2ce9350841e716ac62e58628e842d3a",
         "id": "31c933693458",
         "path": "core/src/util.rs",
         "language": "rust",
@@ -158,6 +162,7 @@ exit 0
         "reason": "declaring"
       },
       {
+        "content": "1c01fd4543776a4fba8e20a5b85a39db9697ae231eea6d1a3b21209b6ad6fa8d",
         "id": "61fb97b14589",
         "path": "core/src/geometry/shape.rs",
         "language": "rust",
@@ -181,6 +186,7 @@ exit 0
         "reason": "imported"
       },
       {
+        "content": "1c01fd4543776a4fba8e20a5b85a39db9697ae231eea6d1a3b21209b6ad6fa8d",
         "id": "5950f4f2b7f4",
         "path": "core/src/geometry/shape.rs",
         "language": "rust",
@@ -204,6 +210,7 @@ exit 0
         "reason": "imported"
       },
       {
+        "content": "1c01fd4543776a4fba8e20a5b85a39db9697ae231eea6d1a3b21209b6ad6fa8d",
         "id": "62d279b637b2",
         "path": "core/src/geometry/shape.rs",
         "language": "rust",
@@ -227,6 +234,7 @@ exit 0
         "reason": "path"
       },
       {
+        "content": "01fb736f8e211e345613c7c9e4dc63f0df2eded91b074faf2ff7a38745d80904",
         "id": "78ad054579c8",
         "path": "app/src/main.rs",
         "language": "rust",
@@ -250,6 +258,7 @@ exit 0
         "reason": "re-export"
       },
       {
+        "content": "01fb736f8e211e345613c7c9e4dc63f0df2eded91b074faf2ff7a38745d80904",
         "id": "08e53d3593f4",
         "path": "app/src/main.rs",
         "language": "rust",
@@ -273,6 +282,7 @@ exit 0
         "reason": "re-export"
       },
       {
+        "content": "01fb736f8e211e345613c7c9e4dc63f0df2eded91b074faf2ff7a38745d80904",
         "id": "effa3c2a5e8f",
         "path": "app/src/main.rs",
         "language": "rust",
@@ -296,6 +306,7 @@ exit 0
         "reason": "re-export"
       },
       {
+        "content": "e401bdbdddb3d44b31a55a4592f83c6a87e7ab97501aa9c0268b27dc42e2298d",
         "id": "f5bf0262ea1e",
         "path": "app/src/cli.rs",
         "language": "rust",

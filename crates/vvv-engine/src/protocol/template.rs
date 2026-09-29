@@ -152,6 +152,7 @@ mod tests {
             ("NONE".to_owned(), CaptureValue::Multiple(vec![])),
         ]);
         let m = Match {
+            content: None,
             id: MatchId::derive(&vvv_core::RelPath::from("x"), Span::new(0, 9), "foo(a, b)"),
             path: "x".into(),
             language: LanguageId::new("t"),

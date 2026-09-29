@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● type-parameter Runtime   src/consumer.ts:7:18
+
+Runtime
+--- stderr ---

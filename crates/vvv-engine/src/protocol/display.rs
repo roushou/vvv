@@ -180,6 +180,7 @@ mod tests {
 
     fn at(line: &str, start: u32, end: u32) -> Match {
         Match {
+            content: None,
             id: MatchId::from("test".to_owned()),
             path: RelPath::from("a.rs"),
             language: LanguageId::from("rust"),

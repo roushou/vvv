@@ -15,6 +15,7 @@ exit 0
     "applied": false,
     "declarations": [
       {
+        "content": "e8dadb6bda7e721eaa565045578523bd9d2cdb5acc94f21157ddd7f2cc5f1709",
         "id": "679da9ff7222",
         "path": "core/src/geometry/point.rs",
         "language": "rust",
@@ -69,6 +70,7 @@ exit 0
     ],
     "occurrences": [
       {
+        "content": "e8dadb6bda7e721eaa565045578523bd9d2cdb5acc94f21157ddd7f2cc5f1709",
         "id": "6f07460c7daa",
         "path": "core/src/geometry/point.rs",
         "language": "rust",
@@ -92,6 +94,7 @@ exit 0
         "reason": "declaring"
       },
       {
+        "content": "e8dadb6bda7e721eaa565045578523bd9d2cdb5acc94f21157ddd7f2cc5f1709",
         "id": "7c45f8e33e34",
         "path": "core/src/geometry/point.rs",
         "language": "rust",
@@ -115,6 +118,7 @@ exit 0
         "reason": "declaring"
       },
       {
+        "content": "e8dadb6bda7e721eaa565045578523bd9d2cdb5acc94f21157ddd7f2cc5f1709",
         "id": "653b8792f61e",
         "path": "core/src/geometry/point.rs",
         "language": "rust",
@@ -138,6 +142,7 @@ exit 0
         "reason": "declaring"
       },
       {
+        "content": "be82ffb684029ba0abd6b2d15b9540cb7b7bbdd7de90b628b344a558290fb81e",
         "id": "7738a0a93793",
         "path": "core/src/geometry/mod.rs",
         "language": "rust",
@@ -161,6 +166,7 @@ exit 0
         "reason": "imported"
       },
       {
+        "content": "be82ffb684029ba0abd6b2d15b9540cb7b7bbdd7de90b628b344a558290fb81e",
         "id": "f952008219b5",
         "path": "core/src/geometry/mod.rs",
         "language": "rust",
@@ -184,6 +190,7 @@ exit 0
         "reason": "imported"
       },
       {
+        "content": "be82ffb684029ba0abd6b2d15b9540cb7b7bbdd7de90b628b344a558290fb81e",
         "id": "57fbc997e1e7",
         "path": "core/src/geometry/mod.rs",
         "language": "rust",
@@ -207,6 +214,7 @@ exit 0
         "reason": "path"
       },
       {
+        "content": "01fb736f8e211e345613c7c9e4dc63f0df2eded91b074faf2ff7a38745d80904",
         "id": "fc1796e0d79e",
         "path": "app/src/main.rs",
         "language": "rust",
@@ -230,6 +238,7 @@ exit 0
         "reason": "re-export"
       },
       {
+        "content": "01fb736f8e211e345613c7c9e4dc63f0df2eded91b074faf2ff7a38745d80904",
         "id": "e9f54510e8e4",
         "path": "app/src/main.rs",
         "language": "rust",
@@ -253,6 +262,7 @@ exit 0
         "reason": "re-export"
       },
       {
+        "content": "1c01fd4543776a4fba8e20a5b85a39db9697ae231eea6d1a3b21209b6ad6fa8d",
         "id": "9cf65a86894c",
         "path": "core/src/geometry/shape.rs",
         "language": "rust",
@@ -276,6 +286,7 @@ exit 0
         "reason": "re-export"
       },
       {
+        "content": "1c01fd4543776a4fba8e20a5b85a39db9697ae231eea6d1a3b21209b6ad6fa8d",
         "id": "3d7759d0f3d6",
         "path": "core/src/geometry/shape.rs",
         "language": "rust",
@@ -299,6 +310,7 @@ exit 0
         "reason": "re-export"
       },
       {
+        "content": "1c01fd4543776a4fba8e20a5b85a39db9697ae231eea6d1a3b21209b6ad6fa8d",
         "id": "712aa3dfdb7d",
         "path": "core/src/geometry/shape.rs",
         "language": "rust",
@@ -322,6 +334,7 @@ exit 0
         "reason": "re-export"
       },
       {
+        "content": "1c01fd4543776a4fba8e20a5b85a39db9697ae231eea6d1a3b21209b6ad6fa8d",
         "id": "22e9c20bac46",
         "path": "core/src/geometry/shape.rs",
         "language": "rust",
@@ -345,6 +358,7 @@ exit 0
         "reason": "re-export"
       },
       {
+        "content": "b681160781b01344378769b063a24e853ce033dcdef12f5c9b2fa8cef6fcb66d",
         "id": "2fe487e37790",
         "path": "core/src/lib.rs",
         "language": "rust",

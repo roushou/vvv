@@ -1,0 +1,355 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "62d4db7d9684b750a05543a8b2b40b342c11d871bd2a48d29cdc792b4d281787",
+    "outcome": "resolved",
+    "target": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/namespaces.rs",
+        "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
+        "span": {
+          "start": 26,
+          "end": 63
+        }
+      },
+      "name_span": {
+        "start": 37,
+        "end": 43
+      },
+      "kind": "struct"
+    },
+    "evidence": {
+      "addresses": [
+        {
+          "package": "navigation",
+          "path": [
+            "namespaces",
+            "Engine"
+          ]
+        }
+      ]
+    },
+    "preview": {
+      "container": {
+        "language": "rust",
+        "declaration": {
+          "path": "src/namespaces.rs",
+          "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
+          "span": {
+            "start": 26,
+            "end": 63
+          }
+        },
+        "name_span": {
+          "start": 37,
+          "end": 43
+        },
+        "kind": "struct"
+      },
+      "declaration": {
+        "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
+        "id": "0792bd5fe934",
+        "path": "src/namespaces.rs",
+        "language": "rust",
+        "span": {
+          "start": 26,
+          "end": 63
+        },
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "end": {
+          "line": 1,
+          "column": 37
+        },
+        "kind": "declaration",
+        "text": "pub struct Engine { pub ready: bool }",
+        "line": "pub struct Engine { pub ready: bool }",
+        "symbol": {
+          "kind": "struct",
+          "name": "Engine",
+          "name_span": {
+            "start": 37,
+            "end": 43
+          },
+          "span": {
+            "start": 26,
+            "end": 63
+          },
+          "extent": {
+            "start": 26,
+            "end": 63
+          },
+          "visibility": {
+            "span": {
+              "start": 26,
+              "end": 29
+            },
+            "text": "pub"
+          }
+        },
+        "role": "declaration"
+      },
+      "source": {
+        "path": "src/namespaces.rs",
+        "text": "use crate::value::Engine;\npub struct Engine { pub ready: bool }\npub fn run(value: Engine) {}\n",
+        "highlights": [
+          {
+            "span": {
+              "start": 0,
+              "end": 3
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 4,
+              "end": 9
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 26,
+              "end": 29
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 30,
+              "end": 36
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 37,
+              "end": 43
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 46,
+              "end": 49
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 57,
+              "end": 61
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 64,
+              "end": 67
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 68,
+              "end": 70
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 71,
+              "end": 74
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 82,
+              "end": 88
+            },
+            "kind": "type"
+          }
+        ],
+        "symbols": [
+          {
+            "kind": "struct",
+            "name": "Engine",
+            "name_span": {
+              "start": 37,
+              "end": 43
+            },
+            "span": {
+              "start": 26,
+              "end": 63
+            },
+            "extent": {
+              "start": 26,
+              "end": 63
+            },
+            "visibility": {
+              "span": {
+                "start": 26,
+                "end": 29
+              },
+              "text": "pub"
+            }
+          },
+          {
+            "kind": "field",
+            "name": "ready",
+            "name_span": {
+              "start": 50,
+              "end": 55
+            },
+            "span": {
+              "start": 46,
+              "end": 61
+            },
+            "extent": {
+              "start": 46,
+              "end": 61
+            },
+            "visibility": {
+              "span": {
+                "start": 46,
+                "end": 49
+              },
+              "text": "pub"
+            }
+          },
+          {
+            "kind": "function",
+            "name": "run",
+            "name_span": {
+              "start": 71,
+              "end": 74
+            },
+            "span": {
+              "start": 64,
+              "end": 92
+            },
+            "extent": {
+              "start": 64,
+              "end": 92
+            },
+            "visibility": {
+              "span": {
+                "start": 64,
+                "end": 67
+              },
+              "text": "pub"
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "value",
+            "name_span": {
+              "start": 75,
+              "end": 80
+            },
+            "span": {
+              "start": 75,
+              "end": 88
+            },
+            "extent": {
+              "start": 75,
+              "end": 88
+            }
+          }
+        ],
+        "identifiers": [
+          {
+            "path": "src/namespaces.rs",
+            "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
+            "span": {
+              "start": 11,
+              "end": 16
+            }
+          },
+          {
+            "path": "src/namespaces.rs",
+            "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
+            "span": {
+              "start": 18,
+              "end": 24
+            }
+          },
+          {
+            "path": "src/namespaces.rs",
+            "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
+            "span": {
+              "start": 37,
+              "end": 43
+            }
+          },
+          {
+            "path": "src/namespaces.rs",
+            "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
+            "span": {
+              "start": 50,
+              "end": 55
+            }
+          },
+          {
+            "path": "src/namespaces.rs",
+            "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
+            "span": {
+              "start": 71,
+              "end": 74
+            }
+          },
+          {
+            "path": "src/namespaces.rs",
+            "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
+            "span": {
+              "start": 75,
+              "end": 80
+            }
+          },
+          {
+            "path": "src/namespaces.rs",
+            "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
+            "span": {
+              "start": 82,
+              "end": 88
+            }
+          }
+        ]
+      },
+      "selection": {
+        "start": 37,
+        "end": 43
+      },
+      "identifiers": [
+        {
+          "path": "src/namespaces.rs",
+          "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
+          "span": {
+            "start": 37,
+            "end": 43
+          }
+        },
+        {
+          "path": "src/namespaces.rs",
+          "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
+          "span": {
+            "start": 50,
+            "end": 55
+          }
+        }
+      ]
+    }
+  }
+}
+--- stderr ---

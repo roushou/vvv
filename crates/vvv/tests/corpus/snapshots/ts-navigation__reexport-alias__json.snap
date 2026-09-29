@@ -1,0 +1,372 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "d7c17711c78f14f02255d97c078a8f42bfaf0cfff6794a071c3684ce544f878b",
+    "outcome": "resolved",
+    "target": {
+      "language": "typescript",
+      "declaration": {
+        "path": "src/origin.ts",
+        "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
+        "span": {
+          "start": 0,
+          "end": 45
+        }
+      },
+      "name_span": {
+        "start": 13,
+        "end": 19
+      },
+      "kind": "class"
+    },
+    "evidence": {
+      "addresses": [
+        {
+          "package": "",
+          "path": [
+            "src",
+            "barrel.ts",
+            "Motor"
+          ]
+        },
+        {
+          "package": "",
+          "path": [
+            "src",
+            "origin.ts",
+            "Engine"
+          ]
+        }
+      ]
+    },
+    "preview": {
+      "container": {
+        "language": "typescript",
+        "declaration": {
+          "path": "src/origin.ts",
+          "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
+          "span": {
+            "start": 0,
+            "end": 45
+          }
+        },
+        "name_span": {
+          "start": 13,
+          "end": 19
+        },
+        "kind": "class"
+      },
+      "declaration": {
+        "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
+        "id": "fed22e5f1593",
+        "path": "src/origin.ts",
+        "language": "typescript",
+        "span": {
+          "start": 7,
+          "end": 45
+        },
+        "start": {
+          "line": 0,
+          "column": 7
+        },
+        "end": {
+          "line": 0,
+          "column": 45
+        },
+        "kind": "declaration",
+        "text": "class Engine { public run(): void {} }",
+        "line": "export class Engine { public run(): void {} }",
+        "symbol": {
+          "kind": "class",
+          "name": "Engine",
+          "name_span": {
+            "start": 13,
+            "end": 19
+          },
+          "span": {
+            "start": 7,
+            "end": 45
+          },
+          "extent": {
+            "start": 0,
+            "end": 45
+          },
+          "visibility": {
+            "span": {
+              "start": 0,
+              "end": 6
+            },
+            "text": "export"
+          }
+        },
+        "role": "declaration"
+      },
+      "source": {
+        "path": "src/origin.ts",
+        "text": "export class Engine { public run(): void {} }\nexport interface Model { engine: Engine }\nclass Hidden {}\n",
+        "highlights": [
+          {
+            "span": {
+              "start": 0,
+              "end": 6
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 7,
+              "end": 12
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 13,
+              "end": 19
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 22,
+              "end": 28
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 29,
+              "end": 32
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 36,
+              "end": 40
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 46,
+              "end": 52
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 53,
+              "end": 62
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 63,
+              "end": 68
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 79,
+              "end": 85
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 88,
+              "end": 93
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 94,
+              "end": 100
+            },
+            "kind": "type"
+          }
+        ],
+        "symbols": [
+          {
+            "kind": "class",
+            "name": "Engine",
+            "name_span": {
+              "start": 13,
+              "end": 19
+            },
+            "span": {
+              "start": 7,
+              "end": 45
+            },
+            "extent": {
+              "start": 0,
+              "end": 45
+            },
+            "visibility": {
+              "span": {
+                "start": 0,
+                "end": 6
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "method",
+            "name": "run",
+            "name_span": {
+              "start": 29,
+              "end": 32
+            },
+            "span": {
+              "start": 22,
+              "end": 43
+            },
+            "extent": {
+              "start": 22,
+              "end": 43
+            }
+          },
+          {
+            "kind": "interface",
+            "name": "Model",
+            "name_span": {
+              "start": 63,
+              "end": 68
+            },
+            "span": {
+              "start": 53,
+              "end": 87
+            },
+            "extent": {
+              "start": 46,
+              "end": 87
+            },
+            "visibility": {
+              "span": {
+                "start": 46,
+                "end": 52
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "field",
+            "name": "engine",
+            "name_span": {
+              "start": 71,
+              "end": 77
+            },
+            "span": {
+              "start": 71,
+              "end": 85
+            },
+            "extent": {
+              "start": 71,
+              "end": 85
+            }
+          },
+          {
+            "kind": "class",
+            "name": "Hidden",
+            "name_span": {
+              "start": 94,
+              "end": 100
+            },
+            "span": {
+              "start": 88,
+              "end": 103
+            },
+            "extent": {
+              "start": 88,
+              "end": 103
+            }
+          }
+        ],
+        "identifiers": [
+          {
+            "path": "src/origin.ts",
+            "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
+            "span": {
+              "start": 13,
+              "end": 19
+            }
+          },
+          {
+            "path": "src/origin.ts",
+            "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
+            "span": {
+              "start": 29,
+              "end": 32
+            }
+          },
+          {
+            "path": "src/origin.ts",
+            "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
+            "span": {
+              "start": 63,
+              "end": 68
+            }
+          },
+          {
+            "path": "src/origin.ts",
+            "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
+            "span": {
+              "start": 71,
+              "end": 77
+            }
+          },
+          {
+            "path": "src/origin.ts",
+            "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
+            "span": {
+              "start": 79,
+              "end": 85
+            }
+          },
+          {
+            "path": "src/origin.ts",
+            "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
+            "span": {
+              "start": 94,
+              "end": 100
+            }
+          }
+        ]
+      },
+      "selection": {
+        "start": 13,
+        "end": 19
+      },
+      "identifiers": [
+        {
+          "path": "src/origin.ts",
+          "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
+          "span": {
+            "start": 13,
+            "end": 19
+          }
+        },
+        {
+          "path": "src/origin.ts",
+          "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
+          "span": {
+            "start": 29,
+            "end": 32
+          }
+        }
+      ]
+    }
+  }
+}
+--- stderr ---

@@ -13,6 +13,7 @@ exit 0
     },
     "matches": [
       {
+        "content": "5bc46d1266ed294d618c8c7b4ff05ae5e1acffdbb00e3b25be1d611a98b9bb5b",
         "id": "94019e09fb52",
         "path": "src/preview_consumer.rs",
         "language": "rust",
@@ -50,6 +51,7 @@ exit 0
         "role": "declaration"
       },
       {
+        "content": "ee3834701664e3b2092376837e50c3405f99f7e7bc3500396296c901520a5588",
         "id": "e123851462fd",
         "path": "src/preview_origin.rs",
         "language": "rust",
@@ -101,6 +103,7 @@ exit 0
         }
       },
       {
+        "content": "7d5511427a8ff89cdc470bad81d45a4c7ad1752e9216998f8a1419b469b23d48",
         "id": "2dd9a5efc639",
         "path": "src/preview_other.rs",
         "language": "rust",
@@ -152,6 +155,7 @@ exit 0
         }
       },
       {
+        "content": "4e2c271361e965adb06eab9f1b0d193a2f5b42570998bb3a94a01cdaa6ab1c16",
         "id": "56803170ea3c",
         "path": "src/lib.rs",
         "language": "rust",
@@ -173,6 +177,7 @@ exit 0
         "role": "import"
       },
       {
+        "content": "5bc46d1266ed294d618c8c7b4ff05ae5e1acffdbb00e3b25be1d611a98b9bb5b",
         "id": "5c122b973b53",
         "path": "src/preview_consumer.rs",
         "language": "rust",
@@ -194,6 +199,7 @@ exit 0
         "role": "import"
       },
       {
+        "content": "5bc46d1266ed294d618c8c7b4ff05ae5e1acffdbb00e3b25be1d611a98b9bb5b",
         "id": "67f1df50198c",
         "path": "src/preview_consumer.rs",
         "language": "rust",
@@ -215,6 +221,7 @@ exit 0
         "role": "use"
       },
       {
+        "content": "5bc46d1266ed294d618c8c7b4ff05ae5e1acffdbb00e3b25be1d611a98b9bb5b",
         "id": "629e88b565a4",
         "path": "src/preview_consumer.rs",
         "language": "rust",
@@ -236,6 +243,7 @@ exit 0
         "role": "use"
       },
       {
+        "content": "5bc46d1266ed294d618c8c7b4ff05ae5e1acffdbb00e3b25be1d611a98b9bb5b",
         "id": "0ded338013c8",
         "path": "src/preview_consumer.rs",
         "language": "rust",
@@ -257,6 +265,7 @@ exit 0
         "role": "use"
       },
       {
+        "content": "5bc46d1266ed294d618c8c7b4ff05ae5e1acffdbb00e3b25be1d611a98b9bb5b",
         "id": "1a60b3d7de97",
         "path": "src/preview_consumer.rs",
         "language": "rust",
@@ -278,6 +287,7 @@ exit 0
         "role": "use"
       },
       {
+        "content": "ee3834701664e3b2092376837e50c3405f99f7e7bc3500396296c901520a5588",
         "id": "9c58aeccb043",
         "path": "src/preview_origin.rs",
         "language": "rust",

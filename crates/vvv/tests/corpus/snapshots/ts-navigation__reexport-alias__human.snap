@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● class Engine   src/origin.ts:1:8
+
+export class Engine { public run(): void {} }
+--- stderr ---

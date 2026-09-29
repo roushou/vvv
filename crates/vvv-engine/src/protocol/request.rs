@@ -22,6 +22,9 @@ use super::{
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "command", rename_all = "snake_case")]
 pub enum Request {
+    Discover(crate::DiscoveryQuery),
+    Context(crate::ContextQuery),
+    Navigate(crate::NavigationQuery),
     Search(Query),
     Outline(OutlineQuery),
     References(ReferencesQuery),
@@ -72,7 +75,10 @@ impl Request {
     /// these; a mutation goes through an `Intent` and `Apply`.
     pub fn is_read_only(&self) -> bool {
         match self {
-            Self::Search(_)
+            Self::Discover(_)
+            | Self::Context(_)
+            | Self::Navigate(_)
+            | Self::Search(_)
             | Self::Outline(_)
             | Self::References(_)
             | Self::Where(_)
@@ -103,6 +109,9 @@ impl Request {
 // worth a `Box` in every client's match.
 #[allow(clippy::large_enum_variant)]
 pub enum Answer {
+    Discover(crate::Discovery),
+    Context(crate::ContextReply),
+    Navigate(crate::NavigationReply),
     Search(Search),
     Outline(Outline),
     References(References),
@@ -163,6 +172,8 @@ impl From<MutationAnswer> for Answer {
 /// `id` the caller chose, echoed on the [`Reply`].
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Call {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub max_output_bytes: Option<usize>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub id: Option<serde_json::Value>,
     #[serde(flatten)]

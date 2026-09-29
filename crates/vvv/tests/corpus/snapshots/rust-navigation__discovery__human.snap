@@ -1,0 +1,29 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+Available commands
+discover (read-only)
+context (read-only)
+navigate (read-only)
+search (read-only)
+outline (read-only)
+references (read-only)
+where (read-only)
+deps (read-only)
+explain (read-only)
+surface (read-only)
+impact (read-only)
+dead (read-only)
+imports (read-only)
+file (read-only)
+rewrite (can write)
+rename (can write)
+move (can write)
+move_symbol (can write)
+batch (can write)
+history (read-only)
+undo (can write)
+--- stderr ---

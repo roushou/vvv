@@ -15,6 +15,7 @@
 mod candidate;
 mod fragment;
 mod namespace;
+mod navigation;
 mod references;
 mod scope;
 
@@ -62,6 +63,8 @@ pub struct Graph {
     /// The last build of each language's project, to tell a refresh that
     /// changed nothing about the project from one that did.
     previous: HashMap<LanguageId, Arc<Project>>,
+    /// Manifest snapshots retained with each captured project for navigation validation.
+    project_sources: HashMap<LanguageId, Vec<crate::SourceFile>>,
 }
 
 struct Entry {
@@ -115,6 +118,7 @@ impl Graph {
             entries: Vec::new(),
             projects: HashMap::new(),
             previous: HashMap::new(),
+            project_sources: HashMap::new(),
         }
     }
 
@@ -161,6 +165,7 @@ impl Graph {
             .collect::<Result<_, EngineError>>()?;
         self.entries = now;
         self.previous.extend(std::mem::take(&mut self.projects));
+        self.project_sources.clear();
         self.walked = walked;
         self.walked_at = Some(Instant::now());
         Ok(())
@@ -220,7 +225,6 @@ impl Graph {
         }
         let language_impl = self.languages.get(language)?;
         let layout = language_impl.layout()?;
-        let vfs = self.workspace.vfs();
         let files: FileSet = self
             .walked
             .iter()
@@ -234,13 +238,15 @@ impl Graph {
                     .is_some_and(|n| layout.manifests().iter().any(|m| n == *m))
             })
             .collect();
-        let packages: Vec<Package> = manifests
+        let sources: Vec<_> = manifests
             .into_par_iter()
-            .filter_map(|manifest| {
-                let text = vfs.read(&self.workspace.absolute(manifest)).ok()?;
-                layout.package(manifest, &text)
-            })
+            .filter_map(|manifest| self.workspace.load(manifest).ok())
             .collect();
+        let packages: Vec<Package> = sources
+            .iter()
+            .filter_map(|file| layout.package(file.path(), file.text()))
+            .collect();
+        self.project_sources.insert(language.clone(), sources);
         let packages = Packages::new(packages);
         let project = Project { packages, files };
         // The same project as last time keeps its allocation: every fragment

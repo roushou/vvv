@@ -265,3 +265,70 @@ mod resolver_tests {
         assert_eq!(got, ["./a/b", "../t", "./e", "./dyn", "./req", "side"]);
     }
 }
+
+#[cfg(test)]
+mod navigation_tests {
+    use super::*;
+    use vvv_core::Language;
+
+    #[test]
+    fn named_imports_record_exact_bound_names() {
+        let source = "import { Other } from './origin'; type Alias = Engine;";
+        let facts = TypeScript::new().facts(source).unwrap();
+        assert_eq!(facts.named_imports.len(), 1);
+        assert_eq!(facts.named_imports[0].local, "Other");
+        assert_eq!(facts.named_imports[0].imported, "Other");
+        assert!(facts.named_modules);
+    }
+}
+
+#[cfg(test)]
+mod lexical_navigation_tests {
+    use super::*;
+    use vvv_core::Language;
+    #[test]
+    fn aliases_generics_and_parameters_are_lowered_without_changing_declarations() {
+        let source = "import type { Engine as Runtime } from './origin'; function f<Runtime>(value: Runtime): Runtime { return value; }";
+        let facts = TypeScript::new().facts(source).unwrap();
+        let binding = &facts.named_imports[0];
+        assert_eq!((&*binding.local, &*binding.imported), ("Runtime", "Engine"));
+        assert!(binding.type_only);
+        assert_eq!(
+            facts
+                .lexical
+                .iter()
+                .map(|b| b.symbol.name.as_str())
+                .collect::<Vec<_>>(),
+            ["Runtime", "value"]
+        );
+    }
+    #[test]
+    fn unmodeled_local_hoisting_and_patterns_block_outer_parameter_confirmation() {
+        let source = "function f(value: number) { if (true) { var value = 2; } return value; }";
+        let facts = TypeScript::new().facts(source).unwrap();
+        assert!(
+            !facts
+                .lexical_tokens
+                .contains(&facts.tokens_named("value").last().unwrap().0)
+        );
+    }
+    #[test]
+    fn nested_signature_bindings_do_not_leak_and_local_items_block_outer_bindings() {
+        let source =
+            "function f<T>(value: T) { type Local = <U>(x: U) => U; let other: U; return value; }";
+        let facts = TypeScript::new().facts(source).unwrap();
+        assert!(!facts.lexical.iter().any(|b| b.symbol.name == "U"));
+        assert!(
+            !facts
+                .lexical_tokens
+                .contains(&facts.tokens_named("value").last().unwrap().0)
+        );
+        let facts = TypeScript::new()
+            .facts("export default class Engine {} export class Named {}")
+            .unwrap();
+        assert_eq!(
+            facts.non_named_exports,
+            [facts.tokens_named("Engine").next().unwrap().0]
+        );
+    }
+}

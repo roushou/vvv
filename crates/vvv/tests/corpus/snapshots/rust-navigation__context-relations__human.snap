@@ -1,0 +1,19 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+Definition  src/consumer.rs:4:1
+pub struct App {
+    engine: Engine,
+    runtime: Runtime,
+}
+Referenced definition  src/origin.rs:1:1
+/// Runtime state.
+pub struct Engine {
+    pub running: bool,
+}
+Confirmed reference  src/consumer.rs:14:1
+impl App { pub fn method(engine: Engine) -> Engine { engine } }
+--- stderr ---

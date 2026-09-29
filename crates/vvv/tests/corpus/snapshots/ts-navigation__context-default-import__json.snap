@@ -1,0 +1,61 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "4eb899df1291125f0d51b2e1e80e4b8c5009e1b43d614287d839c6e4f60a2e32",
+    "outcome": "resolved",
+    "items": [
+      {
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/default.ts",
+            "content": "43b550a61a81b09d367686b6fbde10e80ad8fc8bf1177d30c2cc7418ec95ed80",
+            "span": {
+              "start": 0,
+              "end": 37
+            }
+          },
+          "name_span": {
+            "start": 21,
+            "end": 34
+          },
+          "kind": "class"
+        },
+        "relation": "definition",
+        "via": null,
+        "excerpt": {
+          "path": "src/default.ts",
+          "content": "43b550a61a81b09d367686b6fbde10e80ad8fc8bf1177d30c2cc7418ec95ed80",
+          "span": {
+            "start": 0,
+            "end": 37
+          }
+        },
+        "start": {
+          "line": 0,
+          "column": 0
+        },
+        "text": "export default class DefaultEngine {}",
+        "complete": true
+      }
+    ],
+    "omissions": {
+      "item_limit": 0,
+      "byte_limit": 0,
+      "lookup_limit": 0,
+      "file_limit": 0,
+      "ambiguous": 0,
+      "unavailable": 0,
+      "no_container": 0
+    },
+    "references_by_name": false
+  }
+}
+--- stderr ---

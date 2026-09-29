@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+f2c97c3b389f src/origin.rs
+03656afe22d7 src/other.rs
+--- stderr ---
+Several definitions match; use --select with a match id

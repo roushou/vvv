@@ -1,0 +1,13 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● variant Engine   src/origin.rs:6:5
+
+pub enum Error {
+    Engine,
+    Io,
+}
+--- stderr ---

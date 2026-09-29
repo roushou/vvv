@@ -20,6 +20,7 @@ pub mod facts;
 pub mod highlight;
 pub mod import;
 pub mod lang;
+pub mod navigation;
 pub mod oracle;
 pub mod paths;
 pub mod query;
@@ -34,6 +35,10 @@ pub use facts::{Facts, Token};
 pub use highlight::{Highlight, HighlightKind, HighlightRule};
 pub use import::{ImportGrammar, ImportGroup, ImportNesting, ImportRef, ImportRule, ReExportRule};
 pub use lang::{Grammar, Language, LanguageId, LanguageRegistry};
+pub use navigation::{
+    BindingNamespace, BindingRule, LexicalBinding, NamedImport, NamedImportRule, QualifiedImport,
+    QualifiedImportRule,
+};
 pub use oracle::{Oracle, Referent};
 pub use paths::{ModulePath, Name, PathHead, PathSyntax, RelPath};
 pub use query::{Query, QueryBuilder, QueryError};

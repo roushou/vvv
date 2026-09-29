@@ -11,6 +11,7 @@ pub(crate) mod fixture;
 mod highlights;
 mod imports;
 mod language;
+mod navigation;
 mod searcher;
 mod symbols;
 

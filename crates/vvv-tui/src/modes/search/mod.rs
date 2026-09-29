@@ -1,5 +1,8 @@
 //! The retained query hub and its read-only relations.
 mod body;
+pub(crate) mod browse;
+use browse::{BrowsePage, NavigationTrail};
+use std::sync::Arc;
 pub(crate) mod query;
 pub(crate) mod screen;
 use crate::action::{Action, Effect};
@@ -12,14 +15,17 @@ use query::Filter;
 use query::QueryBar;
 use vvv_engine::{Answer, DepsQuery, ExplainQuery, ImpactQuery, Request, Skipped};
 use vvv_engine::{
-    Confidence, Consumer, Definitions, Deps, Explanation, Impact, Match, Occurrence, Query,
-    References, ReferencesQuery, RelPath, Role,
+    Confidence, Consumer, Deps, Explanation, Impact, Match, Occurrence, Query, References,
+    ReferencesQuery, RelPath, Role,
 };
 // ---------------------------------------------------------------- search
 
 /// The hub: a query, its results, and context for the cursor row.
 #[derive(Debug, Default)]
 pub struct Search {
+    pub trail: NavigationTrail,
+    pub page: BrowsePage,
+    pub stale: bool,
     pub query: QueryBar,
     pub results: Results,
     pub focus: SearchPanel,
@@ -30,7 +36,206 @@ pub struct Search {
 }
 
 impl Search {
+    pub fn follow(
+        &mut self,
+        context: &mut ModeContext<'_>,
+    ) -> (
+        Option<crate::overlays::navigation::NavigationPicker>,
+        Vec<Effect>,
+    ) {
+        use crate::overlays::navigation::NavigationPicker;
+        if self.stale {
+            context
+                .status
+                .info("Saved source needs validation or refresh (ctrl+r)");
+            return (None, Vec::new());
+        }
+        if context.status.busy {
+            return (None, context.fail("Wait for the current search to finish"));
+        }
+        match self.focus {
+            SearchPanel::Body | SearchPanel::Context => {
+                let preview = if self.focus == SearchPanel::Body {
+                    self.body.preview.as_ref()
+                } else {
+                    self.preview.as_ref()
+                };
+                let Some(preview) = preview else {
+                    return (None, context.fail("Source is not available yet"));
+                };
+                let range = if self.focus == SearchPanel::Body {
+                    self.body
+                        .declaration()
+                        .and_then(|d| self.body.symbol(d))
+                        .map(|s| s.extent)
+                } else {
+                    None
+                };
+                let anchors = preview
+                    .identifiers
+                    .iter()
+                    .filter(|a| range.is_none_or(|r| r.contains(&a.span)))
+                    .cloned();
+                let line = if self.focus == SearchPanel::Body {
+                    self.body
+                        .declaration()
+                        .and_then(|d| self.body.lines(d))
+                        .map_or(0, |r| r.start)
+                        + self.body.scroll
+                } else {
+                    self.preview_scroll.unwrap_or_else(|| self.preview_anchor())
+                };
+                let picker = NavigationPicker::identifiers(preview, anchors, line);
+                if picker.items.is_empty() {
+                    return (None, context.fail("No identifiers in this source"));
+                }
+                (Some(picker), Vec::new())
+            }
+            SearchPanel::Results => {
+                let query = match &self.page {
+                    BrowsePage::Definition(symbol) => Some(vvv_engine::NavigationQuery {
+                        origin: vvv_engine::NavigationOrigin::Symbol {
+                            symbol: symbol.clone(),
+                        },
+                        selection: vvv_engine::Selection::All,
+                    }),
+                    _ => self.body.query(),
+                };
+                let Some(query) = query else {
+                    return (None, context.fail("Select a source row"));
+                };
+                (None, self.follow_query(query, context))
+            }
+            SearchPanel::Query => (None, Vec::new()),
+        }
+    }
+
+    pub fn follow_query(
+        &mut self,
+        query: vvv_engine::NavigationQuery,
+        context: &mut ModeContext<'_>,
+    ) -> Vec<Effect> {
+        context.next_generation();
+        context.status.info("Following reference…");
+        vec![self.trail.request(query, false)]
+    }
+
+    pub fn followed(
+        &mut self,
+        ticket: u64,
+        query: vvv_engine::NavigationQuery,
+        reply: Result<vvv_engine::NavigationReply, vvv_engine::Failure>,
+        context: &mut ModeContext<'_>,
+    ) -> Option<crate::overlays::navigation::NavigationPicker> {
+        use vvv_engine::{NavigationOutcome, NavigationReply};
+        let pending = self.trail.accept(ticket, &query)?;
+        match reply {
+            Ok(
+                reply @ NavigationReply {
+                    outcome: NavigationOutcome::Resolved { .. },
+                    ..
+                },
+            ) => {
+                let NavigationOutcome::Resolved {
+                    target, preview, ..
+                } = &reply.outcome
+                else {
+                    unreachable!()
+                };
+                if pending.restoring {
+                    // Validation must confirm the displayed target as well as its origin.
+                    if self.body.pending().is_none()
+                        && self.body.target.as_ref().is_some_and(|old| old != target)
+                    {
+                        self.stale = true;
+                        context
+                            .status
+                            .info("Saved definition changed; refresh with ctrl+r");
+                        return None;
+                    }
+                    let scroll = self.body.scroll;
+                    self.body.install(query, reply);
+                    self.body.scroll = scroll;
+                } else {
+                    self.trail.commit(browse::NavigationEntry::capture(self));
+                    self.page = BrowsePage::Definition(target.clone());
+                    self.results.replace(vec![preview.declaration.clone()]);
+                    self.results.cursor = Cursor::default();
+                    self.preview = None;
+                    self.preview_scroll = None;
+                    self.body.install(query, reply);
+                    self.preview = self.body.preview.clone();
+                    self.focus = SearchPanel::Body;
+                }
+                self.stale = false;
+                context.status.clear();
+            }
+            Ok(NavigationReply {
+                outcome: NavigationOutcome::Ambiguous { candidates },
+                ..
+            }) if !pending.restoring => {
+                context.status.clear();
+                return Some(crate::overlays::navigation::NavigationPicker::candidates(
+                    query, candidates,
+                ));
+            }
+            Ok(NavigationReply {
+                outcome: NavigationOutcome::Unavailable { reason },
+                ..
+            }) => {
+                if pending.restoring && self.body.target.is_none() {
+                    self.stale = false;
+                }
+                context.status.info(reason.message());
+            }
+            Ok(_) if pending.restoring && self.body.target.is_none() => {
+                // An ambiguous origin is a valid saved page too. Validation
+                // must not open a picker until the user explicitly follows it.
+                self.stale = false;
+                context.status.clear();
+            }
+            Ok(_) => {
+                context
+                    .status
+                    .info("Saved definition changed; refresh with ctrl+r");
+            }
+            Err(failure) => {
+                if failure.code == vvv_engine::ErrorCode::Stale {
+                    self.stale = true;
+                }
+                context
+                    .status
+                    .error(format!("{} · refresh with ctrl+r", failure.message));
+            }
+        }
+        None
+    }
+
+    pub fn travel(&mut self, forward: bool, context: &mut ModeContext<'_>) -> Vec<Effect> {
+        self.trail.cancel();
+        if !self.trail.can_travel(forward) {
+            return Vec::new();
+        }
+        let current = browse::NavigationEntry::capture(self);
+        let Some(entry) = self.trail.travel(current, forward) else {
+            return Vec::new();
+        };
+        context.next_generation();
+        entry.restore(self);
+        context.status.busy = false;
+        context.status.info("Checking saved source…");
+        if let Some(query) = self.body.query() {
+            vec![self.trail.request(query, true)]
+        } else {
+            context.status.info("Refresh saved results with ctrl+r");
+            Vec::new()
+        }
+    }
+
     pub fn search(&mut self, context: &mut ModeContext<'_>) -> Vec<Effect> {
+        self.trail.cancel();
+        self.page = BrowsePage::Search;
+        self.body.reticket(self.body.next_ticket());
         let generation = context.next_generation();
         match self.query.parse() {
             Ok(query) => {
@@ -40,6 +245,8 @@ impl Search {
                 vec![Effect::Search { generation, query }]
             }
             Err(e) => {
+                self.stale = false;
+                context.status.busy = false;
                 self.results.replace(Vec::new());
                 self.results.query = None;
                 self.selection_changed();
@@ -147,17 +354,6 @@ impl Search {
             request,
         }])
     }
-    pub fn goto_declaration(&mut self, context: &mut ModeContext<'_>) -> Navigation {
-        if let Some(row) = self.results.declaration_row() {
-            self.results.cursor.index = row;
-            self.selection_changed();
-            return Navigation::Selection;
-        }
-        if !self.results.is_anchored() && self.results.current().is_some() {
-            return Navigation::Effects(self.enter_subject(context));
-        }
-        Navigation::Effects(Vec::new())
-    }
     pub fn focus_by(&mut self, by: i32) {
         self.focus = self.focus.step(by);
         if self.focus == SearchPanel::Body && !self.results.has_body() {
@@ -180,23 +376,19 @@ impl Search {
         }
     }
     pub fn selection_changed(&mut self) {
+        self.trail.cancel();
         self.preview_scroll = None;
-        if !self.results.definition_pending() {
-            self.body.select(self.results.body_declaration());
-        }
+        self.body
+            .select(self.results.current(), self.results.revision);
         if self.focus == SearchPanel::Body && !self.results.has_body() {
             self.focus = SearchPanel::Results;
         }
     }
     pub fn site(&self) -> Option<(RelPath, u32)> {
         if self.focus == SearchPanel::Body {
-            self.body.declaration().map(|d| {
-                let line = self
-                    .body
-                    .lines(d)
-                    .map_or(d.start.line, |lines| lines.start as u32);
-                (d.path.clone(), line)
-            })
+            self.body
+                .declaration()
+                .map(|d| (d.path.clone(), d.start.line))
         } else {
             self.results.current_site()
         }
@@ -221,29 +413,14 @@ impl Search {
     }
     pub fn preview_effect(&self) -> Vec<Effect> {
         let mut effects = Vec::new();
-        if self.results.definition_pending()
-            && let Some(query) = self.results.definition_query()
-        {
-            effects.push(Effect::Definition {
-                revision: self.results.revision,
-                query,
-            });
+        if let Some((ticket, query)) = self.body.pending() {
+            effects.push(Effect::Definition { ticket, query });
         }
         let context = self.results.current_site().map(|(path, _)| path);
         if let Some(path) = &context
             && self.preview.as_ref().map(|p| &p.path) != Some(path)
         {
             effects.push(Effect::Preview { path: path.clone() });
-        }
-        if let Some(declaration) = self.results.body_declaration()
-            && self.body.preview.as_ref().map(|p| &p.path) != Some(&declaration.path)
-            && !effects.iter().any(
-                |effect| matches!(effect, Effect::Preview { path } if *path == declaration.path),
-            )
-        {
-            effects.push(Effect::Preview {
-                path: declaration.path.clone(),
-            });
         }
         effects
     }
@@ -279,6 +456,9 @@ impl Search {
     }
     pub fn update(&mut self, action: Action, context: &mut ModeContext<'_>) -> Vec<Effect> {
         match action {
+            Action::Refresh => return self.search(context),
+            Action::BrowseBack => return self.travel(false, context),
+            Action::BrowseForward => return self.travel(true, context),
             Action::FocusNext => self.focus_by(1),
             Action::FocusPrev => self.focus_by(-1),
             Action::FocusNth(n) => self.focus_nth(n),
@@ -317,11 +497,6 @@ impl Search {
         self.preview_effect()
     }
     pub fn previewed(&mut self, preview: FilePreview) {
-        if let Some(declaration) = self.results.body_declaration()
-            && declaration.path == preview.path
-        {
-            self.body.received(preview.clone(), declaration);
-        }
         if self
             .results
             .current_site()
@@ -337,6 +512,7 @@ impl Search {
         context: &mut ModeContext<'_>,
     ) {
         context.status.busy = false;
+        self.stale = false;
         self.results.replace(matches);
         self.selection_changed();
         if skipped.is_empty() {
@@ -352,7 +528,10 @@ impl Search {
     pub fn answered(&mut self, answer: Answer, context: &mut ModeContext<'_>) -> bool {
         context.status.busy = false;
         match answer {
-            Answer::References(references) => self.results.entered(references),
+            Answer::References(references) => {
+                self.page = BrowsePage::References;
+                self.results.entered(references);
+            }
             Answer::Impact(impact) => self.results.show_impact(impact),
             Answer::Explain(definition) => self.results.show_definition(definition),
             Answer::Deps(deps) => self.results.show_deps(deps),
@@ -462,13 +641,12 @@ impl Relation {
 /// Search results in the engine's order — declarations first — with the
 /// cursor. A row can be *entered* as the search's subject: the rows then
 /// become that declaration's judged occurrences instead of its spellings.
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Results {
     /// Reference answers belong to this result set, including its source ranges.
     revision: u64,
-    definitions: Vec<(ReferencesQuery, Option<Definitions>)>,
     pub query: Option<Query>,
-    pub matches: Vec<Match>,
+    pub matches: Arc<Vec<Match>>,
     /// The declaration the rows were narrowed to, when a row was entered:
     /// name, kind and file, exactly what `references` disambiguates by.
     pub subject: Option<ReferencesQuery>,
@@ -476,21 +654,41 @@ pub struct Results {
     pub relation: Relation,
     /// The subject's occurrences once the engine answered; `None` while the
     /// request is out.
-    pub references: Option<References>,
+    pub references: Option<Arc<References>>,
     /// The subject's consumer modules, once `impact` was asked for.
-    pub impact: Option<Impact>,
+    pub impact: Option<Arc<Impact>>,
     /// The declaration's definition, once `definition` was asked for.
-    pub definition: Option<Explanation>,
+    pub definition: Option<Arc<Explanation>>,
     /// The declaring file's imports and importers, once `deps` was asked for.
-    pub deps: Option<Deps>,
+    pub deps: Option<Arc<Deps>>,
     pub cursor: Cursor,
 }
 
 impl Results {
+    pub fn retained_bytes(&self) -> usize {
+        let mut bytes = crate::model::RetainedBytes::default();
+        if serde_json::to_writer(
+            &mut bytes,
+            &(
+                &self.query,
+                &self.subject,
+                self.matches.as_ref(),
+                self.references.as_deref(),
+                self.impact.as_deref(),
+                self.definition.as_deref(),
+                self.deps.as_deref(),
+            ),
+        )
+        .is_err()
+        {
+            return usize::MAX / 128;
+        }
+        bytes.estimate()
+    }
+
     pub fn replace(&mut self, matches: Vec<Match>) {
         self.revision += 1;
-        self.definitions.clear();
-        self.matches = matches;
+        self.matches = Arc::new(matches);
         self.subject = None;
         self.references = None;
         self.clear_lenses();
@@ -501,31 +699,35 @@ impl Results {
     /// off the answer and the rows become its references. Nothing changes
     /// on screen until this arrives, so the pane never blanks mid-request.
     pub fn entered(&mut self, references: References) {
+        self.revision += 1;
         self.subject = Self::subject_of(&references);
         self.relation = Relation::References;
-        self.references = Some(references);
+        self.references = Some(Arc::new(references));
         self.clear_lenses();
         self.cursor = Cursor::default();
     }
 
     /// The subject's consumer modules.
     pub fn show_impact(&mut self, impact: Impact) {
+        self.revision += 1;
         self.relation = Relation::Impact;
-        self.impact = Some(impact);
+        self.impact = Some(Arc::new(impact));
         self.cursor = Cursor::default();
     }
 
     /// Where the subject is declared: its address, reach and importers.
     pub fn show_definition(&mut self, definition: Explanation) {
+        self.revision += 1;
         self.relation = Relation::Definition;
-        self.definition = Some(definition);
+        self.definition = Some(Arc::new(definition));
         self.cursor = Cursor::default();
     }
 
     /// The declaring file's imports and importers.
     pub fn show_deps(&mut self, deps: Deps) {
+        self.revision += 1;
         self.relation = Relation::Deps;
-        self.deps = Some(deps);
+        self.deps = Some(Arc::new(deps));
         self.cursor = Cursor::default();
     }
 
@@ -550,12 +752,14 @@ impl Results {
 
     /// Show another relation for the same subject; the cursor starts over.
     pub fn set_relation(&mut self, relation: Relation) {
+        self.revision += 1;
         self.relation = relation;
         self.cursor = Cursor::default();
     }
 
     /// Leave the subject: the rows are the search's spellings again.
     pub fn leave(&mut self) {
+        self.revision += 1;
         self.subject = None;
         self.references = None;
         self.clear_lenses();
@@ -642,81 +846,7 @@ impl Results {
 
     /// Reserve space for the whole result set, independent of cursor and loading.
     pub fn has_body(&self) -> bool {
-        self.declarations()
-            .chain(self.anchored_declarations().iter())
-            .any(|d| d.symbol.is_some())
-    }
-
-    /// A declaration row shows itself; a use needs a unique matching declaration.
-    /// In a judged reference list only resolved occurrences belong to the subject.
-    pub fn body_declaration(&self) -> Option<&Match> {
-        let current = self.current()?;
-        if current.role == Role::Declaration && current.symbol.is_some() {
-            return Some(current);
-        }
-        if self.is_anchored() {
-            return self.references.as_ref()?.definition_of(current);
-        }
-        self.declaration_of(current).or_else(|| {
-            let query = self.definition_query()?;
-            self.definitions
-                .iter()
-                .find(|(q, _)| q == &query)?
-                .1
-                .as_ref()?
-                .definition_of(current)
-        })
-    }
-
-    /// Name-only lookup cannot distinguish a type from variants or impl blocks.
-    /// Ask for reference evidence once per name and language in this result set.
-    fn definition_query(&self) -> Option<ReferencesQuery> {
-        if self.is_anchored() {
-            return None;
-        }
-        let current = self.current()?;
-        if current.role == Role::Declaration || self.declaration_of(current).is_some() {
-            return None;
-        }
-        self.declarations()
-            .any(|d| {
-                d.language == current.language
-                    && d.symbol.as_ref().is_some_and(|s| s.name == current.text)
-            })
-            .then(|| ReferencesQuery::new(&current.text).in_language(current.language.clone()))
-    }
-
-    pub fn definition_pending(&self) -> bool {
-        self.definition_query()
-            .is_some_and(|query| !self.definitions.iter().any(|(q, _)| q == &query))
-    }
-
-    pub fn definition_resolved(
-        &mut self,
-        revision: u64,
-        query: ReferencesQuery,
-        references: Option<Definitions>,
-    ) -> bool {
-        if revision != self.revision || self.definitions.iter().any(|(q, _)| q == &query) {
-            return false;
-        }
-        let selected = self.definition_query().as_ref() == Some(&query);
-        self.definitions.push((query, references));
-        selected
-    }
-
-    /// The declaration a use row names, as an index into the current list:
-    /// what the jump key moves the cursor to.
-    pub fn declaration_row(&self) -> Option<usize> {
-        if self.is_anchored() {
-            return self
-                .shown()
-                .iter()
-                .position(|o| o.m.role == Role::Declaration);
-        }
-        let current = self.current()?;
-        let declaration = self.declaration_of(current)?;
-        self.matches.iter().position(|m| m.id == declaration.id)
+        !self.matches.is_empty() || !self.anchored_declarations().is_empty()
     }
 
     /// The subject's declarations, once anchored.

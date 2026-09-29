@@ -48,6 +48,9 @@ impl Document {
     /// Compose one answer into the blocks its command prints.
     pub fn of(answer: &Answer) -> Self {
         match answer {
+            Answer::Discover(r) => Self::discovery(r),
+            Answer::Context(r) => Self::context(r),
+            Answer::Navigate(r) => Self::navigation(r),
             Answer::Search(r) => Self::search(&r.matches, &r.skipped),
             Answer::Outline(r) => Self::outline(r),
             Answer::References(r) => Self::references(r),

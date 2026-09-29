@@ -12,6 +12,7 @@ exit 0
     "sites": [
       {
         "declaration": {
+          "content": "d7846b5e7265a7381f2c3cb20f74bd308ba7731226d103105d22b714c8d9c4db",
           "id": "adb7a8431dd3",
           "path": "src/util.ts",
           "language": "typescript",

@@ -138,6 +138,114 @@ mod tests {
     }
 
     #[test]
+    fn navigation_outcomes() {
+        use vvv_engine::{
+            ContentId, DefinitionPreview, NavigationOutcome, NavigationReply, ResolutionEvidence,
+            SourceAnchor, SymbolKind, SymbolRef, UnavailableReason,
+        };
+        let text = "pub struct Engine;";
+        let mut declaration = fx::decl("src/state.rs", 0, SymbolKind::Struct, "Engine", text);
+        declaration.symbol.as_mut().unwrap().span = vvv_engine::Span::new(0, text.len());
+        declaration.symbol.as_mut().unwrap().extent = vvv_engine::Span::new(0, text.len());
+        let symbol = declaration.symbol.clone().unwrap();
+        let target = SymbolRef {
+            language: "rust".into(),
+            declaration: SourceAnchor {
+                path: declaration.path.clone(),
+                content: ContentId::of(text),
+                span: symbol.extent,
+            },
+            name_span: symbol.name_span,
+            kind: symbol.kind,
+        };
+        let resolved = NavigationOutcome::Resolved {
+            target: target.clone(),
+            evidence: ResolutionEvidence {
+                semantic: None,
+                addresses: vec![],
+            },
+            preview: Box::new(DefinitionPreview {
+                container: target,
+                declaration,
+                source: vvv_engine::File {
+                    identifiers: vec![],
+                    path: "src/state.rs".into(),
+                    text: text.into(),
+                    highlights: vec![],
+                    symbols: vec![symbol.clone()],
+                },
+                selection: symbol.name_span,
+                identifiers: vec![],
+            }),
+        };
+        insta::assert_snapshot!(render(|reporter| {
+            for outcome in std::iter::once(resolved).chain(
+                [
+                    UnavailableReason::NoIdentifier,
+                    UnavailableReason::Unresolved,
+                    UnavailableReason::UnsupportedContext,
+                    UnavailableReason::ExternalSourceUnavailable,
+                    UnavailableReason::CyclicImports,
+                ]
+                .into_iter()
+                .map(|reason| NavigationOutcome::Unavailable { reason }),
+            ) {
+                reporter
+                    .report(&Answer::Navigate(NavigationReply {
+                        snapshot: ContentId::of(text).into(),
+                        outcome,
+                    }))
+                    .unwrap();
+            }
+        }));
+    }
+
+    #[test]
+    fn bounded_context_excerpts() {
+        use vvv_engine::{
+            ContentId, ContextItem, ContextOmissions, ContextOutcome, ContextRelation,
+            ContextReply, Position, SourceAnchor, Span, SymbolKind, SymbolRef,
+        };
+        let text = "fn engine() { work(); }";
+        let anchor = SourceAnchor {
+            path: "src/example.rs".into(),
+            content: ContentId::of(text),
+            span: Span::new(0, text.len()),
+        };
+        let target = SymbolRef {
+            language: "rust".into(),
+            declaration: anchor.clone(),
+            name_span: Span::new(3, 9),
+            kind: SymbolKind::Function,
+        };
+        let reply = ContextReply {
+            snapshot: ContentId::of(text).into(),
+            outcome: ContextOutcome::Resolved,
+            items: vec![ContextItem {
+                target,
+                relation: ContextRelation::Definition,
+                via: None,
+                excerpt: SourceAnchor {
+                    span: Span::new(0, 11),
+                    ..anchor
+                },
+                start: Position::new(10, 0),
+                text: text[..11].into(),
+                complete: false,
+            }],
+            omissions: ContextOmissions {
+                byte_limit: 1,
+                unavailable: 2,
+                ..ContextOmissions::default()
+            },
+            references_by_name: false,
+        };
+        insta::assert_snapshot!(render(|reporter| reporter
+            .report(&Answer::Context(reply))
+            .unwrap()));
+    }
+
+    #[test]
     fn search() {
         insta::assert_snapshot!(render(|r| r.report(&Answer::Search(fx::search())).unwrap()));
     }

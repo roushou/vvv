@@ -30,6 +30,7 @@ pub struct Fake {
     surgery: PathSurgery,
     layout: PathLayout,
     symbols: Option<Vec<Symbol>>,
+    navigation_facts: Option<Facts>,
 }
 
 impl Fake {
@@ -40,6 +41,7 @@ impl Fake {
             surgery: PathSurgery::default(),
             layout: PathLayout::default(),
             symbols: None,
+            navigation_facts: None,
         }
     }
 
@@ -62,6 +64,11 @@ impl Fake {
     /// Supply declaration facts for tests of structural containment.
     pub fn with_symbols(mut self, symbols: Vec<Symbol>) -> Self {
         self.symbols = Some(symbols);
+        self
+    }
+
+    pub fn with_navigation_facts(mut self, facts: Facts) -> Self {
+        self.navigation_facts = Some(facts);
         self
     }
 
@@ -181,9 +188,13 @@ impl Language for Fake {
     }
 
     fn facts(&self, source: &str) -> Result<Facts, SearchError> {
+        if let Some(facts) = &self.navigation_facts {
+            return Ok(facts.clone());
+        }
         let mut facts = Facts::new(self.symbols(source)?, self.imports(source)?, Vec::new());
         for (start, word) in Self::words(source) {
             facts.push_token(word, "word", Span::new(start, start + word.len()));
+            facts.navigation.push(Span::new(start, start + word.len()));
         }
         Ok(facts)
     }

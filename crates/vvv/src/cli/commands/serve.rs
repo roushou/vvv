@@ -6,7 +6,6 @@ use vvv_engine::protocol::Response;
 use vvv_engine::{Answer, Call, Engine, ErrorCode, Failure, Reply, Retention};
 
 use crate::context::Context;
-use crate::output::Diagnose;
 
 /// Answer requests from stdin, one JSON object per line, with one JSON
 /// object per line: a session that keeps the tree between requests
@@ -46,10 +45,7 @@ impl Session {
             .ok()
             .and_then(|v| v.get("id").cloned());
         let response = match serde_json::from_str::<Call>(line) {
-            Ok(call) => match self.engine.run(call.request) {
-                Ok(answer) => Response::ok(answer.into_answer()),
-                Err(error) => Response::error(error.failure()),
-            },
+            Ok(call) => return call.execute(&self.engine),
             Err(error) => Response::error(Failure::new(
                 ErrorCode::BadRequest,
                 anyhow::Error::from(error).to_string(),

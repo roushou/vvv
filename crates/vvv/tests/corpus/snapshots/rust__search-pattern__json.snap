@@ -13,6 +13,7 @@ exit 0
     },
     "matches": [
       {
+        "content": "01fb736f8e211e345613c7c9e4dc63f0df2eded91b074faf2ff7a38745d80904",
         "id": "c86bd92ca935",
         "path": "app/src/main.rs",
         "language": "rust",
@@ -50,6 +51,7 @@ exit 0
         "role": "use"
       },
       {
+        "content": "be82ffb684029ba0abd6b2d15b9540cb7b7bbdd7de90b628b344a558290fb81e",
         "id": "fa12dc901b83",
         "path": "core/src/geometry/mod.rs",
         "language": "rust",
@@ -87,6 +89,7 @@ exit 0
         "role": "use"
       },
       {
+        "content": "e8dadb6bda7e721eaa565045578523bd9d2cdb5acc94f21157ddd7f2cc5f1709",
         "id": "5aca53203838",
         "path": "core/src/geometry/point.rs",
         "language": "rust",

@@ -71,6 +71,15 @@ impl Engine {
     pub fn run(&self, request: crate::Request) -> Result<Execution, EngineError> {
         let _operation = self.operation();
         Ok(match request {
+            crate::Request::Discover(query) => {
+                Execution::Completed(crate::Answer::Discover(query.execute(self)))
+            }
+            crate::Request::Context(query) => Execution::Completed(crate::Answer::Context(
+                query.execute_in(&mut *self.graph()?)?,
+            )),
+            crate::Request::Navigate(query) => Execution::Completed(crate::Answer::Navigate(
+                query.execute_in(&mut *self.graph()?)?,
+            )),
             crate::Request::Search(query) => Execution::Completed(crate::Answer::Search(
                 crate::SearchQuery::from(query).execute_in(&mut *self.graph()?)?,
             )),

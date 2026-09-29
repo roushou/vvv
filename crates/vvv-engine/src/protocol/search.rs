@@ -152,6 +152,9 @@ impl fmt::Debug for MatchId {
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Match {
+    /// Complete source version; absent only in older serialized matches.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub content: Option<crate::ContentId>,
     pub id: MatchId,
     pub path: RelPath,
     pub language: LanguageId,
@@ -181,6 +184,7 @@ impl Match {
         let start = source.position(raw.span.start);
         let path = RelPath::from(file.path());
         Self {
+            content: Some(file.content_id()),
             id: MatchId::derive(&path, raw.span, &raw.text),
             path,
             language,
@@ -215,6 +219,14 @@ impl Match {
             && self.captures == other.captures
             && self.symbol == other.symbol
             && self.role == other.role
+    }
+
+    pub fn anchor(&self) -> Option<crate::SourceAnchor> {
+        Some(crate::SourceAnchor {
+            path: self.path.clone(),
+            content: self.content.clone()?,
+            span: self.symbol.as_ref().map_or(self.span, |s| s.name_span),
+        })
     }
 
     pub fn capture(&self, name: &str) -> Option<&CaptureValue> {

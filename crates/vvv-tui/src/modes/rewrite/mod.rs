@@ -200,7 +200,7 @@ impl RewriteMode {
         if matches.is_empty() {
             return Err("nothing matched; a rewrite acts on the matches");
         }
-        Ok(Self::new(query, matches))
+        Ok(Self::new(query, matches.to_vec()))
     }
     pub fn scroll_focused(&self) -> bool {
         self.focus == RewritePanel::Detail

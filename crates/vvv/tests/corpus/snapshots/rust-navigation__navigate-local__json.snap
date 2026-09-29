@@ -1,0 +1,964 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "56d0bd266f927f0b8174f78e79055a5869123c15755cf8a36aa920071a52c3df",
+    "outcome": "resolved",
+    "target": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/consumer.rs",
+        "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+        "span": {
+          "start": 231,
+          "end": 248
+        }
+      },
+      "name_span": {
+        "start": 236,
+        "end": 242
+      },
+      "kind": "type-alias"
+    },
+    "evidence": {
+      "addresses": []
+    },
+    "preview": {
+      "container": {
+        "language": "rust",
+        "declaration": {
+          "path": "src/consumer.rs",
+          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+          "span": {
+            "start": 231,
+            "end": 248
+          }
+        },
+        "name_span": {
+          "start": 236,
+          "end": 242
+        },
+        "kind": "type-alias"
+      },
+      "declaration": {
+        "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+        "id": "38a7df1c19a2",
+        "path": "src/consumer.rs",
+        "language": "rust",
+        "span": {
+          "start": 231,
+          "end": 248
+        },
+        "start": {
+          "line": 10,
+          "column": 17
+        },
+        "end": {
+          "line": 10,
+          "column": 34
+        },
+        "kind": "declaration",
+        "text": "type Engine = u8;",
+        "line": "pub fn local() { type Engine = u8; let value: Engine = 0; }",
+        "symbol": {
+          "kind": "type-alias",
+          "name": "Engine",
+          "name_span": {
+            "start": 236,
+            "end": 242
+          },
+          "span": {
+            "start": 231,
+            "end": 248
+          },
+          "extent": {
+            "start": 231,
+            "end": 248
+          }
+        },
+        "role": "declaration"
+      },
+      "source": {
+        "path": "src/consumer.rs",
+        "text": "use crate::bridge::Runtime;\nuse crate::origin::Engine;\n\npub struct App {\n    engine: Engine,\n    runtime: Runtime,\n}\n\npub fn roundtrip(engine: Engine) -> Engine { engine }\npub fn generic<Engine>(engine: Engine) {}\npub fn local() { type Engine = u8; let value: Engine = 0; }\npub fn unicode(é: u8, engine: Engine) {}\n\nimpl App { pub fn method(engine: Engine) -> Engine { engine } }\n",
+        "highlights": [
+          {
+            "span": {
+              "start": 0,
+              "end": 3
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 4,
+              "end": 9
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 28,
+              "end": 31
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 32,
+              "end": 37
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 56,
+              "end": 59
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 60,
+              "end": 66
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 67,
+              "end": 70
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 85,
+              "end": 91
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 106,
+              "end": 113
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 118,
+              "end": 121
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 122,
+              "end": 124
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 125,
+              "end": 134
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 143,
+              "end": 149
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 154,
+              "end": 160
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 172,
+              "end": 175
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 176,
+              "end": 178
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 179,
+              "end": 186
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 187,
+              "end": 193
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 203,
+              "end": 209
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 214,
+              "end": 217
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 218,
+              "end": 220
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 221,
+              "end": 226
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 231,
+              "end": 235
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 236,
+              "end": 242
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 245,
+              "end": 247
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 249,
+              "end": 252
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 260,
+              "end": 266
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 269,
+              "end": 270
+            },
+            "kind": "number"
+          },
+          {
+            "span": {
+              "start": 274,
+              "end": 277
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 278,
+              "end": 280
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 281,
+              "end": 288
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 293,
+              "end": 295
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 305,
+              "end": 311
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 317,
+              "end": 321
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 322,
+              "end": 325
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 328,
+              "end": 331
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 332,
+              "end": 334
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 335,
+              "end": 341
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 350,
+              "end": 356
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 361,
+              "end": 367
+            },
+            "kind": "type"
+          }
+        ],
+        "symbols": [
+          {
+            "kind": "struct",
+            "name": "App",
+            "name_span": {
+              "start": 67,
+              "end": 70
+            },
+            "span": {
+              "start": 56,
+              "end": 116
+            },
+            "extent": {
+              "start": 56,
+              "end": 116
+            },
+            "visibility": {
+              "span": {
+                "start": 56,
+                "end": 59
+              },
+              "text": "pub"
+            }
+          },
+          {
+            "kind": "field",
+            "name": "engine",
+            "name_span": {
+              "start": 77,
+              "end": 83
+            },
+            "span": {
+              "start": 77,
+              "end": 91
+            },
+            "extent": {
+              "start": 77,
+              "end": 91
+            }
+          },
+          {
+            "kind": "field",
+            "name": "runtime",
+            "name_span": {
+              "start": 97,
+              "end": 104
+            },
+            "span": {
+              "start": 97,
+              "end": 113
+            },
+            "extent": {
+              "start": 97,
+              "end": 113
+            }
+          },
+          {
+            "kind": "function",
+            "name": "roundtrip",
+            "name_span": {
+              "start": 125,
+              "end": 134
+            },
+            "span": {
+              "start": 118,
+              "end": 171
+            },
+            "extent": {
+              "start": 118,
+              "end": 171
+            },
+            "visibility": {
+              "span": {
+                "start": 118,
+                "end": 121
+              },
+              "text": "pub"
+            }
+          },
+          {
+            "kind": "function",
+            "name": "generic",
+            "name_span": {
+              "start": 179,
+              "end": 186
+            },
+            "span": {
+              "start": 172,
+              "end": 213
+            },
+            "extent": {
+              "start": 172,
+              "end": 213
+            },
+            "visibility": {
+              "span": {
+                "start": 172,
+                "end": 175
+              },
+              "text": "pub"
+            }
+          },
+          {
+            "kind": "function",
+            "name": "local",
+            "name_span": {
+              "start": 221,
+              "end": 226
+            },
+            "span": {
+              "start": 214,
+              "end": 273
+            },
+            "extent": {
+              "start": 214,
+              "end": 273
+            },
+            "visibility": {
+              "span": {
+                "start": 214,
+                "end": 217
+              },
+              "text": "pub"
+            }
+          },
+          {
+            "kind": "type-alias",
+            "name": "Engine",
+            "name_span": {
+              "start": 236,
+              "end": 242
+            },
+            "span": {
+              "start": 231,
+              "end": 248
+            },
+            "extent": {
+              "start": 231,
+              "end": 248
+            }
+          },
+          {
+            "kind": "function",
+            "name": "unicode",
+            "name_span": {
+              "start": 281,
+              "end": 288
+            },
+            "span": {
+              "start": 274,
+              "end": 315
+            },
+            "extent": {
+              "start": 274,
+              "end": 315
+            },
+            "visibility": {
+              "span": {
+                "start": 274,
+                "end": 277
+              },
+              "text": "pub"
+            }
+          },
+          {
+            "kind": "impl",
+            "name": "App",
+            "name_span": {
+              "start": 322,
+              "end": 325
+            },
+            "span": {
+              "start": 317,
+              "end": 380
+            },
+            "extent": {
+              "start": 317,
+              "end": 380
+            }
+          },
+          {
+            "kind": "method",
+            "name": "method",
+            "name_span": {
+              "start": 335,
+              "end": 341
+            },
+            "span": {
+              "start": 328,
+              "end": 378
+            },
+            "extent": {
+              "start": 328,
+              "end": 378
+            },
+            "visibility": {
+              "span": {
+                "start": 328,
+                "end": 331
+              },
+              "text": "pub"
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "engine",
+            "name_span": {
+              "start": 135,
+              "end": 141
+            },
+            "span": {
+              "start": 135,
+              "end": 149
+            },
+            "extent": {
+              "start": 135,
+              "end": 149
+            }
+          },
+          {
+            "kind": "type-parameter",
+            "name": "Engine",
+            "name_span": {
+              "start": 187,
+              "end": 193
+            },
+            "span": {
+              "start": 187,
+              "end": 193
+            },
+            "extent": {
+              "start": 187,
+              "end": 193
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "engine",
+            "name_span": {
+              "start": 195,
+              "end": 201
+            },
+            "span": {
+              "start": 195,
+              "end": 209
+            },
+            "extent": {
+              "start": 195,
+              "end": 209
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "value",
+            "name_span": {
+              "start": 253,
+              "end": 258
+            },
+            "span": {
+              "start": 249,
+              "end": 271
+            },
+            "extent": {
+              "start": 249,
+              "end": 271
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "é",
+            "name_span": {
+              "start": 289,
+              "end": 291
+            },
+            "span": {
+              "start": 289,
+              "end": 295
+            },
+            "extent": {
+              "start": 289,
+              "end": 295
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "engine",
+            "name_span": {
+              "start": 297,
+              "end": 303
+            },
+            "span": {
+              "start": 297,
+              "end": 311
+            },
+            "extent": {
+              "start": 297,
+              "end": 311
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "engine",
+            "name_span": {
+              "start": 342,
+              "end": 348
+            },
+            "span": {
+              "start": 342,
+              "end": 356
+            },
+            "extent": {
+              "start": 342,
+              "end": 356
+            }
+          }
+        ],
+        "identifiers": [
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 11,
+              "end": 17
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 19,
+              "end": 26
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 39,
+              "end": 45
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 47,
+              "end": 53
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 67,
+              "end": 70
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 77,
+              "end": 83
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 85,
+              "end": 91
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 97,
+              "end": 104
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 106,
+              "end": 113
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 125,
+              "end": 134
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 135,
+              "end": 141
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 143,
+              "end": 149
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 154,
+              "end": 160
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 163,
+              "end": 169
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 179,
+              "end": 186
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 187,
+              "end": 193
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 195,
+              "end": 201
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 203,
+              "end": 209
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 221,
+              "end": 226
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 236,
+              "end": 242
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 253,
+              "end": 258
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 260,
+              "end": 266
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 281,
+              "end": 288
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 289,
+              "end": 291
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 297,
+              "end": 303
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 305,
+              "end": 311
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 322,
+              "end": 325
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 335,
+              "end": 341
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 342,
+              "end": 348
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 350,
+              "end": 356
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 361,
+              "end": 367
+            }
+          },
+          {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 370,
+              "end": 376
+            }
+          }
+        ]
+      },
+      "selection": {
+        "start": 236,
+        "end": 242
+      },
+      "identifiers": [
+        {
+          "path": "src/consumer.rs",
+          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+          "span": {
+            "start": 236,
+            "end": 242
+          }
+        }
+      ]
+    }
+  }
+}
+--- stderr ---

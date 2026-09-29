@@ -9,6 +9,31 @@ use crate::history::HistoryError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EngineError {
+    #[error("invalid output or context budget")]
+    InvalidBudget,
+    #[error("output budgets are only supported for read-only requests")]
+    MutationBudget,
+    #[error("result needs {required_bytes} bytes; output budget is {max_bytes}")]
+    OutputLimit {
+        max_bytes: usize,
+        required_bytes: usize,
+    },
+    #[error("navigation cancelled")]
+    NavigationCancelled,
+    #[error("semantic provider state changed")]
+    StaleSemantic,
+    #[error("semantic provider returned invalid or inconsistent source evidence")]
+    InvalidSemantic,
+
+    #[error("source changed: {path}")]
+    StaleSource { path: RelPath },
+    #[error("invalid navigation range in {path}")]
+    InvalidAnchor { path: RelPath },
+    #[error("navigation exceeded its resolution budget")]
+    NavigationLimit,
+    #[error("select exactly one navigation candidate")]
+    NavigationSelection,
+
     #[error("expected {expected} execution, got {actual}")]
     ExecutionKind {
         expected: crate::ExecutionKind,
@@ -77,6 +102,15 @@ impl EngineError {
     /// The stable code a client branches on.
     pub fn code(&self) -> ErrorCode {
         match self {
+            Self::InvalidBudget | Self::MutationBudget => ErrorCode::BadRequest,
+            Self::OutputLimit { .. } => ErrorCode::OutputLimit,
+            Self::NavigationCancelled => ErrorCode::Cancelled,
+            Self::StaleSemantic => ErrorCode::Stale,
+            Self::InvalidSemantic => ErrorCode::BadRequest,
+            Self::StaleSource { .. } => ErrorCode::Stale,
+            Self::InvalidAnchor { .. } => ErrorCode::BadRequest,
+            Self::NavigationSelection => ErrorCode::BadSelection,
+            Self::NavigationLimit => ErrorCode::Incomplete,
             Self::ExecutionKind { .. } => ErrorCode::BadRequest,
             Self::Open { .. } => ErrorCode::Io,
             Self::Vfs(e)
@@ -116,6 +150,8 @@ impl EngineError {
     /// What to try instead, when the error suggests something.
     pub fn hint(&self) -> Option<String> {
         match self {
+            Self::InvalidBudget => Some("Use discover to check supported output and context budget ranges".into()),
+            Self::OutputLimit { .. } => Some("Increase max_output_bytes, narrow the query, or request bounded context".into()),
             Self::NoSuchSymbol { name, .. } => Some(format!(
                 "declarations are matched by exact name; `vvv search --name {name}` shows what exists"
             )),

@@ -6,6 +6,7 @@ pub mod history;
 pub mod impact;
 pub mod imports;
 pub mod move_file;
+pub mod navigate;
 pub mod outline;
 pub mod references;
 pub mod rename;
@@ -15,3 +16,5 @@ pub mod serve;
 pub mod surface;
 pub mod undo;
 pub mod wherever;
+
+pub mod context;

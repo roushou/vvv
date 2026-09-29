@@ -1,0 +1,707 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "1b7353bad9eec03cc3af003893449e52bf065083ca827100fb76d6e8529af419",
+    "outcome": "resolved",
+    "target": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/bindings.rs",
+        "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+        "span": {
+          "start": 167,
+          "end": 192
+        }
+      },
+      "name_span": {
+        "start": 178,
+        "end": 183
+      },
+      "kind": "variable"
+    },
+    "evidence": {
+      "addresses": []
+    },
+    "preview": {
+      "container": {
+        "language": "rust",
+        "declaration": {
+          "path": "src/bindings.rs",
+          "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+          "span": {
+            "start": 167,
+            "end": 192
+          }
+        },
+        "name_span": {
+          "start": 178,
+          "end": 183
+        },
+        "kind": "variable"
+      },
+      "declaration": {
+        "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+        "id": "8c4cdbccdcfa",
+        "path": "src/bindings.rs",
+        "language": "rust",
+        "span": {
+          "start": 167,
+          "end": 192
+        },
+        "start": {
+          "line": 2,
+          "column": 33
+        },
+        "end": {
+          "line": 2,
+          "column": 58
+        },
+        "kind": "declaration",
+        "text": "let (left, right) = pair;",
+        "line": "fn destructure(pair: (u8, u8)) { let (left, right) = pair; consume(right); }",
+        "symbol": {
+          "kind": "variable",
+          "name": "right",
+          "name_span": {
+            "start": 178,
+            "end": 183
+          },
+          "span": {
+            "start": 167,
+            "end": 192
+          },
+          "extent": {
+            "start": 167,
+            "end": 192
+          }
+        },
+        "role": "declaration"
+      },
+      "source": {
+        "path": "src/bindings.rs",
+        "text": "fn pairs((left, right): (u8, u8)) { consume(left); consume(right); }\nfn closure(value: u8) { let f = |value| value; consume(value); }\nfn destructure(pair: (u8, u8)) { let (left, right) = pair; consume(right); }\nuse crate::origin::Engine;\nfn annotated() { let engine: Engine; }\n",
+        "highlights": [
+          {
+            "span": {
+              "start": 0,
+              "end": 2
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 3,
+              "end": 8
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 25,
+              "end": 27
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 29,
+              "end": 31
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 36,
+              "end": 43
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 51,
+              "end": 58
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 69,
+              "end": 71
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 72,
+              "end": 79
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 87,
+              "end": 89
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 93,
+              "end": 96
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 116,
+              "end": 123
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 134,
+              "end": 136
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 137,
+              "end": 148
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 156,
+              "end": 158
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 160,
+              "end": 162
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 167,
+              "end": 170
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 193,
+              "end": 200
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 211,
+              "end": 214
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 215,
+              "end": 220
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 238,
+              "end": 240
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 241,
+              "end": 250
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 255,
+              "end": 258
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 267,
+              "end": 273
+            },
+            "kind": "type"
+          }
+        ],
+        "symbols": [
+          {
+            "kind": "function",
+            "name": "pairs",
+            "name_span": {
+              "start": 3,
+              "end": 8
+            },
+            "span": {
+              "start": 0,
+              "end": 68
+            },
+            "extent": {
+              "start": 0,
+              "end": 68
+            }
+          },
+          {
+            "kind": "function",
+            "name": "closure",
+            "name_span": {
+              "start": 72,
+              "end": 79
+            },
+            "span": {
+              "start": 69,
+              "end": 133
+            },
+            "extent": {
+              "start": 69,
+              "end": 133
+            }
+          },
+          {
+            "kind": "function",
+            "name": "destructure",
+            "name_span": {
+              "start": 137,
+              "end": 148
+            },
+            "span": {
+              "start": 134,
+              "end": 210
+            },
+            "extent": {
+              "start": 134,
+              "end": 210
+            }
+          },
+          {
+            "kind": "function",
+            "name": "annotated",
+            "name_span": {
+              "start": 241,
+              "end": 250
+            },
+            "span": {
+              "start": 238,
+              "end": 276
+            },
+            "extent": {
+              "start": 238,
+              "end": 276
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "left",
+            "name_span": {
+              "start": 10,
+              "end": 14
+            },
+            "span": {
+              "start": 9,
+              "end": 32
+            },
+            "extent": {
+              "start": 9,
+              "end": 32
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "right",
+            "name_span": {
+              "start": 16,
+              "end": 21
+            },
+            "span": {
+              "start": 9,
+              "end": 32
+            },
+            "extent": {
+              "start": 9,
+              "end": 32
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "value",
+            "name_span": {
+              "start": 80,
+              "end": 85
+            },
+            "span": {
+              "start": 80,
+              "end": 89
+            },
+            "extent": {
+              "start": 80,
+              "end": 89
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "f",
+            "name_span": {
+              "start": 97,
+              "end": 98
+            },
+            "span": {
+              "start": 93,
+              "end": 115
+            },
+            "extent": {
+              "start": 93,
+              "end": 115
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "value",
+            "name_span": {
+              "start": 102,
+              "end": 107
+            },
+            "span": {
+              "start": 101,
+              "end": 114
+            },
+            "extent": {
+              "start": 101,
+              "end": 114
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "pair",
+            "name_span": {
+              "start": 149,
+              "end": 153
+            },
+            "span": {
+              "start": 149,
+              "end": 163
+            },
+            "extent": {
+              "start": 149,
+              "end": 163
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "left",
+            "name_span": {
+              "start": 172,
+              "end": 176
+            },
+            "span": {
+              "start": 167,
+              "end": 192
+            },
+            "extent": {
+              "start": 167,
+              "end": 192
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "right",
+            "name_span": {
+              "start": 178,
+              "end": 183
+            },
+            "span": {
+              "start": 167,
+              "end": 192
+            },
+            "extent": {
+              "start": 167,
+              "end": 192
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "engine",
+            "name_span": {
+              "start": 259,
+              "end": 265
+            },
+            "span": {
+              "start": 255,
+              "end": 274
+            },
+            "extent": {
+              "start": 255,
+              "end": 274
+            }
+          }
+        ],
+        "identifiers": [
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 3,
+              "end": 8
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 10,
+              "end": 14
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 16,
+              "end": 21
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 36,
+              "end": 43
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 44,
+              "end": 48
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 51,
+              "end": 58
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 59,
+              "end": 64
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 72,
+              "end": 79
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 80,
+              "end": 85
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 97,
+              "end": 98
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 102,
+              "end": 107
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 109,
+              "end": 114
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 116,
+              "end": 123
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 124,
+              "end": 129
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 137,
+              "end": 148
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 149,
+              "end": 153
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 172,
+              "end": 176
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 178,
+              "end": 183
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 187,
+              "end": 191
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 193,
+              "end": 200
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 201,
+              "end": 206
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 222,
+              "end": 228
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 230,
+              "end": 236
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 241,
+              "end": 250
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 259,
+              "end": 265
+            }
+          },
+          {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 267,
+              "end": 273
+            }
+          }
+        ]
+      },
+      "selection": {
+        "start": 178,
+        "end": 183
+      },
+      "identifiers": [
+        {
+          "path": "src/bindings.rs",
+          "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+          "span": {
+            "start": 172,
+            "end": 176
+          }
+        },
+        {
+          "path": "src/bindings.rs",
+          "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+          "span": {
+            "start": 178,
+            "end": 183
+          }
+        },
+        {
+          "path": "src/bindings.rs",
+          "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+          "span": {
+            "start": 187,
+            "end": 191
+          }
+        }
+      ]
+    }
+  }
+}
+--- stderr ---

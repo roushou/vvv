@@ -83,3 +83,21 @@ pub(crate) use graph::Candidate;
 pub(crate) use plan::Receipt;
 pub(crate) use vfs::Overlay;
 pub(crate) use workspace::SourceFile;
+
+pub use protocol::{
+    ContentId, DefinitionCandidate, DefinitionPreview, NavigationOrigin, NavigationOutcome,
+    NavigationQuery, NavigationReply, ResolutionEvidence, SnapshotId, SourceAnchor, SymbolRef,
+    UnavailableReason,
+};
+
+pub use capabilities::semantic::{
+    NavigationCancellation, NavigationProvider, ProviderVersion, SemanticFailure, SemanticReply,
+    SemanticRequest, SemanticTarget, SourceVersion,
+};
+
+pub use protocol::{
+    ContextBudget, ContextCandidate, ContextItem, ContextOmissions, ContextOutcome, ContextQuery,
+    ContextRelation, ContextReply,
+};
+
+pub use protocol::{Capability, Discovery, DiscoveryQuery, OutputLimit};

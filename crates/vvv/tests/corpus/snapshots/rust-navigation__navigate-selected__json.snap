@@ -1,0 +1,181 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "fbf0356ca99d5fa0de7f760ad06869041d016ebbb0883a351303b53b3a9a7664",
+    "outcome": "resolved",
+    "target": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/other.rs",
+        "content": "7d5511427a8ff89cdc470bad81d45a4c7ad1752e9216998f8a1419b469b23d48",
+        "span": {
+          "start": 0,
+          "end": 18
+        }
+      },
+      "name_span": {
+        "start": 11,
+        "end": 17
+      },
+      "kind": "struct"
+    },
+    "evidence": {
+      "addresses": [
+        {
+          "package": "navigation",
+          "path": [
+            "other",
+            "Engine"
+          ]
+        }
+      ]
+    },
+    "preview": {
+      "container": {
+        "language": "rust",
+        "declaration": {
+          "path": "src/other.rs",
+          "content": "7d5511427a8ff89cdc470bad81d45a4c7ad1752e9216998f8a1419b469b23d48",
+          "span": {
+            "start": 0,
+            "end": 18
+          }
+        },
+        "name_span": {
+          "start": 11,
+          "end": 17
+        },
+        "kind": "struct"
+      },
+      "declaration": {
+        "content": "7d5511427a8ff89cdc470bad81d45a4c7ad1752e9216998f8a1419b469b23d48",
+        "id": "03656afe22d7",
+        "path": "src/other.rs",
+        "language": "rust",
+        "span": {
+          "start": 0,
+          "end": 18
+        },
+        "start": {
+          "line": 0,
+          "column": 0
+        },
+        "end": {
+          "line": 0,
+          "column": 18
+        },
+        "kind": "declaration",
+        "text": "pub struct Engine;",
+        "line": "pub struct Engine;",
+        "symbol": {
+          "kind": "struct",
+          "name": "Engine",
+          "name_span": {
+            "start": 11,
+            "end": 17
+          },
+          "span": {
+            "start": 0,
+            "end": 18
+          },
+          "extent": {
+            "start": 0,
+            "end": 18
+          },
+          "visibility": {
+            "span": {
+              "start": 0,
+              "end": 3
+            },
+            "text": "pub"
+          }
+        },
+        "role": "declaration"
+      },
+      "source": {
+        "path": "src/other.rs",
+        "text": "pub struct Engine;\n",
+        "highlights": [
+          {
+            "span": {
+              "start": 0,
+              "end": 3
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 4,
+              "end": 10
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 11,
+              "end": 17
+            },
+            "kind": "type"
+          }
+        ],
+        "symbols": [
+          {
+            "kind": "struct",
+            "name": "Engine",
+            "name_span": {
+              "start": 11,
+              "end": 17
+            },
+            "span": {
+              "start": 0,
+              "end": 18
+            },
+            "extent": {
+              "start": 0,
+              "end": 18
+            },
+            "visibility": {
+              "span": {
+                "start": 0,
+                "end": 3
+              },
+              "text": "pub"
+            }
+          }
+        ],
+        "identifiers": [
+          {
+            "path": "src/other.rs",
+            "content": "7d5511427a8ff89cdc470bad81d45a4c7ad1752e9216998f8a1419b469b23d48",
+            "span": {
+              "start": 11,
+              "end": 17
+            }
+          }
+        ]
+      },
+      "selection": {
+        "start": 11,
+        "end": 17
+      },
+      "identifiers": [
+        {
+          "path": "src/other.rs",
+          "content": "7d5511427a8ff89cdc470bad81d45a4c7ad1752e9216998f8a1419b469b23d48",
+          "span": {
+            "start": 11,
+            "end": 17
+          }
+        }
+      ]
+    }
+  }
+}
+--- stderr ---

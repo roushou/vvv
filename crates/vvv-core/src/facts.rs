@@ -13,6 +13,26 @@ use crate::text::Span;
 
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Facts {
+    /// Tokens whose context permits module/type resolution without local inference.
+    #[serde(default)]
+    pub navigation: Vec<Span>,
+    /// Navigation tokens in the type namespace.
+    #[serde(default)]
+    pub navigation_types: Vec<Span>,
+    #[serde(default)]
+    pub lexical: Vec<crate::LexicalBinding>,
+    /// Tokens for which all enclosing lexical binding forms are understood.
+    #[serde(default)]
+    pub lexical_tokens: Vec<Span>,
+    #[serde(default)]
+    pub named_imports: Vec<crate::NamedImport>,
+    #[serde(default)]
+    pub named_modules: bool,
+    #[serde(default)]
+    pub qualified_imports: Vec<crate::QualifiedImport>,
+    /// Declarations exported under a different name (for example a default export).
+    #[serde(default)]
+    pub non_named_exports: Vec<Span>,
     pub symbols: Vec<Symbol>,
     pub imports: Vec<ImportRef>,
     pub highlights: Vec<Highlight>,
@@ -41,6 +61,21 @@ impl Facts {
             highlights,
             ..Self::default()
         }
+    }
+
+    /// Navigation-only declarations do not change search or mutation scope.
+    pub fn navigation_symbols(&self) -> impl Iterator<Item = &Symbol> {
+        self.symbols.iter().chain(
+            self.lexical
+                .iter()
+                .map(|binding| &binding.symbol)
+                .filter(|s| {
+                    !self
+                        .symbols
+                        .iter()
+                        .any(|d| d.name_span == s.name_span && d.kind == s.kind)
+                }),
+        )
     }
 
     /// Record an identifier token. Tokens are expected in source order.

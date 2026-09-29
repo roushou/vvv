@@ -1,0 +1,143 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "f14f5e2a3dbb979cf6d36779644081f53b3d1404482aa19582e57ef9c387ea7b",
+    "outcome": "resolved",
+    "items": [
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 56,
+              "end": 116
+            }
+          },
+          "name_span": {
+            "start": 67,
+            "end": 70
+          },
+          "kind": "struct"
+        },
+        "relation": "definition",
+        "via": null,
+        "excerpt": {
+          "path": "src/consumer.rs",
+          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+          "span": {
+            "start": 56,
+            "end": 116
+          }
+        },
+        "start": {
+          "line": 3,
+          "column": 0
+        },
+        "text": "pub struct App {\n    engine: Engine,\n    runtime: Runtime,\n}",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/origin.rs",
+            "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
+            "span": {
+              "start": 0,
+              "end": 63
+            }
+          },
+          "name_span": {
+            "start": 30,
+            "end": 36
+          },
+          "kind": "struct"
+        },
+        "relation": "referenced_definition",
+        "via": {
+          "path": "src/consumer.rs",
+          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+          "span": {
+            "start": 85,
+            "end": 91
+          }
+        },
+        "excerpt": {
+          "path": "src/origin.rs",
+          "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
+          "span": {
+            "start": 0,
+            "end": 63
+          }
+        },
+        "start": {
+          "line": 0,
+          "column": 0
+        },
+        "text": "/// Runtime state.\npub struct Engine {\n    pub running: bool,\n}",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 317,
+              "end": 380
+            }
+          },
+          "name_span": {
+            "start": 322,
+            "end": 325
+          },
+          "kind": "impl"
+        },
+        "relation": "reference",
+        "via": {
+          "path": "src/consumer.rs",
+          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+          "span": {
+            "start": 322,
+            "end": 325
+          }
+        },
+        "excerpt": {
+          "path": "src/consumer.rs",
+          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+          "span": {
+            "start": 317,
+            "end": 380
+          }
+        },
+        "start": {
+          "line": 13,
+          "column": 0
+        },
+        "text": "impl App { pub fn method(engine: Engine) -> Engine { engine } }",
+        "complete": true
+      }
+    ],
+    "omissions": {
+      "item_limit": 0,
+      "byte_limit": 0,
+      "lookup_limit": 0,
+      "file_limit": 0,
+      "ambiguous": 0,
+      "unavailable": 0,
+      "no_container": 0
+    },
+    "references_by_name": true
+  }
+}
+--- stderr ---

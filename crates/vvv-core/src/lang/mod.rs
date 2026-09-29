@@ -69,18 +69,48 @@ impl fmt::Debug for LanguageId {
 /// live. A language module contributes one of these beside its semantics.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Grammar {
+    pub pattern_containers: &'static [&'static str],
+    pub qualified_imports: &'static [crate::QualifiedImportRule],
+    pub bindings: &'static [crate::BindingRule],
+    pub lexical_qualified: &'static [&'static str],
+    pub lexical_boundaries: &'static [&'static str],
+    pub lexical_containers: &'static [&'static str],
+    pub lexical_barriers: &'static [&'static str],
+    pub named_imports: &'static [crate::NamedImportRule],
+    pub named_modules: bool,
+    /// Modifiers that export a declaration under a name other than its own.
+    pub non_named_exports: &'static [&'static str],
     pub symbols: &'static [SymbolRule],
     pub identifiers: &'static [&'static str],
     pub imports: ImportGrammar,
     pub highlights: &'static [HighlightRule],
+    /// Identifier kinds that can be followed through module/type bindings.
+    pub navigation_types: &'static [&'static str],
+    /// Ancestors requiring lexical or receiver information not supplied yet.
+    pub navigation_barriers: &'static [&'static str],
+    /// Child fields on an ancestor that introduce unsupported generic bindings.
+    pub navigation_bindings: &'static [&'static str],
 }
 
 impl Grammar {
     pub const EMPTY: Self = Self {
+        pattern_containers: &[],
+        qualified_imports: &[],
+        bindings: &[],
+        lexical_qualified: &[],
+        lexical_boundaries: &[],
+        lexical_containers: &[],
+        lexical_barriers: &[],
+        named_imports: &[],
+        named_modules: false,
+        non_named_exports: &[],
         symbols: &[],
         identifiers: &[],
         imports: ImportGrammar::EMPTY,
         highlights: &[],
+        navigation_types: &[],
+        navigation_barriers: &[],
+        navigation_bindings: &[],
     };
 }
 

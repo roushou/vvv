@@ -21,11 +21,38 @@ use vvv_engine::report::{Document, Options, View};
 use Action as A;
 use Dispatch::Run;
 
-/// The search screen has no keys of its own: every key is a panel's, or the
-/// default for the panel's kind.
+/// Browsing history and refresh are available from every search panel.
 const MODE: Layer<Action> = Layer {
     name: "Search",
-    bindings: &[],
+    bindings: &[
+        Keybinding {
+            triggers: &[Trigger::Key(Key::alt_left())],
+            dispatch: Run(A::BrowseBack),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "previous browsing location",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::alt_right())],
+            dispatch: Run(A::BrowseForward),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "next browsing location",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('r'))],
+            dispatch: Run(A::Refresh),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "refresh search after source changes",
+            },
+        },
+    ],
 };
 
 /// The query: a name, a pattern, or filters.
@@ -161,14 +188,14 @@ const RESULTS: Layer<Action> = Layer {
         },
         Keybinding {
             triggers: &[Trigger::Key(Key::char('o'))],
-            dispatch: Run(A::Jump),
+            dispatch: Run(A::Follow),
             when: When::Always,
             legend: Legend {
                 bar: Some(Bar {
                     keys: "o",
                     word: "declaration",
                 }),
-                help: "jump to the declaration the row names",
+                help: "follow the exact reference to its definition",
             },
         },
         Keybinding {
@@ -299,6 +326,18 @@ const CONTEXT: Layer<Action> = Layer {
     name: "Search",
     bindings: &[
         Keybinding {
+            triggers: &[Trigger::Key(Key::enter()), Trigger::Key(Key::char('o'))],
+            dispatch: Run(A::Follow),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "⏎",
+                    word: "follow",
+                }),
+                help: "pick an identifier to follow",
+            },
+        },
+        Keybinding {
             triggers: &[
                 Trigger::Key(Key::esc()),
                 Trigger::Key(Key::left()),
@@ -409,6 +448,11 @@ impl<'a> SearchView<'a> {
             ],
         )
     }
+    pub(crate) fn definition_rows(&self, area: Rect) -> usize {
+        let (_, body) = self.header().areas(Region::new(area));
+        ((body.rect().height / 2).min(16)).saturating_sub(2) as usize
+    }
+
     fn layout(&self, area: Region) -> Vec<Region> {
         let (top, body) = self.header().areas(area);
         let (left, right) = body.columns(self.split);
@@ -437,12 +481,7 @@ impl<'a> SearchView<'a> {
         let declaration = s.body.declaration();
         let title = Line::from(Span::styled("definition", t.title));
         let mut rows = Vec::new();
-        let mut empty = if s.results.body_declaration().is_some() || s.results.definition_pending()
-        {
-            ""
-        } else {
-            "No definition available"
-        };
+        let mut empty = s.body.message.as_deref().unwrap_or("");
         if let Some(d) = declaration
             && let Some(preview) = &s.body.preview
             && preview.path == d.path
@@ -538,6 +577,12 @@ impl<'a> SearchView<'a> {
                 right.push(Span::styled(files.to_string(), t.dim));
             }
         }
+        if s.stale {
+            right.push(Span::styled("  stale · ctrl+r refresh", t.warning));
+        }
+        if matches!(s.page, super::browse::BrowsePage::Definition(_)) {
+            right.push(Span::styled("  definition", t.dim));
+        }
         let placeholder = if s.query.is_empty() && !focused {
             Span::styled("type to search", t.dim)
         } else {
@@ -576,11 +621,11 @@ impl<'a> SearchView<'a> {
                     .map_or_else(|| (Vec::new(), Vec::new()), |i| Self::impact_rows(t, i)),
                 Relation::Definition => s.results.definition.as_ref().map_or_else(
                     || (Vec::new(), Vec::new()),
-                    |e| Self::present(t, &*view, &Answer::Explain(e.clone()), width),
+                    |e| Self::present(t, &*view, &Answer::Explain((**e).clone()), width),
                 ),
                 Relation::Deps => s.results.deps.as_ref().map_or_else(
                     || (Vec::new(), Vec::new()),
-                    |d| Self::present(t, &*view, &Answer::Deps(d.clone()), width),
+                    |d| Self::present(t, &*view, &Answer::Deps((**d).clone()), width),
                 ),
                 _ => match &s.results.references {
                     Some(r) => {
@@ -828,8 +873,9 @@ mod tests {
             assert_eq!(before[3].rect().width, before[1].rect().width);
             search.results.cursor.index = 1;
             assert_eq!(before, layout(&search));
-            search.results.matches[1].text = "unrelated".into();
-            assert!(search.results.body_declaration().is_none());
+            std::sync::Arc::make_mut(&mut search.results.matches)[1].text = "unrelated".into();
+            search.selection_changed();
+            assert!(search.body.pending().is_some());
             assert_eq!(before, layout(&search));
         }
     }

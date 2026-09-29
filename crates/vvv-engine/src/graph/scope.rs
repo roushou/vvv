@@ -78,6 +78,24 @@ impl Resolved {
     }
 }
 
+/// Explicit/local bindings precede glob-opened modules. Keeping the two tiers
+/// separate lets navigation respect language binding precedence.
+pub(super) struct Bindings {
+    pub direct: Vec<Address>,
+    pub opened: Vec<Address>,
+    pub explicit: bool,
+}
+
+impl Bindings {
+    fn explicit(direct: Vec<Address>) -> Self {
+        Self {
+            direct,
+            opened: vec![],
+            explicit: true,
+        }
+    }
+}
+
 impl Scope {
     /// What `file` sees, read off its fragment's edges.
     pub fn of(ns: &Namespace, file: &std::path::Path, fragment: &Fragment) -> Self {
@@ -110,6 +128,56 @@ impl Scope {
             opened,
             paths,
             unresolved,
+        }
+    }
+
+    /// Every address supported by this occurrence's module bindings.
+    /// Unlike rename classification, navigation preserves competing imports.
+    pub(super) fn navigation(&self, span: Span, name: &str, fragment: &Fragment) -> Bindings {
+        if let Some(resolved) = self
+            .paths
+            .iter()
+            .filter(|r| r.span.contains(&span))
+            .min_by_key(|r| r.span.end - r.span.start)
+        {
+            if let Some(index) = resolved.named_at(span.start) {
+                let prefix = resolved.path.prefix(index);
+                let imported: Vec<_> = fragment
+                    .imports()
+                    .filter(|e| e.import.binding() == prefix.first())
+                    .filter_map(|e| {
+                        e.address()
+                            .map(|a| a.extend(prefix.segments[1..].iter().cloned()))
+                    })
+                    .collect();
+                if !imported.is_empty() {
+                    return Bindings::explicit(imported);
+                }
+                return Bindings::explicit(
+                    self.ns.resolve(&self.file, &prefix).into_iter().collect(),
+                );
+            }
+            return Bindings::explicit(vec![resolved.address.clone()]);
+        }
+        if self.unresolved.iter().any(|(path, _)| path.contains(&span)) {
+            return Bindings::explicit(vec![]);
+        }
+        let bound: Vec<_> = fragment
+            .imports()
+            .filter(|e| e.import.binding().is_some_and(|b| b.as_str() == name))
+            .collect();
+        let explicit = !bound.is_empty();
+        let mut direct: Vec<_> = bound
+            .into_iter()
+            .filter_map(|e| e.address().cloned())
+            .collect();
+        if let Some(module) = &self.module {
+            direct.push(module.join(name));
+        }
+        Bindings {
+            direct,
+            opened: self.opened.iter().map(|a| a.join(name)).collect(),
+            explicit,
         }
     }
 

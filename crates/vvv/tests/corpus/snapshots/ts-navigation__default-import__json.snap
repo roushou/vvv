@@ -1,0 +1,189 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "16405a187d2caa5907f049687eda46273af3de7e51a783d52e4325f99e6deb3f",
+    "outcome": "resolved",
+    "target": {
+      "language": "typescript",
+      "declaration": {
+        "path": "src/default.ts",
+        "content": "43b550a61a81b09d367686b6fbde10e80ad8fc8bf1177d30c2cc7418ec95ed80",
+        "span": {
+          "start": 0,
+          "end": 37
+        }
+      },
+      "name_span": {
+        "start": 21,
+        "end": 34
+      },
+      "kind": "class"
+    },
+    "evidence": {
+      "addresses": [
+        {
+          "package": "",
+          "path": [
+            "src",
+            "default.ts",
+            "default"
+          ]
+        }
+      ]
+    },
+    "preview": {
+      "container": {
+        "language": "typescript",
+        "declaration": {
+          "path": "src/default.ts",
+          "content": "43b550a61a81b09d367686b6fbde10e80ad8fc8bf1177d30c2cc7418ec95ed80",
+          "span": {
+            "start": 0,
+            "end": 37
+          }
+        },
+        "name_span": {
+          "start": 21,
+          "end": 34
+        },
+        "kind": "class"
+      },
+      "declaration": {
+        "content": "43b550a61a81b09d367686b6fbde10e80ad8fc8bf1177d30c2cc7418ec95ed80",
+        "id": "94716306feb1",
+        "path": "src/default.ts",
+        "language": "typescript",
+        "span": {
+          "start": 15,
+          "end": 37
+        },
+        "start": {
+          "line": 0,
+          "column": 15
+        },
+        "end": {
+          "line": 0,
+          "column": 37
+        },
+        "kind": "declaration",
+        "text": "class DefaultEngine {}",
+        "line": "export default class DefaultEngine {}",
+        "symbol": {
+          "kind": "class",
+          "name": "DefaultEngine",
+          "name_span": {
+            "start": 21,
+            "end": 34
+          },
+          "span": {
+            "start": 15,
+            "end": 37
+          },
+          "extent": {
+            "start": 0,
+            "end": 37
+          },
+          "visibility": {
+            "span": {
+              "start": 0,
+              "end": 14
+            },
+            "text": "export default"
+          }
+        },
+        "role": "declaration"
+      },
+      "source": {
+        "path": "src/default.ts",
+        "text": "export default class DefaultEngine {}\n",
+        "highlights": [
+          {
+            "span": {
+              "start": 0,
+              "end": 6
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 7,
+              "end": 14
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 15,
+              "end": 20
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 21,
+              "end": 34
+            },
+            "kind": "type"
+          }
+        ],
+        "symbols": [
+          {
+            "kind": "class",
+            "name": "DefaultEngine",
+            "name_span": {
+              "start": 21,
+              "end": 34
+            },
+            "span": {
+              "start": 15,
+              "end": 37
+            },
+            "extent": {
+              "start": 0,
+              "end": 37
+            },
+            "visibility": {
+              "span": {
+                "start": 0,
+                "end": 14
+              },
+              "text": "export default"
+            }
+          }
+        ],
+        "identifiers": [
+          {
+            "path": "src/default.ts",
+            "content": "43b550a61a81b09d367686b6fbde10e80ad8fc8bf1177d30c2cc7418ec95ed80",
+            "span": {
+              "start": 21,
+              "end": 34
+            }
+          }
+        ]
+      },
+      "selection": {
+        "start": 21,
+        "end": 34
+      },
+      "identifiers": [
+        {
+          "path": "src/default.ts",
+          "content": "43b550a61a81b09d367686b6fbde10e80ad8fc8bf1177d30c2cc7418ec95ed80",
+          "span": {
+            "start": 21,
+            "end": 34
+          }
+        }
+      ]
+    }
+  }
+}
+--- stderr ---

@@ -8,6 +8,11 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ErrorCode {
+    OutputLimit,
+    /// The caller cancelled the operation.
+    Cancelled,
+    /// Resolution stopped before a complete answer was available.
+    Incomplete,
     /// The request could not be read: not JSON, or not a known command.
     BadRequest,
     /// A query with none of pattern, kind, symbol, name.
@@ -49,6 +54,8 @@ pub enum ErrorCode {
 /// A failed request, as the wire carries it.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Failure {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub output_limit: Option<OutputLimit>,
     pub code: ErrorCode,
     pub message: String,
     /// What to try instead, when there is something.
@@ -66,6 +73,7 @@ impl Failure {
             message: message.into(),
             hint: None,
             recovery: None,
+            output_limit: None,
         }
     }
 
@@ -85,6 +93,16 @@ impl From<&EngineError> for Failure {
         let mut failure = Failure::new(error.code(), format!("{error:#}"));
         if let EngineError::Recovery(recovery) = error {
             failure = failure.with_recovery(recovery.details.clone());
+        }
+        if let EngineError::OutputLimit {
+            max_bytes,
+            required_bytes,
+        } = error
+        {
+            failure.output_limit = Some(OutputLimit {
+                max_bytes: *max_bytes,
+                required_bytes: *required_bytes,
+            });
         }
         match error.hint() {
             Some(hint) => failure.with_hint(hint),
@@ -164,6 +182,9 @@ mod tests {
     #[test]
     fn every_code_keeps_its_wire_spelling() {
         for code in [
+            ErrorCode::OutputLimit,
+            ErrorCode::Cancelled,
+            ErrorCode::Incomplete,
             ErrorCode::BadRequest,
             ErrorCode::BadQuery,
             ErrorCode::BadPattern,
@@ -184,6 +205,9 @@ mod tests {
             ErrorCode::RecoveryFailed,
         ] {
             let documented = match code {
+                ErrorCode::OutputLimit => "output_limit",
+                ErrorCode::Cancelled => "cancelled",
+                ErrorCode::Incomplete => "incomplete",
                 ErrorCode::BadRequest => "bad_request",
                 ErrorCode::BadQuery => "bad_query",
                 ErrorCode::BadPattern => "bad_pattern",
@@ -210,4 +234,10 @@ mod tests {
             );
         }
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct OutputLimit {
+    pub max_bytes: usize,
+    pub required_bytes: usize,
 }

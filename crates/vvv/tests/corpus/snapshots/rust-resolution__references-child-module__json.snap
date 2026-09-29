@@ -11,6 +11,7 @@ exit 0
     "name": "child",
     "declarations": [
       {
+        "content": "e29ea56499f48fa86bfb98c1c9c13a583280a4c9bebf9a6f8561007325f30d97",
         "id": "ae9c33bce5d4",
         "path": "src/a.rs",
         "language": "rust",
@@ -64,6 +65,7 @@ exit 0
     ],
     "occurrences": [
       {
+        "content": "e29ea56499f48fa86bfb98c1c9c13a583280a4c9bebf9a6f8561007325f30d97",
         "id": "0a8bde66ba9e",
         "path": "src/a.rs",
         "language": "rust",
@@ -87,6 +89,7 @@ exit 0
         "reason": "declaring"
       },
       {
+        "content": "088949e453189839e0a8c137aedb9266d1a7f27a4138543c750097bb372e516f",
         "id": "301ba1b1c7d5",
         "path": "src/chained.rs",
         "language": "rust",
@@ -110,6 +113,7 @@ exit 0
         "reason": "path"
       },
       {
+        "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
         "id": "2b4537a7afe9",
         "path": "src/consumer.rs",
         "language": "rust",
@@ -133,6 +137,7 @@ exit 0
         "reason": "path"
       },
       {
+        "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
         "id": "69eff325e3a9",
         "path": "src/consumer.rs",
         "language": "rust",
@@ -156,6 +161,7 @@ exit 0
         "reason": "path"
       },
       {
+        "content": "a57b78d505893391ffaf83410b468409cfced592c3a57d761b1d1e1e8cd6ad0f",
         "id": "2b379fdc9ac7",
         "path": "src/nested.rs",
         "language": "rust",

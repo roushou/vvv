@@ -1,0 +1,13 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● struct Engine   src/origin.rs:2:1
+
+/// Runtime state.
+pub struct Engine {
+    pub running: bool,
+}
+--- stderr ---

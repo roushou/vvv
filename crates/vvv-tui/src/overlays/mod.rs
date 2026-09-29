@@ -1,9 +1,11 @@
 //! Overlay questions, selection, and typed rendering.
+pub(crate) mod navigation;
 pub(crate) mod screen;
 use crate::modes::search::Relation;
 use crate::modes::search::{Search, query::Filter};
 use crate::render::Painter;
 use crate::screen::Screen;
+use navigation::NavigationPicker;
 use ratatui::{buffer::Buffer, layout::Rect};
 use screen::{
     CONFIRM_SCREEN, ConfirmBox, HELP_SCREEN, HelpBox, MENU_SCREEN, MenuBox, REPORT_SCREEN,
@@ -17,6 +19,7 @@ use vvv_engine::{RelPath, SymbolKind};
 #[derive(Debug, Clone)]
 pub enum Overlay {
     Menu(Menu),
+    Navigation(NavigationPicker),
     Confirm(Confirm),
     /// The key list: the screen the user was in and the panel that had the
     /// focus, kept so the list stays about them; `scroll` is how many rows
@@ -71,6 +74,7 @@ impl Overlay {
 
     pub fn screen(&self) -> &'static Screen {
         match self {
+            Self::Navigation(_) => &screen::NAVIGATION_SCREEN,
             Self::Menu(_) => &MENU_SCREEN,
             Self::Confirm(_) => &CONFIRM_SCREEN,
             Self::Help { .. } => &HELP_SCREEN,
@@ -79,6 +83,9 @@ impl Overlay {
     }
     pub fn render(&self, painter: Painter, area: Rect, buf: &mut Buffer) {
         match self {
+            Self::Navigation(picker) => screen::NavigationBox::new(picker, painter)
+                .screen()
+                .render(area, buf),
             Self::Menu(menu) => MenuBox::new(menu, painter).screen().render(area, buf),
             Self::Confirm(confirm) => ConfirmBox::new(confirm, painter).screen().render(area, buf),
             Self::Help {

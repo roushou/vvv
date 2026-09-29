@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● variable value   src/lexical.rs:5:7
+
+let value = 1;
+--- stderr ---

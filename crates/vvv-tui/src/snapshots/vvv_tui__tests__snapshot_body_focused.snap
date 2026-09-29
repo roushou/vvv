@@ -21,4 +21,4 @@ expression: "FrameFixture::new(&m).render()"
 │                                           ││                                           │
 │                                           ││                                           │
 └───────────────────────────────────────────┘└───────────────────────────────────────────┘
- search ← results  < > resize  j/k scroll  d/u page  e editor  v view
+ search ⏎ follow  ← results  < > resize  j/k scroll  d/u page  e editor  v view

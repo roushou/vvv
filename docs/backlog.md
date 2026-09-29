@@ -79,3 +79,22 @@ specified in [the guide](guide.md#rename) and covered by the ignored
 Resolution must retain provenance, visibility, and cycle handling across files.
 Fragment, references, deps, and explain must agree on the correct Rust target;
 references must not discard valid resolutions to match an unresolved edge.
+
+## Navigation coverage
+
+Extend navigation coverage for struct/match patterns, receiver-dependent methods,
+inferred targets, Rust inline modules and qualified type paths, TypeScript local
+hoisting, wildcard exports, arbitrary namespace-member expressions, and package/path
+aliases. External/generated source previews need dedicated source-provider support.
+
+Definition previews retain complete files for interactive browsing; the context
+capability provides bounded excerpts. Measure before introducing dependency-specific
+result caching or changing the interactive preview protocol.
+
+## Context and agent interface coverage
+
+Context incoming scans are bounded and same-spelling only. Alias-complete
+references, caller/callee classification, structural test identification, signature
+versus body expansion, and pagination need dedicated evidence and protocol contracts.
+Discovery lists command metadata; published JSON Schemas and an MCP adapter remain
+separate work. Session output budgets do not provide cancellation or execution limits.

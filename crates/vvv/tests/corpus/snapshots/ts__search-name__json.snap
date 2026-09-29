@@ -13,6 +13,7 @@ exit 0
     },
     "matches": [
       {
+        "content": "acd0355551d105e0ae98250b0280e14d272ce398ab5b850caec828d77b4a70fe",
         "id": "a0486a2d06cd",
         "path": "src/geometry/point.ts",
         "language": "typescript",

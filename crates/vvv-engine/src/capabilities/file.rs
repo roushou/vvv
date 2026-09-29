@@ -19,6 +19,9 @@ pub struct File {
     /// Declarations from the same source snapshot as the text and highlights.
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub symbols: Vec<Symbol>,
+    /// Versioned identifier occurrences from this exact source.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub identifiers: Vec<crate::SourceAnchor>,
 }
 
 impl File {
@@ -55,7 +58,7 @@ impl FileQuery {
     ) -> Result<File, EngineError> {
         let path = self.path.as_path();
         let file = workspace.load(path)?;
-        let (highlights, symbols) = match languages.for_path(path) {
+        let (highlights, symbols, identifiers) = match languages.for_path(path) {
             Some(language) => {
                 let facts = language
                     .facts(file.text())
@@ -63,15 +66,24 @@ impl FileQuery {
                         path: path.into(),
                         source,
                     })?;
-                (facts.highlights, facts.symbols)
+                let identifiers = facts
+                    .tokens()
+                    .map(|(_, _, span)| crate::SourceAnchor {
+                        path: file.path().into(),
+                        content: file.content_id(),
+                        span,
+                    })
+                    .collect();
+                (facts.highlights, facts.symbols, identifiers)
             }
-            None => (Vec::new(), Vec::new()),
+            None => (Vec::new(), Vec::new(), Vec::new()),
         };
         Ok(File {
             path: file.path().into(),
             text: file.text().to_owned(),
             highlights,
             symbols,
+            identifiers,
         })
     }
 }

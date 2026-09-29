@@ -104,6 +104,7 @@ vvv outline src/plan/mod.rs             # what the file declares, with visibilit
 vvv references Plan                     # every token spelling Plan, judged like a rename would
 vvv where Plan --from src/lib.rs        # where Plan is declared and the `use` to write in lib.rs
 vvv deps src/plan/mod.rs                # what the file imports, and who imports it
+vvv navigate src/plan/mod.rs:49:12      # follow this identifier to its definition
 vvv explain src/plan/mod.rs:49:12       # what is at that position: declaration, module, reach
 ```
 
@@ -149,6 +150,36 @@ address a `pub use` offers it at:
   crates/vvv-core/src/answer/mod.rs:11    Reach
   crates/vvv-core/src/lib.rs:46           Reach ReachKind Semantics VisibilityRule
 ```
+
+`navigate path:line[:column]` follows the identifier at that position and shows its
+captured declaration source. Coordinates are 1-based. For several possible targets,
+use `--select 2` or `--select <match-id>` to choose a candidate. `--json` includes
+versioned target anchors and the definition source; `vvv serve` accepts the same
+capability as a `navigate` request.
+
+Rust navigation follows module-level imports, aliases, re-exports, and type uses
+in fields, function parameters, and return types. It also follows simple function
+parameters, generic type parameters, `let` locals, tuple/slice bindings, closure
+parameters and captures, and supported local type/function items. Explicit type
+annotations inside supported function bodies can follow module imports. Inner bindings shadow outer ones; a `let` initializer still sees the previous
+binding. TypeScript follows exact named/default imports, namespace-qualified type
+uses, aliases, named re-exports, local export lists, generic type parameters, and
+simple function or method parameters. Importing one name does not expose other names in that module.
+Declaration tokens preview themselves; enum variants preview their enclosing enum.
+
+Complex patterns (including struct patterns and match arms), receiver-dependent
+methods, inferred targets, inline modules, and unmodeled lexical scopes remain
+unsupported. TypeScript wildcard exports, package/path aliases, arbitrary namespace
+member expressions, and local-variable hoisting are not resolved by this syntax path. A TypeScript default export is not treated as a named export.
+Missing identifiers, unresolved names, external source, cycles, and ambiguous
+definitions have distinct outcomes. A source changed since a search produces a
+stale error; repeat the search to obtain current locations.
+
+The CLI and TUI use syntax resolution. Library hosts can supply a versioned
+`NavigationProvider` through `NavigationQuery::execute_with` for unresolved or
+unsupported occurrences. This API does not launch a language server; hosts provide
+that adapter and its position-encoding conversion. See the
+[provider contract](protocol.md#semantic-navigation-providers).
 
 `explain` takes an editor-style `path:line[:column]`, 1-based, and shows the enclosing
 declaration's line with a caret under its name, then the same `●` line `search` prints,
@@ -248,6 +279,47 @@ a glob of `X` and `X` itself are different things). Files the layout cannot plac
 all — a crate's integration tests — are counted as `not placed` rather than judged.
 Judgement is per file, not per scope, so two test modules importing the same name
 count as redundant.
+
+## Gathering focused context
+
+`context` follows an exact occurrence and returns source excerpts with directly
+related definitions. It uses the same syntax-based navigation as the definition
+pane, with no language-server installation or process.
+
+```console
+vvv context src/engine.rs:20:12
+vvv context src/engine.rs:20:12 --max-bytes 8192 --max-items 8 --json
+vvv context src/engine.rs:20:12 --references --max-files 32 --max-lookups 64
+```
+
+Results start with the declaration (including attached documentation), then its
+nearest enclosing declaration and definitions referenced in its body. Repeated
+targets are included once. Each item carries the relationship, exact source range,
+source version, and the occurrence establishing the relationship. `--select`
+resolves an ambiguous starting occurrence using the same candidate IDs as `navigate`.
+
+`--references` also scans same-spelling occurrences and includes an enclosing
+declaration only when navigation confirms that it refers to the selected target.
+A confirmed reference under a `test` or `tests` path component is labeled as such;
+this is evidence of a related test location, not proof of test coverage. Aliases,
+unresolved references, and dynamic calls are not a complete caller graph.
+
+The defaults are 16,384 compact JSON result bytes, 12 items, 64 additional
+navigation lookups, and 64 files for incoming references. Limits are deterministic;
+JSON escaping counts against the byte budget. Excerpts may be shortened at UTF-8
+boundaries, with `complete: false` and the exact returned range. Omission counts
+report byte/item/work limits and references that could not be confirmed. Request
+an item's versioned target with a larger budget to expand it. The byte budget
+excludes the response envelope and human-output styling. It is not a memory limit
+or execution deadline. Ambiguous candidates are never silently removed to fit;
+an oversized candidate set returns `output_limit`.
+
+`vvv discover --json` lists this build's languages, commands, parameter names, and
+context/output limits. It does not scan the workspace. In `serve`, the same command
+is `{ "command": "discover" }`; a call may set `max_output_bytes` to limit its JSON
+result. An oversized read-only result returns a structured `output_limit` error.
+For `context`, this limit also narrows its excerpt budget. Mutation commands reject
+this option before running, so an output limit cannot hide a successful write.
 
 ## Choosing what a command acts on
 
@@ -572,37 +644,59 @@ switches the rows between the compact list and the full report's result rows —
 search results, a rename's verdict rows, a move's paths and notices. CLI flag
 hints stay in the CLI; the picker shows its own actions.
 
-When the results include declarations, a **definition preview** pane below the list
-shows the selected declaration, including its signature and body, without line numbers or a
-gutter. The declaration's outer indentation is removed; indentation within its body
-is preserved and stays fixed while scrolling. Code uses a fixed left inset.
-Selecting an enum variant previews the whole containing enum and highlights the
-variant's name; `e` opens the enum.
-If no enclosing enum is available, the variant itself is shown.
-A use previews its unique same-named declaration. When names collide, the preview
-asks the engine to check each candidate against the row's imports and re-exports.
-A same-named struct elsewhere in the workspace or an enum variant does not hide
-the definition used by an import, field, function parameter, or return type.
-Only a single confirmed target is shown. In an entered scope,
-only resolved references preview the subject. Rows without a known target show
-“No definition available”. The pane fills the left
-column's width and half its available height, capped at 16 rows including borders.
-That space stays reserved while navigating or loading, even for short bodies.
-When a selection needs another file, the previous definition and scroll
-position remain visible until the new source is ready, then change together. The
-first preview stays empty while loading; no loading message flashes between rows.
-The pane title is `definition`. `4` focuses the definition preview; `tab`/`shift-tab`
-include it in the panel cycle. Use `j`/`k` or arrows to scroll, `d`/`u` or Page Down/Up to page, and `g`/`G` or Home/End to
-reach the top/bottom. `esc` returns to results; `e` opens the declaration in the
-editor. Selecting another row resets the scroll position once the new definition
-is ready.
+A **definition preview** pane below a nonempty results list shows the selected
+occurrence's resolved declaration, including its signature and body, without line
+numbers or a gutter. The declaration's outer indentation is removed; indentation
+within its body is preserved and stays fixed while scrolling. Code uses a fixed
+left inset. Selecting an enum variant previews the containing enum and highlights
+the variant's name; `e` opens the selected variant's declaration line.
+
+The engine resolves the exact source occurrence. A same-named struct elsewhere or
+an enum variant does not hide a definition reached through imports and re-exports.
+Several possible targets show “Several definitions match”; unsupported contexts
+show “Cannot follow this reference yet”. Other outcomes distinguish a missing
+identifier, unresolved name, external source, or cyclic imports. These are the same
+outcomes exposed by `navigate`.
+
+The pane fills the left column's width and half its available height, capped at
+16 rows including borders. Space stays reserved while navigating or loading, even
+for short bodies. The previous definition and scroll remain visible until the
+replacement source and metadata arrive together. No loading message flashes between
+rows, and replies for an older selection cannot replace the current request.
+
+The title is `definition`. `4` focuses the pane; `tab`/`shift-tab` include it in the
+panel cycle. Use `j`/`k` or arrows to scroll, `d`/`u` or Page Down/Up to page, and
+`g`/`G` or Home/End to reach the top/bottom. `esc` returns to results; `e` opens the
+displayed declaration. Moving between uses of the same definition preserves
+scroll. A different definition or source version resets it; selecting a variant
+outside the visible portion of its enum reveals that variant.
+
+**Following code.** Press `o` on a result to follow its exact occurrence to a
+definition. In the context or definition pane, Enter or `o` opens an identifier
+picker. Type to filter, use arrows or Page Up/Down to choose, and Enter to follow.
+Each occurrence shows its line, column, and surrounding source, so two uses of the
+same name remain separate choices. If several definitions match, choose one from
+a second picker showing kind and location. Escape cancels without changing pages.
+
+A successful follow opens the declaration and focuses its definition pane.
+Alt+Left and Alt+Right restore previous/next browsing locations, including the
+query, selected row, focus, and both scroll positions. Row previews, failures, and
+cancelled choices do not add history. A successful follow after going Back replaces
+the forward branch. Navigation history is separate from mutation/undo history.
+
+Restored pages retain their captured source while the engine validates the saved
+occurrence and target. A changed or missing definition leaves the page marked
+stale; Ctrl+R reruns its retained search so you can select a fresh occurrence.
+Returning from the editor also marks the page stale. Following stale anchors is
+blocked. The trail retains at most 64 pages with a 16 MiB estimated payload budget;
+shared payloads are charged per entry, and the oldest entries are evicted first.
+The currently displayed page is outside this retention budget.
 
 `⏎` on a declaration — or on a use that resolves to exactly one — _enters its scope_:
 the rows become that declaration's judged references, grouped by verdict (`✓ safe`,
 `? unverified`, `✗ another declaration's`), each with the reason's glyph. A name
 search becomes the symbol's impact and context. `r`, `m` and `M` then act on the
-entered declaration from any row, `o` jumps the cursor from a use to the declaration
-it names, and `esc` leaves the scope, then the query. `R` opens the relation menu:
+entered declaration from any row, and `esc` leaves the scope, then the query. `R` opens the relation menu:
 all references, one verdict, `impact` (the modules importing it, depth by depth),
 `definition` (its address, reach and importers) or `deps` (the declaring file's
 imports and who imports it). Each answer is written by the engine, not guessed.

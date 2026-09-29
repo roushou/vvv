@@ -46,6 +46,10 @@ pub struct Cli {
 
 #[derive(Debug, Subcommand)]
 enum Commands {
+    /// List commands, supported languages, and context/output budget limits
+    Discover,
+    Context(commands::context::ContextCmd),
+    Navigate(commands::navigate::NavigateCmd),
     Search(commands::search::SearchCmd),
     Outline(commands::outline::OutlineCmd),
     References(commands::references::ReferencesCmd),
@@ -109,6 +113,11 @@ impl Cli {
             self.diff,
         )?;
         match self.command {
+            Some(Commands::Discover) => ctx.run(vvv_engine::Request::Discover(
+                vvv_engine::DiscoveryQuery::default(),
+            )),
+            Some(Commands::Context(cmd)) => cmd.run(&ctx),
+            Some(Commands::Navigate(cmd)) => cmd.run(&ctx),
             Some(Commands::Search(cmd)) => cmd.run(&ctx),
             Some(Commands::Outline(cmd)) => cmd.run(&ctx),
             Some(Commands::References(cmd)) => cmd.run(&ctx),

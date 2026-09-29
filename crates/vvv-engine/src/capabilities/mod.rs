@@ -5,6 +5,9 @@
 //!
 //! | Command | Owning module (relative to `src/`) |
 //! | --- | --- |
+//! | `context` | `capabilities/context.rs` |
+//! | `discover` | `capabilities/discovery.rs` |
+//! | `navigate` | `capabilities/navigation.rs` |
 //! | `search` | `capabilities/search.rs` |
 //! | `outline` | `capabilities/declarations.rs` |
 //! | `where` | `capabilities/declarations.rs` |
@@ -32,3 +35,11 @@ pub(crate) mod rename;
 pub(crate) mod search;
 pub(crate) mod surface;
 pub(crate) mod usage;
+
+pub(crate) mod navigation;
+pub(crate) mod semantic;
+
+pub(crate) mod context;
+
+pub(crate) mod discovery;
+pub(crate) mod session;

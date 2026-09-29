@@ -1,0 +1,9 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+expression: "render(|reporter| reporter.report(&Answer::Context(reply)).unwrap())"
+---
+Definition  src/example.rs:11:1
+fn engine()
+--- stderr ---
+Excerpt shortened by the output budget
+Omitted: 0 item limit, 1 byte limit, 0 lookup limit, 0 file limit, 0 ambiguous, 2 unavailable, 0 without a declaration

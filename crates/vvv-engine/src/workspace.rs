@@ -126,6 +126,10 @@ impl SourceFile {
         })
     }
 
+    pub fn content_id(&self) -> crate::ContentId {
+        crate::ContentId::from_fingerprint(self.witness().fingerprint())
+    }
+
     pub fn source(&self) -> &SourceText {
         &self.source
     }

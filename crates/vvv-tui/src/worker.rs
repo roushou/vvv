@@ -24,20 +24,20 @@ impl Worker {
         let (effects, inbox) = mpsc::channel::<Effect>();
         let (outbox, events) = mpsc::channel::<Event>();
         thread::spawn(move || {
-            let runner = Runner { engine, outbox };
-            while let Ok(mut effect) = inbox.recv() {
-                // Drop searches and plans superseded while we were busy.
+            let mut runner = Runner {
+                engine,
+                outbox,
+                last_definition: None,
+            };
+            while let Ok(effect) = inbox.recv() {
+                let mut pending = Pending::default();
+                pending.push(effect);
                 while let Ok(next) = inbox.try_recv() {
-                    match (&effect, &next) {
-                        (Effect::Search { .. }, Effect::Search { .. })
-                        | (Effect::Plan { .. }, Effect::Plan { .. }) => effect = next,
-                        _ => {
-                            runner.run(effect);
-                            effect = next;
-                        }
-                    }
+                    pending.push(next);
                 }
-                runner.run(effect);
+                for effect in pending.effects {
+                    runner.run(effect);
+                }
             }
         });
         Self { effects, events }
@@ -54,9 +54,42 @@ impl Worker {
     }
 }
 
+/// Pending preview bursts can contain both context and definition requests.
+/// Other work is a barrier: explicit queries and mutations retain their order.
+#[derive(Default)]
+struct Pending {
+    effects: Vec<Effect>,
+}
+
+impl Pending {
+    fn push(&mut self, next: Effect) {
+        let preview = matches!(next, Effect::Definition { .. } | Effect::Preview { .. });
+        if preview {
+            let start = self
+                .effects
+                .iter()
+                .rposition(|e| !matches!(e, Effect::Definition { .. } | Effect::Preview { .. }))
+                .map_or(0, |i| i + 1);
+            if let Some(index) = (start..self.effects.len()).find(|&i| {
+                std::mem::discriminant(&self.effects[i]) == std::mem::discriminant(&next)
+            }) {
+                self.effects.remove(index);
+            }
+        } else if matches!(
+            (self.effects.last(), &next),
+            (Some(Effect::Search { .. }), Effect::Search { .. })
+                | (Some(Effect::Plan { .. }), Effect::Plan { .. })
+        ) {
+            self.effects.pop();
+        }
+        self.effects.push(next);
+    }
+}
+
 struct Runner {
     engine: Engine,
     outbox: Sender<Event>,
+    last_definition: Option<(u64, vvv_engine::NavigationQuery)>,
 }
 
 /// Why an effect produced no answer: the engine refused, or the picker was
@@ -92,25 +125,37 @@ impl std::fmt::Display for Failure {
 }
 
 impl Runner {
-    fn run(&self, effect: Effect) {
+    fn run(&mut self, effect: Effect) {
         if matches!(effect, Effect::Touched) {
+            self.last_definition = None;
             self.engine.touched();
             return;
         }
         let event = match effect {
-            Effect::Definition { revision, query } => {
-                let references = match query.clone().definitions(&self.engine) {
-                    Ok(references) => Some(references),
-                    Err(EngineError::AmbiguousSymbol { .. }) => None,
-                    Err(error) => {
-                        let _ = self.outbox.send(Event::Failed(error.to_string()));
-                        None
-                    }
-                };
+            Effect::Definition { ticket, query } => {
+                if self.last_definition.as_ref() == Some(&(ticket, query.clone())) {
+                    return;
+                }
+                self.last_definition = Some((ticket, query.clone()));
+                let reply = query
+                    .clone()
+                    .execute(&self.engine)
+                    .map_err(|e| vvv_engine::Failure::from(&e));
                 Event::DefinitionResolved {
-                    revision,
+                    ticket,
                     query,
-                    references,
+                    reply,
+                }
+            }
+            Effect::Follow { ticket, query } => {
+                let reply = query
+                    .clone()
+                    .execute(&self.engine)
+                    .map_err(|e| vvv_engine::Failure::from(&e));
+                Event::Followed {
+                    ticket,
+                    query,
+                    reply,
                 }
             }
             // A plan that cannot be made is an answer, not a failure.
@@ -198,6 +243,7 @@ impl Runner {
                     text: file.text,
                     highlights: file.highlights,
                     symbols: file.symbols,
+                    identifiers: file.identifiers,
                     path,
                 }
             }
@@ -217,6 +263,7 @@ impl Runner {
             // handled before anything is answered.
             Effect::Plan { .. }
             | Effect::Definition { .. }
+            | Effect::Follow { .. }
             | Effect::Edit { .. }
             | Effect::Touched => {
                 return Err(Failure::Unsupported("not a worker effect"));
@@ -234,12 +281,13 @@ mod tests {
     #[test]
     fn a_batch_plan_is_rejected_as_a_user_visible_outcome() {
         let (outbox, inbox) = mpsc::channel();
-        let runner = Runner {
+        let mut runner = Runner {
             engine: Engine::new(
                 Workspace::new("/ws", Arc::new(MemoryVfs::new())),
                 Languages::new(),
             ),
             outbox,
+            last_definition: None,
         };
         runner.run(Effect::Plan {
             generation: 7,
@@ -254,12 +302,13 @@ mod tests {
     #[test]
     fn an_apply_event_carries_the_committed_history_id() {
         let (outbox, inbox) = mpsc::channel();
-        let runner = Runner {
+        let mut runner = Runner {
             engine: Engine::new(
                 Workspace::new("/ws", Arc::new(MemoryVfs::new())),
                 Languages::new(),
             ),
             outbox,
+            last_definition: None,
         };
         runner.run(Effect::Commit {
             intent: Intent::Batch(BatchIntent::new([])),
@@ -272,5 +321,55 @@ mod tests {
             Ledger::new(&runner.engine).history().unwrap().entries[0].id,
             1
         );
+    }
+}
+
+#[cfg(test)]
+mod preview_tests {
+    use super::*;
+    #[test]
+    fn interleaved_preview_bursts_coalesce_but_explicit_queries_are_barriers() {
+        let mut pending = Pending::default();
+        for ticket in 0..3 {
+            pending.push(Effect::Definition {
+                ticket,
+                query: vvv_engine::NavigationQuery::at(
+                    "a.rs",
+                    vvv_engine::Position::new(0, ticket as u32),
+                ),
+            });
+            pending.push(Effect::Preview {
+                path: "a.rs".into(),
+            });
+        }
+        assert_eq!(pending.effects.len(), 2);
+        assert!(matches!(
+            pending.effects[0],
+            Effect::Definition { ticket: 2, .. }
+        ));
+        pending.push(Effect::Query {
+            generation: 1,
+            request: vvv_engine::Request::History,
+        });
+        pending.push(Effect::Definition {
+            ticket: 3,
+            query: vvv_engine::NavigationQuery::at("a.rs", vvv_engine::Position::new(0, 3)),
+        });
+        assert_eq!(pending.effects.len(), 4);
+        for ticket in [4, 5] {
+            pending.push(Effect::Follow {
+                ticket,
+                query: vvv_engine::NavigationQuery::at("a.rs", vvv_engine::Position::new(0, 3)),
+            });
+        }
+        assert_eq!(pending.effects.len(), 6);
+        assert!(matches!(
+            pending.effects[4],
+            Effect::Follow { ticket: 4, .. }
+        ));
+        assert!(matches!(
+            pending.effects[5],
+            Effect::Follow { ticket: 5, .. }
+        ));
     }
 }

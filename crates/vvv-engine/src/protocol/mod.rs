@@ -16,6 +16,7 @@ mod respelling;
 mod result;
 mod search;
 mod selection;
+mod source;
 mod template;
 pub mod vocabulary;
 
@@ -39,8 +40,8 @@ pub use crate::rewrite::Rewrite;
 pub use answer::{Dep, Importer, Placed};
 pub use diff::{Diff, DiffKind, DiffLine, Hunk, LineRange};
 pub use failure::{
-    ErrorCode, Failure, Recovery, RecoveryEffect, RecoveryIssue, RecoveryOperation, RecoveryState,
-    RecoveryUnverified,
+    ErrorCode, Failure, OutputLimit, Recovery, RecoveryEffect, RecoveryIssue, RecoveryOperation,
+    RecoveryState, RecoveryUnverified,
 };
 pub use intent::{BatchIntent, Intent, RewriteIntent, RewriteOf};
 pub use notice::{Notice, NoticeKind};
@@ -89,3 +90,16 @@ impl<T> Response<T> {
         }
     }
 }
+
+pub use crate::capabilities::navigation::{
+    DefinitionCandidate, DefinitionPreview, NavigationOrigin, NavigationOutcome, NavigationQuery,
+    NavigationReply, ResolutionEvidence, SnapshotId, UnavailableReason,
+};
+pub use source::{ContentId, SourceAnchor, SymbolRef};
+
+pub use crate::capabilities::context::{
+    ContextBudget, ContextCandidate, ContextItem, ContextOmissions, ContextOutcome, ContextQuery,
+    ContextRelation, ContextReply,
+};
+
+pub use crate::capabilities::discovery::{Capability, Discovery, DiscoveryQuery};

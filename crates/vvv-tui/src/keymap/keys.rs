@@ -127,6 +127,13 @@ impl Key {
         Self::code(Code::Down)
     }
 
+    pub const fn alt_left() -> Self {
+        Self::new(Code::Left, Modifiers::ALT)
+    }
+    pub const fn alt_right() -> Self {
+        Self::new(Code::Right, Modifiers::ALT)
+    }
+
     pub const fn left() -> Self {
         Self::code(Code::Left)
     }
@@ -162,15 +169,7 @@ impl Key {
 
     /// How the key is written in the help and the status bar.
     pub fn label(&self) -> String {
-        if let Code::Char(c) = self.code {
-            if self.modifiers.contains(Modifiers::CTRL) {
-                return format!("ctrl+{c}");
-            }
-            if self.modifiers.contains(Modifiers::ALT) {
-                return format!("alt+{c}");
-            }
-        }
-        match self.code {
+        let label = match self.code {
             Code::Char(' ') => "space".to_owned(),
             Code::Char(c) => c.to_string(),
             Code::Enter => "⏎".to_owned(),
@@ -187,6 +186,17 @@ impl Key {
             Code::PageDown => "pgdn".to_owned(),
             Code::Home => "home".to_owned(),
             Code::End => "end".to_owned(),
-        }
+        };
+        let ctrl = if self.modifiers.contains(Modifiers::CTRL) {
+            "ctrl+"
+        } else {
+            ""
+        };
+        let alt = if self.modifiers.contains(Modifiers::ALT) {
+            "alt+"
+        } else {
+            ""
+        };
+        format!("{ctrl}{alt}{label}")
     }
 }

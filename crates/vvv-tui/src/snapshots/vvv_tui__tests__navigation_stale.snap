@@ -1,0 +1,24 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: "FrameFixture::new(&m).render()"
+---
+┌ vvv ~/dev/nx ───────────────────────────────────── ● 1  1 file  stale · ctrl+r refresh ┐
+│> Alpha                                                                                 │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+┌ results ──────────────────────────────────┐┌ a.rs ─────────────────────────────────────┐
+│● a.rs:1                 struct Alpha      ││    1 │ struct Alpha {                     │
+│                                           ││    2 │     first: Beta,                   │
+│                                           ││    3 │     second: Beta,                  │
+│                                           ││    4 │ }                                  │
+│                                           ││                                           │
+│                                           ││                                           │
+└───────────────────────────────────────────┘│                                           │
+┌ definition ───────────────────────────────┐│                                           │
+│ struct Alpha {                            ││                                           │
+│     first: Beta,                          ││                                           │
+│     second: Beta,                         ││                                           │
+│ }                                         ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+└───────────────────────────────────────────┘└───────────────────────────────────────────┘
+ search  Saved source needs validation or refresh (ctrl+r)  ⏎ follow  ← results  < > resiz

@@ -486,3 +486,172 @@ impl ReportBox<'_> {
         Paragraph::new(shown).render(inner, buf);
     }
 }
+
+/// Filtering uses ordinary text; arrow keys walk the surviving occurrences.
+const NAVIGATION: Layer<Action> = Layer {
+    name: "Navigation choices",
+    bindings: &[
+        Keybinding {
+            triggers: &[Trigger::Key(Key::enter())],
+            dispatch: Run(A::MenuChoose),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "follow",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::esc())],
+            dispatch: Run(A::Back),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "cancel",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::down())],
+            dispatch: Run(A::Move(1)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "next choice",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::up())],
+            dispatch: Run(A::Move(-1)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "previous choice",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::page_down())],
+            dispatch: Run(A::Page(1)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "page down",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::page_up())],
+            dispatch: Run(A::Page(-1)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "page up",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::home())],
+            dispatch: Run(A::Top),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "first choice",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::end())],
+            dispatch: Run(A::Bottom),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "last choice",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::backspace())],
+            dispatch: Run(A::Backspace),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "erase filter",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Text],
+            dispatch: Dispatch::Type,
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "filter choices",
+            },
+        },
+    ],
+};
+pub static NAVIGATION_SCREEN: Screen = Screen {
+    layer: NAVIGATION,
+    panels: &[Panel {
+        layer: NAVIGATION,
+        kind: None,
+    }],
+};
+pub struct NavigationBox<'a> {
+    picker: &'a super::navigation::NavigationPicker,
+    painter: Painter,
+}
+impl<'a> NavigationBox<'a> {
+    pub fn new(picker: &'a super::navigation::NavigationPicker, painter: Painter) -> Self {
+        Self { picker, painter }
+    }
+    pub fn screen(self) -> BoundScreen<Self, 1> {
+        BoundScreen::new(
+            self,
+            &NAVIGATION_SCREEN,
+            |_, area| area.full(),
+            [Self::draw],
+        )
+    }
+    fn draw(&self, area: Rect, buf: &mut Buffer) {
+        let boxed = area.centered(
+            Constraint::Percentage(90),
+            Constraint::Length(18.min(area.height)),
+        );
+        Clear.render(boxed, buf);
+        let block = Block::bordered()
+            .border_style(self.painter.focused)
+            .title(format!(
+                " {} · ↑/↓ choose · enter follow · esc cancel ",
+                self.picker.title
+            ));
+        let inner = block.inner(boxed);
+        block.render(boxed, buf);
+        let visible = self.picker.visible();
+        let height = inner.height.saturating_sub(1) as usize;
+        let start = self
+            .picker
+            .cursor
+            .index
+            .saturating_sub(height.saturating_sub(1));
+        let mut lines = vec![Line::from(format!(
+            "Filter: {}  ({} {})",
+            self.picker.filter,
+            visible.len(),
+            if visible.len() == 1 {
+                "choice"
+            } else {
+                "choices"
+            }
+        ))];
+        lines.extend(
+            visible
+                .iter()
+                .enumerate()
+                .skip(start)
+                .take(height)
+                .map(|(i, item)| {
+                    let line = Line::from(item.label.as_str());
+                    if i == self.picker.cursor.index {
+                        line.style(self.painter.cursor)
+                    } else {
+                        line
+                    }
+                }),
+        );
+        Paragraph::new(lines).render(inner, buf);
+    }
+}

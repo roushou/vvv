@@ -11,6 +11,7 @@ exit 0
     "name": "Foo",
     "declarations": [
       {
+        "content": "e29ea56499f48fa86bfb98c1c9c13a583280a4c9bebf9a6f8561007325f30d97",
         "id": "ccdd1f8b8d03",
         "path": "src/a.rs",
         "language": "rust",
@@ -64,6 +65,7 @@ exit 0
     ],
     "occurrences": [
       {
+        "content": "e29ea56499f48fa86bfb98c1c9c13a583280a4c9bebf9a6f8561007325f30d97",
         "id": "0e6c37e56e0a",
         "path": "src/a.rs",
         "language": "rust",
@@ -87,6 +89,7 @@ exit 0
         "reason": "declaring"
       },
       {
+        "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
         "id": "83a3f39a8b28",
         "path": "src/consumer.rs",
         "language": "rust",
@@ -110,6 +113,7 @@ exit 0
         "reason": "imported"
       },
       {
+        "content": "a57b78d505893391ffaf83410b468409cfced592c3a57d761b1d1e1e8cd6ad0f",
         "id": "122f4d8467ca",
         "path": "src/nested.rs",
         "language": "rust",
@@ -133,6 +137,7 @@ exit 0
         "reason": "imported"
       },
       {
+        "content": "088949e453189839e0a8c137aedb9266d1a7f27a4138543c750097bb372e516f",
         "id": "35b48ca2f7da",
         "path": "src/chained.rs",
         "language": "rust",
@@ -156,6 +161,7 @@ exit 0
         "reason": "path"
       },
       {
+        "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
         "id": "6391f7d4ee18",
         "path": "src/consumer.rs",
         "language": "rust",
@@ -179,6 +185,7 @@ exit 0
         "reason": "path"
       },
       {
+        "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
         "id": "523f413240d6",
         "path": "src/consumer.rs",
         "language": "rust",
@@ -202,6 +209,7 @@ exit 0
         "reason": "path"
       },
       {
+        "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
         "id": "e38ba69b1d57",
         "path": "src/consumer.rs",
         "language": "rust",
@@ -225,6 +233,7 @@ exit 0
         "reason": "path"
       },
       {
+        "content": "a57b78d505893391ffaf83410b468409cfced592c3a57d761b1d1e1e8cd6ad0f",
         "id": "2f984d5c0c89",
         "path": "src/nested.rs",
         "language": "rust",
@@ -248,6 +257,7 @@ exit 0
         "reason": "path"
       },
       {
+        "content": "5fd1c11d769acfcf038916b0a16945d5f8dd60d78616d46c574c2638fb9d10bb",
         "id": "9f8506b3ceb7",
         "path": "src/parent_context/nested.rs",
         "language": "rust",

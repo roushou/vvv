@@ -14,7 +14,7 @@ expression: "FrameFixture::new(&m).render()"
 │← 1                                        ││    6 │ // line 6                          │
 └───────────────────────────────────────────┘│    7 │ // line 7                          │
 ┌ definition ───────────────────────────────┐│    8 │ // line 8                          │
-│ No definition available                   ││    9 │ // line 9                          │
+│ Select a source row                       ││    9 │ // line 9                          │
 │                                           ││   10 │ // line 10                         │
 │                                           ││   11 │ // line 11                         │
 │                                           ││   12 │ // line 12                         │

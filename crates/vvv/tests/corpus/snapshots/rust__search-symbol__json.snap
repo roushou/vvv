@@ -13,6 +13,7 @@ exit 0
     },
     "matches": [
       {
+        "content": "1c01fd4543776a4fba8e20a5b85a39db9697ae231eea6d1a3b21209b6ad6fa8d",
         "id": "47351d7f85b1",
         "path": "core/src/geometry/shape.rs",
         "language": "rust",

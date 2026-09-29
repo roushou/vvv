@@ -1,0 +1,389 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "18c06cc44494ddf2bbe013751134b56908e552ced7121221524e673ff256f1f4",
+    "outcome": "resolved",
+    "items": [
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/origin.rs",
+            "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
+            "span": {
+              "start": 0,
+              "end": 63
+            }
+          },
+          "name_span": {
+            "start": 30,
+            "end": 36
+          },
+          "kind": "struct"
+        },
+        "relation": "definition",
+        "via": null,
+        "excerpt": {
+          "path": "src/origin.rs",
+          "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
+          "span": {
+            "start": 0,
+            "end": 63
+          }
+        },
+        "start": {
+          "line": 0,
+          "column": 0
+        },
+        "text": "/// Runtime state.\npub struct Engine {\n    pub running: bool,\n}",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/bindings.rs",
+            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+            "span": {
+              "start": 238,
+              "end": 276
+            }
+          },
+          "name_span": {
+            "start": 241,
+            "end": 250
+          },
+          "kind": "function"
+        },
+        "relation": "reference",
+        "via": {
+          "path": "src/bindings.rs",
+          "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+          "span": {
+            "start": 267,
+            "end": 273
+          }
+        },
+        "excerpt": {
+          "path": "src/bindings.rs",
+          "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
+          "span": {
+            "start": 238,
+            "end": 276
+          }
+        },
+        "start": {
+          "line": 4,
+          "column": 0
+        },
+        "text": "fn annotated() { let engine: Engine; }",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 77,
+              "end": 91
+            }
+          },
+          "name_span": {
+            "start": 77,
+            "end": 83
+          },
+          "kind": "field"
+        },
+        "relation": "reference",
+        "via": {
+          "path": "src/consumer.rs",
+          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+          "span": {
+            "start": 85,
+            "end": 91
+          }
+        },
+        "excerpt": {
+          "path": "src/consumer.rs",
+          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+          "span": {
+            "start": 77,
+            "end": 91
+          }
+        },
+        "start": {
+          "line": 4,
+          "column": 4
+        },
+        "text": "engine: Engine",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 118,
+              "end": 171
+            }
+          },
+          "name_span": {
+            "start": 125,
+            "end": 134
+          },
+          "kind": "function"
+        },
+        "relation": "reference",
+        "via": {
+          "path": "src/consumer.rs",
+          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+          "span": {
+            "start": 143,
+            "end": 149
+          }
+        },
+        "excerpt": {
+          "path": "src/consumer.rs",
+          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+          "span": {
+            "start": 118,
+            "end": 171
+          }
+        },
+        "start": {
+          "line": 8,
+          "column": 0
+        },
+        "text": "pub fn roundtrip(engine: Engine) -> Engine { engine }",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 274,
+              "end": 315
+            }
+          },
+          "name_span": {
+            "start": 281,
+            "end": 288
+          },
+          "kind": "function"
+        },
+        "relation": "reference",
+        "via": {
+          "path": "src/consumer.rs",
+          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+          "span": {
+            "start": 305,
+            "end": 311
+          }
+        },
+        "excerpt": {
+          "path": "src/consumer.rs",
+          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+          "span": {
+            "start": 274,
+            "end": 315
+          }
+        },
+        "start": {
+          "line": 11,
+          "column": 0
+        },
+        "text": "pub fn unicode(é: u8, engine: Engine) {}",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 328,
+              "end": 378
+            }
+          },
+          "name_span": {
+            "start": 335,
+            "end": 341
+          },
+          "kind": "method"
+        },
+        "relation": "reference",
+        "via": {
+          "path": "src/consumer.rs",
+          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+          "span": {
+            "start": 350,
+            "end": 356
+          }
+        },
+        "excerpt": {
+          "path": "src/consumer.rs",
+          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+          "span": {
+            "start": 328,
+            "end": 378
+          }
+        },
+        "start": {
+          "line": 13,
+          "column": 11
+        },
+        "text": "pub fn method(engine: Engine) -> Engine { engine }",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lexical.rs",
+            "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
+            "span": {
+              "start": 81,
+              "end": 191
+            }
+          },
+          "name_span": {
+            "start": 84,
+            "end": 90
+          },
+          "kind": "function"
+        },
+        "relation": "reference",
+        "via": {
+          "path": "src/lexical.rs",
+          "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
+          "span": {
+            "start": 98,
+            "end": 104
+          }
+        },
+        "excerpt": {
+          "path": "src/lexical.rs",
+          "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
+          "span": {
+            "start": 81,
+            "end": 191
+          }
+        },
+        "start": {
+          "line": 2,
+          "column": 0
+        },
+        "text": "fn shadow(value: Engine) {\n    let value = value;\n    { let value = 1; consume(value); }\n    consume(value);\n}",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lexical.rs",
+            "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
+            "span": {
+              "start": 244,
+              "end": 319
+            }
+          },
+          "name_span": {
+            "start": 247,
+            "end": 259
+          },
+          "kind": "function"
+        },
+        "relation": "reference",
+        "via": {
+          "path": "src/lexical.rs",
+          "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
+          "span": {
+            "start": 267,
+            "end": 273
+          }
+        },
+        "excerpt": {
+          "path": "src/lexical.rs",
+          "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
+          "span": {
+            "start": 244,
+            "end": 319
+          }
+        },
+        "start": {
+          "line": 8,
+          "column": 0
+        },
+        "text": "fn destructured(value: Engine, (left, right): (u8, u8)) { consume(value); }",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/test/check.rs",
+            "content": "5ee24e1ff338c2074c7395bc3ac0ada65dd3921c9220d11fe7cdfbc4b63a0d58",
+            "span": {
+              "start": 27,
+              "end": 55
+            }
+          },
+          "name_span": {
+            "start": 30,
+            "end": 37
+          },
+          "kind": "function"
+        },
+        "relation": "reference_in_test_path",
+        "via": {
+          "path": "src/test/check.rs",
+          "content": "5ee24e1ff338c2074c7395bc3ac0ada65dd3921c9220d11fe7cdfbc4b63a0d58",
+          "span": {
+            "start": 45,
+            "end": 51
+          }
+        },
+        "excerpt": {
+          "path": "src/test/check.rs",
+          "content": "5ee24e1ff338c2074c7395bc3ac0ada65dd3921c9220d11fe7cdfbc4b63a0d58",
+          "span": {
+            "start": 27,
+            "end": 55
+          }
+        },
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "text": "fn related(value: Engine) {}",
+        "complete": true
+      }
+    ],
+    "omissions": {
+      "item_limit": 0,
+      "byte_limit": 0,
+      "lookup_limit": 0,
+      "file_limit": 0,
+      "ambiguous": 1,
+      "unavailable": 0,
+      "no_container": 5
+    },
+    "references_by_name": true
+  }
+}
+--- stderr ---

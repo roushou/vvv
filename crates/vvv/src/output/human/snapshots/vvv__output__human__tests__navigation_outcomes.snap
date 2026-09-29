@@ -1,0 +1,13 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+expression: "render(|reporter|\n{\n    for outcome in\n    std::iter::once(resolved).chain([UnavailableReason::NoIdentifier,\n    UnavailableReason::Unresolved, UnavailableReason::UnsupportedContext,\n    UnavailableReason::ExternalSourceUnavailable,\n    UnavailableReason::CyclicImports,].into_iter().map(|reason|\n    NavigationOutcome::Unavailable { reason }),)\n    {\n        reporter.report(&Answer::Navigate(NavigationReply\n        { snapshot: ContentId::of(text).into(), outcome, })).unwrap();\n    }\n})"
+---
+● struct Engine   src/state.rs:1:1
+
+pub struct Engine;
+--- stderr ---
+Select an identifier
+Could not resolve this name
+Cannot follow this reference yet
+Source is outside this workspace
+Could not resolve cyclic imports

@@ -11,6 +11,7 @@ exit 0
     "name": "Point",
     "declarations": [
       {
+        "content": "acd0355551d105e0ae98250b0280e14d272ce398ab5b850caec828d77b4a70fe",
         "id": "a0486a2d06cd",
         "path": "src/geometry/point.ts",
         "language": "typescript",
@@ -66,6 +67,7 @@ exit 0
     ],
     "occurrences": [
       {
+        "content": "acd0355551d105e0ae98250b0280e14d272ce398ab5b850caec828d77b4a70fe",
         "id": "cce75c58b026",
         "path": "src/geometry/point.ts",
         "language": "typescript",
@@ -89,6 +91,7 @@ exit 0
         "reason": "declaring"
       },
       {
+        "content": "acd0355551d105e0ae98250b0280e14d272ce398ab5b850caec828d77b4a70fe",
         "id": "775d6e19bcbf",
         "path": "src/geometry/point.ts",
         "language": "typescript",
@@ -112,6 +115,7 @@ exit 0
         "reason": "declaring"
       },
       {
+        "content": "acd0355551d105e0ae98250b0280e14d272ce398ab5b850caec828d77b4a70fe",
         "id": "23917e32bc5b",
         "path": "src/geometry/point.ts",
         "language": "typescript",
@@ -135,6 +139,7 @@ exit 0
         "reason": "declaring"
       },
       {
+        "content": "acd0355551d105e0ae98250b0280e14d272ce398ab5b850caec828d77b4a70fe",
         "id": "0f8b302ba45b",
         "path": "src/geometry/point.ts",
         "language": "typescript",
@@ -158,6 +163,7 @@ exit 0
         "reason": "declaring"
       },
       {
+        "content": "acd0355551d105e0ae98250b0280e14d272ce398ab5b850caec828d77b4a70fe",
         "id": "bf6c2cdcaec4",
         "path": "src/geometry/point.ts",
         "language": "typescript",
@@ -181,6 +187,7 @@ exit 0
         "reason": "declaring"
       },
       {
+        "content": "0ff1464ffcb8c6b660379d84584b6996bf579363da7cd0c7c65b6c1be0bce7f2",
         "id": "7efbdf1f1e54",
         "path": "src/geometry/shape.ts",
         "language": "typescript",
@@ -204,6 +211,7 @@ exit 0
         "reason": "opened"
       },
       {
+        "content": "0ff1464ffcb8c6b660379d84584b6996bf579363da7cd0c7c65b6c1be0bce7f2",
         "id": "f3e7e5b67090",
         "path": "src/geometry/shape.ts",
         "language": "typescript",
@@ -227,6 +235,7 @@ exit 0
         "reason": "opened"
       },
       {
+        "content": "e0a38fad2fc0af83dacfc30deec7a56037d25c9cf209f428df58b146f43713d9",
         "id": "068da24d08e6",
         "path": "src/index.ts",
         "language": "typescript",
@@ -250,6 +259,7 @@ exit 0
         "reason": "opened"
       },
       {
+        "content": "f3b72c0afa36850de48018fd2dce4f9a50a4428e6c4f60e3d183273e06aa548a",
         "id": "fb9b85ee03c2",
         "path": "src/app.ts",
         "language": "typescript",
@@ -273,6 +283,7 @@ exit 0
         "reason": "unresolved"
       },
       {
+        "content": "f3b72c0afa36850de48018fd2dce4f9a50a4428e6c4f60e3d183273e06aa548a",
         "id": "dd3f84b8fd4f",
         "path": "src/app.ts",
         "language": "typescript",

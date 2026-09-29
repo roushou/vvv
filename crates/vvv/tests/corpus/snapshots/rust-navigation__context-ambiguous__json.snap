@@ -1,0 +1,66 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "dc8180d8abe08d579580c0dc72e1259545b8dbc7173d3da699d9ce08eeadec01",
+    "outcome": "ambiguous",
+    "candidates": [
+      {
+        "id": "f2c97c3b389f",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/origin.rs",
+            "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
+            "span": {
+              "start": 0,
+              "end": 63
+            }
+          },
+          "name_span": {
+            "start": 30,
+            "end": 36
+          },
+          "kind": "struct"
+        }
+      },
+      {
+        "id": "03656afe22d7",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/other.rs",
+            "content": "7d5511427a8ff89cdc470bad81d45a4c7ad1752e9216998f8a1419b469b23d48",
+            "span": {
+              "start": 0,
+              "end": 18
+            }
+          },
+          "name_span": {
+            "start": 11,
+            "end": 17
+          },
+          "kind": "struct"
+        }
+      }
+    ],
+    "items": [],
+    "omissions": {
+      "item_limit": 0,
+      "byte_limit": 0,
+      "lookup_limit": 0,
+      "file_limit": 0,
+      "ambiguous": 0,
+      "unavailable": 0,
+      "no_container": 0
+    },
+    "references_by_name": false
+  }
+}
+--- stderr ---

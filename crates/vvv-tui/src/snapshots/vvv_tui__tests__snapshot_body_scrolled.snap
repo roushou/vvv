@@ -21,4 +21,4 @@ expression: "FrameFixture::new(&m).render()"
 │     field_23: usize,                      ││   13 │     field_11: usize,               │
 │     field_24: usize,                      ││   14 │     field_12: usize,               │
 └───────────────────────────────────────────┘└───────────────────────────────────────────┘
- search ← results  < > resize  j/k scroll  d/u page  e editor  v view
+ search ⏎ follow  ← results  < > resize  j/k scroll  d/u page  e editor  v view

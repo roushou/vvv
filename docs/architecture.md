@@ -57,21 +57,22 @@ language's rule tables read alike: a `SymbolRule`, `ImportRule` or `HighlightRul
 built by `new(..)` or a kind constructor and scoped by `under(kind)` (a direct
 parent) or `within(kind)` (an ancestor).
 
-| module      | holds                                                                                                                                                                                                                                                             |
-| ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `text`      | `Span` (byte range), `Position` (line/char column), `LineIndex`, `SourceText`                                                                                                                                                                                     |
-| `paths`     | `Name` (one identifier), `ModulePath` (a path as spelled: a `PathHead` — package root, here, `n` up, `Self`, named, root — and segments) and `PathSyntax` (how a language spells one: `Scoped` `::` or `Posix` `/`; parses import text once, spells it back once) |
-| `lang`      | `Language` trait, `LanguageId`, `LanguageRegistry`                                                                                                                                                                                                                |
-| `oracle`    | `Oracle` trait (`refers(file, span) -> Option<Referent>`): a second opinion on a token from something that knows more than syntax; `Referent` (a declaration's file and name span)                                                                                |
-| `symbol`    | `SymbolKind`, `Symbol` (name, node, extent, modifier), `SymbolRule` (the declarative plugin contract, with `leading` kinds and where the modifier is)                                                                                                             |
-| `facts`     | `Facts`: everything about one file from one parse — symbols, imports, highlights, every identifier token interned                                                                                                                                                 |
-| `semantics` | `Semantics`: what syntax means — path separator, import scoping, addressable kinds, visibility modifier → `ReachKind`                                                                                                                                             |
-| `highlight` | `HighlightKind`, `Highlight`, `HighlightRule`: syntax colouring as data                                                                                                                                                                                           |
-| `import`    | `ImportRef` (a `ModulePath` at a span, grouped or not, declaring or a reference), `ImportRule`/`ImportGrammar` (where a grammar keeps import paths, which `PathSyntax` parses them, what re-exports and aliases look like, the text every glob spells)            |
-| `resolve`   | `Address` (a `PackageId` + path; nothing holds across packages), `Packages` (members and their dependencies, renames included), `Project`, `Layout` (addresses and path resolution), `Surgery` (edit spelling), `SideEdit`                                        |
-| `query`     | `Query` + `QueryBuilder`: structural (`pattern`, `kind`) and symbolic (`symbol`, `name`) halves                                                                                                                                                                   |
-| `search`    | `RawMatch` (a match within one text, before it is tied to a file), `Capture`, `Role` (declaration / import / use, set by the searcher), `SearchError`                                                                                                             |
-| `edit`      | `Edit`, `ChangeSet` (sorted, overlap-checked edits + file moves, no write method)                                                                                                                                                                                 |
+| module       | holds                                                                                                                                                                                                                                                             |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `text`       | `Span` (byte range), `Position` (line/char column), `LineIndex`, `SourceText`                                                                                                                                                                                     |
+| `paths`      | `Name` (one identifier), `ModulePath` (a path as spelled: a `PathHead` — package root, here, `n` up, `Self`, named, root — and segments) and `PathSyntax` (how a language spells one: `Scoped` `::` or `Posix` `/`; parses import text once, spells it back once) |
+| `lang`       | `Language` trait, `LanguageId`, `LanguageRegistry`                                                                                                                                                                                                                |
+| `oracle`     | `Oracle` trait (`refers(file, span) -> Option<Referent>`): a second opinion on a token from something that knows more than syntax; `Referent` (a declaration's file and name span)                                                                                |
+| `symbol`     | `SymbolKind`, `Symbol` (name, node, extent, modifier), `SymbolRule` (the declarative plugin contract, with `leading` kinds and where the modifier is)                                                                                                             |
+| `facts`      | `Facts`: everything about one file from one parse — symbols, imports, highlights, every identifier token interned                                                                                                                                                 |
+| `navigation` | `LexicalBinding`, `BindingRule`, `BindingNamespace`, `NamedImport`, `NamedImportRule`: navigation facts and declarative extraction rules                                                                                                                          |
+| `semantics`  | `Semantics`: what syntax means — path separator, import scoping, addressable kinds, visibility modifier → `ReachKind`                                                                                                                                             |
+| `highlight`  | `HighlightKind`, `Highlight`, `HighlightRule`: syntax colouring as data                                                                                                                                                                                           |
+| `import`     | `ImportRef` (a `ModulePath` at a span, grouped or not, declaring or a reference), `ImportRule`/`ImportGrammar` (where a grammar keeps import paths, which `PathSyntax` parses them, what re-exports and aliases look like, the text every glob spells)            |
+| `resolve`    | `Address` (a `PackageId` + path; nothing holds across packages), `Packages` (members and their dependencies, renames included), `Project`, `Layout` (addresses and path resolution), `Surgery` (edit spelling), `SideEdit`                                        |
+| `query`      | `Query` + `QueryBuilder`: structural (`pattern`, `kind`) and symbolic (`symbol`, `name`) halves                                                                                                                                                                   |
+| `search`     | `RawMatch` (a match within one text, before it is tied to a file), `Capture`, `Role` (declaration / import / use, set by the searcher), `SearchError`                                                                                                             |
+| `edit`       | `Edit`, `ChangeSet` (sorted, overlap-checked edits + file moves, no write method)                                                                                                                                                                                 |
 
 ### `vvv-lang` — languages
 
@@ -116,11 +117,60 @@ mutation intents' and `RewriteOf`'s `plan`, `Apply<T>::apply`, or
 workspace, or registry they use explicitly. Public typed methods acquire the
 same operation guard as the dispatcher; internal bodies do not reacquire it.
 
-For definition previews, `ReferencesQuery::definitions` gathers separate reference
-evidence for every addressable candidate under one operation guard and graph
-snapshot. `Definitions::definition_of` returns a target only when exactly one
-candidate resolves the selected token. Name collisions across files or packages
-do not require picking a declaration before inspecting the use site's imports.
+`NavigationQuery` resolves an exact, optionally versioned source occurrence. Its
+capability owns typed requests/outcomes and report composition; `Graph` navigation
+uses retained candidates, scope bindings, and a bounded re-export traversal rather
+than collecting all references to every same-named declaration. Competing targets
+remain candidates, narrowed with `Selection` or a versioned symbol request.
+
+Search matches carry complete source content identities. Navigation replies pair
+the target with its display container (an enum for a variant), full captured source,
+highlights, and identifier anchors. Consulted source and manifest contents are
+revalidated before returning; a detected change produces `StaleSource` and expires
+the graph's trusted walk. Snapshot identity covers those inputs and the captured
+file set, without promising isolation from external writers. Facts and scopes are
+cached per existing graph rules; navigation replies have no persistent result cache.
+
+Grammar tables declare lexical scopes, visibility start points, noncapturing item
+boundaries, unsupported binding forms, and exact named-import rules. The syntax
+adapter lowers these to plain `Facts`: eligible token spans, `LexicalBinding`s,
+`NamedImport`s, and export restrictions. Navigation checks the innermost visible
+binding before module lookup, keeps type and value namespaces separate, and uses
+exact named bindings for TypeScript. Navigation-only declarations stay separate
+from ordinary search/mutation symbols. Unsupported patterns and scope forms block
+confirmation instead of falling through to a same-named outer declaration.
+
+`NavigationQuery::execute_with` accepts a host-supplied `NavigationProvider` and
+shared cancellation token. Syntax resolution runs first; only unresolved or
+unsupported occurrences reach the provider. The provider returns its revision,
+the exact origin, complete candidates, and versions of consulted workspace inputs.
+Navigation validates these and target declarations, then revalidates sources and
+provider revision before returning. Semantic evidence and snapshot identity include
+the provider version. Cancellation is cooperative: the host must bound provider
+work and avoid re-entering this engine while its operation guard is held. No
+language-server process is managed here. The unversioned `Oracle` remains a
+references capability input and is not semantic navigation evidence.
+
+`ContextQuery` owns bounded context composition. It uses exact navigation to gather
+a seed, enclosing declaration, and directly referenced declarations. Optional
+incoming scans inspect a bounded number of files and confirm same-spelling uses
+through navigation; test-path evidence stays explicitly weaker than test coverage.
+Navigation can record its consulted source/manifest versions for this compound
+capability, which revalidates the whole set before returning. Result fitting counts
+compact JSON bytes, preserves UTF-8 source boundaries, and reports omissions; it
+never narrows an ambiguous candidate set to fit. Context does not broaden mutation
+resolution or use the optional semantic provider.
+
+`DiscoveryQuery` describes the build's commands, languages, and budgets without a
+tree walk. `Call` retains wire data in `protocol`; its execution lives in
+`capabilities/session.rs`, which enforces optional result budgets before returning
+a reply. Budgeted mutation calls are rejected before dispatch. The CLI session only
+parses lines, delegates execution, and serializes the response. These output limits
+are separate from source-processing memory or time limits.
+
+`ReferencesQuery::definitions` remains available to typed callers as a separate
+reference-evidence helper. The TUI definition pane uses `NavigationQuery` and does
+not infer preview targets from unique names in its search results.
 
 `Engine::run` returns an in-process `Execution`: `Completed(Answer)`,
 `Preview(Planned<MutationAnswer>)`, or `Applied(Applied<MutationAnswer>)`. Only
@@ -547,7 +597,10 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
   (`columns`, `split`, `rows`), and `Fit` is a text helper. Words come from
   `protocol::vocabulary`.
 - `worker.rs` — the engine on its own thread; effects in, events out; bursts of
-  searches or plans are coalesced. `Commit` plans and applies in one step.
+  searches or plans are coalesced. Interleaved context/definition preview bursts
+  keep the newest request of each kind; explicit queries and mutations are barriers.
+  Definition successes and failures carry a ticket and query, checked against the
+  search mode's current selection before settling the pane. `Commit` plans and applies in one step.
 - `tui.rs` — `Tui` and the only I/O: terminal setup, the event loop with
   debounced searches and plans, the editor hand-off, teardown. It supplies the frame
   timestamp used by `HistoryView`; views do not read the clock.
@@ -562,6 +615,14 @@ and the `✓ 3  ? 1  ✗ 0` counts line is defined once, in the protocol.
 
 Selection in the TUI _is_ the CLI's `--select`: the rename and rewrite modes' ticked
 rows are content-derived ids fed to `Selection::Ids`.
+
+The search mode owns explicit browsing pages and a bounded navigation trail. Saved
+results and file previews share immutable allocations; entries retain query,
+selection, focus and scroll, never mutation plans. Explicit follows use a separate
+request ticket from coalesced row previews and only successful follows push
+history. Restoring a page validates its versioned occurrence and displayed target
+before following again. Identifier/candidate choices belong to a typed navigation
+overlay; the engine supplies source anchors, including identifiers in file previews.
 
 ## Boundaries
 

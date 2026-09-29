@@ -24,9 +24,9 @@ impl ExplainCmd {
 
 /// A `path:line[:column]`, 1-based as editors show them.
 #[derive(Debug, PartialEq, Eq)]
-struct Location {
-    path: PathBuf,
-    position: Position,
+pub(super) struct Location {
+    pub path: PathBuf,
+    pub position: Position,
 }
 
 impl std::str::FromStr for Location {
@@ -34,12 +34,14 @@ impl std::str::FromStr for Location {
 
     /// `src/a.rs:12:4` → the path and a zero-based position.
     fn from_str(text: &str) -> Result<Self, Self::Err> {
-        let mut parts = text.rsplitn(3, ':');
-        let last = parts.next().unwrap_or_default();
-        let (path, line, column) = match (parts.next(), parts.next()) {
-            (Some(line), Some(path)) => (path, line, last),
-            (Some(path), None) => (path, last, "1"),
-            _ => anyhow::bail!("expected path:line[:column], got `{text}`"),
+        let Some((before, last)) = text.rsplit_once(':') else {
+            anyhow::bail!("expected path:line[:column], got `{text}`");
+        };
+        let (path, line, column) = match before.rsplit_once(':') {
+            Some((path, line)) if !line.is_empty() && line.bytes().all(|b| b.is_ascii_digit()) => {
+                (path, line, last)
+            }
+            _ => (before, last, "1"),
         };
         let one_based = |s: &str, what: &str| -> anyhow::Result<u32> {
             let n: u32 = s
@@ -81,5 +83,21 @@ mod tests {
         );
         assert!("src/a.rs".parse::<Location>().is_err());
         assert!("src/a.rs:0".parse::<Location>().is_err());
+    }
+}
+
+#[cfg(test)]
+mod platform_tests {
+    use super::*;
+    #[test]
+    fn windows_drive_letters_are_part_of_the_path_with_or_without_a_column() {
+        for (input, expected) in [
+            (r"C:\src\app.rs:12", Position::new(11, 0)),
+            (r"C:\src\app.rs:12:4", Position::new(11, 3)),
+        ] {
+            let location: Location = input.parse().unwrap();
+            assert_eq!(location.path, std::path::Path::new(r"C:\src\app.rs"));
+            assert_eq!(location.position, expected);
+        }
     }
 }

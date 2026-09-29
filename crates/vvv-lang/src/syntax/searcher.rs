@@ -211,6 +211,7 @@ impl<L: LanguageExt> AstGrepSearcher<L> {
             ImportExtractor::new(&self.grammar.imports, self.lang.clone()).extract(&node)?;
         let highlights = Highlighter::new(self.grammar.highlights).extract(&node);
         let mut facts = Facts::new(symbols, imports, highlights);
+        super::navigation::NavigationFacts::new(&self.grammar).extract(&node, &mut facts);
         let kinds: Vec<u16> = self
             .grammar
             .identifiers
@@ -218,7 +219,33 @@ impl<L: LanguageExt> AstGrepSearcher<L> {
             .map(|kind| self.lang.kind_to_id(kind))
             .collect();
         for n in node.dfs().filter(|n| kinds.contains(&n.kind_id())) {
-            facts.push_token(&n.text(), &n.kind(), n.range().into());
+            let span = n.range().into();
+            let safe = n.ancestors().all(|ancestor| {
+                !self
+                    .grammar
+                    .navigation_barriers
+                    .contains(&ancestor.kind().as_ref())
+                    && self
+                        .grammar
+                        .navigation_bindings
+                        .iter()
+                        .all(|field| ancestor.field(field).is_none())
+            });
+            let imported = facts
+                .imports
+                .iter()
+                .any(|import| import.declares && import.span.contains(&span));
+            if safe
+                && (imported
+                    || (facts.lexical_tokens.contains(&span)
+                        && self.grammar.navigation_types.contains(&n.kind().as_ref())))
+            {
+                facts.navigation.push(span);
+            }
+            if self.grammar.navigation_types.contains(&n.kind().as_ref()) {
+                facts.navigation_types.push(span);
+            }
+            facts.push_token(&n.text(), &n.kind(), span);
         }
         Ok(facts)
     }

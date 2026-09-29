@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● variable right   src/bindings.rs:3:34
+
+let (left, right) = pair;
+--- stderr ---

@@ -96,6 +96,11 @@ impl Tui {
         // Searches and plans are debounced here, in the one place that
         // knows about time; the newest request of each kind wins.
         let mut pending: Option<(Effect, Instant)> = None;
+        let size = terminal.size()?;
+        model.on_event(crate::action::Event::Viewport {
+            width: size.width,
+            height: size.height,
+        });
         let mut effects = model.update(Action::Start);
 
         loop {
@@ -109,6 +114,7 @@ impl Tui {
                             Self::edit(terminal, editor, root, &path, line)?;
                             // The editor may have written anything.
                             worker.send(Effect::Touched);
+                            model.on_event(crate::action::Event::SourcesChanged);
                         }
                         None => model.status.error("no editor: set $VISUAL or $EDITOR"),
                     },
@@ -140,7 +146,11 @@ impl Tui {
                     TermEvent::Key(key) if key.kind == KeyEventKind::Press => {
                         effects.extend(model.on_key(key));
                     }
-                    TermEvent::Resize(..) => {}
+                    TermEvent::Resize(width, height) => {
+                        effects.extend(
+                            model.on_event(crate::action::Event::Viewport { width, height }),
+                        );
+                    }
                     _ => {}
                 }
             }

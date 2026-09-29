@@ -19,6 +19,7 @@ use vvv_engine::{
 pub fn m(path: &str, line: u32, col: u32, text: &str, source_line: &str) -> Match {
     let start = Position::new(line, col);
     Match {
+        content: None,
         id: MatchId::from(format!("{:0>12}", format!("{line}{col}"))),
         path: RelPath::from(path),
         language: LanguageId::new("rust"),

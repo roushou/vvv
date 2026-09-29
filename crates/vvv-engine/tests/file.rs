@@ -72,6 +72,12 @@ fn file_preview_includes_declarations_and_finds_the_nearest_enclosing_enum() {
             symbol.name
         );
     }
+    assert!(!file.identifiers.is_empty());
+    for anchor in &file.identifiers {
+        assert_eq!(anchor.path, file.path);
+        assert_eq!(anchor.content, vvv_engine::ContentId::of(text));
+        assert!(!file.text[anchor.span.start..anchor.span.end].is_empty());
+    }
     let value = serde_json::to_value(&file).unwrap();
     assert_eq!(value["symbols"][0]["kind"], "enum");
     assert_eq!(
