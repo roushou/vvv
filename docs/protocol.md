@@ -1023,12 +1023,12 @@ history id. Interfaces consume `Execution::into_answer()` before serializing the
 wire `Answer`. Executable plans and committed completion handles are not
 serialized.
 
-## Retained rename plans
+## Retained mutation plans
 
-Four commands share the engine's session-owned plan store. They are available to
+Preparation, inspection, review continuation, apply, and discard share the engine's session-owned plan store. They are available to
 library clients and through `vvv serve`; MCP maps the same requests to tools.
 Only `apply_plan` writes workspace files. These commands do not change existing
-`rename` or `apply: true` semantics.
+`rename`, `rewrite`, or `apply: true` semantics.
 
 ```json
 {"command":"prepare_rename","intent":{"name":"Engine","to":"Runtime","declared_in":"src/engine.rs"},"max_bytes":16384}
@@ -1040,20 +1040,20 @@ Only `apply_plan` writes workspace files. These commands do not change existing
 `prepare_rename.intent` is a `RenameIntent`: `name`, `to`, optional `symbol`,
 `language`, `declared_in`, and `selection`. Preparation and inspection accept
 `max_bytes` (default 16384, range 1024–1048576), narrowed by the call's optional
-`max_output_bytes`. Preparation rejects oversized reviews before publishing a
-handle. No edits or ambiguity candidates are omitted to fit the output budget.
+`max_output_bytes`. Without `page`, preparation rejects oversized complete reviews before publishing a
+handle. With `page`, the first page must fit before publication. No edits or ambiguity candidates are omitted to fit the output budget.
 Apply rejects `max_output_bytes` before consuming the plan or writing; its compact
 receipt is size-checked before transaction execution.
 
 Preparation, inspection, and discard return `plan_id`, `lifetime_seconds` (fixed
 from preparation, not a remaining-time counter), and a tagged lifecycle:
 
-| `state`     | Additional data                                       |
-| ----------- | ----------------------------------------------------- |
-| `prepared`  | `preview`: complete existing `Rename` preview payload |
-| `applied`   | `receipt`: the successful apply result                |
-| `failed`    | `failure`: original structured `Failure`              |
-| `discarded` | None                                                  |
+| `state`     | Additional data                                                    |
+| ----------- | ------------------------------------------------------------------ |
+| `prepared`  | `preview`: complete existing `Rename` or `Rewrite` preview payload |
+| `applied`   | `receipt`: the successful apply result                             |
+| `failed`    | `failure`: original structured `Failure`                           |
+| `discarded` | None                                                               |
 
 Inspection returns captured evidence, not newly resolved edits or a freshness
 verdict. Before application, the engine compares the complete captured input
@@ -1090,8 +1090,85 @@ at preparation and includes terminal outcomes. Retention charges source copies,
 edit/review data, snapshots, and allocation overhead conservatively; it is not a
 limit on temporary parser/planner memory. `retention_limit` rejects a new plan
 without evicting pending plans or successful receipts. Discard pending plans,
-narrow the rename, or wait for expiry. Restarting the session loses handles but
+narrow the mutation, or wait for expiry. Restarting the session loses handles but
 keeps committed undo history.
+
+### Paged plan reviews
+
+`prepare_rewrite` accepts `intent: RewriteIntent` (`query`, `template`, optional
+`selection`) and the same `max_bytes`/`page` fields as `prepare_rename`.
+Preparation and `inspect_plan` accept optional `page: PageBudget` (defaults
+20 items, 16384 bytes; bounds 1–64 items and 1024–1048576 bytes). Omitting `page`
+preserves complete-review JSON, including existing rename preview shapes.
+The effective page byte limit is the minimum of `max_bytes`, `page.max_bytes`,
+and optional `Call.max_output_bytes`. The entire compact result counts, including
+escaping and cursor strings. `max_items` counts metadata records and text chunks.
+
+```json
+{"command":"prepare_rewrite","intent":{"query":{"pattern":"increment($X, 1)"},"template":"increment($X, 2)"},"page":{"max_items":20,"max_bytes":8192}}
+{"command":"inspect_plan","plan_id":"<handle>","page":{"max_items":20,"max_bytes":8192}}
+{"command":"review_plan","cursor":"<next_cursor>","page":{"max_items":20,"max_bytes":8192}}
+```
+
+Paged preparation and prepared-plan inspection return `PlanReviewPage`, with:
+
+- `kind: "plan_review"`, `plan_id`, fixed `lifetime_seconds`, and `review_id` (the
+  content identity of the complete captured mutation preview).
+- `mutation: "rename"` or `"rewrite"`, `totals: {declarations, occurrences, files, edits}`.
+- `intent`: complete tagged mutation intent on the first page only.
+- `items`: ordered metadata/text records; `next_cursor`: continuation or null.
+
+Applied/failed/discarded inspection retains the complete lifecycle shape and latest
+validation evidence. Continuation pages contain immutable review content without
+live lifecycle or validation fields. They never imply current source validity.
+
+Record sections are `declaration`, `occurrence`, `file`, `edit`, and `diff`.
+Each record has `index` (zero-based within its section) and, for edits,
+`file_index` (zero-based owning file). Declaration and occurrence order matches the
+complete rename preview, so the occurrence selection ordinal is `index + 1`.
+Files keep preview order; edits keep the file's existing sorted span order.
+Declarations precede occurrences; each file's metadata precedes its edits and diff.
+
+A metadata item is `{kind:"metadata", section, index, file_index?, value}`.
+`value` uses the corresponding ordinary preview record's JSON shape:
+`Match`, `Occurrence`, file metadata, or `Edit`. File metadata omits `edits` and
+`diff`, which are delivered separately. Text fields named `text`, `line`, and
+`replacement`, including nested capture and symbol fields, are replaced by empty
+strings and delivered as subsequent chunks when nonempty. Other metadata is
+indivisible. Unsupported or ambiguous occurrences retain their original verdicts.
+
+A text item is `{kind:"text", section, index, file_index?, field, offset,
+total_bytes, text, complete}`. `field` is an RFC 6901 JSON pointer into that record.
+Offsets and totals count UTF-8 bytes, not characters or JSON-escaped lengths.
+Chunks end on UTF-8 boundaries; `complete` means this is the field's last chunk.
+Concatenate chunks in offset order and replace the metadata's empty field.
+A diff section has only text chunks for `/diff`; attach the reconstructed string
+to its file. Assemble edits by `file_index` and edit `index`. This reconstructs
+the complete preview's declarations, occurrences, edits, and exact unified diffs.
+Intent and required metadata must fit whole; otherwise `output_limit` gives the
+required result size. Budget failures never publish a partial executable plan.
+
+`review_plan` uses opaque `PlanReviewCursor` tokens, distinct from source-query
+cursors; `continue` and `expand` reject them, and `review_plan` rejects query tokens.
+Tokens identify validated record/text positions without accumulating per-page
+checkpoints. Same cursor and budget replay the same page; different budgets start
+at the same position. Failed delivery/cancellation advances no state. A review
+page may end in the middle of one text field but never discards its remaining bytes.
+
+Review does not walk or revalidate the workspace: source edits, apply, undo, and
+failed apply attempts leave captured content unchanged. Apply still performs its
+existing stale-input checks. Reviews survive apply/failure until the plan's fixed
+expiry. Discard releases pending review data; its cursors return `plan_consumed`.
+Expired or foreign review roots return `plan_expired`; malformed or invalid
+positions return `invalid_cursor`. Neither pagination nor inspection extends expiry.
+Retained review data is charged after apply as well as before it, alongside baseline
+and validation evidence. Memory limits still apply even when output is paginated.
+Clients decide when review is sufficient; apply does not count fetched pages.
+
+Rust preparation/inspection return `PlanReviewReply::Complete(PlanReview)` or
+`::Page(PlanReviewPage)`; `PlanStatus::Prepared.preview` is `PlanPreview` with
+shared immutable rename/rewrite payloads. These are Rust API changes, independent
+of the preserved default rename JSON. `review_plan` returns `PlanReviewPage`.
 
 ## Applied-plan validation
 
@@ -1188,23 +1265,25 @@ rejected during initialization. `serve` retains its existing JSON-lines contract
 Only MCP messages go to stdout, including when `--json` is supplied; startup
 errors go to stderr. The workspace is fixed at launch.
 
-`tools/list` returns all twelve tools in one response, with generated JSON Schema
+`tools/list` returns all fourteen tools in one response, with generated JSON Schema
 inputs and per-command `Response` output schemas. A tool-list cursor is invalid.
 
-| MCP tool             | Engine request   |
-| -------------------- | ---------------- |
-| `vvv_discover`       | `discover`       |
-| `vvv_search`         | `search_page`    |
-| `vvv_navigate`       | `resolve`        |
-| `vvv_relationships`  | `relationships`  |
-| `vvv_context`        | `context_page`   |
-| `vvv_continue`       | `continue`       |
-| `vvv_expand`         | `expand`         |
-| `vvv_prepare_rename` | `prepare_rename` |
-| `vvv_inspect_plan`   | `inspect_plan`   |
-| `vvv_apply_plan`     | `apply_plan`     |
-| `vvv_discard_plan`   | `discard_plan`   |
-| `vvv_validate_plan`  | `validate_plan`  |
+| MCP tool              | Engine request    |
+| --------------------- | ----------------- |
+| `vvv_discover`        | `discover`        |
+| `vvv_search`          | `search_page`     |
+| `vvv_navigate`        | `resolve`         |
+| `vvv_relationships`   | `relationships`   |
+| `vvv_context`         | `context_page`    |
+| `vvv_continue`        | `continue`        |
+| `vvv_expand`          | `expand`          |
+| `vvv_prepare_rename`  | `prepare_rename`  |
+| `vvv_prepare_rewrite` | `prepare_rewrite` |
+| `vvv_review_plan`     | `review_plan`     |
+| `vvv_inspect_plan`    | `inspect_plan`    |
+| `vvv_apply_plan`      | `apply_plan`      |
+| `vvv_discard_plan`    | `discard_plan`    |
+| `vvv_validate_plan`   | `validate_plan`   |
 
 Arguments are the command's generated `arguments` schema. Read-only tools add
 `max_output_bytes` (default 16384, or 32768 for discovery; range 1024–1048576).

@@ -1,7 +1,9 @@
 //! Bounded session-local executable plans and terminal outcomes. Lock after operation exclusion.
+use crate::capabilities::plans::review::CapturedReview;
 use crate::capabilities::plans::{PendingPlan, RetainedPlan};
 use crate::{EngineError, Failure, PlanId, PlanReceipt, PlanReview, PlanStatus};
 use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 use std::{
     collections::BTreeMap,
     hash::BuildHasher,
@@ -81,6 +83,9 @@ impl PlanStore {
         Ok(())
     }
     pub(crate) fn review(&mut self, id: &PlanId, now: Instant) -> Result<PlanReview, EngineError> {
+        Ok(self.entry(id, now)?.plan.review.clone())
+    }
+    fn entry(&mut self, id: &PlanId, now: Instant) -> Result<&Entry, EngineError> {
         let parts: Vec<_> = id.0.split('.').collect();
         if parts.len() != 3
             || parts[0] != "p1"
@@ -93,10 +98,18 @@ impl PlanStore {
             return Err(EngineError::InvalidPlan);
         }
         self.purge(now);
-        self.entries
-            .get(id)
-            .map(|entry| entry.plan.review.clone())
-            .ok_or(EngineError::PlanExpired)
+        self.entries.get(id).ok_or(EngineError::PlanExpired)
+    }
+    pub(crate) fn captured(
+        &mut self,
+        id: &PlanId,
+        now: Instant,
+    ) -> Result<Arc<CapturedReview>, EngineError> {
+        self.entry(id, now)?
+            .plan
+            .captured
+            .clone()
+            .ok_or(EngineError::PlanConsumed)
     }
     pub(crate) fn take(&mut self, id: &PlanId) -> Result<PendingPlan, EngineError> {
         self.entries
@@ -126,7 +139,8 @@ impl PlanStore {
             },
         };
         entry.plan.bytes = crate::query_store::QueryStore::weight(&entry.plan.review)
-            .saturating_add(crate::query_store::QueryStore::weight(&entry.plan.baseline));
+            .saturating_add(crate::query_store::QueryStore::weight(&entry.plan.baseline))
+            .saturating_add(entry.plan.captured.as_ref().map_or(0, |r| r.weight()));
     }
     pub(crate) fn validation(
         &mut self,
@@ -165,6 +179,7 @@ impl PlanStore {
         review.validation = None;
         let bytes = crate::query_store::QueryStore::weight(&review)
             .saturating_add(crate::query_store::QueryStore::weight(&plan.baseline))
+            .saturating_add(plan.captured.as_ref().map_or(0, |r| r.weight()))
             .saturating_add(max_bytes.saturating_mul(4))
             .saturating_add(4096);
         let total = self
@@ -185,17 +200,20 @@ impl PlanStore {
             .expect("operation exclusion protects active validation");
         entry.plan.review.validation = Some(report);
         entry.plan.bytes = crate::query_store::QueryStore::weight(&entry.plan.review)
-            .saturating_add(crate::query_store::QueryStore::weight(&entry.plan.baseline));
+            .saturating_add(crate::query_store::QueryStore::weight(&entry.plan.baseline))
+            .saturating_add(entry.plan.captured.as_ref().map_or(0, |r| r.weight()));
     }
     pub(crate) fn discard(&mut self, id: &PlanId, now: Instant) -> Result<PlanReview, EngineError> {
         let review = self.review(id, now)?;
         if matches!(review.status, PlanStatus::Prepared { .. }) {
             let entry = self.entries.get_mut(id).expect("review checked existence");
             entry.plan.pending = None;
+            entry.plan.captured = None;
             entry.plan.baseline = None;
             entry.plan.review.status = PlanStatus::Discarded;
             entry.plan.bytes = crate::query_store::QueryStore::weight(&entry.plan.review)
-                .saturating_add(crate::query_store::QueryStore::weight(&entry.plan.baseline));
+                .saturating_add(crate::query_store::QueryStore::weight(&entry.plan.baseline))
+                .saturating_add(entry.plan.captured.as_ref().map_or(0, |r| r.weight()));
             return Ok(entry.plan.review.clone());
         }
         // Terminal receipts/failures remain inspectable and retryable until expiry.
@@ -238,7 +256,7 @@ mod tests {
                 validation: None,
                 lifetime_seconds: self.store.limits.lifetime_seconds,
                 status: PlanStatus::Prepared {
-                    preview: rename.clone(),
+                    preview: crate::PlanPreview::Rename(Arc::new(rename.clone())),
                 },
             };
             let planned = Planned::new(
@@ -249,7 +267,7 @@ mod tests {
             );
             let (_, snapshot) =
                 crate::graph::query_snapshot::QuerySnapshot::capture(&self.engine).unwrap();
-            RetainedPlan::new(review, planned, snapshot, 0)
+            RetainedPlan::new(review, planned.into_mutation(), snapshot, 0)
         }
     }
     #[test]
@@ -271,6 +289,10 @@ mod tests {
         );
         assert!(matches!(
             f.store.review(&id, end),
+            Err(EngineError::PlanExpired)
+        ));
+        assert!(matches!(
+            f.store.captured(&id, end),
             Err(EngineError::PlanExpired)
         ));
         assert!(f.store.entries.is_empty());
@@ -299,5 +321,30 @@ mod tests {
         ));
         f.store.review(&id, now).unwrap();
         assert_eq!(f.store.entries.len(), 1);
+    }
+    #[test]
+    fn completed_reviews_remain_charged_and_validation_cannot_overrun_retention() {
+        let mut f = Fixture::new();
+        let now = Instant::now();
+        let plan = f.plan();
+        let id = plan.review.plan_id.clone();
+        let review_bytes = plan.captured.as_ref().unwrap().weight();
+        f.store.insert(plan, now).unwrap();
+        f.store.complete(
+            &id,
+            &Ok(PlanReceipt {
+                plan_id: id.clone(),
+                history_id: 1,
+                files: vec![],
+            }),
+        );
+        assert!(f.store.entries[&id].plan.bytes >= review_bytes);
+        f.store.captured(&id, now).unwrap();
+        f.store.limits.max_total_bytes = f.store.entries[&id].plan.bytes;
+        assert!(matches!(
+            f.store.reserve_validation(&id, 4096),
+            Err(EngineError::PlanRetentionLimit)
+        ));
+        f.store.captured(&id, now).unwrap();
     }
 }

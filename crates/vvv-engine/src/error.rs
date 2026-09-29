@@ -210,7 +210,7 @@ impl EngineError {
     /// What to try instead, when the error suggests something.
     pub fn hint(&self) -> Option<String> {
         match self {
-            Self::InvalidPlan => Some("Pass the exact plan_id returned by prepare_rename".into()),
+            Self::InvalidPlan => Some("Pass the exact plan_id returned by preparation".into()),
             Self::PlanExpired | Self::StalePlan => Some("Prepare a new plan and review its diff before applying".into()),
             Self::PlanConsumed => Some("Use inspect_plan to retrieve the recorded outcome; do not retry by rebuilding the mutation".into()),
             Self::PlanRetentionLimit => Some("Discard pending plans, narrow the rename, or wait for terminal outcomes to expire".into()),

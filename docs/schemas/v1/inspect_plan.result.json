@@ -19,6 +19,21 @@
       ],
       "type": "object"
     },
+    "BatchIntent": {
+      "description": "Several intents planned in sequence, each against the state the previous\none leaves, and applied as one.",
+      "properties": {
+        "intents": {
+          "items": {
+            "$ref": "#/$defs/Intent"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "intents"
+      ],
+      "type": "object"
+    },
     "Capture": {
       "description": "One meta-variable binding.",
       "properties": {
@@ -448,6 +463,77 @@
       ],
       "type": "object"
     },
+    "Intent": {
+      "description": "Any mutating request, as one value: what history records, what a summary\nrenders, what a remote client sends.",
+      "oneOf": [
+        {
+          "$ref": "#/$defs/RewriteIntent",
+          "properties": {
+            "command": {
+              "const": "rewrite",
+              "type": "string"
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "type": "object"
+        },
+        {
+          "$ref": "#/$defs/RenameIntent",
+          "properties": {
+            "command": {
+              "const": "rename",
+              "type": "string"
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "type": "object"
+        },
+        {
+          "$ref": "#/$defs/MoveIntent",
+          "properties": {
+            "command": {
+              "const": "move",
+              "type": "string"
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "type": "object"
+        },
+        {
+          "$ref": "#/$defs/MoveSymbolIntent",
+          "properties": {
+            "command": {
+              "const": "move_symbol",
+              "type": "string"
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "type": "object"
+        },
+        {
+          "$ref": "#/$defs/BatchIntent",
+          "description": "Several intents planned in sequence, each against the state the\nprevious one leaves, and applied as one.",
+          "properties": {
+            "command": {
+              "const": "batch",
+              "type": "string"
+            }
+          },
+          "required": [
+            "command"
+          ],
+          "type": "object"
+        }
+      ]
+    },
     "LanguageId": {
       "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
       "type": "string"
@@ -557,6 +643,44 @@
       "required": [
         "span",
         "text"
+      ],
+      "type": "object"
+    },
+    "MoveIntent": {
+      "description": "Move a file and make every reference to it follow.",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
+    "MoveSymbolIntent": {
+      "description": "Move one declaration — with what belongs to it in the text, and for Rust\nits `impl` blocks — from the file declaring it to another file of the\nsame language, and make every reference follow.",
+      "properties": {
+        "from": {
+          "description": "The file declaring it.",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "to": {
+          "description": "The file to declare it in; it must exist.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "from",
+        "to"
       ],
       "type": "object"
     },
@@ -699,6 +823,16 @@
       "description": "Opaque handle scoped to an engine session, not a serializable edit plan.",
       "type": "string"
     },
+    "PlanPreview": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Rename"
+        },
+        {
+          "$ref": "#/$defs/Rewrite"
+        }
+      ]
+    },
     "PlanReceipt": {
       "properties": {
         "files": {
@@ -725,6 +859,259 @@
       ],
       "type": "object"
     },
+    "PlanReview": {
+      "oneOf": [
+        {
+          "properties": {
+            "preview": {
+              "$ref": "#/$defs/PlanPreview"
+            },
+            "state": {
+              "const": "prepared",
+              "type": "string"
+            }
+          },
+          "required": [
+            "state",
+            "preview"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "receipt": {
+              "$ref": "#/$defs/PlanReceipt"
+            },
+            "state": {
+              "const": "applied",
+              "type": "string"
+            }
+          },
+          "required": [
+            "state",
+            "receipt"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "failure": {
+              "$ref": "#/$defs/Failure"
+            },
+            "state": {
+              "const": "failed",
+              "type": "string"
+            }
+          },
+          "required": [
+            "state",
+            "failure"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "state": {
+              "const": "discarded",
+              "type": "string"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "type": "object"
+        }
+      ],
+      "properties": {
+        "lifetime_seconds": {
+          "description": "Fixed lifetime from preparation; inspection/retry does not extend it.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "plan_id": {
+          "$ref": "#/$defs/PlanId"
+        },
+        "validation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ValidationReport"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Latest explicitly requested validation; does not change the apply receipt."
+        }
+      },
+      "required": [
+        "plan_id",
+        "lifetime_seconds"
+      ],
+      "type": "object"
+    },
+    "PlanReviewCursor": {
+      "description": "A plan-store cursor. It cannot be used with source-query continue or expand.",
+      "type": "string"
+    },
+    "PlanReviewItem": {
+      "description": "Metadata uses the corresponding ordinary preview record shape. Text fields\nreplaced by empty strings are reconstructed by following JSON-pointer chunks.",
+      "oneOf": [
+        {
+          "properties": {
+            "file_index": {
+              "format": "uint",
+              "minimum": 0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "index": {
+              "format": "uint",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "kind": {
+              "const": "metadata",
+              "type": "string"
+            },
+            "section": {
+              "$ref": "#/$defs/ReviewSection"
+            },
+            "value": true
+          },
+          "required": [
+            "kind",
+            "section",
+            "index",
+            "value"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "field": {
+              "type": "string"
+            },
+            "file_index": {
+              "format": "uint",
+              "minimum": 0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "index": {
+              "format": "uint",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "kind": {
+              "const": "text",
+              "type": "string"
+            },
+            "offset": {
+              "format": "uint",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "section": {
+              "$ref": "#/$defs/ReviewSection"
+            },
+            "text": {
+              "type": "string"
+            },
+            "total_bytes": {
+              "format": "uint",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "kind",
+            "section",
+            "index",
+            "field",
+            "offset",
+            "total_bytes",
+            "text",
+            "complete"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "PlanReviewKind": {
+      "enum": [
+        "plan_review"
+      ],
+      "type": "string"
+    },
+    "PlanReviewPage": {
+      "properties": {
+        "intent": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Intent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/PlanReviewItem"
+          },
+          "type": "array"
+        },
+        "kind": {
+          "$ref": "#/$defs/PlanReviewKind"
+        },
+        "lifetime_seconds": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "mutation": {
+          "$ref": "#/$defs/ReviewMutation"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlanReviewCursor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plan_id": {
+          "$ref": "#/$defs/PlanId"
+        },
+        "review_id": {
+          "$ref": "#/$defs/ContentId"
+        },
+        "totals": {
+          "$ref": "#/$defs/ReviewTotals"
+        }
+      },
+      "required": [
+        "kind",
+        "plan_id",
+        "lifetime_seconds",
+        "review_id",
+        "mutation",
+        "totals",
+        "items",
+        "next_cursor"
+      ],
+      "type": "object"
+    },
     "Position": {
       "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
       "properties": {
@@ -743,6 +1130,54 @@
         "line",
         "column"
       ],
+      "type": "object"
+    },
+    "Query": {
+      "properties": {
+        "kind": {
+          "description": "Tree-sitter node kind, e.g. `function_item`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "language": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LanguageId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Restrict to one language; otherwise every registered language is searched."
+        },
+        "name": {
+          "description": "Only declarations with exactly this name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pattern": {
+          "description": "ast-grep style pattern with meta-variables, e.g. `fn $NAME($$$ARGS) { $$$ }`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolKind"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Only declarations of this kind."
+        }
+      },
       "type": "object"
     },
     "Reason": {
@@ -1097,6 +1532,121 @@
       ],
       "type": "object"
     },
+    "ReviewMutation": {
+      "enum": [
+        "rename",
+        "rewrite"
+      ],
+      "type": "string"
+    },
+    "ReviewSection": {
+      "enum": [
+        "declaration",
+        "occurrence",
+        "file",
+        "edit",
+        "diff"
+      ],
+      "type": "string"
+    },
+    "ReviewTotals": {
+      "properties": {
+        "declarations": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "edits": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "files": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "occurrences": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "declarations",
+        "occurrences",
+        "files",
+        "edits"
+      ],
+      "type": "object"
+    },
+    "Rewrite": {
+      "description": "`vvv rewrite`: one edit per selected match.",
+      "oneOf": [
+        {
+          "properties": {
+            "applied": {
+              "const": false
+            },
+            "history_id": false
+          },
+          "required": [
+            "applied"
+          ]
+        },
+        {
+          "properties": {
+            "applied": {
+              "const": true
+            },
+            "history_id": {
+              "format": "uint64",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "applied",
+            "history_id"
+          ]
+        }
+      ],
+      "properties": {
+        "files": {
+          "items": {
+            "$ref": "#/$defs/FileChange"
+          },
+          "type": "array"
+        },
+        "intent": {
+          "$ref": "#/$defs/RewriteIntent"
+        }
+      },
+      "required": [
+        "intent",
+        "files"
+      ],
+      "type": "object"
+    },
+    "RewriteIntent": {
+      "description": "Replace every selected match of `query` with `template`.",
+      "properties": {
+        "query": {
+          "$ref": "#/$defs/Query"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
+        },
+        "template": {
+          "$ref": "#/$defs/Template"
+        }
+      },
+      "required": [
+        "query",
+        "template"
+      ],
+      "type": "object"
+    },
     "Role": {
       "description": "What position a match occupies in its file: the declaration itself, a\ntoken inside an import statement, or any other use. Views lead with\ndeclarations and dim imports; the engine orders results by it.",
       "enum": [
@@ -1283,6 +1833,10 @@
         }
       ]
     },
+    "Template": {
+      "description": "Replacement text with meta-variable holes: `bar($$$ARGS)`, `$NAME_v2`.\n\nVariables are `$NAME` (single capture) or `$$$NAME` (sequence capture);\na name is `[A-Z_][A-Z0-9_]*`. Anything else is literal.",
+      "type": "string"
+    },
     "ValidationReport": {
       "properties": {
         "after": {
@@ -1367,96 +1921,15 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:inspect_plan:result:efdb0fe7854e8db904c53197f024b1bd174433831f4b87540b4c50b998773f60",
+  "$id": "urn:vvv:schema:1:inspect_plan:result:a2e8845259a9b2ddecd1c80260fcdeb253acffaf80ebede1687fbb30eda77c0e",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "oneOf": [
+  "anyOf": [
     {
-      "properties": {
-        "preview": {
-          "$ref": "#/$defs/Rename"
-        },
-        "state": {
-          "const": "prepared",
-          "type": "string"
-        }
-      },
-      "required": [
-        "state",
-        "preview"
-      ],
-      "type": "object"
+      "$ref": "#/$defs/PlanReview"
     },
     {
-      "properties": {
-        "receipt": {
-          "$ref": "#/$defs/PlanReceipt"
-        },
-        "state": {
-          "const": "applied",
-          "type": "string"
-        }
-      },
-      "required": [
-        "state",
-        "receipt"
-      ],
-      "type": "object"
-    },
-    {
-      "properties": {
-        "failure": {
-          "$ref": "#/$defs/Failure"
-        },
-        "state": {
-          "const": "failed",
-          "type": "string"
-        }
-      },
-      "required": [
-        "state",
-        "failure"
-      ],
-      "type": "object"
-    },
-    {
-      "properties": {
-        "state": {
-          "const": "discarded",
-          "type": "string"
-        }
-      },
-      "required": [
-        "state"
-      ],
-      "type": "object"
+      "$ref": "#/$defs/PlanReviewPage"
     }
   ],
-  "properties": {
-    "lifetime_seconds": {
-      "description": "Fixed lifetime from preparation; inspection/retry does not extend it.",
-      "format": "uint64",
-      "minimum": 0,
-      "type": "integer"
-    },
-    "plan_id": {
-      "$ref": "#/$defs/PlanId"
-    },
-    "validation": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/ValidationReport"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "description": "Latest explicitly requested validation; does not change the apply receipt."
-    }
-  },
-  "required": [
-    "plan_id",
-    "lifetime_seconds"
-  ],
-  "title": "inspect_plan result",
-  "type": "object"
+  "title": "inspect_plan result"
 }

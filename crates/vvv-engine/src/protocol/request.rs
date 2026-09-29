@@ -29,6 +29,8 @@ pub enum Request {
     ValidatePlan(crate::ValidatePlanQuery),
     InspectPlan(crate::InspectPlanQuery),
     PrepareRename(crate::PrepareRenameQuery),
+    PrepareRewrite(crate::PrepareRewriteQuery),
+    ReviewPlan(crate::ReviewPlanQuery),
     #[cfg(feature = "schema")]
     Schema(crate::SchemaQuery),
     SearchPage(crate::SearchPageQuery),
@@ -103,6 +105,8 @@ impl Request {
             Self::ValidatePlan(_) => super::Command::ValidatePlan,
             Self::InspectPlan(_) => super::Command::InspectPlan,
             Self::PrepareRename(_) => super::Command::PrepareRename,
+            Self::PrepareRewrite(_) => super::Command::PrepareRewrite,
+            Self::ReviewPlan(_) => super::Command::ReviewPlan,
             #[cfg(feature = "schema")]
             Self::Schema(_) => super::Command::Schema,
             Self::SearchPage(_) => super::Command::SearchPage,
@@ -149,8 +153,10 @@ pub enum Answer {
     DiscardPlan(crate::PlanReview),
     ApplyPlan(crate::PlanReceipt),
     ValidatePlan(crate::ValidationReport),
-    InspectPlan(crate::PlanReview),
-    PrepareRename(crate::PlanReview),
+    InspectPlan(crate::PlanReviewReply),
+    PrepareRename(crate::PlanReviewReply),
+    PrepareRewrite(crate::PlanReviewReply),
+    ReviewPlan(crate::PlanReviewPage),
     #[cfg(feature = "schema")]
     Schema(crate::SchemaDocument),
     SearchPage(crate::SearchPage),

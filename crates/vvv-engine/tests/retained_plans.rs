@@ -28,16 +28,22 @@ impl Fixture {
         PrepareRenameQuery {
             intent: RenameIntent::new("foo", "bar"),
             max_bytes: 16384,
+            page: None,
         }
         .execute(&self.engine)
+        .unwrap()
+        .into_complete()
         .unwrap()
     }
     fn inspect(&self, plan_id: PlanId) -> vvv_engine::PlanReview {
         InspectPlanQuery {
             plan_id,
             max_bytes: 16384,
+            page: None,
         }
         .execute(&self.engine)
+        .unwrap()
+        .into_complete()
         .unwrap()
     }
 }
@@ -50,7 +56,7 @@ fn exact_preview_survives_wire_round_trip_and_apply_is_retryable_even_after_undo
         panic!()
     };
     assert_eq!(
-        serde_json::to_value(&preview.files).unwrap(),
+        serde_json::to_value(preview.files()).unwrap(),
         serde_json::to_value(&expected.files).unwrap()
     );
     assert_eq!(f.vfs.read(Path::new("/ws/a.p")).unwrap(), "def foo\nfoo()");
@@ -165,8 +171,11 @@ fn failed_apply_rolls_back_records_failure_and_cannot_be_retried_as_a_write() {
     let review = PrepareRenameQuery {
         intent: RenameIntent::new("foo", "bar"),
         max_bytes: 16384,
+        page: None,
     }
     .execute(&f.engine)
+    .unwrap()
+    .into_complete()
     .unwrap();
     f.arm(FaultOperation::Write, "b.p", 0, FaultAction::After);
     let apply = ApplyPlanQuery {
@@ -179,9 +188,12 @@ fn failed_apply_rolls_back_records_failure_and_cannot_be_retried_as_a_write() {
     assert!(matches!(
         InspectPlanQuery {
             plan_id: review.plan_id,
-            max_bytes: 16384
+            max_bytes: 16384,
+            page: None,
         }
         .execute(&f.engine)
+        .unwrap()
+        .into_complete()
         .unwrap()
         .status,
         PlanStatus::Failed { .. }
@@ -237,7 +249,8 @@ fn capacity_never_silently_evicts_a_reviewed_plan_and_discard_frees_space() {
     assert!(matches!(
         PrepareRenameQuery {
             intent: RenameIntent::new("foo", "bar"),
-            max_bytes: 16384
+            max_bytes: 16384,
+            page: None,
         }
         .execute(&f.engine),
         Err(EngineError::PlanRetentionLimit)

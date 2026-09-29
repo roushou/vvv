@@ -10,6 +10,8 @@ pub enum Command {
     ValidatePlan,
     InspectPlan,
     PrepareRename,
+    PrepareRewrite,
+    ReviewPlan,
     #[cfg(feature = "schema")]
     Schema,
     SearchPage,
@@ -48,6 +50,8 @@ impl Command {
         Self::ValidatePlan,
         Self::InspectPlan,
         Self::PrepareRename,
+        Self::PrepareRewrite,
+        Self::ReviewPlan,
         #[cfg(feature = "schema")]
         Self::Schema,
         Self::SearchPage,
@@ -86,6 +90,8 @@ impl Command {
             Self::ValidatePlan => "validate_plan",
             Self::InspectPlan => "inspect_plan",
             Self::PrepareRename => "prepare_rename",
+            Self::PrepareRewrite => "prepare_rewrite",
+            Self::ReviewPlan => "review_plan",
             #[cfg(feature = "schema")]
             Self::Schema => "schema",
             Self::SearchPage => "search_page",
@@ -123,8 +129,9 @@ impl Command {
             Self::DiscardPlan => &["plan_id"],
             Self::ApplyPlan => &["plan_id"],
             Self::ValidatePlan => &["plan_id", "checks", "extra_inputs", "budget"],
-            Self::InspectPlan => &["plan_id", "max_bytes"],
-            Self::PrepareRename => &["intent", "max_bytes"],
+            Self::InspectPlan => &["plan_id", "max_bytes", "page"],
+            Self::PrepareRename | Self::PrepareRewrite => &["intent", "max_bytes", "page"],
+            Self::ReviewPlan => &["cursor", "page"],
             #[cfg(feature = "schema")]
             Self::Schema => &["for_command", "contract"],
             Self::SearchPage => &["query", "scope", "page"],
@@ -184,7 +191,7 @@ impl Command {
             Self::DiscardPlan => true,
             Self::ApplyPlan | Self::ValidatePlan => false,
             Self::InspectPlan => true,
-            Self::PrepareRename => true,
+            Self::PrepareRename | Self::PrepareRewrite | Self::ReviewPlan => true,
             #[cfg(feature = "schema")]
             Self::Schema => true,
             Self::SearchPage => true,

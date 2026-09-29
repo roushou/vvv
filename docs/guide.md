@@ -351,10 +351,10 @@ result. An oversized read-only result returns a structured `output_limit` error.
 For `context`, this limit also narrows its excerpt budget. Mutation commands reject
 this option before running, so an output limit cannot hide a successful write.
 
-## Reviewing and applying retained rename plans
+## Reviewing and applying retained mutation plans
 
 Use a single `vvv serve` or MCP session when application must use exactly the edits
-you reviewed. Ordinary `rename` and `rename --apply` invocations still build separate
+you reviewed. Ordinary `rename`/`rewrite` previews and their `--apply` invocations still build separate
 plans. Retained handles stay in memory; they do not survive a restart or transfer
 between sessions/workspaces.
 
@@ -397,6 +397,37 @@ MCP provides `vvv_prepare_rename`, `vvv_inspect_plan`, `vvv_apply_plan`, and
 `vvv_discard_plan` with the same arguments, omitting `command`. Only `vvv_apply_plan`
 can write. Queued calls can be cancelled; once apply starts it finishes its
 transaction. If a response is interrupted, inspect or retry the same handle.
+
+### Retained rewrites and paged reviews
+
+`prepare_rewrite` retains the existing rewrite intent: `query`, `template`, and
+optional `selection`. MCP exposes it as `vvv_prepare_rewrite`. Captures expand
+from the captured source; application cannot replace the template or selection.
+Use the same inspection, apply, discard, and validation commands as for rename.
+
+For a large rename or rewrite, supply `page` during preparation or inspection:
+
+```json
+{"command":"prepare_rewrite","intent":{"query":{"pattern":"increment($X, 1)"},"template":"increment($X, 2)"},"page":{"max_items":20,"max_bytes":8192}}
+{"command":"review_plan","cursor":"<next_cursor>","page":{"max_items":20,"max_bytes":8192}}
+```
+
+The MCP continuation tool is `vvv_review_plan`. Follow `next_cursor` until null
+before applying. Pages contain ordered metadata and exact text chunks, including
+large replacements and single-file diffs. Reassemble chunks by section, index,
+optional file index, JSON-pointer field, and UTF-8 byte offset. Nothing is silently
+omitted. The first page includes the complete intent; an unusually large template
+or selection may require a larger first-page budget. Full review remains the
+fallback when `page` is omitted. See [the record contract](protocol.md#paged-plan-reviews)
+for reconstruction details.
+
+Review cursors read captured evidence without accessing the current source tree.
+Edits do not change their content; applying still checks freshness. Retries with
+the same budgets return the same page. Changing budgets resumes from the same
+position. Captured reviews remain readable after apply or failure, until the
+original expiry. Discard releases a pending review and its cursors. Pagination
+and validation do not extend expiry or bypass retention limits. Fetching every
+page is a client review responsibility, not an enforced apply prerequisite.
 
 ## Validating an applied change
 
@@ -982,7 +1013,7 @@ For clients that use an `mcpServers` configuration, add:
 
 The client must support MCP `2025-11-25`. Navigation tools are read-only:
 `vvv_discover`, `vvv_search`, `vvv_navigate`, `vvv_relationships`, `vvv_context`,
-`vvv_continue`, and `vvv_expand`. Reviewed changes use `vvv_prepare_rename`,
+`vvv_continue`, and `vvv_expand`. Reviewed changes use `vvv_prepare_rename`, `vvv_prepare_rewrite`, `vvv_review_plan`,
 `vvv_inspect_plan`, `vvv_discard_plan`, and the writing tool `vvv_apply_plan`.
 `vvv_validate_plan` runs explicitly supplied project checks after apply.
 Their input and output schemas and mutation annotations are available through

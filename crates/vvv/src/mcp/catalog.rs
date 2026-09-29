@@ -11,6 +11,8 @@ pub(crate) enum ToolKind {
     ValidatePlan,
     InspectPlan,
     PrepareRename,
+    PrepareRewrite,
+    ReviewPlan,
     Discover,
     Search,
     Relationships,
@@ -20,12 +22,14 @@ pub(crate) enum ToolKind {
     Expand,
 }
 impl ToolKind {
-    pub const ALL: [Self; 12] = [
+    pub const ALL: [Self; 14] = [
         Self::DiscardPlan,
         Self::ApplyPlan,
         Self::ValidatePlan,
         Self::InspectPlan,
         Self::PrepareRename,
+        Self::PrepareRewrite,
+        Self::ReviewPlan,
         Self::Discover,
         Self::Search,
         Self::Relationships,
@@ -48,6 +52,8 @@ impl ToolKind {
             Self::ValidatePlan => "vvv_validate_plan",
             Self::InspectPlan => "vvv_inspect_plan",
             Self::PrepareRename => "vvv_prepare_rename",
+            Self::PrepareRewrite => "vvv_prepare_rewrite",
+            Self::ReviewPlan => "vvv_review_plan",
             Self::Discover => "vvv_discover",
             Self::Search => "vvv_search",
             Self::Relationships => "vvv_relationships",
@@ -64,6 +70,8 @@ impl ToolKind {
             Self::ValidatePlan => Command::ValidatePlan,
             Self::InspectPlan => Command::InspectPlan,
             Self::PrepareRename => Command::PrepareRename,
+            Self::PrepareRewrite => Command::PrepareRewrite,
+            Self::ReviewPlan => Command::ReviewPlan,
             Self::Discover => Command::Discover,
             Self::Search => Command::SearchPage,
             Self::Relationships => Command::Relationships,

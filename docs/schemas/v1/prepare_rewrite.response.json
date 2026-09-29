@@ -1112,6 +1112,16 @@
       ],
       "type": "object"
     },
+    "PlanReviewReply": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PlanReview"
+        },
+        {
+          "$ref": "#/$defs/PlanReviewPage"
+        }
+      ]
+    },
     "Position": {
       "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
       "properties": {
@@ -1921,15 +1931,97 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:prepare_rename:result:093bbf297b8818b0716a9d187536302163244499133d5e780b44f0b59b46bb53",
+  "$id": "urn:vvv:schema:1:prepare_rewrite:response:591725dd49c26b0adb54713504b8f13ad8826ba9a445f2580c6ee4983bbdf394",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "anyOf": [
+  "description": "Top-level envelope of every `--json` response.",
+  "oneOf": [
     {
-      "$ref": "#/$defs/PlanReview"
+      "properties": {
+        "result": {
+          "$ref": "#/$defs/PlanReviewReply"
+        },
+        "schema": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "status": {
+          "const": "ok",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "schema",
+        "result"
+      ],
+      "type": "object"
     },
     {
-      "$ref": "#/$defs/PlanReviewPage"
+      "description": "A failed request, as the wire carries it.",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "continuation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContinuationRecovery"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "hint": {
+          "description": "What to try instead, when there is something.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "message": {
+          "type": "string"
+        },
+        "output_limit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OutputLimit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "recovery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Recovery"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Effects that could not be restored after a failed mutation."
+        },
+        "schema": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "status": {
+          "const": "error",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "schema",
+        "code",
+        "message"
+      ],
+      "type": "object"
     }
   ],
-  "title": "prepare_rename result"
+  "title": "prepare_rewrite response"
 }

@@ -1416,8 +1416,11 @@ impl PageTranscript {
                 .declared_in(path)
                 .of_symbol(symbol.parse().unwrap()),
             max_bytes: 65536,
+            page: None,
         }
         .execute(&engine)
+        .unwrap()
+        .into_complete()
         .unwrap();
         let receipt = vvv_engine::ApplyPlanQuery {
             plan_id: prepared.plan_id,
@@ -1518,6 +1521,72 @@ impl PageTranscript {
         settings.bind(|| {
             insta::assert_snapshot!(
                 format!("{}__retained-plan__json", corpus.name),
+                serde_json::to_string_pretty(&transcript.replies).unwrap()
+            )
+        });
+    }
+    fn rewrites(corpus: Corpus) {
+        let (vfs, engine) = corpus.engine();
+        let before = snapshot(&vfs);
+        let expected = RewriteIntent::new(Query::pattern("Engine"), "Runtime")
+            .plan(&engine)
+            .unwrap();
+        let mut transcript = Self {
+            replies: vec![],
+            cursors: BTreeMap::new(),
+        };
+        let first = transcript.call(&engine, serde_json::json!({"command":"prepare_rewrite","intent":{"query":{"pattern":"Engine"},"template":"Runtime"},"page":{"max_items":3,"max_bytes":1024}}));
+        let id = first["result"]["plan_id"].clone();
+        let mut cursor = first["result"]["next_cursor"].clone();
+        let mut pages = 0;
+        while !cursor.is_null() {
+            pages += 1;
+            assert!(pages < 200);
+            let page = transcript.call(&engine, serde_json::json!({"command":"review_plan","cursor":cursor,"page":{"max_items":3,"max_bytes":1024}}));
+            assert!(serde_json::to_vec(&page["result"]).unwrap().len() <= 1024);
+            cursor = page["result"]["next_cursor"].clone();
+        }
+        assert!(pages > 0);
+        let inspected = transcript.call(
+            &engine,
+            serde_json::json!({"command":"inspect_plan","plan_id":id,"max_bytes":65536}),
+        );
+        assert_eq!(
+            inspected["result"]["preview"],
+            serde_json::to_value(&*expected).unwrap()
+        );
+        let applied = transcript.call(
+            &engine,
+            serde_json::json!({"command":"apply_plan","plan_id":id}),
+        );
+        for file in expected.preview() {
+            assert_eq!(
+                vfs.read(&Path::new("/ws").join(&file.path)).unwrap(),
+                file.after
+            );
+        }
+        assert_eq!(
+            transcript.call(
+                &engine,
+                serde_json::json!({"command":"apply_plan","plan_id":id})
+            ),
+            applied
+        );
+        vvv_engine::Ledger::new(&engine).undo().unwrap();
+        assert_eq!(snapshot(&vfs), before);
+        assert_eq!(
+            transcript.call(
+                &engine,
+                serde_json::json!({"command":"apply_plan","plan_id":id})
+            ),
+            applied
+        );
+        let mut settings = insta::Settings::clone_current();
+        settings.set_snapshot_path("corpus/snapshots");
+        settings.set_prepend_module_to_snapshot(false);
+        settings.bind(|| {
+            insta::assert_snapshot!(
+                format!("{}__retained-rewrite__json", corpus.name),
                 serde_json::to_string_pretty(&transcript.replies).unwrap()
             )
         });
@@ -1812,4 +1881,23 @@ fn typescript_validation_golden() {
         "src/origin.ts",
         "class",
     );
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_retained_rewrite_golden() {
+    PageTranscript::rewrites(Corpus {
+        name: "rust-navigation",
+        cases: &[],
+        mutations: Vec::new,
+    });
+}
+#[cfg(feature = "typescript")]
+#[test]
+fn typescript_retained_rewrite_golden() {
+    PageTranscript::rewrites(Corpus {
+        name: "ts-navigation",
+        cases: &[],
+        mutations: Vec::new,
+    });
 }

@@ -60,8 +60,14 @@ impl McpIssue {
 impl ToolKind {
     pub fn description(self) -> &'static str {
         match self {
+            Self::PrepareRewrite => {
+                "Prepare a structural rewrite without writing. Retain the exact edits for 10 minutes. Supply page for bounded review delivery; follow next_cursor through vvv_review_plan before applying. Selection and template are fixed at preparation."
+            }
+            Self::ReviewPlan => {
+                "Continue an immutable captured plan review. Reassemble text chunks by record identity, JSON pointer, and UTF-8 byte offset. Workspace changes do not alter the captured review; apply checks freshness. Review does not extend expiry."
+            }
             Self::PrepareRename => {
-                "Prepare a rename without writing files. Review the complete preview, including skipped/unresolved occurrences. Retains the exact executable plan in this session for 10 minutes. Return plan_id to apply only after review; narrowing or budget failure never silently drops edits."
+                "Prepare a rename without writing files. Review the preview, including skipped/unresolved occurrences. Supply page for bounded delivery and follow next_cursor through vvv_review_plan. Retains the exact executable plan in this session for 10 minutes. Return plan_id to apply only after review; narrowing or budget failure never silently drops edits."
             }
             Self::InspectPlan => {
                 "Inspect the captured preview or terminal outcome of a retained plan. Does not replan or extend its lifetime. Apply checks current sources separately."

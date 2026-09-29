@@ -699,6 +699,16 @@
       "description": "Opaque handle scoped to an engine session, not a serializable edit plan.",
       "type": "string"
     },
+    "PlanPreview": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Rename"
+        },
+        {
+          "$ref": "#/$defs/Rewrite"
+        }
+      ]
+    },
     "PlanReceipt": {
       "properties": {
         "files": {
@@ -730,7 +740,7 @@
         {
           "properties": {
             "preview": {
-              "$ref": "#/$defs/Rename"
+              "$ref": "#/$defs/PlanPreview"
             },
             "state": {
               "const": "prepared",
@@ -834,6 +844,54 @@
         "line",
         "column"
       ],
+      "type": "object"
+    },
+    "Query": {
+      "properties": {
+        "kind": {
+          "description": "Tree-sitter node kind, e.g. `function_item`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "language": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LanguageId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Restrict to one language; otherwise every registered language is searched."
+        },
+        "name": {
+          "description": "Only declarations with exactly this name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pattern": {
+          "description": "ast-grep style pattern with meta-variables, e.g. `fn $NAME($$$ARGS) { $$$ }`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolKind"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Only declarations of this kind."
+        }
+      },
       "type": "object"
     },
     "Reason": {
@@ -1188,6 +1246,73 @@
       ],
       "type": "object"
     },
+    "Rewrite": {
+      "description": "`vvv rewrite`: one edit per selected match.",
+      "oneOf": [
+        {
+          "properties": {
+            "applied": {
+              "const": false
+            },
+            "history_id": false
+          },
+          "required": [
+            "applied"
+          ]
+        },
+        {
+          "properties": {
+            "applied": {
+              "const": true
+            },
+            "history_id": {
+              "format": "uint64",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "applied",
+            "history_id"
+          ]
+        }
+      ],
+      "properties": {
+        "files": {
+          "items": {
+            "$ref": "#/$defs/FileChange"
+          },
+          "type": "array"
+        },
+        "intent": {
+          "$ref": "#/$defs/RewriteIntent"
+        }
+      },
+      "required": [
+        "intent",
+        "files"
+      ],
+      "type": "object"
+    },
+    "RewriteIntent": {
+      "description": "Replace every selected match of `query` with `template`.",
+      "properties": {
+        "query": {
+          "$ref": "#/$defs/Query"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
+        },
+        "template": {
+          "$ref": "#/$defs/Template"
+        }
+      },
+      "required": [
+        "query",
+        "template"
+      ],
+      "type": "object"
+    },
     "Role": {
       "description": "What position a match occupies in its file: the declaration itself, a\ntoken inside an import statement, or any other use. Views lead with\ndeclarations and dim imports; the engine orders results by it.",
       "enum": [
@@ -1374,6 +1499,10 @@
         }
       ]
     },
+    "Template": {
+      "description": "Replacement text with meta-variable holes: `bar($$$ARGS)`, `$NAME_v2`.\n\nVariables are `$NAME` (single capture) or `$$$NAME` (sequence capture);\na name is `[A-Z_][A-Z0-9_]*`. Anything else is literal.",
+      "type": "string"
+    },
     "ValidationReport": {
       "properties": {
         "after": {
@@ -1458,7 +1587,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:discard_plan:response:c7f7cdf48a8d05a130033b5e2f3bb83b14823488876cf222aadcb4e1b05f9166",
+  "$id": "urn:vvv:schema:1:discard_plan:response:ba9d49d5c1fe8590d2cb9201fdda7e7e2da372b78e37ca3df20ea3c544f6999c",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [

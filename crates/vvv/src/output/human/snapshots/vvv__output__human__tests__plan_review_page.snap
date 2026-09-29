@@ -1,0 +1,9 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+expression: "render(|r| r.report(&Answer::ReviewPlan(page)).unwrap())"
+---
+Plan: p1.example
+{"kind":"metadata","section":"file","index":0,"value":{"path":"src/a.rs"}}
+{"kind":"text","section":"edit","index":0,"file_index":0,"field":"/replacement","offset":0,"total_bytes":12,"text":"bar(1)","complete":false}
+--- stderr ---
+Review cursor: r1.p1.0000000000000000.0000000000000001.0000000000000002.0000000000000006

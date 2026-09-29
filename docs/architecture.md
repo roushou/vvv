@@ -528,9 +528,10 @@ its `Request` on a session engine and writes the `Reply` for JSON-lines clients.
 default), `vvv-tui`; `vvv ui` or bare `vvv` in a terminal hands the engine to the
 picker with the CLI's colour policy and `$VISUAL`/`$EDITOR`.
 
-The optional `mcp` feature adds `mcp/`, a six-tool read-only adapter using the official
-Rust SDK's codec, lifecycle, and dispatch. It calls the engine in process through
-`Call::execute_with_cancellation`, sharing the ordinary call budget policy. A bounded
+The optional `mcp` feature adds `mcp/`, a fourteen-tool adapter for navigation, reviewed mutations, and explicit validation using the official
+Rust SDK's codec, lifecycle, and dispatch. Reads and validation call the engine
+in process through `Call::execute_with_cancellation`; apply uses `Call::execute`
+and finishes its active transaction. Both share the ordinary call budget policy. A bounded
 queue and one dedicated engine worker keep synchronous parsing off the protocol
 loop; the transport bounds frames, request IDs, and admitted requests. Tool descriptions
 and result/error conversion live in `output/mcp.rs`. SDK and async-runtime dependencies
@@ -892,14 +893,14 @@ Engine dispatch routes typed requests without owning capability behavior.
 ## Retained mutation handles
 
 `capabilities/plans.rs` owns preparation, inspection, application, discard, and
-report composition for reviewed rename plans. `plan_store.rs` retains executable
+report composition for reviewed rename and rewrite plans. `plan_store.rs` retains executable
 plans and terminal outcomes, shared by engine clones. Ordinary mutation requests
 keep their existing lifecycle. Session handles are references to captured plans;
 clients cannot submit replacement edits or change the captured intent on apply.
 
 Preparation uses a fresh content-verified `QuerySnapshot`, preserves any configured
 library oracle, plans against that graph, and revalidates before publication. It
-checks the complete review's output budget before retaining a handle. Application
+checks the complete review or requested first page against its output budget before retaining a handle. Application
 consumes the retained executable plan after operation exclusion, revalidates the
 input snapshot and engine revision, and delegates writes/history/recovery to `Apply`.
 This session capability scans before apply; direct typed `Apply` remains a
@@ -912,6 +913,22 @@ entry limits, and conservative byte accounting bound the store; capacity pressur
 never evicts pending plans or successful receipts. Discarded tombstones may be
 reclaimed on the next preparation. MCP distinguishes queued cancellation from
 active application: reads are cooperative, active writes finish their transaction.
+
+`capabilities/plans/review.rs` owns the immutable closed rename/rewrite preview,
+record construction, exact UTF-8 text chunking, delivery budgets, and review cursor
+positions. `PendingPlan` holds `Planned<MutationAnswer>`; preparation admits only
+rename and rewrite. Shared immutable preview allocations keep inspection from
+copying all occurrences and edits. Review pages never access a source tree or
+reuse source-query checkpoints: they describe captured evidence that remains
+readable after workspace edits, apply, or failed apply. Lifecycle and latest
+validation evidence remain inspection's responsibility.
+
+Stateless review cursors identify checked positions within a plan's captured records;
+page retries add no retained checkpoint allocations. Captured reviews remain charged
+within the existing plan memory limits after completion, and share the original
+fixed expiry. Discard releases pending executable plans, captured reviews, and
+baselines. No proof of page delivery is required for apply; clients own their review
+policy. Moves and batches are not admitted to retained handles.
 
 ### Validation of applied plans
 

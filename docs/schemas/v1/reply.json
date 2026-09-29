@@ -31,10 +31,16 @@
           "$ref": "#/$defs/ValidationReport"
         },
         {
-          "$ref": "#/$defs/PlanReview"
+          "$ref": "#/$defs/PlanReviewReply"
         },
         {
-          "$ref": "#/$defs/PlanReview"
+          "$ref": "#/$defs/PlanReviewReply"
+        },
+        {
+          "$ref": "#/$defs/PlanReviewReply"
+        },
+        {
+          "$ref": "#/$defs/PlanReviewPage"
         },
         {
           "$ref": "#/$defs/SchemaDocument"
@@ -2864,6 +2870,16 @@
       ],
       "type": "object"
     },
+    "PlanPreview": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Rename"
+        },
+        {
+          "$ref": "#/$defs/Rewrite"
+        }
+      ]
+    },
     "PlanReceipt": {
       "properties": {
         "files": {
@@ -2895,7 +2911,7 @@
         {
           "properties": {
             "preview": {
-              "$ref": "#/$defs/Rename"
+              "$ref": "#/$defs/PlanPreview"
             },
             "state": {
               "const": "prepared",
@@ -2980,6 +2996,178 @@
         "lifetime_seconds"
       ],
       "type": "object"
+    },
+    "PlanReviewCursor": {
+      "description": "A plan-store cursor. It cannot be used with source-query continue or expand.",
+      "type": "string"
+    },
+    "PlanReviewItem": {
+      "description": "Metadata uses the corresponding ordinary preview record shape. Text fields\nreplaced by empty strings are reconstructed by following JSON-pointer chunks.",
+      "oneOf": [
+        {
+          "properties": {
+            "file_index": {
+              "format": "uint",
+              "minimum": 0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "index": {
+              "format": "uint",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "kind": {
+              "const": "metadata",
+              "type": "string"
+            },
+            "section": {
+              "$ref": "#/$defs/ReviewSection"
+            },
+            "value": true
+          },
+          "required": [
+            "kind",
+            "section",
+            "index",
+            "value"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "complete": {
+              "type": "boolean"
+            },
+            "field": {
+              "type": "string"
+            },
+            "file_index": {
+              "format": "uint",
+              "minimum": 0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "index": {
+              "format": "uint",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "kind": {
+              "const": "text",
+              "type": "string"
+            },
+            "offset": {
+              "format": "uint",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "section": {
+              "$ref": "#/$defs/ReviewSection"
+            },
+            "text": {
+              "type": "string"
+            },
+            "total_bytes": {
+              "format": "uint",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "kind",
+            "section",
+            "index",
+            "field",
+            "offset",
+            "total_bytes",
+            "text",
+            "complete"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "PlanReviewKind": {
+      "enum": [
+        "plan_review"
+      ],
+      "type": "string"
+    },
+    "PlanReviewPage": {
+      "properties": {
+        "intent": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Intent"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/PlanReviewItem"
+          },
+          "type": "array"
+        },
+        "kind": {
+          "$ref": "#/$defs/PlanReviewKind"
+        },
+        "lifetime_seconds": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "mutation": {
+          "$ref": "#/$defs/ReviewMutation"
+        },
+        "next_cursor": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlanReviewCursor"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "plan_id": {
+          "$ref": "#/$defs/PlanId"
+        },
+        "review_id": {
+          "$ref": "#/$defs/ContentId"
+        },
+        "totals": {
+          "$ref": "#/$defs/ReviewTotals"
+        }
+      },
+      "required": [
+        "kind",
+        "plan_id",
+        "lifetime_seconds",
+        "review_id",
+        "mutation",
+        "totals",
+        "items",
+        "next_cursor"
+      ],
+      "type": "object"
+    },
+    "PlanReviewReply": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PlanReview"
+        },
+        {
+          "$ref": "#/$defs/PlanReviewPage"
+        }
+      ]
     },
     "Position": {
       "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
@@ -4009,6 +4197,54 @@
       ],
       "type": "object"
     },
+    "ReviewMutation": {
+      "enum": [
+        "rename",
+        "rewrite"
+      ],
+      "type": "string"
+    },
+    "ReviewSection": {
+      "enum": [
+        "declaration",
+        "occurrence",
+        "file",
+        "edit",
+        "diff"
+      ],
+      "type": "string"
+    },
+    "ReviewTotals": {
+      "properties": {
+        "declarations": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "edits": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "files": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "occurrences": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "declarations",
+        "occurrences",
+        "files",
+        "edits"
+      ],
+      "type": "object"
+    },
     "Rewrite": {
       "description": "`vvv rewrite`: one edit per selected match.",
       "oneOf": [
@@ -4941,7 +5177,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:session:reply:00017c063ecc3cc6e41a00336d76372d5edf36c231565cfa1e89edcaf8f8d26d",
+  "$id": "urn:vvv:schema:1:session:reply:2aed5b30dd86ba5249e470ef86a10e8311c74630b631d252db741aaf4ca40d72",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "The reply to a [`Call`]: its `id`, then the usual envelope.",
   "oneOf": [

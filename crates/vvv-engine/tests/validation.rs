@@ -42,8 +42,11 @@ impl Fixture {
         let review = PrepareRenameQuery {
             intent: RenameIntent::new("foo", "bar"),
             max_bytes: 16384,
+            page: None,
         }
         .execute(&engine)
+        .unwrap()
+        .into_complete()
         .unwrap();
         let receipt = ApplyPlanQuery {
             plan_id: review.plan_id,
@@ -80,8 +83,11 @@ impl Fixture {
         InspectPlanQuery {
             plan_id: self.receipt.plan_id.clone(),
             max_bytes: 16384,
+            page: None,
         }
         .execute(&self.engine)
+        .unwrap()
+        .into_complete()
         .unwrap()
         .validation
     }
@@ -325,4 +331,40 @@ fn successful_leader_exit_cleans_up_descendants_holding_output_pipes() {
     assert!(report.checks[0].stdout.complete);
     std::thread::sleep(std::time::Duration::from_millis(550));
     assert!(!f.root.join(".vvv/escaped").exists());
+}
+
+#[cfg(unix)]
+#[test]
+fn rewrite_validation_uses_written_versions_and_retains_review_evidence() {
+    let mut f = Fixture::new("pass");
+    let review = vvv_engine::PrepareRewriteQuery {
+        intent: vvv_engine::RewriteIntent::new(vvv_engine::Query::pattern("bar"), "baz"),
+        max_bytes: 16384,
+        page: None,
+    }
+    .execute(&f.engine)
+    .unwrap()
+    .into_complete()
+    .unwrap();
+    f.receipt = ApplyPlanQuery {
+        plan_id: review.plan_id,
+    }
+    .execute(&f.engine)
+    .unwrap();
+    let report = f.query().execute(&f.engine).unwrap();
+    assert!(report.passed);
+    assert_eq!(report.sources, f.receipt.files);
+    assert_eq!(
+        report.sources[0].content,
+        vvv_engine::ContentId::of("def baz\nbaz()")
+    );
+    assert_eq!(f.recorded().unwrap(), report);
+    assert_eq!(
+        ApplyPlanQuery {
+            plan_id: f.receipt.plan_id.clone()
+        }
+        .execute(&f.engine)
+        .unwrap(),
+        f.receipt
+    );
 }

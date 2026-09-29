@@ -1,24 +1,5 @@
 {
   "$defs": {
-    "Address": {
-      "description": "A position in a language's namespace: the package it belongs to and the\npath within it — `fff :: [grep, types]` for a Rust module, path\ncomponents for a TypeScript file. Prefix relations, which are what a move\ncares about, never hold across packages.",
-      "properties": {
-        "package": {
-          "$ref": "#/$defs/PackageId"
-        },
-        "path": {
-          "items": {
-            "$ref": "#/$defs/Name"
-          },
-          "type": "array"
-        }
-      },
-      "required": [
-        "package",
-        "path"
-      ],
-      "type": "object"
-    },
     "BatchIntent": {
       "description": "Several intents planned in sequence, each against the state the previous\none leaves, and applied as one.",
       "properties": {
@@ -34,195 +15,6 @@
       ],
       "type": "object"
     },
-    "Capture": {
-      "description": "One meta-variable binding.",
-      "properties": {
-        "span": {
-          "$ref": "#/$defs/Span"
-        },
-        "text": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "span",
-        "text"
-      ],
-      "type": "object"
-    },
-    "CaptureValue": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/Capture"
-        },
-        {
-          "items": {
-            "$ref": "#/$defs/Capture"
-          },
-          "type": "array"
-        }
-      ],
-      "description": "`$A` binds one node; `$$$A` binds a sequence."
-    },
-    "CheckCommand": {
-      "additionalProperties": false,
-      "properties": {
-        "args": {
-          "default": [],
-          "items": {
-            "type": "string"
-          },
-          "type": "array"
-        },
-        "name": {
-          "description": "A caller-defined label, such as formatting, compilation, or unit tests.",
-          "type": "string"
-        },
-        "program": {
-          "description": "Executed directly, without implicit shell parsing.",
-          "type": "string"
-        }
-      },
-      "required": [
-        "name",
-        "program",
-        "args"
-      ],
-      "type": "object"
-    },
-    "CheckFailure": {
-      "properties": {
-        "operation": {
-          "$ref": "#/$defs/CheckOperation"
-        },
-        "os_code": {
-          "format": "int32",
-          "type": [
-            "integer",
-            "null"
-          ]
-        }
-      },
-      "required": [
-        "operation",
-        "os_code"
-      ],
-      "type": "object"
-    },
-    "CheckOperation": {
-      "enum": [
-        "spawn",
-        "capture",
-        "wait",
-        "terminate"
-      ],
-      "type": "string"
-    },
-    "CheckOutcome": {
-      "enum": [
-        "not_run",
-        "passed",
-        "failed",
-        "timed_out",
-        "cancelled",
-        "error"
-      ],
-      "type": "string"
-    },
-    "CheckOutput": {
-      "properties": {
-        "bytes_seen": {
-          "format": "uint64",
-          "minimum": 0,
-          "type": "integer"
-        },
-        "complete": {
-          "description": "False when capture stopped before EOF or a read failed.",
-          "type": "boolean"
-        },
-        "text": {
-          "type": "string"
-        },
-        "truncated": {
-          "type": "boolean"
-        }
-      },
-      "required": [
-        "text",
-        "bytes_seen",
-        "truncated",
-        "complete"
-      ],
-      "type": "object"
-    },
-    "CheckResult": {
-      "properties": {
-        "command": {
-          "$ref": "#/$defs/CheckCommand"
-        },
-        "duration_ms": {
-          "format": "uint64",
-          "minimum": 0,
-          "type": "integer"
-        },
-        "exit_code": {
-          "format": "int32",
-          "type": [
-            "integer",
-            "null"
-          ]
-        },
-        "failure": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/CheckFailure"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "outcome": {
-          "$ref": "#/$defs/CheckOutcome"
-        },
-        "stderr": {
-          "$ref": "#/$defs/CheckOutput"
-        },
-        "stdout": {
-          "$ref": "#/$defs/CheckOutput"
-        }
-      },
-      "required": [
-        "command",
-        "outcome",
-        "exit_code",
-        "duration_ms",
-        "stdout",
-        "stderr",
-        "failure"
-      ],
-      "type": "object"
-    },
-    "Confidence": {
-      "description": "How sure a rename is that an occurrence refers to its target declaration.",
-      "oneOf": [
-        {
-          "const": "resolved",
-          "description": "Declared, imported, or reached by a path that resolves to the target.",
-          "type": "string"
-        },
-        {
-          "const": "unresolved",
-          "description": "A bare token with no evidence either way.",
-          "type": "string"
-        },
-        {
-          "const": "other",
-          "description": "Resolves to a different declaration of the same name.",
-          "type": "string"
-        }
-      ]
-    },
     "ContentId": {
       "description": "Digest of complete file contents, independent of their path.",
       "type": "string"
@@ -236,26 +28,6 @@
         "narrow_query"
       ],
       "type": "string"
-    },
-    "Diff": {
-      "description": "One file's change: the unified diff text (the wire) and its hunks (the\nmodel).",
-      "type": "string"
-    },
-    "Edit": {
-      "description": "Replace the bytes at `span` with `replacement`.",
-      "properties": {
-        "replacement": {
-          "type": "string"
-        },
-        "span": {
-          "$ref": "#/$defs/Span"
-        }
-      },
-      "required": [
-        "span",
-        "replacement"
-      ],
-      "type": "object"
     },
     "ErrorCode": {
       "description": "The kind of failure, stable across releases; the message is not.",
@@ -428,41 +200,6 @@
       ],
       "type": "object"
     },
-    "FileChange": {
-      "description": "One file a plan touches: its edits and the whole-file diff.",
-      "properties": {
-        "diff": {
-          "$ref": "#/$defs/Diff"
-        },
-        "edits": {
-          "items": {
-            "$ref": "#/$defs/Edit"
-          },
-          "type": "array"
-        },
-        "moved_to": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/RelPath"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Path after, when the file is moved."
-        },
-        "path": {
-          "$ref": "#/$defs/RelPath",
-          "description": "Path before the change."
-        }
-      },
-      "required": [
-        "path",
-        "edits",
-        "diff"
-      ],
-      "type": "object"
-    },
     "Intent": {
       "description": "Any mutating request, as one value: what history records, what a summary\nrenders, what a remote client sends.",
       "oneOf": [
@@ -538,113 +275,9 @@
       "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
       "type": "string"
     },
-    "Match": {
-      "properties": {
-        "address": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/Address"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "For a declaration in an addressable file: its module address, the\nvalue `outline` gives it. Filled by the engine, which has the project."
-        },
-        "captures": {
-          "additionalProperties": {
-            "$ref": "#/$defs/CaptureValue"
-          },
-          "type": "object"
-        },
-        "content": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/ContentId"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Complete source version; absent only in older serialized matches."
-        },
-        "end": {
-          "$ref": "#/$defs/Position"
-        },
-        "id": {
-          "$ref": "#/$defs/MatchId"
-        },
-        "kind": {
-          "type": "string"
-        },
-        "language": {
-          "$ref": "#/$defs/LanguageId"
-        },
-        "line": {
-          "default": "",
-          "description": "The source line on which the match starts, for display in context.",
-          "type": "string"
-        },
-        "path": {
-          "$ref": "#/$defs/RelPath"
-        },
-        "role": {
-          "$ref": "#/$defs/Role",
-          "default": "use"
-        },
-        "span": {
-          "$ref": "#/$defs/Span"
-        },
-        "start": {
-          "$ref": "#/$defs/Position"
-        },
-        "symbol": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/Symbol"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "text": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "id",
-        "path",
-        "language",
-        "span",
-        "start",
-        "end",
-        "kind",
-        "text",
-        "line",
-        "role"
-      ],
-      "type": "object"
-    },
     "MatchId": {
       "description": "Content-derived identifier: the same file, range and text yield the same id\nacross runs, so a selection made from one `search` can drive a later command.",
       "type": "string"
-    },
-    "Modifier": {
-      "description": "A visibility modifier as it appears in the source.",
-      "properties": {
-        "span": {
-          "$ref": "#/$defs/Span"
-        },
-        "text": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "span",
-        "text"
-      ],
-      "type": "object"
     },
     "MoveIntent": {
       "description": "Move a file and make every reference to it follow.",
@@ -684,108 +317,6 @@
       ],
       "type": "object"
     },
-    "Name": {
-      "description": "One identifier: a module, a declaration, a file stem. Compared by text.",
-      "type": "string"
-    },
-    "Occurrence": {
-      "description": "A token spelling the renamed name, with what the imports could tell.",
-      "properties": {
-        "address": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/Address"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "For a declaration in an addressable file: its module address, the\nvalue `outline` gives it. Filled by the engine, which has the project."
-        },
-        "captures": {
-          "additionalProperties": {
-            "$ref": "#/$defs/CaptureValue"
-          },
-          "type": "object"
-        },
-        "confidence": {
-          "$ref": "#/$defs/Confidence"
-        },
-        "content": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/ContentId"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Complete source version; absent only in older serialized matches."
-        },
-        "end": {
-          "$ref": "#/$defs/Position"
-        },
-        "id": {
-          "$ref": "#/$defs/MatchId"
-        },
-        "kind": {
-          "type": "string"
-        },
-        "language": {
-          "$ref": "#/$defs/LanguageId"
-        },
-        "line": {
-          "default": "",
-          "description": "The source line on which the match starts, for display in context.",
-          "type": "string"
-        },
-        "path": {
-          "$ref": "#/$defs/RelPath"
-        },
-        "reason": {
-          "$ref": "#/$defs/Reason",
-          "default": "unresolved"
-        },
-        "role": {
-          "$ref": "#/$defs/Role",
-          "default": "use"
-        },
-        "span": {
-          "$ref": "#/$defs/Span"
-        },
-        "start": {
-          "$ref": "#/$defs/Position"
-        },
-        "symbol": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/Symbol"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "text": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "id",
-        "path",
-        "language",
-        "span",
-        "start",
-        "end",
-        "kind",
-        "text",
-        "line",
-        "role",
-        "confidence",
-        "reason"
-      ],
-      "type": "object"
-    },
     "OutputLimit": {
       "properties": {
         "anchor": {
@@ -815,140 +346,9 @@
       ],
       "type": "object"
     },
-    "PackageId": {
-      "description": "The name a package goes by in paths: a Rust crate's lib name (`fff`, not\n`fff-search`), a TypeScript package's name. The layout decides the spelling.",
-      "type": "string"
-    },
     "PlanId": {
       "description": "Opaque handle scoped to an engine session, not a serializable edit plan.",
       "type": "string"
-    },
-    "PlanPreview": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/Rename"
-        },
-        {
-          "$ref": "#/$defs/Rewrite"
-        }
-      ]
-    },
-    "PlanReceipt": {
-      "properties": {
-        "files": {
-          "description": "Contents written by the transaction. A replay reports this historical result.",
-          "items": {
-            "$ref": "#/$defs/SourceVersion"
-          },
-          "type": "array"
-        },
-        "history_id": {
-          "description": "Committed history entry, used by the existing history/undo lifecycle.",
-          "format": "uint64",
-          "minimum": 0,
-          "type": "integer"
-        },
-        "plan_id": {
-          "$ref": "#/$defs/PlanId"
-        }
-      },
-      "required": [
-        "plan_id",
-        "history_id",
-        "files"
-      ],
-      "type": "object"
-    },
-    "PlanReview": {
-      "oneOf": [
-        {
-          "properties": {
-            "preview": {
-              "$ref": "#/$defs/PlanPreview"
-            },
-            "state": {
-              "const": "prepared",
-              "type": "string"
-            }
-          },
-          "required": [
-            "state",
-            "preview"
-          ],
-          "type": "object"
-        },
-        {
-          "properties": {
-            "receipt": {
-              "$ref": "#/$defs/PlanReceipt"
-            },
-            "state": {
-              "const": "applied",
-              "type": "string"
-            }
-          },
-          "required": [
-            "state",
-            "receipt"
-          ],
-          "type": "object"
-        },
-        {
-          "properties": {
-            "failure": {
-              "$ref": "#/$defs/Failure"
-            },
-            "state": {
-              "const": "failed",
-              "type": "string"
-            }
-          },
-          "required": [
-            "state",
-            "failure"
-          ],
-          "type": "object"
-        },
-        {
-          "properties": {
-            "state": {
-              "const": "discarded",
-              "type": "string"
-            }
-          },
-          "required": [
-            "state"
-          ],
-          "type": "object"
-        }
-      ],
-      "properties": {
-        "lifetime_seconds": {
-          "description": "Fixed lifetime from preparation; inspection/retry does not extend it.",
-          "format": "uint64",
-          "minimum": 0,
-          "type": "integer"
-        },
-        "plan_id": {
-          "$ref": "#/$defs/PlanId"
-        },
-        "validation": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/ValidationReport"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Latest explicitly requested validation; does not change the apply receipt."
-        }
-      },
-      "required": [
-        "plan_id",
-        "lifetime_seconds"
-      ],
-      "type": "object"
     },
     "PlanReviewCursor": {
       "description": "A plan-store cursor. It cannot be used with source-query continue or expand.",
@@ -1112,26 +512,6 @@
       ],
       "type": "object"
     },
-    "Position": {
-      "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
-      "properties": {
-        "column": {
-          "format": "uint32",
-          "minimum": 0,
-          "type": "integer"
-        },
-        "line": {
-          "format": "uint32",
-          "minimum": 0,
-          "type": "integer"
-        }
-      },
-      "required": [
-        "line",
-        "column"
-      ],
-      "type": "object"
-    },
     "Query": {
       "properties": {
         "kind": {
@@ -1179,66 +559,6 @@
         }
       },
       "type": "object"
-    },
-    "Reason": {
-      "description": "What the file's imports and paths said about an occurrence: the ground\nfor its [`Confidence`]. Views tag `?` and `✗` sections with it.",
-      "oneOf": [
-        {
-          "const": "declaring",
-          "description": "Written in the module that declares the target.",
-          "type": "string"
-        },
-        {
-          "const": "imported",
-          "description": "An import resolving to the target brings the name in.",
-          "type": "string"
-        },
-        {
-          "const": "path",
-          "description": "The tail of a qualified path resolving to the target.",
-          "type": "string"
-        },
-        {
-          "const": "opened",
-          "description": "A glob (or whole-file) import opens the declaring module.",
-          "type": "string"
-        },
-        {
-          "const": "re-export",
-          "description": "Reached through a re-export (`use vvv_core::Span` for\n`vvv_core::text::span::Span`) that vvv followed to the declaration.",
-          "type": "string"
-        },
-        {
-          "const": "oracle",
-          "description": "Syntax could not place it; an oracle — a build, a language server —\nsaid it is the declaration.",
-          "type": "string"
-        },
-        {
-          "const": "unresolved",
-          "description": "A bare name nothing imports, or a path whose head cannot be placed.",
-          "type": "string"
-        },
-        {
-          "const": "by-name",
-          "description": "No declaration to judge against: a method or field, reached through\na type; the token merely spells the name.",
-          "type": "string"
-        },
-        {
-          "const": "other-declaration",
-          "description": "Resolves to another declaration of the same name in the workspace.",
-          "type": "string"
-        },
-        {
-          "const": "external",
-          "description": "Resolves into a package outside the workspace.",
-          "type": "string"
-        },
-        {
-          "const": "oracle-other",
-          "description": "Syntax could not place it; an oracle said it is another declaration.",
-          "type": "string"
-        }
-      ]
     },
     "Recovery": {
       "description": "A recovery result; unknown states are separate from confirmed residual effects.",
@@ -1418,70 +738,6 @@
       "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
       "type": "string"
     },
-    "Rename": {
-      "description": "`vvv rename`: the declaration and every occurrence, each judged.",
-      "oneOf": [
-        {
-          "properties": {
-            "applied": {
-              "const": false
-            },
-            "history_id": false
-          },
-          "required": [
-            "applied"
-          ]
-        },
-        {
-          "properties": {
-            "applied": {
-              "const": true
-            },
-            "history_id": {
-              "format": "uint64",
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          "required": [
-            "applied",
-            "history_id"
-          ]
-        }
-      ],
-      "properties": {
-        "declarations": {
-          "description": "Where `name` is declared; more than one means the rename is ambiguous.",
-          "items": {
-            "$ref": "#/$defs/Match"
-          },
-          "type": "array"
-        },
-        "files": {
-          "items": {
-            "$ref": "#/$defs/FileChange"
-          },
-          "type": "array"
-        },
-        "intent": {
-          "$ref": "#/$defs/RenameIntent"
-        },
-        "occurrences": {
-          "description": "Every identifier spelling the name, each judged against the target;\ntheir ids feed a later `--select`.",
-          "items": {
-            "$ref": "#/$defs/Occurrence"
-          },
-          "type": "array"
-        }
-      },
-      "required": [
-        "intent",
-        "declarations",
-        "occurrences",
-        "files"
-      ],
-      "type": "object"
-    },
     "RenameIntent": {
       "description": "Rename the declaration(s) called `name` and every identifier that spells it.\n\nResolution is syntactic: every occurrence of the identifier in files of\nthe declaring language is an occurrence. The `selection` is how a human or\nagent excludes the ones that are not the same symbol.",
       "properties": {
@@ -1580,54 +836,6 @@
       ],
       "type": "object"
     },
-    "Rewrite": {
-      "description": "`vvv rewrite`: one edit per selected match.",
-      "oneOf": [
-        {
-          "properties": {
-            "applied": {
-              "const": false
-            },
-            "history_id": false
-          },
-          "required": [
-            "applied"
-          ]
-        },
-        {
-          "properties": {
-            "applied": {
-              "const": true
-            },
-            "history_id": {
-              "format": "uint64",
-              "minimum": 0,
-              "type": "integer"
-            }
-          },
-          "required": [
-            "applied",
-            "history_id"
-          ]
-        }
-      ],
-      "properties": {
-        "files": {
-          "items": {
-            "$ref": "#/$defs/FileChange"
-          },
-          "type": "array"
-        },
-        "intent": {
-          "$ref": "#/$defs/RewriteIntent"
-        }
-      },
-      "required": [
-        "intent",
-        "files"
-      ],
-      "type": "object"
-    },
     "RewriteIntent": {
       "description": "Replace every selected match of `query` with `template`.",
       "properties": {
@@ -1646,15 +854,6 @@
         "template"
       ],
       "type": "object"
-    },
-    "Role": {
-      "description": "What position a match occupies in its file: the declaration itself, a\ntoken inside an import statement, or any other use. Views lead with\ndeclarations and dim imports; the engine orders results by it.",
-      "enum": [
-        "declaration",
-        "import",
-        "use"
-      ],
-      "type": "string"
     },
     "Selection": {
       "description": "Which matches of a search a later command acts on.\n\nIds are content-derived, so a selection made from `vvv search` can be\nhanded to `vvv rewrite` in a separate process. Ordinals are the 1-based\npositions in the same search's result order, which is what human output\nnumbers rows with. Either kind that no longer resolves means the files\nchanged in between; the selection is then refused rather than silently\nnarrowed.",
@@ -1701,10 +900,6 @@
         }
       ]
     },
-    "SnapshotId": {
-      "$ref": "#/$defs/ContentId",
-      "description": "Opaque identity of captured source and project inputs; not a disk transaction."
-    },
     "SourceAnchor": {
       "properties": {
         "content": {
@@ -1721,21 +916,6 @@
         "path",
         "content",
         "span"
-      ],
-      "type": "object"
-    },
-    "SourceVersion": {
-      "properties": {
-        "content": {
-          "$ref": "#/$defs/ContentId"
-        },
-        "path": {
-          "$ref": "#/$defs/RelPath"
-        }
-      },
-      "required": [
-        "path",
-        "content"
       ],
       "type": "object"
     },
@@ -1756,48 +936,6 @@
       "required": [
         "start",
         "end"
-      ],
-      "type": "object"
-    },
-    "Symbol": {
-      "description": "A declaration found in one file.",
-      "properties": {
-        "extent": {
-          "$ref": "#/$defs/Span",
-          "description": "The declaration with what belongs to it in the text: leading\nattributes and doc comments, an enclosing `export`. What moving the\ndeclaration cuts; what an outline shows."
-        },
-        "kind": {
-          "$ref": "#/$defs/SymbolKind"
-        },
-        "name": {
-          "type": "string"
-        },
-        "name_span": {
-          "$ref": "#/$defs/Span",
-          "description": "The identifier token itself: what a rename replaces."
-        },
-        "span": {
-          "$ref": "#/$defs/Span",
-          "description": "The declaration node."
-        },
-        "visibility": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/Modifier"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "The visibility as written (`pub(crate)`, `export`); `None` when the\ndeclaration has no modifier. What it means is the language's\n[`Semantics`](crate::Semantics)."
-        }
-      },
-      "required": [
-        "kind",
-        "name",
-        "name_span",
-        "span",
-        "extent"
       ],
       "type": "object"
     },
@@ -1836,100 +974,99 @@
     "Template": {
       "description": "Replacement text with meta-variable holes: `bar($$$ARGS)`, `$NAME_v2`.\n\nVariables are `$NAME` (single capture) or `$$$NAME` (sequence capture);\na name is `[A-Z_][A-Z0-9_]*`. Anything else is literal.",
       "type": "string"
-    },
-    "ValidationReport": {
+    }
+  },
+  "$id": "urn:vvv:schema:1:review_plan:response:a08fbf3727646a013cd72e0709f085f0c89d9d8fe813a329b62e6c785e85a31f",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "Top-level envelope of every `--json` response.",
+  "oneOf": [
+    {
       "properties": {
-        "after": {
+        "result": {
+          "$ref": "#/$defs/PlanReviewPage"
+        },
+        "schema": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "status": {
+          "const": "ok",
+          "type": "string"
+        }
+      },
+      "required": [
+        "status",
+        "schema",
+        "result"
+      ],
+      "type": "object"
+    },
+    {
+      "description": "A failed request, as the wire carries it.",
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "continuation": {
           "anyOf": [
             {
-              "$ref": "#/$defs/SnapshotId"
+              "$ref": "#/$defs/ContinuationRecovery"
             },
             {
               "type": "null"
             }
           ]
         },
-        "before": {
-          "$ref": "#/$defs/SnapshotId"
+        "hint": {
+          "description": "What to try instead, when there is something.",
+          "type": [
+            "string",
+            "null"
+          ]
         },
-        "checks": {
-          "items": {
-            "$ref": "#/$defs/CheckResult"
-          },
-          "type": "array"
+        "message": {
+          "type": "string"
         },
-        "extra_inputs": {
-          "items": {
-            "$ref": "#/$defs/RelPath"
-          },
-          "type": "array"
+        "output_limit": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OutputLimit"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
-        "history_id": {
-          "format": "uint64",
+        "recovery": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Recovery"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Effects that could not be restored after a failed mutation."
+        },
+        "schema": {
+          "format": "uint32",
           "minimum": 0,
           "type": "integer"
         },
-        "input_files": {
-          "format": "uint",
-          "minimum": 0,
-          "type": "integer"
-        },
-        "passed": {
-          "description": "True only when every command succeeded and observed inputs stayed unchanged.",
-          "type": "boolean"
-        },
-        "plan_id": {
-          "$ref": "#/$defs/PlanId"
-        },
-        "run": {
-          "description": "Monotonically increasing within this retained plan.",
-          "format": "uint64",
-          "minimum": 0,
-          "type": "integer"
-        },
-        "source_state": {
-          "$ref": "#/$defs/ValidationSourceState"
-        },
-        "sources": {
-          "items": {
-            "$ref": "#/$defs/SourceVersion"
-          },
-          "type": "array"
+        "status": {
+          "const": "error",
+          "type": "string"
         }
       },
       "required": [
-        "plan_id",
-        "history_id",
-        "run",
-        "sources",
-        "before",
-        "after",
-        "input_files",
-        "extra_inputs",
-        "source_state",
-        "passed",
-        "checks"
+        "status",
+        "schema",
+        "code",
+        "message"
       ],
       "type": "object"
-    },
-    "ValidationSourceState": {
-      "enum": [
-        "unchanged",
-        "changed",
-        "unavailable"
-      ],
-      "type": "string"
-    }
-  },
-  "$id": "urn:vvv:schema:1:prepare_rename:result:093bbf297b8818b0716a9d187536302163244499133d5e780b44f0b59b46bb53",
-  "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "anyOf": [
-    {
-      "$ref": "#/$defs/PlanReview"
-    },
-    {
-      "$ref": "#/$defs/PlanReviewPage"
     }
   ],
-  "title": "prepare_rename result"
+  "title": "review_plan response"
 }

@@ -48,6 +48,14 @@ impl Call {
             }
             if let Some(limit) = self.max_output_bytes {
                 match &mut self.request {
+                    crate::Request::PrepareRewrite(query) => {
+                        crate::PlanReviewReply::budget(query.max_bytes, query.page.as_ref())?;
+                        query.max_bytes = query.max_bytes.min(limit);
+                    }
+                    crate::Request::ReviewPlan(query) => {
+                        query.page.validate()?;
+                        query.page.max_bytes = query.page.max_bytes.min(limit);
+                    }
                     crate::Request::PrepareRename(query) => {
                         crate::PageBudget {
                             max_bytes: query.max_bytes,

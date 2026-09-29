@@ -47,6 +47,8 @@
         "validate_plan",
         "inspect_plan",
         "prepare_rename",
+        "prepare_rewrite",
+        "review_plan",
         "schema",
         "search_page",
         "context_page",
@@ -494,6 +496,10 @@
     },
     "PlanId": {
       "description": "Opaque handle scoped to an engine session, not a serializable edit plan.",
+      "type": "string"
+    },
+    "PlanReviewCursor": {
+      "description": "A plan-store cursor. It cannot be used with source-query continue or expand.",
       "type": "string"
     },
     "Position": {
@@ -1087,7 +1093,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:session:call:d3dc6f8fb0b3ca4d76ac91b51fdd9a653ea79695293bed2dff1549ada2d5cbd8",
+  "$id": "urn:vvv:schema:1:session:call:0cba9de7cbf0527418f4e7eb134232416f2f6c7b3bc0cf116f23b42016cce87d",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "A request on a session's wire (`vvv serve`): the request with whatever\n`id` the caller chose, echoed on the [`Reply`].",
   "oneOf": [
@@ -1177,6 +1183,16 @@
           "minimum": 1024,
           "type": "integer"
         },
+        "page": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PageBudget"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "plan_id": {
           "$ref": "#/$defs/PlanId"
         }
@@ -1202,11 +1218,77 @@
           "maximum": 1048576,
           "minimum": 1024,
           "type": "integer"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PageBudget"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
         "command",
         "intent"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "command": {
+          "const": "prepare_rewrite",
+          "type": "string"
+        },
+        "intent": {
+          "$ref": "#/$defs/RewriteIntent"
+        },
+        "max_bytes": {
+          "default": 16384,
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 1024,
+          "type": "integer"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PageBudget"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "command",
+        "intent"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "command": {
+          "const": "review_plan",
+          "type": "string"
+        },
+        "cursor": {
+          "$ref": "#/$defs/PlanReviewCursor"
+        },
+        "page": {
+          "$ref": "#/$defs/PageBudget",
+          "default": {
+            "max_bytes": 16384,
+            "max_items": 20
+          }
+        }
+      },
+      "required": [
+        "command",
+        "cursor"
       ],
       "type": "object"
     },

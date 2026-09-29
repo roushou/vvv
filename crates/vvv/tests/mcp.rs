@@ -41,7 +41,7 @@ impl Client {
             ProtocolVersion::V_2025_11_25
         );
         let tools = service.list_all_tools().await.unwrap();
-        assert_eq!(tools.len(), 12);
+        assert_eq!(tools.len(), 14);
         assert!(
             tools
                 .iter()
@@ -684,4 +684,88 @@ fn validation_source_fixture() {
     assert!(source.contains("Runtime"));
     assert!(!source.contains("Engine"));
     println!("renamed source checked");
+}
+
+#[cfg(any(feature = "rust", feature = "typescript"))]
+#[tokio::test]
+async fn paged_rewrite_reviews_exact_capture_expansions_and_applies_once() {
+    let fixture = Fixture::new();
+    #[cfg(feature = "rust")]
+    let (path, header, function) = (
+        "src/lib.rs",
+        "fn increment(value: i32, amount: i32) -> i32 { value + amount }\n",
+        "pub fn value_INDEX(value: i32) -> i32 { increment(value, 1) }\n",
+    );
+    #[cfg(all(not(feature = "rust"), feature = "typescript"))]
+    let (path, header, function) = (
+        "src/lib.ts",
+        "function increment(value: number, amount: number) { return value + amount; }\n",
+        "export function value_INDEX(value: number) { return increment(value, 1); }\n",
+    );
+    let before = format!(
+        "{header}{}",
+        (0..30)
+            .map(|i| function.replace("INDEX", &i.to_string()))
+            .collect::<String>()
+    );
+    std::fs::write(fixture.root.join(path), &before).unwrap();
+    let client = Client::new(&fixture.root).await;
+    let prepared = client.call("vvv_prepare_rewrite", json!({"intent":{"query":{"pattern":"increment($X, 1)"},"template":"increment($X, 2)"},"page":{"max_items":3,"max_bytes":1024},"max_output_bytes":1024})).await;
+    assert_eq!(prepared["status"], "ok", "{prepared}");
+    let first = prepared["result"].clone();
+    assert_eq!(first["totals"]["edits"], 30);
+    let handle = json!({"plan_id":first["plan_id"]});
+    let mut page = first.clone();
+    let mut replacements = BTreeMap::<(u64, u64), String>::new();
+    let mut page_count = 0;
+    loop {
+        assert!(serde_json::to_vec(&page).unwrap().len() <= 1024);
+        assert_eq!(page["review_id"], first["review_id"]);
+        for item in page["items"].as_array().unwrap() {
+            if item["kind"] == "text" && item["section"] == "edit" {
+                let text = replacements
+                    .entry((
+                        item["file_index"].as_u64().unwrap(),
+                        item["index"].as_u64().unwrap(),
+                    ))
+                    .or_default();
+                assert_eq!(text.len() as u64, item["offset"].as_u64().unwrap());
+                text.push_str(item["text"].as_str().unwrap());
+            }
+        }
+        page_count += 1;
+        assert!(page_count < 300);
+        if page["next_cursor"].is_null() {
+            break;
+        }
+        let args = json!({"cursor":page["next_cursor"],"page":{"max_items":3,"max_bytes":1024},"max_output_bytes":1024});
+        let continued = client.call("vvv_review_plan", args.clone()).await;
+        assert_eq!(continued["status"], "ok", "{continued}");
+        assert_eq!(client.call("vvv_review_plan", args).await, continued);
+        page = continued["result"].clone();
+    }
+    assert!(page_count > 10);
+    assert_eq!(replacements.len(), 30);
+    assert!(replacements.values().all(|r| r == "increment(value, 2)"));
+    let inspected = client.call("vvv_inspect_plan", json!({"plan_id":handle["plan_id"],"page":{"max_items":3,"max_bytes":1024},"max_output_bytes":1024})).await;
+    assert_eq!(inspected, prepared);
+    let applied = client.call("vvv_apply_plan", handle.clone()).await;
+    assert_eq!(applied["status"], "ok", "{applied}");
+    assert_eq!(
+        std::fs::read_to_string(fixture.root.join(path)).unwrap(),
+        before.replace("increment(value, 1)", "increment(value, 2)")
+    );
+    assert_eq!(client.call("vvv_apply_plan", handle).await, applied);
+    if !first["next_cursor"].is_null() {
+        assert_eq!(
+            client
+                .call(
+                    "vvv_review_plan",
+                    json!({"cursor":first["next_cursor"],"page":{"max_items":3,"max_bytes":1024}})
+                )
+                .await["status"],
+            "ok"
+        );
+    }
+    client.close().await;
 }

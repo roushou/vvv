@@ -20,39 +20,29 @@
       },
       "type": "object"
     },
-    "PlanId": {
-      "description": "Opaque handle scoped to an engine session, not a serializable edit plan.",
+    "PlanReviewCursor": {
+      "description": "A plan-store cursor. It cannot be used with source-query continue or expand.",
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:inspect_plan:arguments:176b75b8d73563332554da760c818101516d84af58cc3901f9ff2ed8e58c5cff",
+  "$id": "urn:vvv:schema:1:review_plan:arguments:52d41e3328120d4d9340b86c4e667059b422bf7f5318616f37761f0b239d689a",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
-    "max_bytes": {
-      "default": 16384,
-      "format": "uint",
-      "maximum": 1048576,
-      "minimum": 1024,
-      "type": "integer"
+    "cursor": {
+      "$ref": "#/$defs/PlanReviewCursor"
     },
     "page": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/PageBudget"
-        },
-        {
-          "type": "null"
-        }
-      ]
-    },
-    "plan_id": {
-      "$ref": "#/$defs/PlanId"
+      "$ref": "#/$defs/PageBudget",
+      "default": {
+        "max_bytes": 16384,
+        "max_items": 20
+      }
     }
   },
   "required": [
-    "plan_id"
+    "cursor"
   ],
-  "title": "inspect_plan arguments",
+  "title": "review_plan arguments",
   "type": "object"
 }

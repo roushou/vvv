@@ -128,8 +128,10 @@ pub use vvv_core::CallKind;
 mod plan_store;
 pub use plan_store::PlanLimits;
 pub use protocol::{
-    ApplyPlanQuery, DiscardPlanQuery, InspectPlanQuery, PlanId, PlanReceipt, PlanReview,
-    PlanStatus, PrepareRenameQuery,
+    ApplyPlanQuery, DiscardPlanQuery, InspectPlanQuery, PlanId, PlanPreview, PlanReceipt,
+    PlanReview, PlanReviewCursor, PlanReviewItem, PlanReviewKind, PlanReviewPage, PlanReviewReply,
+    PlanStatus, PrepareRenameQuery, PrepareRewriteQuery, ReviewMutation, ReviewPlanQuery,
+    ReviewSection, ReviewTotals,
 };
 
 pub use crate::capabilities::validation::{

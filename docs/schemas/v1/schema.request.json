@@ -7,6 +7,8 @@
         "validate_plan",
         "inspect_plan",
         "prepare_rename",
+        "prepare_rewrite",
+        "review_plan",
         "schema",
         "search_page",
         "context_page",
@@ -72,7 +74,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:schema:request:4d6cdcf3e5ea1c35ed866e4bdac589c0a5eedaa28ee5aa7252393110af2785f3",
+  "$id": "urn:vvv:schema:1:schema:request:b6cc584c5c7678ae54e78f91874f7e246d5866c368424c806408cf83885da753",
   "$ref": "#/$defs/SchemaQuery",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {

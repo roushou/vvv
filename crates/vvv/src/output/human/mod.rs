@@ -284,7 +284,45 @@ mod tests {
         };
         insta::assert_snapshot!(
             "inspect_validation",
-            render(|r| r.report(&Answer::InspectPlan(review)).unwrap())
+            render(|r| r
+                .report(&Answer::InspectPlan(vvv_engine::PlanReviewReply::Complete(
+                    review
+                )))
+                .unwrap())
+        );
+    }
+
+    #[test]
+    fn retained_rewrite() {
+        let review = vvv_engine::PlanReview {
+            plan_id: serde_json::from_value(serde_json::json!("p1.example")).unwrap(),
+            lifetime_seconds: 600,
+            validation: None,
+            status: vvv_engine::PlanStatus::Prepared {
+                preview: vvv_engine::PlanPreview::Rewrite(std::sync::Arc::new(fx::rewrite(false))),
+            },
+        };
+        insta::assert_snapshot!(
+            "retained_rewrite",
+            render(|r| r
+                .report(&Answer::PrepareRewrite(
+                    vvv_engine::PlanReviewReply::Complete(review)
+                ))
+                .unwrap())
+        );
+    }
+
+    #[test]
+    fn plan_review_page() {
+        let page: vvv_engine::PlanReviewPage = serde_json::from_value(serde_json::json!({
+            "kind":"plan_review", "plan_id":"p1.example", "lifetime_seconds":600,
+            "review_id":"captured-preview", "mutation":"rewrite", "totals":{"declarations":0,"occurrences":0,"files":1,"edits":1},
+            "items":[{"kind":"metadata","section":"file","index":0,"value":{"path":"src/a.rs"}},{"kind":"text","section":"edit","index":0,"file_index":0,"field":"/replacement","offset":0,"total_bytes":12,"text":"bar(1)","complete":false}],
+            "next_cursor":"r1.p1.0000000000000000.0000000000000001.0000000000000002.0000000000000006"
+        })).unwrap();
+        insta::assert_snapshot!(
+            "plan_review_page",
+            render(|r| r.report(&Answer::ReviewPlan(page)).unwrap())
         );
     }
 

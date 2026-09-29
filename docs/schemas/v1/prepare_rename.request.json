@@ -8,6 +8,26 @@
       "description": "Content-derived identifier: the same file, range and text yield the same id\nacross runs, so a selection made from one `search` can drive a later command.",
       "type": "string"
     },
+    "PageBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_bytes": {
+          "default": 16384,
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 1024,
+          "type": "integer"
+        },
+        "max_items": {
+          "default": 20,
+          "format": "uint",
+          "maximum": 64,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
     "RelPath": {
       "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
       "type": "string"
@@ -140,7 +160,7 @@
       ]
     }
   },
-  "$id": "urn:vvv:schema:1:prepare_rename:request:310a58726d3785e9fbf2ac4229b5c56c962dae741b3104a61f0f47385c46bcda",
+  "$id": "urn:vvv:schema:1:prepare_rename:request:612e81f81220e23de50b7fc77296ebe92136617cc501ab8352498396ec9073a0",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
@@ -157,6 +177,16 @@
       "maximum": 1048576,
       "minimum": 1024,
       "type": "integer"
+    },
+    "page": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PageBudget"
+        },
+        {
+          "type": "null"
+        }
+      ]
     }
   },
   "required": [

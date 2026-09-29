@@ -93,6 +93,12 @@ impl Engine {
                 crate::Request::InspectPlan(query) => {
                     Execution::Completed(crate::Answer::InspectPlan(query.execute_in(self)?))
                 }
+                crate::Request::PrepareRewrite(query) => {
+                    Execution::Completed(crate::Answer::PrepareRewrite(query.execute_in(self)?))
+                }
+                crate::Request::ReviewPlan(query) => {
+                    Execution::Completed(crate::Answer::ReviewPlan(query.execute_in(self)?))
+                }
                 crate::Request::PrepareRename(query) => {
                     Execution::Completed(crate::Answer::PrepareRename(query.execute_in(self)?))
                 }

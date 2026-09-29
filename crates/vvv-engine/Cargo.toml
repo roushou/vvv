@@ -22,7 +22,7 @@ ignore = "0.4.33"
 rayon = "1.10"
 same-file = "1.0.6"
 schemars = { workspace = true, optional = true }
-serde = { workspace = true }
+serde = { workspace = true, features = ["rc"] }
 serde_json = { workspace = true }
 similar = "3.2.0"
 thiserror = { workspace = true }

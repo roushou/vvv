@@ -5,7 +5,7 @@
 //!
 //! | Command | Owning module (relative to `src/`) |
 //! | --- | --- |
-//! | `prepare_rename`, `inspect_plan`, `apply_plan`, `discard_plan` | `capabilities/plans.rs` |
+//! | `prepare_rename`, `prepare_rewrite`, `inspect_plan`, `review_plan`, `apply_plan`, `discard_plan` | `capabilities/plans.rs` |
 //! | `validate_plan` | `capabilities/validation.rs` |
 //! | `schema` | `capabilities/schema.rs` |
 //! | `search_page` | `capabilities/search.rs` |
