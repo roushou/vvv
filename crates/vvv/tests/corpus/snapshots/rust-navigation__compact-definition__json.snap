@@ -1,0 +1,64 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "127d38f56716477218534b40059f2cc01d0eeac7aadea3a66334b1ffbdaa1689",
+    "outcome": "resolved",
+    "target": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/origin.rs",
+        "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
+        "span": {
+          "start": 0,
+          "end": 63
+        }
+      },
+      "name_span": {
+        "start": 30,
+        "end": 36
+      },
+      "kind": "struct"
+    },
+    "id": "f2c97c3b389f",
+    "name": "Engine",
+    "start": {
+      "line": 1,
+      "column": 0
+    },
+    "evidence": {
+      "addresses": [
+        {
+          "package": "navigation",
+          "path": [
+            "origin",
+            "Engine"
+          ]
+        }
+      ]
+    },
+    "container": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/origin.rs",
+        "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
+        "span": {
+          "start": 0,
+          "end": 63
+        }
+      },
+      "name_span": {
+        "start": 30,
+        "end": 36
+      },
+      "kind": "struct"
+    }
+  }
+}
+--- stderr ---

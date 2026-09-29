@@ -62,6 +62,7 @@ impl Fixture {
     fn page(&self, count: usize) -> PageReply {
         PageReply::Search(
             SearchPageQuery {
+                scope: Default::default(),
                 query: Query::pattern("Foo"),
                 page: PageBudget {
                     max_items: count,
@@ -84,6 +85,7 @@ impl Fixture {
     }
     fn context_query(&self, references: bool, bytes: usize) -> ContextPageQuery {
         ContextPageQuery {
+            include_enclosing: false,
             origin: NavigationQuery::at("a.p", Position::new(1, 4)).origin,
             selection: Selection::All,
             references,
@@ -101,7 +103,7 @@ impl Fixture {
 #[test]
 fn search_pages_equal_unpaged_order_and_retry_across_engine_clones() {
     let f = Fixture::search();
-    let expected = SearchQuery(Query::pattern("Foo"))
+    let expected = SearchQuery::from(Query::pattern("Foo"))
         .execute(&f.engine)
         .unwrap();
     let first = f.page(2);
@@ -206,6 +208,7 @@ fn context_resumes_each_frontier_with_first_evidence_and_bounded_work() {
     let f = Fixture::context("body");
     let query = f.context_query(true, 4096);
     let expected = ContextQuery {
+        include_enclosing: false,
         origin: query.origin.clone(),
         selection: Selection::All,
         references: true,
@@ -321,6 +324,7 @@ fn outer_byte_limit_is_applied_before_publishing_and_oversized_matches_are_indiv
     let source = format!("Foo:{}", "x".repeat(4000));
     f.vfs.write(Path::new("/ws/a.p"), &source).unwrap();
     let query = SearchPageQuery {
+        scope: Default::default(),
         query: Query::pattern("Foo"),
         page: PageBudget {
             max_items: 1,
@@ -349,6 +353,7 @@ fn deletions_and_failed_postvalidation_do_not_publish_or_consume_checkpoints() {
         Languages::new().with(Fake::default()),
     );
     let first = SearchPageQuery {
+        scope: Default::default(),
         query: Query::pattern("Foo"),
         page: PageBudget {
             max_items: 1,
@@ -433,6 +438,7 @@ fn ambiguity_is_preserved_and_expansion_tokens_become_stale_with_their_query() {
         Languages::new().with(Fake::default()),
     );
     let query = ContextPageQuery {
+        include_enclosing: false,
         origin: NavigationQuery::at("a.p", Position::new(2, 0)).origin,
         selection: Selection::All,
         references: false,
@@ -470,6 +476,7 @@ fn content_hashes_detect_same_stamp_edits_and_changes_during_page_generation() {
             Languages::new().with(Fake::default()),
         );
         let first = SearchPageQuery {
+            scope: Default::default(),
             query: Query::pattern("Foo"),
             page: PageBudget {
                 max_items: 1,
@@ -506,6 +513,7 @@ fn failed_mutation_invalidates_cursors_even_when_rollback_restores_the_original_
         Languages::new().with(Fake::default()),
     );
     let first = SearchPageQuery {
+        scope: Default::default(),
         query: Query::pattern("Foo"),
         page: PageBudget {
             max_items: 1,

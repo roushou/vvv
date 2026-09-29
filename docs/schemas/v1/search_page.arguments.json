@@ -72,6 +72,31 @@
       },
       "type": "object"
     },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "SearchScope": {
+      "additionalProperties": false,
+      "description": "Explicit file/directory prefixes and owning package names or IDs.\nAlternatives within each list are ORed; the two lists are intersected.",
+      "properties": {
+        "packages": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "paths": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RelPath"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
     "SymbolKind": {
       "description": "What a declaration declares, in vocabulary shared by every language.",
       "oneOf": [
@@ -105,7 +130,7 @@
       ]
     }
   },
-  "$id": "urn:vvv:schema:1:search_page:arguments:9dca67c571e64039de4ff4ef3a20e872f074d25a51d93cc4299b0c5afb7986f1",
+  "$id": "urn:vvv:schema:1:search_page:arguments:b69c88420584ca51eff4f4cab28c5c97bf0e52e4ed0e428e4656c0307939219a",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
@@ -118,6 +143,13 @@
     },
     "query": {
       "$ref": "#/$defs/Query"
+    },
+    "scope": {
+      "$ref": "#/$defs/SearchScope",
+      "default": {
+        "packages": [],
+        "paths": []
+      }
     }
   },
   "required": [

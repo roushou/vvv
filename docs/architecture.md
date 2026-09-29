@@ -113,8 +113,11 @@ tree. The engine owns orchestration, not capability behavior.
 Typed clients call `SearchQuery::execute(&Engine)`, the other queries' `execute`,
 mutation intents' and `RewriteOf`'s `plan`, `Apply<T>::apply`, or
 `Ledger::new(&Engine).history()` / `.undo()`. These keep concrete outputs such as
-`Search`, `Planned<Rename>`, and `Applied<Rename>`. `SearchQuery` wraps the plugin's
-`Query` without changing its serialization. Execution bodies take the graph,
+`Search`, `Planned<Rename>`, and `Applied<Rename>`. `SearchQuery` flattens the plugin's
+`Query` and adds an optional engine-owned `SearchScope`. Path component prefixes
+and manifest-name/package-ID filters are intersected before match collection;
+package membership uses the deepest layout-defined owning root. Empty scopes keep
+the original wire shape. Execution bodies take the graph,
 workspace, or registry they use explicitly. Public typed methods acquire the
 same operation guard as the dispatcher; internal bodies do not reacquire it.
 
@@ -131,6 +134,10 @@ revalidated before returning; a detected change produces `StaleSource` and expir
 the graph's trusted walk. Snapshot identity covers those inputs and the captured
 file set, without promising isolation from external writers. Facts and scopes are
 cached per existing graph rules; navigation replies have no persistent result cache.
+`ResolutionQuery` exposes the same resolution through compact locations and evidence
+without serializing preview files or declaration bodies. MCP navigation uses this
+contract; CLI `navigate --compact` and wire `resolve` expose it to other clients.
+This projection currently reuses full navigation internally.
 
 Grammar tables declare lexical scopes, visibility start points, noncapturing item
 boundaries, unsupported binding forms, and exact named-import rules. The syntax
@@ -153,7 +160,10 @@ language-server process is managed here. The unversioned `Oracle` remains a
 references capability input and is not semantic navigation evidence.
 
 `ContextQuery` owns bounded context composition. It uses exact navigation to gather
-a seed, enclosing declaration, and directly referenced declarations. Optional
+a seed and directly referenced declarations. The enclosing declaration is a
+versioned location by default; its body is an explicit `include_enclosing` opt-in.
+Paged checkpoints retain this policy so an owner body cannot reappear through a
+later relationship after it was omitted by policy. Optional
 incoming scans inspect a bounded number of files and confirm same-spelling uses
 through navigation; test-path evidence stays explicitly weaker than test coverage.
 Navigation can record its consulted source/manifest versions for this compound
@@ -304,8 +314,9 @@ the language's `glob_marker` (`::*` in Rust) in the alias's own package or namin
 
 Capability execution uses these components:
 
-- `SearchQuery` asks `Graph::search` to filter candidates by literals and execute
-  `Candidate::find` in parallel. Addressed declarations precede other matches.
+- `SearchQuery` asks `Graph::search_scoped` to filter candidates by paths, packages,
+  and literals, then execute `Candidate::find` in parallel. Addressed declarations
+  precede other matches.
 - `RewriteIntent` narrows search matches and expands `Template` against each
   matched source snapshot. `RewriteOf` validates retained matches and captures.
 - `RenameIntent` contains a `ReferencesQuery`. `Target` selects an addressable

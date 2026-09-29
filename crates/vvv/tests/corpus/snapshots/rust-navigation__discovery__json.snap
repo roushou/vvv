@@ -18,8 +18,8 @@ exit 0
     "commands": [
       {
         "schemas": {
-          "arguments": "urn:vvv:schema:1:schema:arguments:969767df0009704058c661b7c8470c39b5d0ccefcd3799de59efe1ba0562d6b7",
-          "request": "urn:vvv:schema:1:schema:request:c28d4441286acfd91a126c1a4e642ef02d1a6b1853938547cc9434a592e60ddd",
+          "arguments": "urn:vvv:schema:1:schema:arguments:129a4fdb16d9e592bff18442c397366823e32891a1e05de20434b94bdeb5667d",
+          "request": "urn:vvv:schema:1:schema:request:66041090020c145a023e3fc01f3f3f35446400939eea8f3d7fca83703556bbcf",
           "result": "urn:vvv:schema:1:schema:result:0cb1e4287c7574a39efe0bd8f791785ba3093dc8fcd23e29a9c4eb8499be5ad3",
           "response": "urn:vvv:schema:1:schema:response:ea76060bc41eb75a4687a087ceca0f86bf98b5f6b098df138795793590ca9479"
         },
@@ -32,24 +32,25 @@ exit 0
       },
       {
         "schemas": {
-          "arguments": "urn:vvv:schema:1:search_page:arguments:9dca67c571e64039de4ff4ef3a20e872f074d25a51d93cc4299b0c5afb7986f1",
-          "request": "urn:vvv:schema:1:search_page:request:77ecb4100109ee2e5bad5212475668ad3567e4a86fad6b0822c32a79f8c7deff",
-          "result": "urn:vvv:schema:1:search_page:result:03df0ed1af83f30d8a6fc716c194df00313f41e52308890df799a733df81ebe9",
-          "response": "urn:vvv:schema:1:search_page:response:4624f9b1aefce231c7880e33b17dcb07635a2776285e5ede77a4806c9dccdc0b"
+          "arguments": "urn:vvv:schema:1:search_page:arguments:b69c88420584ca51eff4f4cab28c5c97bf0e52e4ed0e428e4656c0307939219a",
+          "request": "urn:vvv:schema:1:search_page:request:bb482e11c4a4843863f0daf58acb5d46daa3bd22d398b0da18c822b9de6ac9c8",
+          "result": "urn:vvv:schema:1:search_page:result:80804d9e50403934a3f908a763d9d5c4ac8924559965c7bb7b17bf5d38403c6a",
+          "response": "urn:vvv:schema:1:search_page:response:af178a43869f49055792a61822cc8285ef5bad0f662706c80c35449df9630be9"
         },
         "command": "search_page",
         "read_only": true,
         "parameters": [
           "query",
+          "scope",
           "page"
         ]
       },
       {
         "schemas": {
-          "arguments": "urn:vvv:schema:1:context_page:arguments:4a02461577c9a3c67d301296db28cadff01caa7cf70637ac20c4167263c74ba1",
-          "request": "urn:vvv:schema:1:context_page:request:c83fda0d7b3a83d48930012db3c06edd8fec3596961baf0c7cb2d8f2ecdaec96",
-          "result": "urn:vvv:schema:1:context_page:result:f2a103df081d65520a788ca42f8e8ca2f4a37af8091450e6800296dc462db92f",
-          "response": "urn:vvv:schema:1:context_page:response:d5a9e46eef7f704c8dc3ddf2831de80c183306250708ad36c8a665c1a10ef72f"
+          "arguments": "urn:vvv:schema:1:context_page:arguments:de879940b5b0d33d51eaf84178a7a45642e3fe47df891f2ba1eb08e000a10db4",
+          "request": "urn:vvv:schema:1:context_page:request:b48f115ebc28b461f1eaa93a7d1347d6ee8b638218d4a03d15c11cb8f5b50734",
+          "result": "urn:vvv:schema:1:context_page:result:f2e810fed92f845a32ce6df94917dcdb5b7dfa26d60e872f46e86936053ec06c",
+          "response": "urn:vvv:schema:1:context_page:response:7792bef117e299047275566d99ceecc2a456950ba517bab0976cf7b46ce3c7a0"
         },
         "command": "context_page",
         "read_only": true,
@@ -57,6 +58,7 @@ exit 0
           "origin",
           "selection",
           "references",
+          "include_enclosing",
           "page",
           "work"
         ]
@@ -65,8 +67,8 @@ exit 0
         "schemas": {
           "arguments": "urn:vvv:schema:1:continue:arguments:abb1881777d39e1e9e0fc9236bb7087212cc2f55753d9881620bf451d742527d",
           "request": "urn:vvv:schema:1:continue:request:ba83b1e58efaf02f601cc2cded307ad0942a4c3af430e5fdcb075f81081a2887",
-          "result": "urn:vvv:schema:1:continue:result:62f1ae513776fef85a4be267664cd5510bef7e0e862c4d26373c27e6b3fa8fe4",
-          "response": "urn:vvv:schema:1:continue:response:4b63f8b440ec682eb0b96543ef68d1104a65d3d28c23cc7bcab61508a84681d1"
+          "result": "urn:vvv:schema:1:continue:result:9be66dededc118473fc36e640a4da67f65d30583bb72280aee150e67faaaf918",
+          "response": "urn:vvv:schema:1:continue:response:91ffe083f385f1838737f3a773ae61939cdff14d88fc8e0a12938aff3a69198a"
         },
         "command": "continue",
         "read_only": true,
@@ -103,10 +105,10 @@ exit 0
       },
       {
         "schemas": {
-          "arguments": "urn:vvv:schema:1:context:arguments:caa309ce19692e75b2df74803edb25d300c83fdf58433152bf2d074f43058ec1",
-          "request": "urn:vvv:schema:1:context:request:04c2a803417f20b7cbf8ce3800dc709d1fc0cabce25e3c070f447af378770a50",
-          "result": "urn:vvv:schema:1:context:result:1ef2cf8ec470dc7d0a75e49fb54b3d80cb81b5f699c3892c7209fa68704f44e2",
-          "response": "urn:vvv:schema:1:context:response:e993de2498c0c4ced2a63d8862576172d6e6efb1e041d72f77af2d271dbaab4b"
+          "arguments": "urn:vvv:schema:1:context:arguments:e4b13ab2d6bc4d4c6928ced5d445dfc8767fa173dc78158a19ca8626ef15ea8c",
+          "request": "urn:vvv:schema:1:context:request:c04fbe0ae6797baf7a4ea45a33e7dd18e139ad642f511637c7521457775d55fd",
+          "result": "urn:vvv:schema:1:context:result:ed949efd3c6d62ea0593b01c2654bb5d088d95087576c6ca3b1bcf4ee591201f",
+          "response": "urn:vvv:schema:1:context:response:122ce4a0724911f1b19c564af0df91e3a7a2cba18ad19476f8eb1c89f7b157bd"
         },
         "command": "context",
         "read_only": true,
@@ -114,7 +116,8 @@ exit 0
           "origin",
           "selection",
           "budget",
-          "references"
+          "references",
+          "include_enclosing"
         ]
       },
       {
@@ -133,10 +136,24 @@ exit 0
       },
       {
         "schemas": {
-          "arguments": "urn:vvv:schema:1:search:arguments:d2400eb9bad88228c3febecffa029cc93aedf54ad1632387d8af5c4d7345bda0",
-          "request": "urn:vvv:schema:1:search:request:2fba9c4b36bf7eb8a79b49b5b17a727031d832cc4d698a6b6aeac44656fe5990",
-          "result": "urn:vvv:schema:1:search:result:85c0044991e20abb2c267cc34858b48ed6a637b76ee0fa5ba2e00f0b9d7d4a7b",
-          "response": "urn:vvv:schema:1:search:response:9c1d367763e46e506ec6972c21a85039792cd18c492dc4570f81369eb93dde46"
+          "arguments": "urn:vvv:schema:1:resolve:arguments:a0e28eb15593cf64e53adc5ef8919aaf951c9a6b6dd34d4206ca2781191e17b6",
+          "request": "urn:vvv:schema:1:resolve:request:dab3d978565746af1928e0e870a83686c8abb3b26d4d87a92cea1b9cd008e9ac",
+          "result": "urn:vvv:schema:1:resolve:result:1b18bf668530aaac98633e439f51400c6b2ea9ec11d4be0007a4ca81ee4f36a3",
+          "response": "urn:vvv:schema:1:resolve:response:c43c245370f9c0b03bdb08f34756fa0660af4b278ce1b7333b5294c1c5262514"
+        },
+        "command": "resolve",
+        "read_only": true,
+        "parameters": [
+          "origin",
+          "selection"
+        ]
+      },
+      {
+        "schemas": {
+          "arguments": "urn:vvv:schema:1:search:arguments:7d72fef904a59b25bd289c8d20c0b4a27d37cc9ad67b56ee387611b386fed1c9",
+          "request": "urn:vvv:schema:1:search:request:322fb0cbdb2fdf4399fa6b61558e8878a6ec52765000103c35a8b3e5984fcf14",
+          "result": "urn:vvv:schema:1:search:result:e4dba0205e9e8f3500dd931265023eb34d5722a5914904e224cc2deb3b4c9cd8",
+          "response": "urn:vvv:schema:1:search:response:82ea497a8e377a16812571f8fbd1cb7843212d669407206e5b6e3fe93ed3a4e5"
         },
         "command": "search",
         "read_only": true,
@@ -145,7 +162,8 @@ exit 0
           "kind",
           "symbol",
           "name",
-          "language"
+          "language",
+          "scope"
         ]
       },
       {

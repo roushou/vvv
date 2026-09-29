@@ -4,6 +4,7 @@
 //! is the [`Answer`] of the same name.
 
 use serde::{Deserialize, Serialize};
+#[cfg(test)]
 use vvv_core::Query;
 
 use crate::capabilities::moves::{Move, MoveIntent, MoveSymbol, MoveSymbolIntent};
@@ -32,7 +33,8 @@ pub enum Request {
     Discover(crate::DiscoveryQuery),
     Context(crate::ContextQuery),
     Navigate(crate::NavigationQuery),
-    Search(Query),
+    Resolve(crate::ResolutionQuery),
+    Search(crate::SearchQuery),
     Outline(OutlineQuery),
     References(ReferencesQuery),
     Where(WhereQuery),
@@ -95,6 +97,7 @@ impl Request {
             Self::Discover(_) => super::Command::Discover,
             Self::Context(_) => super::Command::Context,
             Self::Navigate(_) => super::Command::Navigate,
+            Self::Resolve(_) => super::Command::Resolve,
             Self::Search(_) => super::Command::Search,
             Self::Outline(_) => super::Command::Outline,
             Self::References(_) => super::Command::References,
@@ -136,6 +139,7 @@ pub enum Answer {
     Discover(crate::Discovery),
     Context(crate::ContextReply),
     Navigate(crate::NavigationReply),
+    Resolve(crate::ResolutionReply),
     Search(Search),
     Outline(Outline),
     References(References),
@@ -223,7 +227,7 @@ mod tests {
     #[test]
     fn the_read_only_guard_separates_queries_from_mutations() {
         assert!(Request::History.is_read_only());
-        assert!(Request::Search(Query::pattern("Engine")).is_read_only());
+        assert!(Request::Search(Query::pattern("Engine").into()).is_read_only());
         assert!(Request::References(ReferencesQuery::new("Engine")).is_read_only());
         assert!(!Request::Undo.is_read_only(), "undo writes, however small");
         assert!(

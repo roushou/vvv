@@ -12,6 +12,7 @@
 //! | `expand` | `capabilities/excerpts.rs` |
 //! | `context` | `capabilities/context.rs` |
 //! | `discover` | `capabilities/discovery.rs` |
+//! | `resolve` | `capabilities/navigation.rs` |
 //! | `navigate` | `capabilities/navigation.rs` |
 //! | `search` | `capabilities/search.rs` |
 //! | `outline` | `capabilities/declarations.rs` |

@@ -51,6 +51,11 @@
             "max_lookups": 64
           }
         },
+        "include_enclosing": {
+          "default": false,
+          "description": "Include the enclosing declaration's full body as a separate item.",
+          "type": "boolean"
+        },
         "origin": {
           "$ref": "#/$defs/NavigationOrigin"
         },
@@ -309,7 +314,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:context:request:04c2a803417f20b7cbf8ce3800dc709d1fc0cabce25e3c070f447af378770a50",
+  "$id": "urn:vvv:schema:1:context:request:c04fbe0ae6797baf7a4ea45a33e7dd18e139ad642f511637c7521457775d55fd",
   "$ref": "#/$defs/ContextQuery",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {

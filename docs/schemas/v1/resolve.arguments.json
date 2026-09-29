@@ -4,76 +4,6 @@
       "description": "Digest of the complete UTF-8 source text, independent of its path.",
       "type": "string"
     },
-    "ContextBudget": {
-      "additionalProperties": false,
-      "properties": {
-        "max_bytes": {
-          "default": 16384,
-          "description": "Maximum compact JSON bytes in the result, excluding the response envelope.",
-          "format": "uint",
-          "maximum": 1048576,
-          "minimum": 1024,
-          "type": "integer"
-        },
-        "max_files": {
-          "default": 64,
-          "description": "Maximum source files examined for incoming same-spelling references.",
-          "format": "uint",
-          "maximum": 1024,
-          "minimum": 1,
-          "type": "integer"
-        },
-        "max_items": {
-          "default": 12,
-          "format": "uint",
-          "maximum": 64,
-          "minimum": 1,
-          "type": "integer"
-        },
-        "max_lookups": {
-          "default": 64,
-          "format": "uint",
-          "maximum": 512,
-          "minimum": 1,
-          "type": "integer"
-        }
-      },
-      "type": "object"
-    },
-    "ContextQuery": {
-      "properties": {
-        "budget": {
-          "$ref": "#/$defs/ContextBudget",
-          "default": {
-            "max_bytes": 16384,
-            "max_files": 64,
-            "max_items": 12,
-            "max_lookups": 64
-          }
-        },
-        "include_enclosing": {
-          "default": false,
-          "description": "Include the enclosing declaration's full body as a separate item.",
-          "type": "boolean"
-        },
-        "origin": {
-          "$ref": "#/$defs/NavigationOrigin"
-        },
-        "references": {
-          "default": false,
-          "description": "Include incoming references with this exact spelling, validated by navigation.",
-          "type": "boolean"
-        },
-        "selection": {
-          "$ref": "#/$defs/Selection",
-          "default": "all"
-        }
-      },
-      "required": [
-        "origin"
-      ],
-      "type": "object"
-    },
     "LanguageId": {
       "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
       "type": "string"
@@ -149,6 +79,20 @@
         }
       ]
     },
+    "NavigationQuery": {
+      "properties": {
+        "origin": {
+          "$ref": "#/$defs/NavigationOrigin"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
+        }
+      },
+      "required": [
+        "origin"
+      ],
+      "type": "object"
+    },
     "Position": {
       "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
       "properties": {
@@ -172,6 +116,10 @@
     "RelPath": {
       "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
       "type": "string"
+    },
+    "ResolutionQuery": {
+      "$ref": "#/$defs/NavigationQuery",
+      "description": "Compact resolution with the same origin and selection semantics as navigation."
     },
     "Selection": {
       "description": "Which matches of a search a later command acts on.\n\nIds are content-derived, so a selection made from `vvv search` can be\nhanded to `vvv rewrite` in a separate process. Ordinals are the 1-based\npositions in the same search's result order, which is what human output\nnumbers rows with. Either kind that no longer resolves means the files\nchanged in between; the selection is then refused rather than silently\nnarrowed.",
@@ -314,11 +262,11 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:context:arguments:e4b13ab2d6bc4d4c6928ced5d445dfc8767fa173dc78158a19ca8626ef15ea8c",
-  "$ref": "#/$defs/ContextQuery",
+  "$id": "urn:vvv:schema:1:resolve:arguments:a0e28eb15593cf64e53adc5ef8919aaf951c9a6b6dd34d4206ca2781191e17b6",
+  "$ref": "#/$defs/ResolutionQuery",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {},
   "required": [],
-  "title": "context arguments",
+  "title": "resolve arguments",
   "type": "object"
 }

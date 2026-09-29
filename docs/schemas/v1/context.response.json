@@ -173,6 +173,17 @@
         }
       ],
       "properties": {
+        "enclosing": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Location of the enclosing declaration, without repeating its body."
+        },
         "items": {
           "items": {
             "$ref": "#/$defs/ContextItem"
@@ -721,7 +732,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:context:response:e993de2498c0c4ced2a63d8862576172d6e6efb1e041d72f77af2d271dbaab4b",
+  "$id": "urn:vvv:schema:1:context:response:122ce4a0724911f1b19c564af0df91e3a7a2cba18ad19476f8eb1c89f7b157bd",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [

@@ -259,6 +259,7 @@ mod tests {
                 snapshot,
                 identity: crate::ContentId::of("query").into(),
                 data: QueryData::Search(Search {
+                    scope: Default::default(),
                     query: crate::Query::pattern("x"),
                     matches: vec![],
                     skipped: vec![],

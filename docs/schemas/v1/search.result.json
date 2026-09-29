@@ -254,6 +254,31 @@
       ],
       "type": "string"
     },
+    "SearchScope": {
+      "additionalProperties": false,
+      "description": "Explicit file/directory prefixes and owning package names or IDs.\nAlternatives within each list are ORed; the two lists are intersected.",
+      "properties": {
+        "packages": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "paths": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RelPath"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "paths",
+        "packages"
+      ],
+      "type": "object"
+    },
     "Skipped": {
       "description": "A language a search left out, and why: its grammar could not compile the\nquery (a Rust pattern on a TypeScript tree). Never fatal; the other\nlanguages' matches are complete. Data only; the display layer words it.",
       "properties": {
@@ -365,7 +390,7 @@
       ]
     }
   },
-  "$id": "urn:vvv:schema:1:search:result:85c0044991e20abb2c267cc34858b48ed6a637b76ee0fa5ba2e00f0b9d7d4a7b",
+  "$id": "urn:vvv:schema:1:search:result:e4dba0205e9e8f3500dd931265023eb34d5722a5914904e224cc2deb3b4c9cd8",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "`vvv search`: what was found, and which languages could not be asked.",
   "properties": {
@@ -377,6 +402,9 @@
     },
     "query": {
       "$ref": "#/$defs/Query"
+    },
+    "scope": {
+      "$ref": "#/$defs/SearchScope"
     },
     "skipped": {
       "description": "Languages whose grammar could not compile the query; their files\nwere not searched.",

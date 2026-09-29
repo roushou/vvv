@@ -381,6 +381,31 @@
       ],
       "type": "object"
     },
+    "SearchScope": {
+      "additionalProperties": false,
+      "description": "Explicit file/directory prefixes and owning package names or IDs.\nAlternatives within each list are ORed; the two lists are intersected.",
+      "properties": {
+        "packages": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "paths": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RelPath"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "paths",
+        "packages"
+      ],
+      "type": "object"
+    },
     "Skipped": {
       "description": "A language a search left out, and why: its grammar could not compile the\nquery (a Rust pattern on a TypeScript tree). Never fatal; the other\nlanguages' matches are complete. Data only; the display layer words it.",
       "properties": {
@@ -599,6 +624,16 @@
         }
       ],
       "properties": {
+        "enclosing": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "items": {
           "items": {
             "$ref": "#/$defs/PagedContextItem"
@@ -655,6 +690,9 @@
         "query": {
           "$ref": "#/$defs/Query"
         },
+        "scope": {
+          "$ref": "#/$defs/SearchScope"
+        },
         "skipped": {
           "items": {
             "$ref": "#/$defs/Skipped"
@@ -681,7 +719,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:continue:result:62f1ae513776fef85a4be267664cd5510bef7e0e862c4d26373c27e6b3fa8fe4",
+  "$id": "urn:vvv:schema:1:continue:result:9be66dededc118473fc36e640a4da67f65d30583bb72280aee150e67faaaf918",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "anyOf": [
     {

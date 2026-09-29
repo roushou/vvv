@@ -4,7 +4,12 @@
       "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
       "type": "string"
     },
-    "Query": {
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "SearchQuery": {
+      "description": "A structural or symbolic search with a typed engine answer.\nPlugin predicates remain separate from engine-owned workspace filters.",
       "properties": {
         "kind": {
           "description": "Tree-sitter node kind, e.g. `function_item`.",
@@ -38,6 +43,9 @@
             "null"
           ]
         },
+        "scope": {
+          "$ref": "#/$defs/SearchScope"
+        },
         "symbol": {
           "anyOf": [
             {
@@ -48,6 +56,27 @@
             }
           ],
           "description": "Only declarations of this kind."
+        }
+      },
+      "type": "object"
+    },
+    "SearchScope": {
+      "additionalProperties": false,
+      "description": "Explicit file/directory prefixes and owning package names or IDs.\nAlternatives within each list are ORed; the two lists are intersected.",
+      "properties": {
+        "packages": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "paths": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RelPath"
+          },
+          "type": "array"
         }
       },
       "type": "object"
@@ -85,8 +114,8 @@
       ]
     }
   },
-  "$id": "urn:vvv:schema:1:search:request:2fba9c4b36bf7eb8a79b49b5b17a727031d832cc4d698a6b6aeac44656fe5990",
-  "$ref": "#/$defs/Query",
+  "$id": "urn:vvv:schema:1:search:request:322fb0cbdb2fdf4399fa6b61558e8878a6ec52765000103c35a8b3e5984fcf14",
+  "$ref": "#/$defs/SearchQuery",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {
     "command": {

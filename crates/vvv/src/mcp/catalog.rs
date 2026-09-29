@@ -36,7 +36,7 @@ impl ToolKind {
         match self {
             Self::Discover => Command::Discover,
             Self::Search => Command::SearchPage,
-            Self::Navigate => Command::Navigate,
+            Self::Navigate => Command::Resolve,
             Self::Context => Command::ContextPage,
             Self::Continue => Command::Continue,
             Self::Expand => Command::Expand,
@@ -58,7 +58,7 @@ impl ToolEntry {
         .document;
         // Enum newtype variants use a root reference. Inline that object before
         // closing the adapter's argument surface or its properties get rejected.
-        if let Some(Value::String(reference)) = input.remove("$ref") {
+        while let Some(Value::String(reference)) = input.remove("$ref") {
             let name = reference
                 .strip_prefix("#/$defs/")
                 .expect("local schema reference");

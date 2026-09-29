@@ -382,3 +382,78 @@ fn lexical_facts_select_the_innermost_binding_and_preserve_symbol_roundtrips() {
         ));
     }
 }
+
+#[test]
+fn compact_resolution_preserves_identity_and_evidence_without_preview_payloads() {
+    let source = "def Engine\n".to_owned() + &"irrelevant large file body\n".repeat(10000);
+    let f = Fixture::new(&[("a.p", &source)]);
+    let query = NavigationQuery::at("a.p", Position::new(0, 4));
+    let full = query.clone().execute(&f.engine).unwrap();
+    let compact = vvv_engine::ResolutionQuery(query)
+        .execute(&f.engine)
+        .unwrap();
+    let NavigationOutcome::Resolved {
+        target,
+        preview,
+        evidence,
+    } = full.outcome
+    else {
+        panic!()
+    };
+    let vvv_engine::ResolutionOutcome::Resolved {
+        definition,
+        container,
+    } = &compact.outcome
+    else {
+        panic!()
+    };
+    assert_eq!(compact.snapshot, full.snapshot);
+    assert_eq!(definition.target, target);
+    assert_eq!(definition.evidence, evidence);
+    assert_eq!(definition.id, preview.declaration.id);
+    assert_eq!(*container, preview.container);
+    assert_eq!(definition.name, "Engine");
+    assert!(serde_json::to_vec(&compact).unwrap().len() < 1024);
+    let doc = vvv_engine::report::Document::of(&Answer::Resolve(compact));
+    use vvv_engine::report::View;
+    let view = vvv_engine::report::Detailed.present(&doc, Default::default(), 80);
+    assert_eq!(
+        view.body[0].source.as_ref().unwrap().path.as_path(),
+        Path::new("a.p")
+    );
+}
+
+#[test]
+fn compact_ambiguity_keeps_every_selectable_candidate_and_unavailable_reason() {
+    let f = Fixture::new(&[
+        ("a.p", "def Engine"),
+        ("b.p", "def Engine"),
+        ("use.p", "use a.p/Engine\nuse b.p/Engine\nEngine"),
+    ]);
+    let query = NavigationQuery::at("use.p", Position::new(2, 0));
+    let reply = vvv_engine::ResolutionQuery(query.clone())
+        .execute(&f.engine)
+        .unwrap();
+    let vvv_engine::ResolutionOutcome::Ambiguous { candidates } = reply.outcome else {
+        panic!()
+    };
+    assert_eq!(candidates.len(), 2);
+    let selected = vvv_engine::ResolutionQuery(
+        query.select(vvv_engine::Selection::ids([candidates[1].id.clone()])),
+    )
+    .execute(&f.engine)
+    .unwrap();
+    let vvv_engine::ResolutionOutcome::Resolved { definition, .. } = selected.outcome else {
+        panic!()
+    };
+    assert_eq!(definition.target, candidates[1].target);
+    let unavailable = vvv_engine::ResolutionQuery(NavigationQuery::at("a.p", Position::new(0, 3)))
+        .execute(&f.engine)
+        .unwrap();
+    assert!(matches!(
+        unavailable.outcome,
+        vvv_engine::ResolutionOutcome::Unavailable {
+            reason: UnavailableReason::NoIdentifier
+        }
+    ));
+}

@@ -11,14 +11,20 @@ pub struct NavigateCmd {
     /// Choose one candidate by its 1-based row number or match id
     #[arg(long, value_name = "ROW_OR_ID")]
     pub select: Option<String>,
+    /// Return a compact target and evidence without full-file preview data
+    #[arg(long)]
+    pub compact: bool,
 }
 
 impl NavigateCmd {
     pub fn run(self, ctx: &Context) -> anyhow::Result<()> {
         let Location { path, position } = self.location.parse()?;
         let selection = crate::cli::select::Select::new(self.select.as_slice()).selection()?;
-        ctx.run(Request::Navigate(
-            NavigationQuery::at(path, position).select(selection),
-        ))
+        let query = NavigationQuery::at(path, position).select(selection);
+        ctx.run(if self.compact {
+            Request::Resolve(vvv_engine::ResolutionQuery(query))
+        } else {
+            Request::Navigate(query)
+        })
     }
 }

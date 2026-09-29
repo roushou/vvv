@@ -59,8 +59,8 @@ pub use protocol::{
     Notice, NoticeKind, Occurrence, Outline, OutlineItem, OutlineQuery, Placed, Reach, Reason,
     Recovery, RecoveryEffect, RecoveryIssue, RecoveryOperation, RecoveryState, RecoveryUnverified,
     References, ReferencesQuery, Reply, Request, Respelling, Rewrite, RewriteIntent, RewriteOf,
-    Search, SearchQuery, Selection, SelectionError, Site, Skipped, Surface, SurfaceQuery, Template,
-    TemplateError, Undo, Unreferenced, WhereQuery,
+    Search, SearchQuery, SearchScope, Selection, SelectionError, Site, Skipped, Surface,
+    SurfaceQuery, Template, TemplateError, Undo, Unreferenced, WhereQuery,
 };
 pub use vfs::{
     DiskVfs, EntryKind, MemoryVfs, MoveError, MoveState, ParentCreation, Stamp, Vfs, VfsError,
@@ -115,3 +115,5 @@ pub use protocol::{
 
 mod cancellation;
 pub use cancellation::ReadCancellation;
+
+pub use protocol::{DefinitionLocation, ResolutionOutcome, ResolutionQuery, ResolutionReply};

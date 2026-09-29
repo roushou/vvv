@@ -157,6 +157,12 @@ use `--select 2` or `--select <match-id>` to choose a candidate. `--json` includ
 versioned target anchors and the definition source; `vvv serve` accepts the same
 capability as a `navigate` request.
 
+Use `vvv navigate path:line:column --compact --json` for a small resolution result:
+name, match ID, versioned target, display container, declaration position, and
+evidence. This uses the engine's `resolve` request and keeps all ambiguous
+candidates. Request source separately with `context`. MCP's `vvv_navigate` uses
+this compact contract; full navigation previews remain available to the CLI and TUI.
+
 Rust navigation follows module-level imports, aliases, re-exports, and type uses
 in fields, function parameters, and return types. It also follows simple function
 parameters, generic type parameters, `let` locals, tuple/slice bindings, closure
@@ -292,8 +298,10 @@ vvv context src/engine.rs:20:12 --max-bytes 8192 --max-items 8 --json
 vvv context src/engine.rs:20:12 --references --max-files 32 --max-lookups 64
 ```
 
-Results start with the declaration (including attached documentation), then its
-nearest enclosing declaration and definitions referenced in its body. Repeated
+Results start with the declaration (including attached documentation), followed by
+definitions referenced in its body. JSON carries the nearest enclosing declaration
+in `enclosing` as a versioned location, without repeating its body. Add
+`--include-enclosing` when you want that body as an additional item. Repeated
 targets are included once. Each item carries the relationship, exact source range,
 source version, and the occurrence establishing the relationship. `--select`
 resolves an ambiguous starting occurrence using the same candidate IDs as `navigate`.
@@ -335,7 +343,7 @@ their IDs and original one-based ordinals. A match too large for a page produces
 `output_limit` with the required size rather than a shortened match.
 
 Use `context_page` with the same origin/selection as `context`, separate `page`
-and `work` budgets, and optional `references: true`. Continue its query cursor for
+and `work` budgets, and optional `references: true` or `include_enclosing: true`. Continue its query cursor for
 more relationships. For a shortened definition, use its separate `expansion` token:
 
 ```json
@@ -846,10 +854,13 @@ The client must support MCP `2025-11-25`. The six tools are read-only:
 Discovery describes the engine's full command catalog; only those six tools are
 exposed through MCP.
 
-For example, call `vvv_search` with `{"query":{"name":"Engine"}}`, then pass a
-result's `path` and `start` as a position origin to `vvv_navigate` or `vvv_context`.
-Include its `content` as `expected_content` to reject an intervening edit. For
-example, this requests context at a zero-based position:
+For example, call `vvv_search` with
+`{"query":{"name":"Engine"},"scope":{"packages":["vvv-engine"],"paths":["crates/vvv-engine/src"]}}`.
+For a declaration match, form an occurrence anchor from its `path`, `content`, and
+`symbol.name_span`; pass it as `{"kind":"occurrence","anchor":...}` to navigation
+or context. A declaration's `start` can point at a keyword rather than its name.
+For identifier pattern matches, its `span` is already the identifier range.
+You can also request context at a zero-based position:
 
 ```json
 {
@@ -867,8 +878,8 @@ continues related declarations through `vvv_continue`; each item's `expansion`
 handle retrieves more exact source text through `vvv_expand`. Handles belong to
 this session. When an edit makes one stale, restart the original query. Navigation
 can return multiple candidates or an unavailable outcome; inspect that outcome
-before proceeding. A large navigation preview returns `output_limit`; use bounded
-context instead.
+before proceeding. Navigation returns compact locations and evidence; use context
+for source excerpts. Very large candidate sets can still exceed the output budget.
 
 Each tool defaults to a 16 KiB engine result budget, configurable with
 `max_output_bytes` up to 1 MiB. Protocol framing has separate limits described in
@@ -877,3 +888,29 @@ or stops active work at the next engine checkpoint; a parser invocation or pendi
 filesystem operation is not forcibly interrupted. Closing stdin cancels work and
 ends the session. Source resolution uses the same engine and ast-grep plugins as
 the CLI; no language server is launched.
+
+## Restricting search to paths and packages
+
+```console
+vvv search --name Engine --path crates/vvv-engine/src
+vvv search --name Engine --package vvv-engine
+vvv search Engine --path crates/vvv-engine/src --package vvv_engine
+```
+
+`--path` accepts an exact workspace-relative file or a directory prefix, matching
+path components: `src/a` includes `src/a/mod.rs`, but not `src/ab.rs`. Use `/`
+separators; absolute paths and `..` components are rejected. `.` means the workspace.
+These are literal prefixes, not globs. Repeat either flag for alternatives; when
+both kinds of filter are present, a file must match both.
+
+`--package` accepts a manifest name or the canonical ID used in vvv addresses
+(`vvv-engine` or `vvv_engine` for this repository's engine). Ownership uses the
+nearest enclosing package root, so a nested fixture package is not included with
+its parent. Files without a known owning package do not match a package filter.
+Unknown package names return no matches.
+
+For `search`, `search_page`, or MCP `vvv_search`, pass the same filters as
+`"scope":{"paths":["crates/vvv-engine/src"],"packages":["vvv-engine"]}`. The
+scope is echoed when nonempty and is retained through continuation. Ordinals and
+totals describe only the filtered results. Filtering happens before match
+collection; it does not narrow the workspace snapshot used for stale detection.

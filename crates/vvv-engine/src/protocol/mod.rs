@@ -33,7 +33,7 @@ pub use crate::capabilities::imports::{
     Deps, DepsQuery, ExplainQuery, Explanation, ImportSite, ImportsQuery, ImportsReport,
 };
 pub use crate::capabilities::rename::{Definitions, References, ReferencesQuery};
-pub use crate::capabilities::search::{Search, SearchQuery};
+pub use crate::capabilities::search::{Search, SearchQuery, SearchScope};
 pub use crate::capabilities::surface::{Exposed, Surface, SurfaceQuery};
 pub use crate::capabilities::usage::{
     Consumer, Dead, DeadQuery, Impact, ImpactQuery, Unreferenced,
@@ -95,8 +95,9 @@ impl<T> Response<T> {
 }
 
 pub use crate::capabilities::navigation::{
-    DefinitionCandidate, DefinitionPreview, NavigationOrigin, NavigationOutcome, NavigationQuery,
-    NavigationReply, ResolutionEvidence, SnapshotId, UnavailableReason,
+    DefinitionCandidate, DefinitionLocation, DefinitionPreview, NavigationOrigin,
+    NavigationOutcome, NavigationQuery, NavigationReply, ResolutionEvidence, ResolutionOutcome,
+    ResolutionQuery, ResolutionReply, SnapshotId, UnavailableReason,
 };
 pub use source::{ContentId, SourceAnchor, SymbolRef};
 

@@ -46,6 +46,9 @@
           "$ref": "#/$defs/NavigationReply"
         },
         {
+          "$ref": "#/$defs/ResolutionReply"
+        },
+        {
           "$ref": "#/$defs/Search"
         },
         {
@@ -499,6 +502,17 @@
         }
       ],
       "properties": {
+        "enclosing": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Location of the enclosing declaration, without repeating its body."
+        },
         "items": {
           "items": {
             "$ref": "#/$defs/ContextItem"
@@ -608,6 +622,34 @@
       "required": [
         "target",
         "declaration",
+        "evidence"
+      ],
+      "type": "object"
+    },
+    "DefinitionLocation": {
+      "description": "Enough information to select, open, or request context for a declaration.",
+      "properties": {
+        "evidence": {
+          "$ref": "#/$defs/ResolutionEvidence"
+        },
+        "id": {
+          "$ref": "#/$defs/MatchId"
+        },
+        "name": {
+          "type": "string"
+        },
+        "start": {
+          "$ref": "#/$defs/Position"
+        },
+        "target": {
+          "$ref": "#/$defs/SymbolRef"
+        }
+      },
+      "required": [
+        "target",
+        "id",
+        "name",
+        "start",
         "evidence"
       ],
       "type": "object"
@@ -3127,6 +3169,91 @@
       ],
       "type": "object"
     },
+    "ResolutionReply": {
+      "oneOf": [
+        {
+          "description": "Enough information to select, open, or request context for a declaration.",
+          "properties": {
+            "container": {
+              "$ref": "#/$defs/SymbolRef"
+            },
+            "evidence": {
+              "$ref": "#/$defs/ResolutionEvidence"
+            },
+            "id": {
+              "$ref": "#/$defs/MatchId"
+            },
+            "name": {
+              "type": "string"
+            },
+            "outcome": {
+              "const": "resolved",
+              "type": "string"
+            },
+            "start": {
+              "$ref": "#/$defs/Position"
+            },
+            "target": {
+              "$ref": "#/$defs/SymbolRef"
+            }
+          },
+          "required": [
+            "outcome",
+            "target",
+            "id",
+            "name",
+            "start",
+            "evidence",
+            "container"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "candidates": {
+              "items": {
+                "$ref": "#/$defs/DefinitionLocation"
+              },
+              "type": "array"
+            },
+            "outcome": {
+              "const": "ambiguous",
+              "type": "string"
+            }
+          },
+          "required": [
+            "outcome",
+            "candidates"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "outcome": {
+              "const": "unavailable",
+              "type": "string"
+            },
+            "reason": {
+              "$ref": "#/$defs/UnavailableReason"
+            }
+          },
+          "required": [
+            "outcome",
+            "reason"
+          ],
+          "type": "object"
+        }
+      ],
+      "properties": {
+        "snapshot": {
+          "$ref": "#/$defs/SnapshotId"
+        }
+      },
+      "required": [
+        "snapshot"
+      ],
+      "type": "object"
+    },
     "Respelling": {
       "description": "A reference a move re-spelled in place: where it is, what it said and\nwhat it says now. A preview lists these as one row each instead of a\ndiff hunk; an edit no respelling accounts for is structural and shows as\na hunk.",
       "properties": {
@@ -3285,6 +3412,9 @@
         "query": {
           "$ref": "#/$defs/Query"
         },
+        "scope": {
+          "$ref": "#/$defs/SearchScope"
+        },
         "skipped": {
           "description": "Languages whose grammar could not compile the query; their files\nwere not searched.",
           "items": {
@@ -3391,6 +3521,31 @@
         "text",
         "line",
         "role"
+      ],
+      "type": "object"
+    },
+    "SearchScope": {
+      "additionalProperties": false,
+      "description": "Explicit file/directory prefixes and owning package names or IDs.\nAlternatives within each list are ORed; the two lists are intersected.",
+      "properties": {
+        "packages": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "paths": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RelPath"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "paths",
+        "packages"
       ],
       "type": "object"
     },
@@ -3842,6 +3997,16 @@
         }
       ],
       "properties": {
+        "enclosing": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "items": {
           "items": {
             "$ref": "#/$defs/PagedContextItem"
@@ -3898,6 +4063,9 @@
         "query": {
           "$ref": "#/$defs/Query"
         },
+        "scope": {
+          "$ref": "#/$defs/SearchScope"
+        },
         "skipped": {
           "items": {
             "$ref": "#/$defs/Skipped"
@@ -3924,7 +4092,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:session:reply:96c122956609d5728b7ef43078926dd9ec83cd126195911611dc6e03bd7f706e",
+  "$id": "urn:vvv:schema:1:session:reply:253b940d2a66ce5d214300d9edd9651f0f56585975b713ea8cc3dd35690ca946",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "The reply to a [`Call`]: its `id`, then the usual envelope.",
   "oneOf": [

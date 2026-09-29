@@ -176,7 +176,8 @@ artifact identity; the catalog hashes canonical generated data.
 ## `vvv context`
 
 The request accepts the same `origin` and `selection` as `navigate`, an optional
-`budget`, and `references` (default false). Budget fields default independently:
+`budget`, `references` (default false), and `include_enclosing` (default false).
+Budget fields default independently:
 
 | Field         | Default | Allowed range |
 | ------------- | ------- | ------------- |
@@ -202,8 +203,11 @@ Each item has:
 - `text`: the source substring, without added ellipses or reformatted indentation.
 - `complete`: whether the entire target extent is present.
 
-Items are ordered seed first, enclosing declaration second, outgoing occurrences
-in source order, then incoming files/tokens in path/source order. Each target
+The optional `enclosing` field identifies the nearest enclosing declaration as a
+`SymbolRef`. Its body is included only when `include_enclosing: true`; the same
+owner is not reintroduced through outgoing or incoming relationships by default.
+Items are ordered seed first, the optional enclosing body second, outgoing
+occurrences in source order, then incoming files/tokens in path/source order. Each target
 appears once, keeping its first relationship evidence. Outgoing declarations
 already contained in the seed are not duplicated. Documentation attached to a
 declaration belongs to its extent; there is no separate generated summary.
@@ -230,6 +234,9 @@ not lock external editors or promise filesystem transaction isolation. Expand an
 item with a new context request using its `target` as a symbol origin.
 
 ## Paged queries and exact source expansion
+
+`context_page` shares context's `include_enclosing` opt-in and returns the same
+optional `enclosing` location on each page, including empty progress pages.
 
 `search_page`, `context_page`, `continue`, and `expand` are read-only session and
 library commands. Keep the same `serve` process (or clones of one `Engine`) for
@@ -274,7 +281,7 @@ an independent excerpt cursor or null. Ambiguity candidates remain complete and
 indivisible. `continue` returns the same operation-specific shape, distinguished
 by `kind`.
 
-Context traversal preserves seed, enclosing declaration, outgoing occurrence,
+Context traversal preserves seed, optional enclosing body, outgoing occurrence,
 and incoming path/source order, with first-evidence deduplication across pages.
 Work counters describe additional relationship work in this call; the initial
 seed lookup is excluded. Resuming within an incoming file counts that file once
@@ -458,6 +465,28 @@ no syntax data. Older payloads without `identifiers` deserialize to an empty lis
 Adding this field changes Rust `File` struct literals.
 Clients can use declaration containment to preview an enum when a variant is selected.
 
+## `resolve`
+
+The compact companion to `navigate` accepts the same `origin` and `selection`.
+`ResolutionQuery` returns `ResolutionReply` with the same snapshot, resolution
+semantics, source validation, and evidence. The CLI exposes it through
+`navigate --compact`; MCP's `vvv_navigate` maps to this command.
+
+Resolved replies contain `outcome: "resolved"`, `target`, `id`, `name`, `start`,
+`evidence`, and `container`. `target` and `container` are versioned `SymbolRef`s;
+`start` is the declaration's zero-based starting position. `container` preserves
+preview containment (for example, the enum containing a variant). Request the
+target through `context`/`context_page` to obtain source.
+
+Ambiguous replies keep every candidate as `{target,id,name,start,evidence}` in the
+same order and with the same selectable IDs as full navigation. Unavailable
+replies keep the same reason. Full source, highlights, identifier lists, and
+serialized declaration bodies are omitted by construction, not truncated after
+budget checks. Candidate sets and long names can still exceed a caller's budget;
+that produces the ordinary `output_limit` failure. Full navigation still owns
+source capture internally, so this is a delivery reduction, not a parser-memory
+or runtime guarantee.
+
 ## `navigate`
 
 `NavigationQuery` contains `origin` and an optional `selection` using the existing
@@ -605,6 +634,30 @@ A pattern is written in one language. A language whose grammar cannot compile it
 asked once, before any file is read, and listed in `skipped` with the grammar's reason;
 its files are not searched and the command still succeeds. `skipped` is absent when
 empty. Pass `language` to ask one language only.
+
+Both `search` and `search_page` accept an engine-owned `scope` beside their plugin
+predicates. For unpaged `search`, predicates remain top-level; paged requests nest
+them under `query`:
+
+```json
+{"command":"search","name":"Engine","scope":{"paths":["crates/vvv-engine/src"],"packages":["vvv-engine"]}}
+{"command":"search_page","query":{"name":"Engine"},"scope":{"packages":["vvv_engine"]}}
+```
+
+`paths` and `packages` default to empty lists (unrestricted). Path alternatives
+match whole components and represent exact files or directory prefixes, using
+workspace-relative `/` paths; absolute paths, `..`, backslashes, drive syntax, and
+NUL bytes are rejected with `bad_request`. `.` or an empty prefix matches the
+workspace. Package alternatives match either a manifest name or canonical package
+ID exactly, using the deepest owning package root from the file's language layout.
+Unknown packages and files without package ownership do not match. Alternatives
+within each list are ORed; the lists are ANDed. There is no heuristic exclusion of
+tests or fixtures.
+
+The result echoes nonempty `scope`. Collection and retained-result limits apply
+after filtering, and page ordinals/totals refer to the filtered set. Scope is part
+of the retained query identity and cannot change through `continue`; delivery
+budgets may still change. Source/manifest validation remains workspace-wide.
 
 ## `vvv outline`, `references`, `where`, `deps`, `explain`
 
@@ -963,7 +1016,7 @@ inputs and per-command `Response` output schemas. A tool-list cursor is invalid.
 | -------------- | -------------- |
 | `vvv_discover` | `discover`     |
 | `vvv_search`   | `search_page`  |
-| `vvv_navigate` | `navigate`     |
+| `vvv_navigate` | `resolve`      |
 | `vvv_context`  | `context_page` |
 | `vvv_continue` | `continue`     |
 | `vvv_expand`   | `expand`       |
@@ -980,8 +1033,8 @@ budget policy. `structuredContent` contains the original vvv `Response<Answer>`
 without an MCP request ID. A text block contains the same JSON for compatibility.
 Engine failures set `isError: true` and retain typed recovery fields. Ambiguous and
 unavailable navigation are successful results with `isError: false`. Unknown tools
-and invalid argument shapes are JSON-RPC errors, not vvv failures. Large navigation
-results return `output_limit`; use `vvv_context` for bounded source excerpts.
+and invalid argument shapes are JSON-RPC errors, not vvv failures. Navigation returns compact definition locations; use `vvv_context` for bounded
+source excerpts. Oversized candidate sets still return `output_limit`.
 
 Limits apply independently:
 

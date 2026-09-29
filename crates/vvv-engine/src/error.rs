@@ -9,6 +9,10 @@ use crate::history::HistoryError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EngineError {
+    #[error(
+        "search paths must be workspace-relative with / separators and no .. components; package filters must be nonempty"
+    )]
+    InvalidSearchScope,
     #[error("request cancelled")]
     ReadCancelled,
     #[error("a cancellation handle can execute only one read-only call")]
@@ -125,6 +129,7 @@ impl EngineError {
     /// The stable code a client branches on.
     pub fn code(&self) -> ErrorCode {
         match self {
+            Self::InvalidSearchScope => ErrorCode::BadRequest,
             Self::ReadCancelled => ErrorCode::Cancelled,
             Self::ReusedCancellation | Self::MutationCancellation => ErrorCode::BadRequest,
             #[cfg(feature = "schema")]

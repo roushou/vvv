@@ -24,6 +24,12 @@ pub struct SearchCmd {
     /// Only search files of this language (rust, typescript, tsx)
     #[arg(short, long)]
     pub lang: Option<String>,
+    /// Restrict to a workspace-relative file or directory; repeat for alternatives
+    #[arg(long)]
+    pub path: Vec<vvv_engine::RelPath>,
+    /// Restrict to an owning package name or ID; repeat for alternatives
+    #[arg(long)]
+    pub package: Vec<String>,
 }
 
 impl SearchCmd {
@@ -35,6 +41,10 @@ impl SearchCmd {
             .name(self.name)
             .language(self.lang.map(LanguageId::from))
             .build()?;
+        let query = vvv_engine::SearchQuery::from(query).scoped(vvv_engine::SearchScope {
+            paths: self.path,
+            packages: self.package,
+        });
         ctx.run(Request::Search(query))
     }
 }

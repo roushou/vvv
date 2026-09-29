@@ -69,6 +69,7 @@ pub fn decl(path: &str, line: u32, kind: SymbolKind, name: &str, source_line: &s
 
 pub fn search() -> Search {
     Search {
+        scope: Default::default(),
         query: Query::pattern("Language"),
         matches: vec![
             decl(

@@ -25,6 +25,7 @@
         "discover",
         "context",
         "navigate",
+        "resolve",
         "search",
         "outline",
         "references",
@@ -96,6 +97,11 @@
             "max_items": 12,
             "max_lookups": 64
           }
+        },
+        "include_enclosing": {
+          "default": false,
+          "description": "Include the enclosing declaration's full body as a separate item.",
+          "type": "boolean"
         },
         "origin": {
           "$ref": "#/$defs/NavigationOrigin"
@@ -608,6 +614,10 @@
       ],
       "type": "object"
     },
+    "ResolutionQuery": {
+      "$ref": "#/$defs/NavigationQuery",
+      "description": "Compact resolution with the same origin and selection semantics as navigation."
+    },
     "RewriteIntent": {
       "description": "Replace every selected match of `query` with `template`.",
       "properties": {
@@ -658,6 +668,79 @@
       "required": [
         "contract"
       ],
+      "type": "object"
+    },
+    "SearchQuery": {
+      "description": "A structural or symbolic search with a typed engine answer.\nPlugin predicates remain separate from engine-owned workspace filters.",
+      "properties": {
+        "kind": {
+          "description": "Tree-sitter node kind, e.g. `function_item`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "language": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/LanguageId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Restrict to one language; otherwise every registered language is searched."
+        },
+        "name": {
+          "description": "Only declarations with exactly this name.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pattern": {
+          "description": "ast-grep style pattern with meta-variables, e.g. `fn $NAME($$$ARGS) { $$$ }`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scope": {
+          "$ref": "#/$defs/SearchScope"
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolKind"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Only declarations of this kind."
+        }
+      },
+      "type": "object"
+    },
+    "SearchScope": {
+      "additionalProperties": false,
+      "description": "Explicit file/directory prefixes and owning package names or IDs.\nAlternatives within each list are ORed; the two lists are intersected.",
+      "properties": {
+        "packages": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "paths": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RelPath"
+          },
+          "type": "array"
+        }
+      },
       "type": "object"
     },
     "Selection": {
@@ -859,7 +942,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:session:call:baa08c9efb6fc5958d882f4a8ed621a7271ab7741d2a546a3be7d8ecc43fe46a",
+  "$id": "urn:vvv:schema:1:session:call:b2f9f97012e1169e3c2e39c4df12f318945e1f7b6cfd7ac0227e39903cd7247c",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "A request on a session's wire (`vvv serve`): the request with whatever\n`id` the caller chose, echoed on the [`Reply`].",
   "oneOf": [
@@ -891,6 +974,13 @@
         },
         "query": {
           "$ref": "#/$defs/Query"
+        },
+        "scope": {
+          "$ref": "#/$defs/SearchScope",
+          "default": {
+            "packages": [],
+            "paths": []
+          }
         }
       },
       "required": [
@@ -904,6 +994,11 @@
         "command": {
           "const": "context_page",
           "type": "string"
+        },
+        "include_enclosing": {
+          "default": false,
+          "description": "Include the enclosing declaration's full body as a separate item.",
+          "type": "boolean"
         },
         "origin": {
           "$ref": "#/$defs/NavigationOrigin"
@@ -1033,7 +1128,20 @@
       "type": "object"
     },
     {
-      "$ref": "#/$defs/Query",
+      "$ref": "#/$defs/ResolutionQuery",
+      "properties": {
+        "command": {
+          "const": "resolve",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "$ref": "#/$defs/SearchQuery",
       "properties": {
         "command": {
           "const": "search",

@@ -647,6 +647,9 @@
         "query": {
           "$ref": "#/$defs/Query"
         },
+        "scope": {
+          "$ref": "#/$defs/SearchScope"
+        },
         "skipped": {
           "description": "Languages whose grammar could not compile the query; their files\nwere not searched.",
           "items": {
@@ -658,6 +661,31 @@
       "required": [
         "query",
         "matches"
+      ],
+      "type": "object"
+    },
+    "SearchScope": {
+      "additionalProperties": false,
+      "description": "Explicit file/directory prefixes and owning package names or IDs.\nAlternatives within each list are ORed; the two lists are intersected.",
+      "properties": {
+        "packages": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "paths": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RelPath"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "paths",
+        "packages"
       ],
       "type": "object"
     },
@@ -791,7 +819,7 @@
       ]
     }
   },
-  "$id": "urn:vvv:schema:1:search:response:9c1d367763e46e506ec6972c21a85039792cd18c492dc4570f81369eb93dde46",
+  "$id": "urn:vvv:schema:1:search:response:82ea497a8e377a16812571f8fbd1cb7843212d669407206e5b6e3fe93ed3a4e5",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [

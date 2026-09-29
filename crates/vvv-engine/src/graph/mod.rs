@@ -334,7 +334,14 @@ impl Graph {
     /// one, then everything else by path and position — the order human
     /// output prints and numbers.
     pub fn search(&mut self, query: &Query) -> Result<Search, EngineError> {
-        let (candidates, skipped) = self.search_candidates(query);
+        self.search_scoped(query, &crate::SearchScope::default())
+    }
+    pub(crate) fn search_scoped(
+        &mut self,
+        query: &Query,
+        scope: &crate::SearchScope,
+    ) -> Result<Search, EngineError> {
+        let (candidates, skipped) = self.scoped_candidates(query, scope)?;
         let per_file: Vec<Vec<Match>> = candidates
             .par_iter()
             .map(|c| {
@@ -349,6 +356,7 @@ impl Graph {
         self.address_declarations(&mut matches);
         matches.sort_by_key(|m| m.role != Role::Declaration);
         Ok(Search {
+            scope: scope.clone(),
             query: query.clone(),
             matches,
             skipped,
@@ -359,10 +367,12 @@ impl Graph {
     pub(crate) fn search_bounded(
         &mut self,
         query: &Query,
+        scope: &crate::SearchScope,
         maximum: usize,
     ) -> Result<Search, EngineError> {
-        let (candidates, skipped) = self.search_candidates(query);
+        let (candidates, skipped) = self.scoped_candidates(query, scope)?;
         let mut result = Search {
+            scope: scope.clone(),
             query: query.clone(),
             matches: vec![],
             skipped,
@@ -382,6 +392,34 @@ impl Graph {
         }
         result.matches.sort_by_key(|m| m.role != Role::Declaration);
         Ok(result)
+    }
+
+    fn scoped_candidates(
+        &mut self,
+        query: &Query,
+        scope: &crate::SearchScope,
+    ) -> Result<(Vec<Candidate>, Vec<Skipped>), EngineError> {
+        let (candidates, skipped) = self.search_candidates(query);
+        let mut kept = Vec::new();
+        for candidate in candidates {
+            self.check_read()?;
+            if !scope.includes_path(candidate.path()) {
+                continue;
+            }
+            if !scope.packages.is_empty() {
+                let project = self.project_build(&candidate.language());
+                self.check_read()?;
+                if !scope.includes_package(
+                    project
+                        .as_ref()
+                        .and_then(|p| p.packages.containing(candidate.path())),
+                ) {
+                    continue;
+                }
+            }
+            kept.push(candidate);
+        }
+        Ok((kept, skipped))
     }
 
     fn search_candidates(&self, query: &Query) -> (Vec<Candidate>, Vec<Skipped>) {

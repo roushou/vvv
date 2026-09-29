@@ -1,0 +1,11 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+src/origin.rs
+  1 ●    2:1    pub struct Engine {  +2
+  2 ●    6:5    Engine,
+--- stderr ---
+● 2  1 file

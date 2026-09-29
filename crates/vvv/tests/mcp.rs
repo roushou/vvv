@@ -264,13 +264,20 @@ async fn sdk_context_workflow_matches_engine_and_serve_and_expands_exact_source(
         )
         .await;
     assert_eq!(nav["result"]["outcome"], "resolved");
-    let too_large = client
+    let compact = client
         .call(
             "vvv_navigate",
             json!({"origin":origin,"max_output_bytes":1024}),
         )
         .await;
-    assert_eq!(too_large["code"], "output_limit");
+    assert_eq!(compact["status"], "ok");
+    assert!(compact["result"].get("preview").is_none());
+    assert!(serde_json::to_vec(&compact["result"]).unwrap().len() <= 1024);
+    assert_eq!(
+        fixture.engine_call(json!({"command":"navigate","origin":origin,"max_output_bytes":1024}))
+            ["code"],
+        "output_limit"
+    );
     let context = client
         .call(
             "vvv_context",
@@ -381,4 +388,66 @@ async fn unsupported_protocol_and_oversized_input_exit_without_non_protocol_stdo
             assert!(message["error"].is_object());
         }
     }
+}
+
+#[cfg(feature = "rust")]
+#[tokio::test]
+async fn scoped_search_and_compact_context_work_for_real_packages_and_methods() {
+    let fixture = Fixture::new();
+    std::fs::write(
+        fixture.root.join("Cargo.toml"),
+        "[package]\nname = \"probe-package\"\nversion = \"0.1.0\"\n",
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.root.join("src/lib.rs"),
+        "pub struct Engine;\nimpl Engine { pub fn method() {} }\n",
+    )
+    .unwrap();
+    std::fs::create_dir_all(fixture.root.join("src/nested/src")).unwrap();
+    std::fs::write(
+        fixture.root.join("src/nested/Cargo.toml"),
+        "[package]\nname = \"fixture\"\nversion = \"0.1.0\"\n",
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.root.join("src/nested/src/lib.rs"),
+        "pub struct Engine;\n",
+    )
+    .unwrap();
+    let client = Client::new(&fixture.root).await;
+    for package in ["probe-package", "probe_package"] {
+        let result = client.call("vvv_search", json!({"query":{"name":"Engine","symbol":"struct"},"scope":{"paths":["src"],"packages":[package]}})).await;
+        assert_eq!(result["result"]["total_items"], 1, "{result}");
+        assert_eq!(result["result"]["items"][0]["path"], "src/lib.rs");
+    }
+    let found = client
+        .call("vvv_search", json!({"query":{"name":"method"}}))
+        .await;
+    let item = &found["result"]["items"][0];
+    let origin = json!({"kind":"occurrence","anchor":{"path":item["path"],"content":item["content"],"span":item["symbol"]["name_span"]}});
+    let compact = client.call("vvv_context", json!({"origin":origin})).await;
+    let owner = &compact["result"]["enclosing"];
+    assert_eq!(owner["kind"], "impl");
+    assert!(
+        compact["result"]["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .all(|i| &i["target"] != owner)
+    );
+    let full = client
+        .call(
+            "vvv_context",
+            json!({"origin":origin,"include_enclosing":true}),
+        )
+        .await;
+    assert!(
+        full["result"]["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|i| &i["target"] == owner && i["relation"] == "enclosing_declaration")
+    );
+    client.close().await;
 }

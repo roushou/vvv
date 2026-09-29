@@ -8,17 +8,68 @@ use serde::{Deserialize, Serialize};
 use vvv_core::Query;
 
 /// A structural or symbolic search with a typed engine answer.
-/// Serializes transparently as the wrapped query.
+/// Plugin predicates remain separate from engine-owned workspace filters.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
-#[serde(transparent)]
-pub struct SearchQuery(pub vvv_core::Query);
+pub struct SearchQuery {
+    #[serde(flatten)]
+    pub query: Query,
+    #[serde(default, skip_serializing_if = "SearchScope::is_empty")]
+    pub scope: SearchScope,
+}
+
+/// Explicit file/directory prefixes and owning package names or IDs.
+/// Alternatives within each list are ORed; the two lists are intersected.
+#[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(default, deny_unknown_fields)]
+pub struct SearchScope {
+    pub paths: Vec<crate::RelPath>,
+    pub packages: Vec<String>,
+}
+impl SearchScope {
+    pub fn is_empty(&self) -> bool {
+        self.paths.is_empty() && self.packages.is_empty()
+    }
+    pub fn validate(&self) -> Result<(), EngineError> {
+        use std::path::Component;
+        if self.paths.iter().any(|p| {
+            p.as_str().contains(['\\', ':', '\0'])
+                || p.components()
+                    .any(|c| !matches!(c, Component::Normal(_) | Component::CurDir))
+        }) || self.packages.iter().any(|p| p.is_empty())
+        {
+            return Err(EngineError::InvalidSearchScope);
+        }
+        Ok(())
+    }
+    pub(crate) fn includes_path(&self, path: &std::path::Path) -> bool {
+        self.paths.is_empty()
+            || self.paths.iter().any(|prefix| {
+                let normalized: std::path::PathBuf = prefix
+                    .components()
+                    .filter(|c| !matches!(c, std::path::Component::CurDir))
+                    .collect();
+                path.starts_with(normalized)
+            })
+    }
+    pub(crate) fn includes_package(&self, package: Option<&vvv_core::Package>) -> bool {
+        self.packages.is_empty()
+            || package.is_some_and(|p| {
+                self.packages
+                    .iter()
+                    .any(|filter| filter == p.id.as_str() || filter == &p.name)
+            })
+    }
+}
 
 /// `vvv search`: what was found, and which languages could not be asked.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Search {
     pub query: Query,
+    #[serde(default, skip_serializing_if = "SearchScope::is_empty")]
+    pub scope: SearchScope,
     pub matches: Vec<Match>,
     /// Languages whose grammar could not compile the query; their files
     /// were not searched.
@@ -28,13 +79,20 @@ pub struct Search {
 
 impl From<vvv_core::Query> for SearchQuery {
     fn from(query: vvv_core::Query) -> Self {
-        Self(query)
+        Self {
+            query,
+            scope: SearchScope::default(),
+        }
     }
 }
 
 /// Structural or symbolic search across the workspace: only files spelling
 /// the query's literal words are parsed.
 impl SearchQuery {
+    pub fn scoped(mut self, scope: SearchScope) -> Self {
+        self.scope = scope;
+        self
+    }
     /// Answer with the concrete result of this query.
     pub fn execute(self, engine: &crate::Engine) -> Result<Search, EngineError> {
         let _operation = engine.operation();
@@ -43,8 +101,9 @@ impl SearchQuery {
     }
 
     pub(crate) fn execute_in(self, graph: &mut crate::graph::Graph) -> Result<Search, EngineError> {
-        self.0.check()?;
-        graph.search(&self.0)
+        self.query.check()?;
+        self.scope.validate()?;
+        graph.search_scoped(&self.query, &self.scope)
     }
 }
 
@@ -96,12 +155,16 @@ impl Document {
 pub struct SearchPageQuery {
     pub query: Query,
     #[serde(default)]
+    pub scope: SearchScope,
+    #[serde(default)]
     pub page: crate::PageBudget,
 }
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "kind", rename = "search")]
 pub struct SearchPage {
+    #[serde(default, skip_serializing_if = "SearchScope::is_empty")]
+    pub scope: SearchScope,
     pub snapshot: crate::SnapshotId,
     pub query: Query,
     pub items: Vec<SearchPageItem>,
@@ -130,13 +193,17 @@ impl SearchPageQuery {
         use crate::{graph::query_snapshot::QuerySnapshot, query_store::QueryData};
         self.page.validate()?;
         self.query.check()?;
+        self.scope.validate()?;
         let (mut graph, snapshot) = QuerySnapshot::capture(engine)?;
-        let search =
-            graph.search_bounded(&self.query, crate::QueryLimits::default().max_query_bytes)?;
+        let search = graph.search_bounded(
+            &self.query,
+            &self.scope,
+            crate::QueryLimits::default().max_query_bytes,
+        )?;
         let mut session = super::pagination::PageSession::new(
             engine,
             snapshot,
-            &self.query,
+            &(&self.query, &self.scope),
             QueryData::Search(search),
         );
         let result = SearchSession { next: 0 }.page(engine, &mut session, self.page);
@@ -161,6 +228,7 @@ impl SearchSession {
             return Err(EngineError::InvalidCursor);
         };
         let mut page = SearchPage {
+            scope: search.scope.clone(),
             snapshot: session.root.identity.clone(),
             query: search.query.clone(),
             items: vec![],

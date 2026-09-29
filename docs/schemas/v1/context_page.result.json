@@ -266,7 +266,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:context_page:result:f2a103df081d65520a788ca42f8e8ca2f4a37af8091450e6800296dc462db92f",
+  "$id": "urn:vvv:schema:1:context_page:result:f2e810fed92f845a32ce6df94917dcdb5b7dfa26d60e872f46e86936053ec06c",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "oneOf": [
     {
@@ -318,6 +318,16 @@
     }
   ],
   "properties": {
+    "enclosing": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SymbolRef"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "items": {
       "items": {
         "$ref": "#/$defs/PagedContextItem"

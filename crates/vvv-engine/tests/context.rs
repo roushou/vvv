@@ -161,3 +161,85 @@ fn ambiguity_is_never_silently_narrowed_to_fit_a_budget() {
         Err(EngineError::OutputLimit { .. })
     ));
 }
+
+#[test]
+fn enclosing_body_is_opt_in_and_the_location_survives_paging() {
+    use vvv_engine::{
+        ContextPageQuery, ContinueQuery, PageBudget, PageReply, Selection, WorkBudget,
+    };
+    let source = "def Owner\n  def Method Owner\n";
+    let method_start = source.find("def Method").unwrap();
+    let symbols = vec![
+        Symbol::plain(
+            SymbolKind::Impl,
+            "Owner",
+            Span::new(4, 9),
+            Span::new(0, source.len()),
+        ),
+        Symbol::plain(
+            SymbolKind::Method,
+            "Method",
+            Span::new(method_start + 4, method_start + 10),
+            Span::new(method_start, source.len() - 1),
+        ),
+    ];
+    let engine = Engine::new(
+        Workspace::new(
+            "/ws",
+            Arc::new(MemoryVfs::new().with_file("/ws/a.p", source)),
+        ),
+        Languages::new().with(Fake::default().with_symbols(symbols)),
+    );
+    let origin = NavigationQuery::at("a.p", Position::new(1, 7)).origin;
+    let mut query = ContextQuery::new(origin.clone());
+    let compact = query.clone().execute(&engine).unwrap();
+    let enclosing = compact.enclosing.clone().unwrap();
+    assert_eq!(enclosing.kind, SymbolKind::Impl);
+    assert!(compact.items.iter().all(|item| item.target != enclosing));
+    query.include_enclosing = true;
+    let full = query.execute(&engine).unwrap();
+    assert!(
+        full.items
+            .iter()
+            .any(|i| i.target == enclosing && i.text == source)
+    );
+    for include_enclosing in [false, true] {
+        let page = ContextPageQuery {
+            origin: origin.clone(),
+            selection: Selection::All,
+            references: false,
+            include_enclosing,
+            page: PageBudget {
+                max_items: 1,
+                ..Default::default()
+            },
+            work: WorkBudget::default(),
+        }
+        .execute(&engine)
+        .unwrap();
+        let mut current = PageReply::Context(page);
+        let mut owners = 0;
+        loop {
+            let PageReply::Context(page) = current else {
+                panic!()
+            };
+            assert_eq!(page.enclosing, Some(enclosing.clone()));
+            owners += page
+                .items
+                .iter()
+                .filter(|i| i.item.target == enclosing)
+                .count();
+            let Some(cursor) = page.next_cursor else {
+                break;
+            };
+            current = ContinueQuery {
+                cursor,
+                page: PageBudget::default(),
+                work: None,
+            }
+            .execute(&engine)
+            .unwrap();
+        }
+        assert_eq!(owners, usize::from(include_enclosing));
+    }
+}

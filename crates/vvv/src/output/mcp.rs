@@ -64,13 +64,13 @@ impl ToolKind {
                 "List the build's languages, engine commands, schemas, and limits. The MCP tool allowlist is tools/list."
             }
             Self::Search => {
-                "Search source structure or symbol names. Returns bounded pages with stable IDs, absolute ordinals, and a continuation cursor."
+                "Search source structure or symbol names. Use scope.paths for file/directory prefixes and scope.packages for owning package names or IDs. Returns bounded pages with stable IDs and a continuation cursor."
             }
             Self::Navigate => {
-                "Resolve an exact source position, occurrence, or symbol. Inspect resolved, ambiguous, or unavailable outcomes. For large previews use vvv_context."
+                "Resolve an exact source position, occurrence, or symbol to compact locations and evidence. Inspect resolved, ambiguous, or unavailable outcomes. Fetch source bodies with vvv_context."
             }
             Self::Context => {
-                "Retrieve exact declaration excerpts and evidence for related declarations. Continue relationships with next_cursor; expand text with each item's expansion handle."
+                "Retrieve exact declaration excerpts and related declarations. Enclosing locations are metadata; set include_enclosing to request their bodies. Follow next_cursor even on empty progress pages; expand text with each item's expansion handle."
             }
             Self::Continue => {
                 "Continue a retained search or context query in this session. Retryable; edits require restarting the original query."

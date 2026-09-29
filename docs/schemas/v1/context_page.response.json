@@ -697,6 +697,16 @@
         }
       ],
       "properties": {
+        "enclosing": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolRef"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "items": {
           "items": {
             "$ref": "#/$defs/PagedContextItem"
@@ -737,7 +747,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:context_page:response:d5a9e46eef7f704c8dc3ddf2831de80c183306250708ad36c8a665c1a10ef72f",
+  "$id": "urn:vvv:schema:1:context_page:response:7792bef117e299047275566d99ceecc2a456950ba517bab0976cf7b46ce3c7a0",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [

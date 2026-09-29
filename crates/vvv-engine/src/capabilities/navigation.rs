@@ -204,3 +204,108 @@ impl Document {
         report
     }
 }
+
+/// Compact resolution with the same origin and selection semantics as navigation.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(transparent)]
+pub struct ResolutionQuery(pub NavigationQuery);
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct ResolutionReply {
+    pub snapshot: SnapshotId,
+    #[serde(flatten)]
+    pub outcome: ResolutionOutcome,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(tag = "outcome", rename_all = "snake_case")]
+pub enum ResolutionOutcome {
+    Resolved {
+        #[serde(flatten)]
+        definition: Box<DefinitionLocation>,
+        container: SymbolRef,
+    },
+    Ambiguous {
+        candidates: Vec<DefinitionLocation>,
+    },
+    Unavailable {
+        reason: UnavailableReason,
+    },
+}
+
+/// Enough information to select, open, or request context for a declaration.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct DefinitionLocation {
+    pub target: SymbolRef,
+    pub id: crate::MatchId,
+    pub name: String,
+    pub start: Position,
+    pub evidence: ResolutionEvidence,
+}
+impl DefinitionLocation {
+    fn new(target: SymbolRef, declaration: Match, evidence: ResolutionEvidence) -> Self {
+        Self {
+            target,
+            id: declaration.id,
+            name: declaration.symbol.expect("navigation declaration").name,
+            start: declaration.start,
+            evidence,
+        }
+    }
+}
+impl ResolutionQuery {
+    pub fn execute(self, engine: &Engine) -> Result<ResolutionReply, EngineError> {
+        let _operation = engine.operation();
+        self.execute_in(&mut *engine.graph()?)
+    }
+    pub(crate) fn execute_in(self, graph: &mut Graph) -> Result<ResolutionReply, EngineError> {
+        let reply = self.0.execute_in(graph)?;
+        Ok(ResolutionReply {
+            snapshot: reply.snapshot,
+            outcome: match reply.outcome {
+                NavigationOutcome::Resolved {
+                    target,
+                    evidence,
+                    preview,
+                } => ResolutionOutcome::Resolved {
+                    definition: Box::new(DefinitionLocation::new(
+                        target,
+                        preview.declaration,
+                        evidence,
+                    )),
+                    container: preview.container,
+                },
+                NavigationOutcome::Ambiguous { candidates } => ResolutionOutcome::Ambiguous {
+                    candidates: candidates
+                        .into_iter()
+                        .map(|c| DefinitionLocation::new(c.target, c.declaration, c.evidence))
+                        .collect(),
+                },
+                NavigationOutcome::Unavailable { reason } => {
+                    ResolutionOutcome::Unavailable { reason }
+                }
+            },
+        })
+    }
+}
+impl Document {
+    pub(crate) fn resolution(reply: &ResolutionReply) -> Self {
+        let mut doc = Self::new();
+        let locations = match &reply.outcome {
+            ResolutionOutcome::Resolved { definition, .. } => {
+                std::slice::from_ref(definition.as_ref())
+            }
+            ResolutionOutcome::Ambiguous { candidates } => candidates,
+            ResolutionOutcome::Unavailable { reason } => {
+                doc.notes([Line::of(Role::Dim, reason.message())]);
+                return doc;
+            }
+        };
+        doc.block_body(crate::report::Block::Locations(locations.to_vec()));
+        doc
+    }
+}

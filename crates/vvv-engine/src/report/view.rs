@@ -131,6 +131,22 @@ impl View for Detailed {
                     Row::at(line, path.clone(), item.start.line)
                 })
                 .collect(),
+            Block::Locations(locations) => locations
+                .iter()
+                .map(|d| {
+                    Row::at(
+                        Line::of(Role::Plain, &d.name)
+                            .and(Role::Plain, " ")
+                            .and(Role::Path, d.target.declaration.path.to_string())
+                            .and(
+                                Role::Plain,
+                                format!(":{}:{} [{}]", d.start.line + 1, d.start.column + 1, d.id),
+                            ),
+                        d.target.declaration.path.clone(),
+                        d.start.line,
+                    )
+                })
+                .collect(),
             Block::Sites(sites) => sites
                 .iter()
                 .flat_map(|site| lines::SiteLine::new(site).rows())

@@ -340,7 +340,9 @@ impl Corpus {
                 })
                 .collect()
         });
-        let command = if args[0] == "move" && args.contains(&"--symbol") {
+        let command = if args[0] == "navigate" && args.contains(&"--compact") {
+            vvv_engine::Command::Resolve
+        } else if args[0] == "move" && args.contains(&"--symbol") {
             vvv_engine::Command::MoveSymbol
         } else {
             args[0].parse().unwrap()
@@ -1180,6 +1182,34 @@ fn rust_navigation_golden() {
         name: "rust-navigation",
         cases: &[
             (
+                "compact-definition",
+                &["navigate", "src/consumer.rs:5:13", "--compact"],
+            ),
+            (
+                "compact-ambiguity",
+                &["navigate", "src/ambiguous.rs:3:26", "--compact"],
+            ),
+            (
+                "scoped-search",
+                &[
+                    "search",
+                    "--name",
+                    "Engine",
+                    "--path",
+                    "src/origin.rs",
+                    "--package",
+                    "navigation",
+                ],
+            ),
+            (
+                "context-method-location",
+                &["context", "src/consumer.rs:14:19"],
+            ),
+            (
+                "context-method-body",
+                &["context", "src/consumer.rs:14:19", "--include-enclosing"],
+            ),
+            (
                 "context-tests",
                 &[
                     "context",
@@ -1363,7 +1393,7 @@ impl PageTranscript {
             cursor = reply["result"]["next_cursor"].clone();
             items.extend(reply["result"]["items"].as_array().unwrap().clone());
         }
-        let expected = vvv_engine::SearchQuery(Query::pattern("Engine"))
+        let expected = vvv_engine::SearchQuery::from(Query::pattern("Engine"))
             .execute(&engine)
             .unwrap();
         let matches = items
@@ -1384,6 +1414,7 @@ impl PageTranscript {
             items.extend(reply["result"]["items"].as_array().unwrap().clone());
         }
         let expected = vvv_engine::ContextQuery {
+            include_enclosing: false,
             origin: serde_json::from_value(origin).unwrap(),
             selection: vvv_engine::Selection::All,
             references: true,

@@ -284,10 +284,15 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:context_page:arguments:4a02461577c9a3c67d301296db28cadff01caa7cf70637ac20c4167263c74ba1",
+  "$id": "urn:vvv:schema:1:context_page:arguments:de879940b5b0d33d51eaf84178a7a45642e3fe47df891f2ba1eb08e000a10db4",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
+    "include_enclosing": {
+      "default": false,
+      "description": "Include the enclosing declaration's full body as a separate item.",
+      "type": "boolean"
+    },
     "origin": {
       "$ref": "#/$defs/NavigationOrigin"
     },

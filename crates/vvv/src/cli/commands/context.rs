@@ -22,6 +22,9 @@ pub struct ContextCmd {
     /// Also scan for incoming references with the same spelling
     #[arg(long)]
     pub references: bool,
+    /// Include the enclosing declaration's body, which can repeat the selected method
+    #[arg(long)]
+    pub include_enclosing: bool,
 }
 impl ContextCmd {
     pub fn run(self, ctx: &Context) -> anyhow::Result<()> {
@@ -35,6 +38,7 @@ impl ContextCmd {
             max_files: self.max_files,
         };
         query.references = self.references;
+        query.include_enclosing = self.include_enclosing;
         ctx.run(Request::Context(query))
     }
 }

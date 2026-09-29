@@ -101,11 +101,14 @@ impl Engine {
                 crate::Request::Context(query) => Execution::Completed(crate::Answer::Context(
                     query.execute_in(&mut *self.graph()?)?,
                 )),
+                crate::Request::Resolve(query) => Execution::Completed(crate::Answer::Resolve(
+                    query.execute_in(&mut *self.graph()?)?,
+                )),
                 crate::Request::Navigate(query) => Execution::Completed(crate::Answer::Navigate(
                     query.execute_in(&mut *self.graph()?)?,
                 )),
                 crate::Request::Search(query) => Execution::Completed(crate::Answer::Search(
-                    crate::SearchQuery::from(query).execute_in(&mut *self.graph()?)?,
+                    query.execute_in(&mut *self.graph()?)?,
                 )),
                 crate::Request::Outline(query) => Execution::Completed(crate::Answer::Outline(
                     query.execute_in(&mut *self.graph()?, self.workspace())?,

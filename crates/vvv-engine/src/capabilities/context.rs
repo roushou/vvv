@@ -72,6 +72,9 @@ pub struct ContextQuery {
     /// Include incoming references with this exact spelling, validated by navigation.
     #[serde(default)]
     pub references: bool,
+    /// Include the enclosing declaration's full body as a separate item.
+    #[serde(default)]
+    pub include_enclosing: bool,
 }
 impl ContextQuery {
     pub fn new(origin: NavigationOrigin) -> Self {
@@ -80,6 +83,7 @@ impl ContextQuery {
             selection: Selection::All,
             budget: ContextBudget::default(),
             references: false,
+            include_enclosing: false,
         }
     }
     pub fn execute(self, engine: &Engine) -> Result<ContextReply, EngineError> {
@@ -100,6 +104,7 @@ impl ContextQuery {
             snapshot: reply.snapshot.clone(),
             outcome: ContextOutcome::Resolved,
             items: vec![],
+            enclosing: None,
             omissions: ContextOmissions::default(),
             references_by_name: self.references,
         };
@@ -129,6 +134,8 @@ impl ContextQuery {
                     .expect("navigation declaration")
                     .name
                     .clone();
+                let enclosing = ContextPending::enclosing(&target, &preview.source.symbols);
+                context.enclosing = enclosing.as_ref().map(|item| item.target.clone());
                 context.add(
                     target.clone(),
                     &preview.source.text,
@@ -136,7 +143,9 @@ impl ContextQuery {
                     None,
                     &self.budget,
                 );
-                if let Some(item) = ContextPending::enclosing(&target, &preview.source.symbols) {
+                if self.include_enclosing
+                    && let Some(item) = enclosing
+                {
                     context.add(
                         item.target,
                         &preview.source.text,
@@ -253,6 +262,9 @@ pub struct ContextReply {
     #[serde(flatten)]
     pub outcome: ContextOutcome,
     pub items: Vec<ContextItem>,
+    /// Location of the enclosing declaration, without repeating its body.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub enclosing: Option<SymbolRef>,
     pub omissions: ContextOmissions,
     /// Incoming scanning covers this spelling only, not every possible alias.
     pub references_by_name: bool,
@@ -323,7 +335,10 @@ impl ContextReply {
         via: Option<SourceAnchor>,
         budget: &ContextBudget,
     ) {
-        if self.items.iter().any(|item| item.target == target) {
+        if (self.enclosing.as_ref() == Some(&target)
+            && relation != ContextRelation::EnclosingDeclaration)
+            || self.items.iter().any(|item| item.target == target)
+        {
             return;
         }
         if self.items.len() >= budget.max_items {
@@ -451,6 +466,9 @@ pub struct ContextPageQuery {
     pub selection: Selection,
     #[serde(default)]
     pub references: bool,
+    /// Include the enclosing declaration's full body as a separate item.
+    #[serde(default)]
+    pub include_enclosing: bool,
     #[serde(default)]
     pub page: crate::PageBudget,
     #[serde(default)]
@@ -464,6 +482,8 @@ pub struct ContextPage {
     #[serde(flatten)]
     pub outcome: ContextOutcome,
     pub items: Vec<PagedContextItem>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub enclosing: Option<SymbolRef>,
     pub references_by_name: bool,
     pub work: ContextWork,
     pub unresolved: ContextUnresolved,
@@ -505,6 +525,7 @@ pub(crate) struct ContextSeed {
     target: Option<SymbolRef>,
     name: String,
     initial: Vec<ContextPending>,
+    enclosing: Option<SymbolRef>,
     outgoing: Vec<SourceAnchor>,
     incoming: Vec<crate::RelPath>,
     references: bool,
@@ -534,15 +555,27 @@ impl ContextPageQuery {
         self.work.validate()?;
         let (mut graph, snapshot) = crate::graph::query_snapshot::QuerySnapshot::capture(engine)?;
         let seed = ContextSeed::capture(&mut graph, &self)?;
-        let identity = (&self.origin, &self.selection, self.references);
+        let identity = (
+            &self.origin,
+            &self.selection,
+            self.references,
+            self.include_enclosing,
+        );
+        let state = ContextSession {
+            seen: if self.include_enclosing {
+                vec![]
+            } else {
+                seed.enclosing.clone().into_iter().collect()
+            },
+            ..Default::default()
+        };
         let mut session = super::pagination::PageSession::new(
             engine,
             snapshot,
             &identity,
             crate::query_store::QueryData::Context(seed),
         );
-        let result =
-            ContextSession::default().page(engine, &mut graph, &mut session, self.page, self.work);
+        let result = state.page(engine, &mut graph, &mut session, self.page, self.work);
         match session.finish(engine, result)? {
             crate::PageReply::Context(page) => Ok(page),
             _ => unreachable!("capability returns its own page"),
@@ -563,6 +596,7 @@ impl ContextSeed {
             target: None,
             name: String::new(),
             initial: vec![],
+            enclosing: None,
             outgoing: vec![],
             incoming: vec![],
             references: query.references,
@@ -598,7 +632,10 @@ impl ContextSeed {
                     via: None,
                 });
                 if let Some(item) = ContextPending::enclosing(&target, &preview.source.symbols) {
-                    seed.initial.push(item);
+                    seed.enclosing = Some(item.target.clone());
+                    if query.include_enclosing {
+                        seed.initial.push(item);
+                    }
                 }
                 seed.outgoing = preview
                     .identifiers
@@ -726,6 +763,7 @@ impl ContextSession {
             return Err(EngineError::InvalidCursor);
         };
         let mut page = ContextPage {
+            enclosing: seed.enclosing.clone(),
             snapshot: root.identity.clone(),
             outcome: seed.outcome.clone(),
             items: vec![],
@@ -829,6 +867,7 @@ impl ContextSession {
 impl crate::report::Document {
     pub(crate) fn context_page(page: &ContextPage) -> Self {
         let context = ContextReply {
+            enclosing: page.enclosing.clone(),
             snapshot: page.snapshot.clone(),
             outcome: page.outcome.clone(),
             items: page.items.iter().map(|p| p.item.clone()).collect(),

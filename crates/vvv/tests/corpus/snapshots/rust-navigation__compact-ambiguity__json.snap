@@ -1,0 +1,87 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "fbf0356ca99d5fa0de7f760ad06869041d016ebbb0883a351303b53b3a9a7664",
+    "outcome": "ambiguous",
+    "candidates": [
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/origin.rs",
+            "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
+            "span": {
+              "start": 0,
+              "end": 63
+            }
+          },
+          "name_span": {
+            "start": 30,
+            "end": 36
+          },
+          "kind": "struct"
+        },
+        "id": "f2c97c3b389f",
+        "name": "Engine",
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "navigation",
+              "path": [
+                "origin",
+                "Engine"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/other.rs",
+            "content": "7d5511427a8ff89cdc470bad81d45a4c7ad1752e9216998f8a1419b469b23d48",
+            "span": {
+              "start": 0,
+              "end": 18
+            }
+          },
+          "name_span": {
+            "start": 11,
+            "end": 17
+          },
+          "kind": "struct"
+        },
+        "id": "03656afe22d7",
+        "name": "Engine",
+        "start": {
+          "line": 0,
+          "column": 0
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "navigation",
+              "path": [
+                "other",
+                "Engine"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
+--- stderr ---

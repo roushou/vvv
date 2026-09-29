@@ -261,6 +261,31 @@
       ],
       "type": "object"
     },
+    "SearchScope": {
+      "additionalProperties": false,
+      "description": "Explicit file/directory prefixes and owning package names or IDs.\nAlternatives within each list are ORed; the two lists are intersected.",
+      "properties": {
+        "packages": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "paths": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/RelPath"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "paths",
+        "packages"
+      ],
+      "type": "object"
+    },
     "Skipped": {
       "description": "A language a search left out, and why: its grammar could not compile the\nquery (a Rust pattern on a TypeScript tree). Never fatal; the other\nlanguages' matches are complete. Data only; the display layer words it.",
       "properties": {
@@ -376,7 +401,7 @@
       ]
     }
   },
-  "$id": "urn:vvv:schema:1:search_page:result:03df0ed1af83f30d8a6fc716c194df00313f41e52308890df799a733df81ebe9",
+  "$id": "urn:vvv:schema:1:search_page:result:80804d9e50403934a3f908a763d9d5c4ac8924559965c7bb7b17bf5d38403c6a",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {
     "items": {
@@ -393,6 +418,9 @@
     },
     "query": {
       "$ref": "#/$defs/Query"
+    },
+    "scope": {
+      "$ref": "#/$defs/SearchScope"
     },
     "skipped": {
       "items": {

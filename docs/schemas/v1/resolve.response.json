@@ -19,108 +19,9 @@
       ],
       "type": "object"
     },
-    "Capture": {
-      "description": "One meta-variable binding.",
-      "properties": {
-        "span": {
-          "$ref": "#/$defs/Span"
-        },
-        "text": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "span",
-        "text"
-      ],
-      "type": "object"
-    },
-    "CaptureValue": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/Capture"
-        },
-        {
-          "items": {
-            "$ref": "#/$defs/Capture"
-          },
-          "type": "array"
-        }
-      ],
-      "description": "`$A` binds one node; `$$$A` binds a sequence."
-    },
     "ContentId": {
       "description": "Digest of the complete UTF-8 source text, independent of its path.",
       "type": "string"
-    },
-    "ContextCandidate": {
-      "properties": {
-        "id": {
-          "$ref": "#/$defs/MatchId"
-        },
-        "target": {
-          "$ref": "#/$defs/SymbolRef"
-        }
-      },
-      "required": [
-        "id",
-        "target"
-      ],
-      "type": "object"
-    },
-    "ContextRelation": {
-      "enum": [
-        "definition",
-        "enclosing_declaration",
-        "referenced_definition",
-        "reference",
-        "reference_in_test_path"
-      ],
-      "type": "string"
-    },
-    "ContextUnresolved": {
-      "properties": {
-        "ambiguous": {
-          "format": "uint",
-          "minimum": 0,
-          "type": "integer"
-        },
-        "no_container": {
-          "format": "uint",
-          "minimum": 0,
-          "type": "integer"
-        },
-        "unavailable": {
-          "format": "uint",
-          "minimum": 0,
-          "type": "integer"
-        }
-      },
-      "required": [
-        "ambiguous",
-        "unavailable",
-        "no_container"
-      ],
-      "type": "object"
-    },
-    "ContextWork": {
-      "properties": {
-        "files": {
-          "format": "uint",
-          "minimum": 0,
-          "type": "integer"
-        },
-        "lookups": {
-          "format": "uint",
-          "minimum": 0,
-          "type": "integer"
-        }
-      },
-      "required": [
-        "lookups",
-        "files"
-      ],
-      "type": "object"
     },
     "ContinuationRecovery": {
       "description": "A recovery action clients can branch on without parsing the error message.",
@@ -131,6 +32,34 @@
         "narrow_query"
       ],
       "type": "string"
+    },
+    "DefinitionLocation": {
+      "description": "Enough information to select, open, or request context for a declaration.",
+      "properties": {
+        "evidence": {
+          "$ref": "#/$defs/ResolutionEvidence"
+        },
+        "id": {
+          "$ref": "#/$defs/MatchId"
+        },
+        "name": {
+          "type": "string"
+        },
+        "start": {
+          "$ref": "#/$defs/Position"
+        },
+        "target": {
+          "$ref": "#/$defs/SymbolRef"
+        }
+      },
+      "required": [
+        "target",
+        "id",
+        "name",
+        "start",
+        "evidence"
+      ],
+      "type": "object"
     },
     "ErrorCode": {
       "description": "The kind of failure, stable across releases; the message is not.",
@@ -308,22 +237,6 @@
       "description": "Content-derived identifier: the same file, range and text yield the same id\nacross runs, so a selection made from one `search` can drive a later command.",
       "type": "string"
     },
-    "Modifier": {
-      "description": "A visibility modifier as it appears in the source.",
-      "properties": {
-        "span": {
-          "$ref": "#/$defs/Span"
-        },
-        "text": {
-          "type": "string"
-        }
-      },
-      "required": [
-        "span",
-        "text"
-      ],
-      "type": "object"
-    },
     "Name": {
       "description": "One identifier: a module, a declaration, a file stem. Compared by text.",
       "type": "string"
@@ -361,67 +274,6 @@
       "description": "The name a package goes by in paths: a Rust crate's lib name (`fff`, not\n`fff-search`), a TypeScript package's name. The layout decides the spelling.",
       "type": "string"
     },
-    "PageReply": {
-      "anyOf": [
-        {
-          "$ref": "#/$defs/search"
-        },
-        {
-          "$ref": "#/$defs/context"
-        }
-      ]
-    },
-    "PagedContextItem": {
-      "properties": {
-        "complete": {
-          "type": "boolean"
-        },
-        "excerpt": {
-          "$ref": "#/$defs/SourceAnchor",
-          "description": "Range of the returned text, which can be shorter than the target extent."
-        },
-        "expansion": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "relation": {
-          "$ref": "#/$defs/ContextRelation"
-        },
-        "start": {
-          "$ref": "#/$defs/Position"
-        },
-        "target": {
-          "$ref": "#/$defs/SymbolRef"
-        },
-        "text": {
-          "type": "string"
-        },
-        "via": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/SourceAnchor"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "The exact occurrence establishing this relationship; absent for the seed."
-        }
-      },
-      "required": [
-        "target",
-        "relation",
-        "via",
-        "excerpt",
-        "start",
-        "text",
-        "complete",
-        "expansion"
-      ],
-      "type": "object"
-    },
     "Position": {
       "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
       "properties": {
@@ -442,52 +294,19 @@
       ],
       "type": "object"
     },
-    "Query": {
+    "ProviderVersion": {
       "properties": {
-        "kind": {
-          "description": "Tree-sitter node kind, e.g. `function_item`.",
-          "type": [
-            "string",
-            "null"
-          ]
+        "provider": {
+          "type": "string"
         },
-        "language": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/LanguageId"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Restrict to one language; otherwise every registered language is searched."
-        },
-        "name": {
-          "description": "Only declarations with exactly this name.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "pattern": {
-          "description": "ast-grep style pattern with meta-variables, e.g. `fn $NAME($$$ARGS) { $$$ }`.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "symbol": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/SymbolKind"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Only declarations of this kind."
+        "revision": {
+          "type": "string"
         }
       },
+      "required": [
+        "provider",
+        "revision"
+      ],
       "type": "object"
     },
     "Recovery": {
@@ -668,148 +487,113 @@
       "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
       "type": "string"
     },
-    "Role": {
-      "description": "What position a match occupies in its file: the declaration itself, a\ntoken inside an import statement, or any other use. Views lead with\ndeclarations and dim imports; the engine orders results by it.",
-      "enum": [
-        "declaration",
-        "import",
-        "use"
-      ],
-      "type": "string"
-    },
-    "SearchPageItem": {
+    "ResolutionEvidence": {
       "properties": {
-        "address": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/Address"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "For a declaration in an addressable file: its module address, the\nvalue `outline` gives it. Filled by the engine, which has the project."
-        },
-        "captures": {
-          "additionalProperties": {
-            "$ref": "#/$defs/CaptureValue"
+        "addresses": {
+          "description": "The binding's address followed by each re-export address, in order.",
+          "items": {
+            "$ref": "#/$defs/Address"
           },
-          "type": "object"
+          "type": "array"
         },
-        "content": {
+        "semantic": {
           "anyOf": [
             {
-              "$ref": "#/$defs/ContentId"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "Complete source version; absent only in older serialized matches."
-        },
-        "end": {
-          "$ref": "#/$defs/Position"
-        },
-        "id": {
-          "$ref": "#/$defs/MatchId"
-        },
-        "kind": {
-          "type": "string"
-        },
-        "language": {
-          "$ref": "#/$defs/LanguageId"
-        },
-        "line": {
-          "default": "",
-          "description": "The source line on which the match starts, for display in context.",
-          "type": "string"
-        },
-        "ordinal": {
-          "description": "Absolute, one-based position in the complete search ordering.",
-          "format": "uint",
-          "minimum": 0,
-          "type": "integer"
-        },
-        "path": {
-          "$ref": "#/$defs/RelPath"
-        },
-        "role": {
-          "$ref": "#/$defs/Role",
-          "default": "use"
-        },
-        "span": {
-          "$ref": "#/$defs/Span"
-        },
-        "start": {
-          "$ref": "#/$defs/Position"
-        },
-        "symbol": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/Symbol"
+              "$ref": "#/$defs/ProviderVersion"
             },
             {
               "type": "null"
             }
           ]
-        },
-        "text": {
-          "type": "string"
         }
       },
       "required": [
-        "ordinal",
-        "id",
-        "path",
-        "language",
-        "span",
-        "start",
-        "end",
-        "kind",
-        "text",
-        "line",
-        "role"
+        "addresses"
       ],
       "type": "object"
     },
-    "SearchScope": {
-      "additionalProperties": false,
-      "description": "Explicit file/directory prefixes and owning package names or IDs.\nAlternatives within each list are ORed; the two lists are intersected.",
-      "properties": {
-        "packages": {
-          "default": [],
-          "items": {
-            "type": "string"
+    "ResolutionReply": {
+      "oneOf": [
+        {
+          "description": "Enough information to select, open, or request context for a declaration.",
+          "properties": {
+            "container": {
+              "$ref": "#/$defs/SymbolRef"
+            },
+            "evidence": {
+              "$ref": "#/$defs/ResolutionEvidence"
+            },
+            "id": {
+              "$ref": "#/$defs/MatchId"
+            },
+            "name": {
+              "type": "string"
+            },
+            "outcome": {
+              "const": "resolved",
+              "type": "string"
+            },
+            "start": {
+              "$ref": "#/$defs/Position"
+            },
+            "target": {
+              "$ref": "#/$defs/SymbolRef"
+            }
           },
-          "type": "array"
+          "required": [
+            "outcome",
+            "target",
+            "id",
+            "name",
+            "start",
+            "evidence",
+            "container"
+          ],
+          "type": "object"
         },
-        "paths": {
-          "default": [],
-          "items": {
-            "$ref": "#/$defs/RelPath"
+        {
+          "properties": {
+            "candidates": {
+              "items": {
+                "$ref": "#/$defs/DefinitionLocation"
+              },
+              "type": "array"
+            },
+            "outcome": {
+              "const": "ambiguous",
+              "type": "string"
+            }
           },
-          "type": "array"
+          "required": [
+            "outcome",
+            "candidates"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "outcome": {
+              "const": "unavailable",
+              "type": "string"
+            },
+            "reason": {
+              "$ref": "#/$defs/UnavailableReason"
+            }
+          },
+          "required": [
+            "outcome",
+            "reason"
+          ],
+          "type": "object"
         }
-      },
-      "required": [
-        "paths",
-        "packages"
       ],
-      "type": "object"
-    },
-    "Skipped": {
-      "description": "A language a search left out, and why: its grammar could not compile the\nquery (a Rust pattern on a TypeScript tree). Never fatal; the other\nlanguages' matches are complete. Data only; the display layer words it.",
       "properties": {
-        "language": {
-          "$ref": "#/$defs/LanguageId"
-        },
-        "reason": {
-          "type": "string"
+        "snapshot": {
+          "$ref": "#/$defs/SnapshotId"
         }
       },
       "required": [
-        "language",
-        "reason"
+        "snapshot"
       ],
       "type": "object"
     },
@@ -853,48 +637,6 @@
       "required": [
         "start",
         "end"
-      ],
-      "type": "object"
-    },
-    "Symbol": {
-      "description": "A declaration found in one file.",
-      "properties": {
-        "extent": {
-          "$ref": "#/$defs/Span",
-          "description": "The declaration with what belongs to it in the text: leading\nattributes and doc comments, an enclosing `export`. What moving the\ndeclaration cuts; what an outline shows."
-        },
-        "kind": {
-          "$ref": "#/$defs/SymbolKind"
-        },
-        "name": {
-          "type": "string"
-        },
-        "name_span": {
-          "$ref": "#/$defs/Span",
-          "description": "The identifier token itself: what a rename replaces."
-        },
-        "span": {
-          "$ref": "#/$defs/Span",
-          "description": "The declaration node."
-        },
-        "visibility": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/Modifier"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "description": "The visibility as written (`pub(crate)`, `export`); `None` when the\ndeclaration has no modifier. What it means is the language's\n[`Semantics`](crate::Semantics)."
-        }
-      },
-      "required": [
-        "kind",
-        "name",
-        "name_span",
-        "span",
-        "extent"
       ],
       "type": "object"
     },
@@ -963,161 +705,16 @@
         "cyclic_imports"
       ],
       "type": "string"
-    },
-    "context": {
-      "oneOf": [
-        {
-          "properties": {
-            "outcome": {
-              "const": "resolved",
-              "type": "string"
-            }
-          },
-          "required": [
-            "outcome"
-          ],
-          "type": "object"
-        },
-        {
-          "properties": {
-            "candidates": {
-              "items": {
-                "$ref": "#/$defs/ContextCandidate"
-              },
-              "type": "array"
-            },
-            "outcome": {
-              "const": "ambiguous",
-              "type": "string"
-            }
-          },
-          "required": [
-            "outcome",
-            "candidates"
-          ],
-          "type": "object"
-        },
-        {
-          "properties": {
-            "outcome": {
-              "const": "unavailable",
-              "type": "string"
-            },
-            "reason": {
-              "$ref": "#/$defs/UnavailableReason"
-            }
-          },
-          "required": [
-            "outcome",
-            "reason"
-          ],
-          "type": "object"
-        }
-      ],
-      "properties": {
-        "enclosing": {
-          "anyOf": [
-            {
-              "$ref": "#/$defs/SymbolRef"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "items": {
-          "items": {
-            "$ref": "#/$defs/PagedContextItem"
-          },
-          "type": "array"
-        },
-        "next_cursor": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "references_by_name": {
-          "type": "boolean"
-        },
-        "snapshot": {
-          "$ref": "#/$defs/SnapshotId"
-        },
-        "traversal_complete": {
-          "type": "boolean"
-        },
-        "unresolved": {
-          "$ref": "#/$defs/ContextUnresolved"
-        },
-        "work": {
-          "$ref": "#/$defs/ContextWork"
-        }
-      },
-      "required": [
-        "snapshot",
-        "items",
-        "references_by_name",
-        "work",
-        "unresolved",
-        "traversal_complete",
-        "next_cursor"
-      ],
-      "type": "object"
-    },
-    "search": {
-      "properties": {
-        "items": {
-          "items": {
-            "$ref": "#/$defs/SearchPageItem"
-          },
-          "type": "array"
-        },
-        "next_cursor": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "query": {
-          "$ref": "#/$defs/Query"
-        },
-        "scope": {
-          "$ref": "#/$defs/SearchScope"
-        },
-        "skipped": {
-          "items": {
-            "$ref": "#/$defs/Skipped"
-          },
-          "type": "array"
-        },
-        "snapshot": {
-          "$ref": "#/$defs/SnapshotId"
-        },
-        "total_items": {
-          "format": "uint",
-          "minimum": 0,
-          "type": "integer"
-        }
-      },
-      "required": [
-        "snapshot",
-        "query",
-        "items",
-        "skipped",
-        "total_items",
-        "next_cursor"
-      ],
-      "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:continue:response:91ffe083f385f1838737f3a773ae61939cdff14d88fc8e0a12938aff3a69198a",
+  "$id": "urn:vvv:schema:1:resolve:response:c43c245370f9c0b03bdb08f34756fa0660af4b278ce1b7333b5294c1c5262514",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [
     {
       "properties": {
         "result": {
-          "$ref": "#/$defs/PageReply"
+          "$ref": "#/$defs/ResolutionReply"
         },
         "schema": {
           "format": "uint32",
@@ -1202,5 +799,5 @@
       "type": "object"
     }
   ],
-  "title": "continue response"
+  "title": "resolve response"
 }

@@ -47,6 +47,8 @@ pub enum Block {
     },
     /// Where a name is declared: the sites `where` found.
     Sites(Vec<Site>),
+    /// Compact resolved or candidate declaration locations.
+    Locations(Vec<crate::DefinitionLocation>),
     /// Declarations nothing refers to, and the unsure-token count of each.
     Dead(Vec<Unreferenced>),
     /// A package's exposed names, and how many import each.

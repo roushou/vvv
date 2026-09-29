@@ -254,6 +254,7 @@ impl SchemaDocument {
             Command::Expand => contract!(crate::Expansion),
             Command::Discover => contract!(crate::Discovery),
             Command::Context => contract!(crate::ContextReply),
+            Command::Resolve => contract!(crate::ResolutionReply),
             Command::Navigate => contract!(crate::NavigationReply),
             Command::Search => contract!(crate::Search),
             Command::Outline => contract!(crate::Outline),

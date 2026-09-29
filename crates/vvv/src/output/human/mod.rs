@@ -231,6 +231,7 @@ mod tests {
             kind: SymbolKind::Function,
         };
         let reply = ContextReply {
+            enclosing: None,
             snapshot: ContentId::of(text).into(),
             outcome: ContextOutcome::Resolved,
             items: vec![ContextItem {
@@ -265,6 +266,7 @@ mod tests {
     #[test]
     fn search_empty() {
         let empty = Search {
+            scope: Default::default(),
             query: vvv_engine::Query::pattern("nope"),
             matches: vec![],
             skipped: vec![],

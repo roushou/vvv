@@ -284,13 +284,18 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:context_page:request:c83fda0d7b3a83d48930012db3c06edd8fec3596961baf0c7cb2d8f2ecdaec96",
+  "$id": "urn:vvv:schema:1:context_page:request:b48f115ebc28b461f1eaa93a7d1347d6ee8b638218d4a03d15c11cb8f5b50734",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
     "command": {
       "const": "context_page",
       "type": "string"
+    },
+    "include_enclosing": {
+      "default": false,
+      "description": "Include the enclosing declaration's full body as a separate item.",
+      "type": "boolean"
     },
     "origin": {
       "$ref": "#/$defs/NavigationOrigin"
