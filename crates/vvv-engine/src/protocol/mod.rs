@@ -133,8 +133,8 @@ pub use crate::capabilities::relationships::{
 pub use crate::capabilities::plans::{
     ApplyPlanQuery, DiscardPlanQuery, InspectPlanQuery, PlanId, PlanPreview, PlanReceipt,
     PlanReview, PlanReviewCursor, PlanReviewItem, PlanReviewKind, PlanReviewPage, PlanReviewReply,
-    PlanStatus, PrepareRenameQuery, PrepareRewriteQuery, ReviewMutation, ReviewPlanQuery,
-    ReviewSection, ReviewTotals,
+    PlanStatus, PrepareMoveIntent, PrepareMoveQuery, PrepareRenameQuery, PrepareRewriteQuery,
+    ReviewMutation, ReviewPlanQuery, ReviewSection, ReviewTotals,
 };
 
 pub use crate::capabilities::validation::{

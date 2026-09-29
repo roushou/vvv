@@ -19,6 +19,12 @@ impl QuerySnapshot {
         }
         self
     }
+    pub(crate) fn inventory(&self) -> &[RelPath] {
+        &self.inventory
+    }
+    pub(crate) fn languages(&self) -> &[LanguageId] {
+        &self.languages
+    }
     pub(crate) fn inputs(&self) -> &BTreeMap<RelPath, ContentId> {
         &self.sources
     }

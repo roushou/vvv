@@ -60,6 +60,9 @@ impl McpIssue {
 impl ToolKind {
     pub fn description(self) -> &'static str {
         match self {
+            Self::PrepareMove => {
+                "Prepare a retained file or directory move. Review exact edits and destinations, then apply its session-local handle."
+            }
             Self::PrepareRewrite => {
                 "Prepare a structural rewrite without writing. Retain the exact edits for 10 minutes. Supply page for bounded review delivery; follow next_cursor through vvv_review_plan before applying. Selection and template are fixed at preparation."
             }
@@ -73,7 +76,7 @@ impl ToolKind {
                 "Inspect the captured preview or terminal outcome of a retained plan. Does not replan or extend its lifetime. Apply checks current sources separately."
             }
             Self::ValidatePlan => {
-                "Run explicitly supplied programs and argv in the workspace after applying a retained plan. Use formatting check mode. Programs are not sandboxed and may write or access the network. Unix disk workspaces only. Captures bounded output and source-change evidence; inspect_plan retains the latest run, including after cancellation. Each call runs the checks again. Uses budget.max_bytes, not max_output_bytes."
+                "Run explicitly supplied programs and argv in the workspace after applying a retained plan. Use formatting check mode. Programs are not sandboxed and may write or access the network. Supported Unix and Windows disk workspaces. Captures bounded output and source-change evidence; inspect_plan retains the latest run, including after cancellation. Each call runs the checks again. Uses budget.max_bytes, not max_output_bytes."
             }
             Self::ApplyPlan => {
                 "Write the exact reviewed plan_id and record undo history. Rejects changed workspace inputs. Repeating a successful handle returns its original receipt without writing again. Once started, application finishes despite cancellation; inspect the handle after an interrupted response. Does not run formatters, compilers, or tests."

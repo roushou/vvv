@@ -17,6 +17,8 @@ pub enum EngineError {
     InvalidValidation,
     #[error("invalid plan handle")]
     InvalidPlan,
+    #[error("move paths must be nonempty workspace-relative paths without .. components: {path}")]
+    InvalidMovePath { path: RelPath },
     #[error("plan expired or belongs to another session; prepare and review a new plan")]
     PlanExpired,
     #[error("plan cannot be applied again; inspect its terminal outcome")]
@@ -150,7 +152,7 @@ impl EngineError {
             Self::PlanConsumed => ErrorCode::PlanConsumed,
             Self::StalePlan => ErrorCode::Stale,
             Self::PlanRetentionLimit => ErrorCode::RetentionLimit,
-            Self::InvalidSearchScope => ErrorCode::BadRequest,
+            Self::InvalidSearchScope | Self::InvalidMovePath { .. } => ErrorCode::BadRequest,
             Self::ReadCancelled => ErrorCode::Cancelled,
             Self::ReusedCancellation | Self::MutationCancellation => ErrorCode::BadRequest,
             #[cfg(feature = "schema")]

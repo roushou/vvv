@@ -1,4 +1,5 @@
 //! Explicit check commands and evidence tied to an applied plan's source versions.
+pub(crate) mod baseline;
 mod process;
 use crate::graph::query_snapshot::QuerySnapshot;
 use crate::{
@@ -190,10 +191,7 @@ impl ValidatePlanQuery {
         })?;
         let before = ValidationInputs::capture(engine, &self.extra_inputs, &baseline)?;
         // Capture again before launching to reject inconsistent reads during capture.
-        if baseline
-            .inputs()
-            .iter()
-            .any(|(path, content)| before.files.get(path) != Some(content))
+        if !before.matches_baseline(&baseline)
             || before != ValidationInputs::capture(engine, &self.extra_inputs, &baseline)?
         {
             return Err(EngineError::StalePlan);
@@ -302,12 +300,14 @@ impl ValidatePlanQuery {
 #[derive(Debug, PartialEq, Eq, Serialize)]
 struct ValidationInputs {
     files: BTreeMap<RelPath, ContentId>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    moves: Option<baseline::MoveObservation>,
 }
 impl ValidationInputs {
     fn capture(
         engine: &Engine,
         extra: &[RelPath],
-        baseline: &QuerySnapshot,
+        baseline: &baseline::ValidationBaseline,
     ) -> Result<Self, EngineError> {
         let (_, current) = QuerySnapshot::capture(engine)?;
         let mut files = BTreeMap::new();
@@ -340,7 +340,17 @@ impl ValidationInputs {
             }
             files.insert(path.clone(), content);
         }
-        Ok(Self { files })
+        Ok(Self {
+            files,
+            moves: baseline.observe(engine)?,
+        })
+    }
+    fn matches_baseline(&self, baseline: &baseline::ValidationBaseline) -> bool {
+        baseline
+            .inputs()
+            .iter()
+            .all(|(path, content)| self.files.get(path) == Some(content))
+            && baseline.matches(self.moves.as_ref())
     }
     fn identity(&self) -> SnapshotId {
         ContentId::of(&serde_json::to_string(self).expect("inputs serialize")).into()

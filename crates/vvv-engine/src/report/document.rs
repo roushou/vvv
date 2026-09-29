@@ -52,7 +52,9 @@ impl Document {
             Answer::ApplyPlan(r) => Self::plan_receipt(r),
             Answer::ValidatePlan(r) => Self::validation(r),
             Answer::InspectPlan(r) => Self::plan_reply(r),
-            Answer::PrepareRename(r) | Answer::PrepareRewrite(r) => Self::plan_reply(r),
+            Answer::PrepareRename(r) | Answer::PrepareRewrite(r) | Answer::PrepareMove(r) => {
+                Self::plan_reply(r)
+            }
             Answer::ReviewPlan(r) => Self::plan_page(r),
             #[cfg(feature = "schema")]
             Answer::Schema(r) => Self::schema(r),

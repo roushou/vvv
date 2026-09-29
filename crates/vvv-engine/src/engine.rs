@@ -93,6 +93,9 @@ impl Engine {
                 crate::Request::InspectPlan(query) => {
                     Execution::Completed(crate::Answer::InspectPlan(query.execute_in(self)?))
                 }
+                crate::Request::PrepareMove(query) => {
+                    Execution::Completed(crate::Answer::PrepareMove(query.execute_in(self)?))
+                }
                 crate::Request::PrepareRewrite(query) => {
                     Execution::Completed(crate::Answer::PrepareRewrite(query.execute_in(self)?))
                 }

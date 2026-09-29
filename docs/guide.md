@@ -398,6 +398,32 @@ MCP provides `vvv_prepare_rename`, `vvv_inspect_plan`, `vvv_apply_plan`, and
 can write. Queued calls can be cancelled; once apply starts it finishes its
 transaction. If a response is interrupted, inspect or retry the same handle.
 
+### Retained file and directory moves
+
+Use `prepare_move` to retain the existing file/directory move planner's exact edits
+and destinations. MCP exposes the same request as `vvv_prepare_move`:
+
+```json
+{
+  "command": "prepare_move",
+  "intent": { "from": "src/origin.rs", "to": "src/relocated.rs" },
+  "page": { "max_items": 20, "max_bytes": 8192 }
+}
+```
+
+Both paths must be nonempty workspace-relative paths with no `..` components.
+The existing move rules apply, including companion files, import rewrites, notices,
+and destination-preserving writes. Inspect, review, apply, discard, and validate
+through the same handle commands as rename. Application does not rerun the planner.
+Retained symbol moves and batches are unsupported.
+
+Move validation checks final destination contents, disappearance of old source
+entries (allowing case-only aliases), and unchanged inventory outside the reviewed
+moves. It also retains ignore configuration along source/destination ancestors,
+including recorded absence. These observations remain checked during commands,
+even for hidden or ignored destinations. No fresh post-apply tree is adopted as
+the reviewed baseline. Receipt retries remain historical after edits or undo.
+
 ### Retained rewrites and paged reviews
 
 `prepare_rewrite` retains the existing rewrite intent: `query`, `template`, and
@@ -405,7 +431,7 @@ optional `selection`. MCP exposes it as `vvv_prepare_rewrite`. Captures expand
 from the captured source; application cannot replace the template or selection.
 Use the same inspection, apply, discard, and validation commands as for rename.
 
-For a large rename or rewrite, supply `page` during preparation or inspection:
+For a large rename, rewrite, or file move, supply `page` during preparation or inspection:
 
 ```json
 {"command":"prepare_rewrite","intent":{"query":{"pattern":"increment($X, 1)"},"template":"increment($X, 2)"},"page":{"max_items":20,"max_bytes":8192}}
@@ -1016,7 +1042,7 @@ For clients that use an `mcpServers` configuration, add:
 
 The client must support MCP `2025-11-25`. Navigation tools are read-only:
 `vvv_discover`, `vvv_search`, `vvv_navigate`, `vvv_relationships`, `vvv_context`,
-`vvv_continue`, and `vvv_expand`. Reviewed changes use `vvv_prepare_rename`, `vvv_prepare_rewrite`, `vvv_review_plan`,
+`vvv_continue`, and `vvv_expand`. Reviewed changes use `vvv_prepare_rename`, `vvv_prepare_rewrite`, `vvv_prepare_move`, `vvv_review_plan`,
 `vvv_inspect_plan`, `vvv_discard_plan`, and the writing tool `vvv_apply_plan`.
 `vvv_validate_plan` runs explicitly supplied project checks after apply.
 Their input and output schemas and mutation annotations are available through

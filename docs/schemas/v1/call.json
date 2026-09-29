@@ -48,6 +48,7 @@
         "inspect_plan",
         "prepare_rename",
         "prepare_rewrite",
+        "prepare_move",
         "review_plan",
         "schema",
         "search_page",
@@ -519,6 +520,23 @@
       "required": [
         "line",
         "column"
+      ],
+      "type": "object"
+    },
+    "PrepareMoveIntent": {
+      "additionalProperties": false,
+      "description": "Workspace-relative source and destination for a retained file/directory move.",
+      "properties": {
+        "from": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "to": {
+          "$ref": "#/$defs/RelPath"
+        }
+      },
+      "required": [
+        "from",
+        "to"
       ],
       "type": "object"
     },
@@ -1093,7 +1111,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:session:call:0cba9de7cbf0527418f4e7eb134232416f2f6c7b3bc0cf116f23b42016cce87d",
+  "$id": "urn:vvv:schema:1:session:call:da7aeb4fc4c56f06cb0cb35679ca3f975dd794fcfa664b20f1b66b974d2217a5",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "A request on a session's wire (`vvv serve`): the request with whatever\n`id` the caller chose, echoed on the [`Reply`].",
   "oneOf": [
@@ -1244,6 +1262,39 @@
         },
         "intent": {
           "$ref": "#/$defs/RewriteIntent"
+        },
+        "max_bytes": {
+          "default": 16384,
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 1024,
+          "type": "integer"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PageBudget"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "command",
+        "intent"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "command": {
+          "const": "prepare_move",
+          "type": "string"
+        },
+        "intent": {
+          "$ref": "#/$defs/PrepareMoveIntent"
         },
         "max_bytes": {
           "default": 16384,

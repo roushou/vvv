@@ -107,6 +107,23 @@ impl Fixture {
                     .into();
             }
         }
+        if pages[0]["mutation"] == "move" {
+            let metadata = records.remove(&("move".into(), 0, None)).unwrap();
+            result
+                .as_object_mut()
+                .unwrap()
+                .extend(metadata.as_object().unwrap().clone());
+            for (section, field) in [("notice", "notices"), ("respelling", "respellings")] {
+                let values = records
+                    .iter()
+                    .filter(|((s, _, _), _)| s == section)
+                    .map(|(_, value)| value.clone())
+                    .collect::<Vec<_>>();
+                if !values.is_empty() {
+                    result[field] = values.into();
+                }
+            }
+        }
         result
     }
 }
@@ -297,4 +314,35 @@ fn empty_rewrite_page_is_complete_and_full_review_round_trips_with_a_closed_prev
     let review: vvv_engine::PlanReview =
         serde_json::from_value(inspected["result"].clone()).unwrap();
     assert_eq!(serde_json::to_value(review).unwrap(), inspected["result"]);
+}
+
+#[test]
+fn move_pages_reassemble_notices_respellings_addresses_and_empty_diffs() {
+    let f = Fixture::new("def foo\n");
+    f.vfs.write(Path::new("/ws/manifest.p"), "").unwrap();
+    f.vfs
+        .write(Path::new("/ws/use.p"), "use a.p\nuse {a.p}\n")
+        .unwrap();
+    let intent = json!({"from":"a.p","to":"folder/new.p"});
+    let complete = f.prepare("prepare_move", intent.clone(), false);
+    let first = f.prepare("prepare_move", intent, true);
+    assert_eq!(first["mutation"], "move");
+    assert_eq!(first["totals"]["notices"], 1);
+    assert_eq!(first["totals"]["respellings"], 1);
+    let pages = f.pages(first.clone());
+    assert_eq!(Fixture::reconstruct(&pages), complete["preview"]);
+    let reply = f.call(json!({"command":"apply_plan","plan_id":first["plan_id"]}));
+    assert_eq!(reply["status"], "ok", "{reply}");
+    assert!(!f.vfs.exists(Path::new("/ws/a.p")));
+    assert_eq!(
+        f.vfs.read(Path::new("/ws/folder/new.p")).unwrap(),
+        "def foo\n"
+    );
+    assert_eq!(f.pages(first.clone()), pages);
+    Ledger::new(&f.engine).undo().unwrap();
+    assert_eq!(f.vfs.read(Path::new("/ws/a.p")).unwrap(), "def foo\n");
+    assert_eq!(
+        f.call(json!({"command":"apply_plan","plan_id":first["plan_id"]})),
+        reply
+    );
 }

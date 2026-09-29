@@ -1,5 +1,6 @@
-//! Session-owned, reviewable rename and rewrite plans. Executable edits never cross the wire.
+//! Session-owned, reviewable rename, rewrite, and file move plans. Executable edits never cross the wire.
 pub(crate) mod review;
+use crate::capabilities::validation::baseline::ValidationBaseline;
 use crate::graph::query_snapshot::QuerySnapshot;
 use crate::{
     ContentId, Engine, EngineError, Failure, MutationAnswer, Planned, RenameIntent, RewriteIntent,
@@ -78,6 +79,73 @@ impl PrepareRewriteQuery {
         let revision = engine.query_revision();
         let (mut graph, snapshot) = QuerySnapshot::capture(engine)?;
         let planned = self.intent.plan_in(&mut graph, engine.workspace())?;
+        RetainedPlan::publish(
+            engine,
+            planned.into_mutation(),
+            snapshot,
+            revision,
+            budget,
+            self.page.is_some(),
+        )
+    }
+}
+/// Workspace-relative source and destination for a retained file/directory move.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields)]
+pub struct PrepareMoveIntent {
+    pub from: crate::RelPath,
+    pub to: crate::RelPath,
+}
+impl PrepareMoveIntent {
+    fn validate(&self) -> Result<(), EngineError> {
+        for path in [&self.from, &self.to] {
+            if path.as_os_str().is_empty()
+                || path.is_absolute()
+                || path.components().any(|part| {
+                    !matches!(
+                        part,
+                        std::path::Component::Normal(_) | std::path::Component::CurDir
+                    )
+                })
+                || !path
+                    .components()
+                    .any(|part| matches!(part, std::path::Component::Normal(_)))
+            {
+                return Err(EngineError::InvalidMovePath { path: path.clone() });
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields)]
+pub struct PrepareMoveQuery {
+    pub intent: PrepareMoveIntent,
+    #[serde(default = "PrepareRenameQuery::default_max_bytes")]
+    #[cfg_attr(feature = "schema", schemars(range(min = 1024, max = 1048576)))]
+    pub max_bytes: usize,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub page: Option<crate::PageBudget>,
+}
+impl PrepareMoveQuery {
+    pub fn execute(self, engine: &Engine) -> Result<PlanReviewReply, EngineError> {
+        let _operation = engine.operation();
+        self.execute_in(engine)
+    }
+    pub(crate) fn execute_in(self, engine: &Engine) -> Result<PlanReviewReply, EngineError> {
+        self.intent.validate()?;
+        let budget = PlanReviewReply::budget(self.max_bytes, self.page.as_ref())?;
+        let revision = engine.query_revision();
+        let (mut graph, snapshot) = QuerySnapshot::capture(engine)?;
+        if let Some(oracle) = engine.oracle() {
+            graph = graph.with_oracle(oracle);
+        }
+        let intent =
+            crate::MoveIntent::new(self.intent.from.to_path_buf(), self.intent.to.to_path_buf());
+        let planned = intent.plan_in(&mut graph, engine.workspace())?;
         RetainedPlan::publish(
             engine,
             planned.into_mutation(),
@@ -215,12 +283,12 @@ pub(crate) struct RetainedPlan {
     pub review: PlanReview,
     pub pending: Option<PendingPlan>,
     pub captured: Option<Arc<CapturedReview>>,
-    pub baseline: Option<QuerySnapshot>,
+    pub baseline: Option<Arc<ValidationBaseline>>,
     pub bytes: usize,
 }
 pub(crate) struct PendingPlan {
     planned: Planned<MutationAnswer>,
-    snapshot: QuerySnapshot,
+    baseline: Arc<ValidationBaseline>,
     revision: u64,
 }
 impl RetainedPlan {
@@ -232,7 +300,6 @@ impl RetainedPlan {
         budget: crate::PageBudget,
         paged: bool,
     ) -> Result<PlanReviewReply, EngineError> {
-        snapshot.validate(engine)?;
         if revision != engine.query_revision() {
             return Err(EngineError::StalePlan);
         }
@@ -243,7 +310,8 @@ impl RetainedPlan {
             lifetime_seconds: crate::PlanLimits::default().lifetime_seconds,
             status: PlanStatus::Prepared { preview },
         };
-        let retained = Self::new(review.clone(), planned, snapshot, revision);
+        let baseline = ValidationBaseline::capture(engine, snapshot, planned.preview())?;
+        let retained = Self::new(review.clone(), planned, baseline, revision);
         let reply = if paged {
             PlanReviewReply::Page(retained.captured.as_ref().expect("prepared review").page(
                 engine,
@@ -260,7 +328,7 @@ impl RetainedPlan {
             .baseline
             .as_ref()
             .expect("prepared baseline")
-            .validate(engine)?;
+            .validate_before(engine)?;
         if revision != engine.query_revision() {
             return Err(EngineError::StalePlan);
         }
@@ -270,7 +338,7 @@ impl RetainedPlan {
     pub(crate) fn new(
         review: PlanReview,
         planned: Planned<MutationAnswer>,
-        snapshot: QuerySnapshot,
+        baseline: ValidationBaseline,
         revision: u64,
     ) -> Self {
         // Charge source copies, replacement strings, preview metadata, snapshot maps,
@@ -283,7 +351,7 @@ impl RetainedPlan {
         let bytes = source_bytes
             .saturating_mul(4)
             .saturating_add(crate::query_store::QueryStore::weight(&review))
-            .saturating_add(crate::query_store::QueryStore::weight(&snapshot).saturating_mul(2));
+            .saturating_add(crate::query_store::QueryStore::weight(&baseline).saturating_mul(2));
         let captured = match &review.status {
             PlanStatus::Prepared { preview } => {
                 Some(Arc::new(CapturedReview::new(preview.clone())))
@@ -291,13 +359,14 @@ impl RetainedPlan {
             _ => None,
         };
         let bytes = bytes.saturating_add(captured.as_ref().map_or(0, |c| c.weight()));
+        let baseline = Arc::new(baseline);
         Self {
             review,
             captured,
-            baseline: Some(snapshot.clone()),
+            baseline: Some(baseline.clone()),
             pending: Some(PendingPlan {
                 planned,
-                snapshot,
+                baseline,
                 revision,
             }),
             bytes,
@@ -309,8 +378,8 @@ impl PendingPlan {
         if self.revision != engine.query_revision() {
             return Err(EngineError::StalePlan);
         }
-        self.snapshot
-            .validate(engine)
+        self.baseline
+            .validate_before(engine)
             .map_err(|error| match error {
                 EngineError::StaleQuery | EngineError::StaleSource { .. } => EngineError::StalePlan,
                 other => other,
@@ -343,6 +412,7 @@ impl crate::report::Document {
             PlanStatus::Prepared { preview } => match preview {
                 PlanPreview::Rename(r) => Self::rename(r),
                 PlanPreview::Rewrite(r) => Self::rewrite(r),
+                PlanPreview::Move(r) => Self::move_file(r),
             },
             PlanStatus::Applied { receipt } => Self::plan_receipt(receipt),
             PlanStatus::Failed { failure } => Self::error(failure),

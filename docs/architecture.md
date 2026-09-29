@@ -528,7 +528,7 @@ its `Request` on a session engine and writes the `Reply` for JSON-lines clients.
 default), `vvv-tui`; `vvv ui` or bare `vvv` in a terminal hands the engine to the
 picker with the CLI's colour policy and `$VISUAL`/`$EDITOR`.
 
-The optional `mcp` feature adds `mcp/`, a fourteen-tool adapter for navigation, reviewed mutations, and explicit validation using the official
+The optional `mcp` feature adds `mcp/`, a fifteen-tool adapter for navigation, reviewed mutations, and explicit validation using the official
 Rust SDK's codec, lifecycle, and dispatch. Reads and validation call the engine
 in process through `Call::execute_with_cancellation`; apply uses `Call::execute`
 and finishes its active transaction. Both share the ordinary call budget policy. A bounded
@@ -893,7 +893,7 @@ Engine dispatch routes typed requests without owning capability behavior.
 ## Retained mutation handles
 
 `capabilities/plans.rs` owns preparation, inspection, application, discard, and
-report composition for reviewed rename and rewrite plans. `plan_store.rs` retains executable
+report composition for reviewed rename, rewrite, and file/directory move plans. `plan_store.rs` retains executable
 plans and terminal outcomes, shared by engine clones. Ordinary mutation requests
 keep their existing lifecycle. Session handles are references to captured plans;
 clients cannot submit replacement edits or change the captured intent on apply.
@@ -914,10 +914,10 @@ never evicts pending plans or successful receipts. Discarded tombstones may be
 reclaimed on the next preparation. MCP distinguishes queued cancellation from
 active application: reads are cooperative, active writes finish their transaction.
 
-`capabilities/plans/review.rs` owns the immutable closed rename/rewrite preview,
+`capabilities/plans/review.rs` owns the immutable closed rename/rewrite/move preview,
 record construction, exact UTF-8 text chunking, delivery budgets, and review cursor
 positions. `PendingPlan` holds `Planned<MutationAnswer>`; preparation admits only
-rename and rewrite. Shared immutable preview allocations keep inspection from
+rename, rewrite, and file/directory moves. Shared immutable preview allocations keep inspection from
 copying all occurrences and edits. Review pages never access a source tree or
 reuse source-query checkpoints: they describe captured evidence that remains
 readable after workspace edits, apply, or failed apply. Lifecycle and latest
@@ -928,7 +928,7 @@ page retries add no retained checkpoint allocations. Captured reviews remain cha
 within the existing plan memory limits after completion, and share the original
 fixed expiry. Discard releases pending executable plans, captured reviews, and
 baselines. No proof of page delivery is required for apply; clients own their review
-policy. Moves and batches are not admitted to retained handles.
+policy. Symbol moves and batches are not admitted to retained handles.
 
 ### Validation of applied plans
 
@@ -947,8 +947,16 @@ the transaction model. This external execution capability does not format or pla
 source edits and provides no rollback or sandbox. MCP advertises it as non-read-only
 and open-world. Engine-owned mutations still require a `Plan`.
 
-The plan store retains its input snapshot after successful apply, replacing changed
-content identities with the versions written by the transaction. Validation first
+`capabilities/validation/baseline.rs` derives expected post-apply input identities
+from the executable preview before writes. It retains reviewed path transitions,
+original inventory, exact final contents, and source/destination ancestor ignore
+configuration with absence evidence. After successful apply, the store retains this
+baseline rather than capturing and trusting a fresh tree. Move validation compares
+inventory outside the reviewed transitions, verifies old-entry absence (or case-only
+aliases), and checks final destination contents directly even when hidden or ignored.
+Move observations also track entry spelling and configuration presence during checks.
+`QuerySnapshot` remains the strict pre-apply and query freshness contract; an overlay
+walk is not evidence of disk ignore behavior at destination paths. Validation first
 checks this baseline, then fingerprints visible files, planner configuration inputs,
 and caller-listed extra inputs before, between, and after commands. A report links
 the apply receipt to these observations and bounded command results. It preserves

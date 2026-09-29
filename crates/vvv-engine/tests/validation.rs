@@ -158,6 +158,8 @@ fn validation_command_fixture() {
             std::fs::write(".vvv/escaped", "must not run").unwrap();
         }
         "change" => std::fs::write("a.p", "def changed").unwrap(),
+        "hidden-move-config" => std::fs::write(".hidden-dir/.ignore", "changed").unwrap(),
+        "move-source" => std::fs::write("a.p", "recreated").unwrap(),
         "hidden" => std::fs::write(".hidden", "changed").unwrap(),
         "ignore" => std::fs::write(".gitignore", "resource.bin\n").unwrap(),
         _ => panic!("unknown fixture mode"),
@@ -410,4 +412,176 @@ fn unicode_paths_and_quoted_arguments_reach_the_native_program() {
     let report = query.execute(&fixture.engine).unwrap();
     assert!(report.passed, "{report:?}");
     assert!(report.checks[0].stdout.text.contains("arguments preserved"));
+}
+
+#[cfg(any(unix, windows))]
+#[test]
+fn move_validation_tracks_visible_hidden_and_ignored_destinations() {
+    use vvv_engine::{PrepareMoveIntent, PrepareMoveQuery};
+    for destination in [
+        "dest/moved.p",
+        "A.p",
+        ".hidden-dir/moved.p",
+        "ignored/moved.p",
+    ] {
+        let mut f = Fixture::new("pass");
+        std::fs::write(f.root.join("manifest.p"), "").unwrap();
+        std::fs::create_dir_all(f.root.join(".git")).unwrap();
+        std::fs::write(f.root.join(".gitignore"), "ignored/\n").unwrap();
+        let review = PrepareMoveQuery {
+            intent: PrepareMoveIntent {
+                from: "a.p".into(),
+                to: destination.into(),
+            },
+            max_bytes: 65536,
+            page: None,
+        }
+        .execute(&f.engine)
+        .unwrap()
+        .into_complete()
+        .unwrap();
+        f.receipt = ApplyPlanQuery {
+            plan_id: review.plan_id,
+        }
+        .execute(&f.engine)
+        .unwrap();
+        let report = f.query().execute(&f.engine).unwrap();
+        assert!(report.passed, "{report:?}");
+        assert!(
+            report
+                .sources
+                .iter()
+                .any(|source| source.path == std::path::Path::new(destination))
+        );
+        assert_eq!(report, f.recorded().unwrap());
+        std::fs::write(f.root.join(destination), "external edit").unwrap();
+        assert!(matches!(
+            f.query().execute(&f.engine),
+            Err(EngineError::StalePlan)
+        ));
+        assert_eq!(
+            ApplyPlanQuery {
+                plan_id: f.receipt.plan_id.clone()
+            }
+            .execute(&f.engine)
+            .unwrap(),
+            f.receipt
+        );
+    }
+}
+
+#[cfg(any(unix, windows))]
+#[test]
+fn move_validation_rejects_recreated_sources_configs_and_unrelated_inventory_changes() {
+    use vvv_engine::{PrepareMoveIntent, PrepareMoveQuery};
+    for path in [
+        "a.p",
+        "dest/.ignore",
+        "dest/.gitignore",
+        "unrelated.p",
+        "resource.bin",
+    ] {
+        let mut f = Fixture::new("pass");
+        std::fs::write(f.root.join("manifest.p"), "").unwrap();
+        let review = PrepareMoveQuery {
+            intent: PrepareMoveIntent {
+                from: "a.p".into(),
+                to: "dest/new.p".into(),
+            },
+            max_bytes: 65536,
+            page: None,
+        }
+        .execute(&f.engine)
+        .unwrap()
+        .into_complete()
+        .unwrap();
+        f.receipt = ApplyPlanQuery {
+            plan_id: review.plan_id,
+        }
+        .execute(&f.engine)
+        .unwrap();
+        f.query().execute(&f.engine).unwrap();
+        if path == "resource.bin" {
+            std::fs::remove_file(f.root.join(path)).unwrap();
+        } else {
+            std::fs::write(f.root.join(path), "external edit").unwrap();
+        }
+        assert!(
+            matches!(f.query().execute(&f.engine), Err(EngineError::StalePlan)),
+            "path {path}"
+        );
+    }
+}
+
+#[cfg(any(unix, windows))]
+#[test]
+fn destination_ignore_configuration_is_checked_before_move_apply() {
+    use vvv_engine::{PrepareMoveIntent, PrepareMoveQuery};
+    for initially_present in [true, false] {
+        let f = Fixture::new("pass");
+        std::fs::write(f.root.join("manifest.p"), "").unwrap();
+        std::fs::create_dir_all(f.root.join("destination")).unwrap();
+        let config = f.root.join("destination/.ignore");
+        if initially_present {
+            std::fs::write(&config, "original\n").unwrap();
+        }
+        let review = PrepareMoveQuery {
+            intent: PrepareMoveIntent {
+                from: "a.p".into(),
+                to: "destination/new.p".into(),
+            },
+            max_bytes: 65536,
+            page: None,
+        }
+        .execute(&f.engine)
+        .unwrap()
+        .into_complete()
+        .unwrap();
+        std::fs::write(config, "changed\n").unwrap();
+        assert!(matches!(
+            ApplyPlanQuery {
+                plan_id: review.plan_id
+            }
+            .execute(&f.engine),
+            Err(EngineError::StalePlan)
+        ));
+        assert!(f.root.join("a.p").exists());
+        assert!(!f.root.join("destination/new.p").exists());
+    }
+}
+
+#[cfg(any(unix, windows))]
+#[test]
+fn checks_observe_hidden_move_configuration_and_recreated_source_entries() {
+    use vvv_engine::{PrepareMoveIntent, PrepareMoveQuery, ValidationSourceState};
+    for mode in ["hidden-move-config", "move-source"] {
+        let mut f = Fixture::new(mode);
+        std::fs::write(f.root.join("manifest.p"), "").unwrap();
+        std::fs::create_dir_all(f.root.join(".hidden-dir")).unwrap();
+        let from = "a.p";
+        let review = PrepareMoveQuery {
+            intent: PrepareMoveIntent {
+                from: from.into(),
+                to: ".hidden-dir/new.p".into(),
+            },
+            max_bytes: 65536,
+            page: None,
+        }
+        .execute(&f.engine)
+        .unwrap()
+        .into_complete()
+        .unwrap();
+        f.receipt = ApplyPlanQuery {
+            plan_id: review.plan_id,
+        }
+        .execute(&f.engine)
+        .unwrap();
+        let report = f.query().execute(&f.engine).unwrap();
+        assert!(!report.passed);
+        assert_eq!(
+            report.source_state,
+            ValidationSourceState::Changed,
+            "{report:?}"
+        );
+    }
 }

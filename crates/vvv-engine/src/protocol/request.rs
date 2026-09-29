@@ -30,6 +30,7 @@ pub enum Request {
     InspectPlan(crate::InspectPlanQuery),
     PrepareRename(crate::PrepareRenameQuery),
     PrepareRewrite(crate::PrepareRewriteQuery),
+    PrepareMove(crate::PrepareMoveQuery),
     ReviewPlan(crate::ReviewPlanQuery),
     #[cfg(feature = "schema")]
     Schema(crate::SchemaQuery),
@@ -106,6 +107,7 @@ impl Request {
             Self::InspectPlan(_) => super::Command::InspectPlan,
             Self::PrepareRename(_) => super::Command::PrepareRename,
             Self::PrepareRewrite(_) => super::Command::PrepareRewrite,
+            Self::PrepareMove(_) => super::Command::PrepareMove,
             Self::ReviewPlan(_) => super::Command::ReviewPlan,
             #[cfg(feature = "schema")]
             Self::Schema(_) => super::Command::Schema,
@@ -156,6 +158,7 @@ pub enum Answer {
     InspectPlan(crate::PlanReviewReply),
     PrepareRename(crate::PlanReviewReply),
     PrepareRewrite(crate::PlanReviewReply),
+    PrepareMove(crate::PlanReviewReply),
     ReviewPlan(crate::PlanReviewPage),
     #[cfg(feature = "schema")]
     Schema(crate::SchemaDocument),

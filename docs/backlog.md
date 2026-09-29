@@ -106,9 +106,11 @@ paged queries on large repositories before narrowing their invalidation scope.
 
 ## Reviewed mutations
 
-Retained session handles cover rename and rewrite. Extend the same review/receipt
-contract to moves and batches. Moves require baseline path/inventory updates in
-`QuerySnapshot`, beyond content-only `with_versions`, before applied-plan validation
-can describe them correctly. Measure full-input capture latency on large repositories; ignored
-inputs and ambient tool/dependency versions need explicit coverage contracts before
-broadening validation claims.
+Retained session handles cover rename, rewrite, and file/directory moves. Extend the
+same review/receipt contract to symbol moves and batches. Symbol extraction currently
+chooses a matching declaration by name and gathers same-named pieces; define explicit
+candidate selection and companion ownership before exposing retained symbol moves.
+Batch validation needs final path/content effects derived from ordered staged plans.
+Measure full-input capture latency on large repositories; ignored inputs and ambient
+tool/dependency versions need explicit coverage contracts before broadening validation
+claims.

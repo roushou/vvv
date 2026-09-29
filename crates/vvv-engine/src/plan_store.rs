@@ -122,14 +122,9 @@ impl PlanStore {
             .entries
             .get_mut(id)
             .expect("operation exclusion protects active plan");
-        entry.plan.baseline = match result {
-            Ok(receipt) => entry
-                .plan
-                .baseline
-                .take()
-                .map(|baseline| baseline.with_versions(&receipt.files)),
-            Err(_) => None,
-        };
+        if result.is_err() {
+            entry.plan.baseline = None;
+        }
         entry.plan.review.status = match result {
             Ok(receipt) => PlanStatus::Applied {
                 receipt: receipt.clone(),
@@ -149,7 +144,7 @@ impl PlanStore {
     ) -> Result<
         (
             PlanReceipt,
-            crate::graph::query_snapshot::QuerySnapshot,
+            Arc<crate::capabilities::validation::baseline::ValidationBaseline>,
             u64,
         ),
         EngineError,
@@ -267,7 +262,13 @@ mod tests {
             );
             let (_, snapshot) =
                 crate::graph::query_snapshot::QuerySnapshot::capture(&self.engine).unwrap();
-            RetainedPlan::new(review, planned.into_mutation(), snapshot, 0)
+            let baseline = crate::capabilities::validation::baseline::ValidationBaseline::capture(
+                &self.engine,
+                snapshot,
+                planned.preview(),
+            )
+            .unwrap();
+            RetainedPlan::new(review, planned.into_mutation(), baseline, 0)
         }
     }
     #[test]

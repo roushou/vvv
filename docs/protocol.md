@@ -1093,6 +1093,26 @@ without evicting pending plans or successful receipts. Discard pending plans,
 narrow the mutation, or wait for expiry. Restarting the session loses handles but
 keeps committed undo history.
 
+### Retained file and directory moves
+
+`prepare_move` takes `intent: {from: RelPath, to: RelPath}`, `max_bytes`, and optional
+`page`, and returns the existing `PlanReviewReply`. Paths must be nonempty,
+workspace-relative, and contain no `..` components; violations return `bad_request`.
+Only file/directory moves are admitted; symbol moves and batches are unsupported.
+Complete previews use the ordinary `Move` shape, including normalized source and
+destination, optional module addresses, notices, respellings, files, and `moved_to`.
+The existing transaction checks destination occupancy again and never replaces
+an entry created by another writer. Preparation does not reserve destinations.
+
+Receipts retain final destination content versions, without adding removed-path
+fields. A private validation baseline derives path transitions and expected input
+contents before writes. Validation checks destination bytes directly, including
+hidden/ignored destinations, rejects recreated old entries except case-only aliases,
+and compares inventory outside the reviewed transitions. Source/destination ancestor
+ignore configuration is captured with absence evidence and observed before, between,
+and after commands. Post-apply external changes are not adopted into the baseline.
+Inspection and receipt replay retain their existing historical semantics.
+
 ### Paged plan reviews
 
 `prepare_rewrite` accepts `intent: RewriteIntent` (`query`, `template`, optional
@@ -1114,7 +1134,8 @@ Paged preparation and prepared-plan inspection return `PlanReviewPage`, with:
 
 - `kind: "plan_review"`, `plan_id`, fixed `lifetime_seconds`, and `review_id` (the
   content identity of the complete captured mutation preview).
-- `mutation: "rename"` or `"rewrite"`, `totals: {declarations, occurrences, files, edits}`.
+- `mutation: "rename"`, `"rewrite"`, or `"move"`, `totals: {declarations, occurrences, files, edits}`.
+  Nonzero move `notices` and `respellings` counts are additional optional totals.
 - `intent`: complete tagged mutation intent on the first page only.
 - `items`: ordered metadata/text records; `next_cursor`: continuation or null.
 
@@ -1122,7 +1143,11 @@ Applied/failed/discarded inspection retains the complete lifecycle shape and lat
 validation evidence. Continuation pages contain immutable review content without
 live lifecycle or validation fields. They never imply current source validity.
 
-Record sections are `declaration`, `occurrence`, `file`, `edit`, and `diff`.
+Record sections are `declaration`, `occurrence`, `file`, `edit`, and `diff`, plus
+`move`, `notice`, and `respelling` for moves. The single `move` record carries
+normalized `from`/`to` and optional module addresses; notice and respelling records
+retain their ordinary wire shapes and order. Move records precede notices,
+respellings, and files.
 Each record has `index` (zero-based within its section) and, for edits,
 `file_index` (zero-based owning file). Declaration and occurrence order matches the
 complete rename preview, so the occurrence selection ordinal is `index + 1`.
@@ -1133,7 +1158,8 @@ A metadata item is `{kind:"metadata", section, index, file_index?, value}`.
 `value` uses the corresponding ordinary preview record's JSON shape:
 `Match`, `Occurrence`, file metadata, or `Edit`. File metadata omits `edits` and
 `diff`, which are delivered separately. Text fields named `text`, `line`, and
-`replacement`, including nested capture and symbol fields, are replaced by empty
+`replacement`, plus move strings `import`, `item`, `from`, and `to`,
+including nested capture and symbol fields, are replaced by empty
 strings and delivered as subsequent chunks when nonempty. Other metadata is
 indivisible. Unsupported or ambiguous occurrences retain their original verdicts.
 
@@ -1167,8 +1193,8 @@ Clients decide when review is sufficient; apply does not count fetched pages.
 
 Rust preparation/inspection return `PlanReviewReply::Complete(PlanReview)` or
 `::Page(PlanReviewPage)`; `PlanStatus::Prepared.preview` is `PlanPreview` with
-shared immutable rename/rewrite payloads. These are Rust API changes, independent
-of the preserved default rename JSON. `review_plan` returns `PlanReviewPage`.
+shared immutable rename/rewrite/move payloads. Default rename JSON retains its
+existing shape. `review_plan` returns `PlanReviewPage`.
 
 ## Applied-plan validation
 
@@ -1268,7 +1294,7 @@ rejected during initialization. `serve` retains its existing JSON-lines contract
 Only MCP messages go to stdout, including when `--json` is supplied; startup
 errors go to stderr. The workspace is fixed at launch.
 
-`tools/list` returns all fourteen tools in one response, with generated JSON Schema
+`tools/list` returns all fifteen tools in one response, with generated JSON Schema
 inputs and per-command `Response` output schemas. A tool-list cursor is invalid.
 
 | MCP tool              | Engine request    |
@@ -1282,6 +1308,7 @@ inputs and per-command `Response` output schemas. A tool-list cursor is invalid.
 | `vvv_expand`          | `expand`          |
 | `vvv_prepare_rename`  | `prepare_rename`  |
 | `vvv_prepare_rewrite` | `prepare_rewrite` |
+| `vvv_prepare_move`    | `prepare_move`    |
 | `vvv_review_plan`     | `review_plan`     |
 | `vvv_inspect_plan`    | `inspect_plan`    |
 | `vvv_apply_plan`      | `apply_plan`      |

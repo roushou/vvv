@@ -346,12 +346,16 @@
     "ReviewMutation": {
       "enum": [
         "rename",
-        "rewrite"
+        "rewrite",
+        "move"
       ],
       "type": "string"
     },
     "ReviewSection": {
       "enum": [
+        "move",
+        "notice",
+        "respelling",
         "declaration",
         "occurrence",
         "file",
@@ -377,7 +381,17 @@
           "minimum": 0,
           "type": "integer"
         },
+        "notices": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
         "occurrences": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "respellings": {
           "format": "uint",
           "minimum": 0,
           "type": "integer"
@@ -492,7 +506,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:review_plan:result:15cd4ed356f3142bcaf6159bfc00f7bd895a89c84b97ecedbf0ae8e898f56464",
+  "$id": "urn:vvv:schema:1:review_plan:result:8bf7ebb164fe1357d0dc86505b40f99b4d230bd0bc3aec85f0e3e4dc3d57caf9",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {
     "intent": {

@@ -251,7 +251,9 @@ impl SchemaDocument {
             Command::ApplyPlan => contract!(crate::PlanReceipt),
             Command::ValidatePlan => contract!(crate::ValidationReport),
             Command::InspectPlan => contract!(crate::PlanReviewReply),
-            Command::PrepareRename | Command::PrepareRewrite => contract!(crate::PlanReviewReply),
+            Command::PrepareRename | Command::PrepareRewrite | Command::PrepareMove => {
+                contract!(crate::PlanReviewReply)
+            }
             Command::ReviewPlan => contract!(crate::PlanReviewPage),
             Command::Schema => contract!(SchemaDocument),
             Command::SearchPage => contract!(crate::SearchPage),

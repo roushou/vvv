@@ -1525,6 +1525,74 @@ impl PageTranscript {
             )
         });
     }
+    fn moves(corpus: Corpus, from: &str, to: &str) {
+        let (vfs, engine) = corpus.engine();
+        let before = snapshot(&vfs);
+        let expected = vvv_engine::MoveIntent::new(from, to).plan(&engine).unwrap();
+        let mut transcript = Self {
+            replies: vec![],
+            cursors: BTreeMap::new(),
+        };
+        let first = transcript.call(&engine, serde_json::json!({"command":"prepare_move","intent":{"from":from,"to":to},"page":{"max_items":3,"max_bytes":1024}}));
+        let id = first["result"]["plan_id"].clone();
+        let mut cursor = first["result"]["next_cursor"].clone();
+        let mut count = 0;
+        while !cursor.is_null() {
+            count += 1;
+            assert!(count < 200);
+            let reply = transcript.call(&engine, serde_json::json!({"command":"review_plan","cursor":cursor,"page":{"max_items":3,"max_bytes":1024}}));
+            assert!(serde_json::to_vec(&reply["result"]).unwrap().len() <= 1024);
+            cursor = reply["result"]["next_cursor"].clone();
+        }
+        assert!(count > 0);
+        let inspected = transcript.call(
+            &engine,
+            serde_json::json!({"command":"inspect_plan","plan_id":id,"max_bytes":65536}),
+        );
+        assert_eq!(
+            inspected["result"]["preview"],
+            serde_json::to_value(&*expected).unwrap()
+        );
+        let applied = transcript.call(
+            &engine,
+            serde_json::json!({"command":"apply_plan","plan_id":id}),
+        );
+        for file in expected.preview() {
+            assert_eq!(
+                vfs.read(&Path::new("/ws").join(file.moved_to.as_ref().unwrap_or(&file.path)))
+                    .unwrap(),
+                file.after
+            );
+            if file.moved_to.is_some() {
+                assert!(!vfs.exists(&Path::new("/ws").join(&file.path)));
+            }
+        }
+        assert_eq!(
+            transcript.call(
+                &engine,
+                serde_json::json!({"command":"apply_plan","plan_id":id})
+            ),
+            applied
+        );
+        vvv_engine::Ledger::new(&engine).undo().unwrap();
+        assert_eq!(snapshot(&vfs), before);
+        assert_eq!(
+            transcript.call(
+                &engine,
+                serde_json::json!({"command":"apply_plan","plan_id":id})
+            ),
+            applied
+        );
+        let mut settings = insta::Settings::clone_current();
+        settings.set_snapshot_path("corpus/snapshots");
+        settings.set_prepend_module_to_snapshot(false);
+        settings.bind(|| {
+            insta::assert_snapshot!(
+                format!("{}__retained-move__json", corpus.name),
+                serde_json::to_string_pretty(&transcript.replies).unwrap()
+            )
+        });
+    }
     fn rewrites(corpus: Corpus) {
         let (vfs, engine) = corpus.engine();
         let before = snapshot(&vfs);
@@ -1900,4 +1968,31 @@ fn typescript_retained_rewrite_golden() {
         cases: &[],
         mutations: Vec::new,
     });
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_retained_move_golden() {
+    PageTranscript::moves(
+        Corpus {
+            name: "rust-navigation",
+            cases: &[],
+            mutations: Vec::new,
+        },
+        "src/origin.rs",
+        "src/relocated.rs",
+    );
+}
+#[cfg(feature = "typescript")]
+#[test]
+fn typescript_retained_move_golden() {
+    PageTranscript::moves(
+        Corpus {
+            name: "ts-navigation",
+            cases: &[],
+            mutations: Vec::new,
+        },
+        "src/origin.ts",
+        "src/relocated.ts",
+    );
 }

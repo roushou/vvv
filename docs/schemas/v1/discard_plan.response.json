@@ -560,9 +560,198 @@
       ],
       "type": "object"
     },
+    "Move": {
+      "description": "`vvv move`: a file or directory moved, its importers respelled.",
+      "oneOf": [
+        {
+          "properties": {
+            "applied": {
+              "const": false
+            },
+            "history_id": false
+          },
+          "required": [
+            "applied"
+          ]
+        },
+        {
+          "properties": {
+            "applied": {
+              "const": true
+            },
+            "history_id": {
+              "format": "uint64",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "applied",
+            "history_id"
+          ]
+        }
+      ],
+      "properties": {
+        "files": {
+          "items": {
+            "$ref": "#/$defs/FileChange"
+          },
+          "type": "array"
+        },
+        "from": {
+          "$ref": "#/$defs/RelPath",
+          "description": "Normalised, workspace-relative source and destination."
+        },
+        "from_address": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Address"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The module address before and after, when the language has one."
+        },
+        "intent": {
+          "$ref": "#/$defs/MoveIntent"
+        },
+        "notices": {
+          "description": "References vvv found but could not rewrite.",
+          "items": {
+            "$ref": "#/$defs/Notice"
+          },
+          "type": "array"
+        },
+        "respellings": {
+          "description": "References rewritten in place; every other edit in `files` is\nstructural (a `mod` line moved, a visibility widened).",
+          "items": {
+            "$ref": "#/$defs/Respelling"
+          },
+          "type": "array"
+        },
+        "to": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "to_address": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Address"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "intent",
+        "from",
+        "to",
+        "files"
+      ],
+      "type": "object"
+    },
+    "MoveIntent": {
+      "description": "Move a file and make every reference to it follow.",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
     "Name": {
       "description": "One identifier: a module, a declaration, a file stem. Compared by text.",
       "type": "string"
+    },
+    "Notice": {
+      "description": "Something a plan could not do and a human should look at. Never fatal:\nthe rest of the plan is still valid. Data only; the display layer words it.",
+      "oneOf": [
+        {
+          "description": "An import the layout understood but the surgery could not rewrite in place;\n`replacement` is what it should become.",
+          "properties": {
+            "import": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "unrewritable_import",
+              "type": "string"
+            },
+            "replacement": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "import",
+            "replacement"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "After the move, `from` references `item` but may not see it, and the\nwidening it would take is not one vvv makes on its own (making a\ndeclaration public across packages is the author's call).",
+          "properties": {
+            "from": {
+              "$ref": "#/$defs/Address"
+            },
+            "item": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "unreachable",
+              "type": "string"
+            },
+            "needs": {
+              "$ref": "#/$defs/ReachKind"
+            }
+          },
+          "required": [
+            "kind",
+            "item",
+            "from",
+            "needs"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "An import that now names a declaration in its own file, inside a\ngrouped statement vvv does not split for this; remove the entry.",
+          "properties": {
+            "import": {
+              "type": "string"
+            },
+            "kind": {
+              "const": "redundant_import",
+              "type": "string"
+            }
+          },
+          "required": [
+            "kind",
+            "import"
+          ],
+          "type": "object"
+        }
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "start": {
+          "$ref": "#/$defs/Position"
+        }
+      },
+      "required": [
+        "path",
+        "start"
+      ],
+      "type": "object"
     },
     "Occurrence": {
       "description": "A token spelling the renamed name, with what the imports could tell.",
@@ -706,6 +895,9 @@
         },
         {
           "$ref": "#/$defs/Rewrite"
+        },
+        {
+          "$ref": "#/$defs/Move"
         }
       ]
     },
@@ -893,6 +1085,36 @@
         }
       },
       "type": "object"
+    },
+    "ReachKind": {
+      "description": "What a visibility modifier means, relative to the declaring module.",
+      "oneOf": [
+        {
+          "const": "declaring",
+          "description": "The declaring module and its descendants (Rust private).",
+          "type": "string"
+        },
+        {
+          "const": "parent",
+          "description": "The parent module and its descendants (`pub(super)`).",
+          "type": "string"
+        },
+        {
+          "const": "package",
+          "description": "The whole package (`pub(crate)`).",
+          "type": "string"
+        },
+        {
+          "const": "everyone",
+          "description": "Everyone (`pub`, `export`).",
+          "type": "string"
+        },
+        {
+          "const": "path",
+          "description": "A module named in the modifier (`pub(in a::b)`); the layout resolves it.",
+          "type": "string"
+        }
+      ]
     },
     "Reason": {
       "description": "What the file's imports and paths said about an occurrence: the ground\nfor its [`Confidence`]. Views tag `?` and `✗` sections with it.",
@@ -1246,6 +1468,35 @@
       ],
       "type": "object"
     },
+    "Respelling": {
+      "description": "A reference a move re-spelled in place: where it is, what it said and\nwhat it says now. A preview lists these as one row each instead of a\ndiff hunk; an edit no respelling accounts for is structural and shows as\na hunk.",
+      "properties": {
+        "from": {
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "span": {
+          "$ref": "#/$defs/Span",
+          "description": "The reference's span before the move — the edit that rewrites it."
+        },
+        "start": {
+          "$ref": "#/$defs/Position"
+        },
+        "to": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "span",
+        "start",
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
     "Rewrite": {
       "description": "`vvv rewrite`: one edit per selected match.",
       "oneOf": [
@@ -1587,7 +1838,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:discard_plan:response:ba9d49d5c1fe8590d2cb9201fdda7e7e2da372b78e37ca3df20ea3c544f6999c",
+  "$id": "urn:vvv:schema:1:discard_plan:response:d8aa9b7537b6d6a73b34350202a2c8bba3e8b3b58b882c8d2b439743de8d441d",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [

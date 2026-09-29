@@ -41,7 +41,7 @@ impl Client {
             ProtocolVersion::V_2025_11_25
         );
         let tools = service.list_all_tools().await.unwrap();
-        assert_eq!(tools.len(), 14);
+        assert_eq!(tools.len(), 15);
         assert!(
             tools
                 .iter()
@@ -768,4 +768,87 @@ async fn paged_rewrite_reviews_exact_capture_expansions_and_applies_once() {
         );
     }
     client.close().await;
+}
+
+#[cfg(any(feature = "rust", feature = "typescript"))]
+#[tokio::test]
+async fn reviewed_move_pages_apply_validate_and_preserve_the_receipt() {
+    let fixture = Fixture::new();
+    #[cfg(feature = "rust")]
+    let (from, to) = ("src/origin.rs", "src/relocated.rs");
+    #[cfg(all(not(feature = "rust"), feature = "typescript"))]
+    let (from, to) = ("src/origin.ts", "src/relocated.ts");
+    #[cfg(feature = "rust")]
+    {
+        std::fs::write(
+            fixture.root.join("src/lib.rs"),
+            "pub mod origin;\npub use origin::Engine;\n",
+        )
+        .unwrap();
+        std::fs::write(fixture.root.join(from), "pub struct Engine;\n").unwrap();
+    }
+    #[cfg(all(not(feature = "rust"), feature = "typescript"))]
+    {
+        std::fs::write(fixture.root.join("package.json"), "{\"name\":\"probe\"}").unwrap();
+        std::fs::write(
+            fixture.root.join("src/lib.ts"),
+            "export { Engine } from './origin';\n",
+        )
+        .unwrap();
+        std::fs::write(fixture.root.join(from), "export class Engine {}\n").unwrap();
+    }
+    let client = Client::new(&fixture.root).await;
+    let prepared = client.call("vvv_prepare_move", json!({"intent":{"from":from,"to":to},"page":{"max_items":2,"max_bytes":1024},"max_output_bytes":1024})).await;
+    assert_eq!(prepared["status"], "ok", "{prepared}");
+    let first = prepared["result"].clone();
+    assert_eq!(first["mutation"], "move");
+    let mut page = first.clone();
+    let mut count = 0;
+    loop {
+        assert!(serde_json::to_vec(&page).unwrap().len() <= 1024);
+        count += 1;
+        assert!(count < 200);
+        if page["next_cursor"].is_null() {
+            break;
+        }
+        let result = client.call("vvv_review_plan", json!({"cursor":page["next_cursor"],"page":{"max_items":2,"max_bytes":1024},"max_output_bytes":1024})).await;
+        assert_eq!(result["status"], "ok", "{result}");
+        page = result["result"].clone();
+    }
+    assert!(count > 1);
+    let handle = json!({"plan_id":first["plan_id"]});
+    let applied = client.call("vvv_apply_plan", handle.clone()).await;
+    assert_eq!(applied["status"], "ok", "{applied}");
+    assert!(!fixture.root.join(from).exists());
+    assert!(fixture.root.join(to).exists());
+    assert!(
+        applied["result"]["files"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|file| file["path"] == to)
+    );
+    #[cfg(any(unix, windows))]
+    {
+        let checked = client.call("vvv_validate_plan", json!({"plan_id":handle["plan_id"],"checks":[{"name":"native move assertion","program":std::env::current_exe().unwrap(),"args":["--exact","move_validation_fixture","--ignored","--nocapture"]}],"budget":{"timeout_ms":5000,"max_bytes":4096}})).await;
+        assert_eq!(checked["status"], "ok", "{checked}");
+        assert_eq!(checked["result"]["passed"], true, "{checked}");
+        let inspected = client.call("vvv_inspect_plan", handle.clone()).await;
+        assert_eq!(inspected["result"]["validation"], checked["result"]);
+        assert_eq!(inspected["result"]["receipt"], applied["result"]);
+    }
+    assert_eq!(client.call("vvv_apply_plan", handle).await, applied);
+    client.close().await;
+}
+
+#[test]
+#[ignore = "subprocess fixture used by the MCP move validation workflow"]
+fn move_validation_fixture() {
+    let extension = if Path::new("src/relocated.rs").exists() {
+        "rs"
+    } else {
+        "ts"
+    };
+    assert!(Path::new(&format!("src/relocated.{extension}")).exists());
+    assert!(!Path::new(&format!("src/origin.{extension}")).exists());
 }

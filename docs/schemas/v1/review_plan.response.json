@@ -791,12 +791,16 @@
     "ReviewMutation": {
       "enum": [
         "rename",
-        "rewrite"
+        "rewrite",
+        "move"
       ],
       "type": "string"
     },
     "ReviewSection": {
       "enum": [
+        "move",
+        "notice",
+        "respelling",
         "declaration",
         "occurrence",
         "file",
@@ -822,7 +826,17 @@
           "minimum": 0,
           "type": "integer"
         },
+        "notices": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
         "occurrences": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "respellings": {
           "format": "uint",
           "minimum": 0,
           "type": "integer"
@@ -976,7 +990,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:review_plan:response:a08fbf3727646a013cd72e0709f085f0c89d9d8fe813a329b62e6c785e85a31f",
+  "$id": "urn:vvv:schema:1:review_plan:response:49813bb403df273d5b3bcd117f8e8752b27cfdc8b626e97ac2c9d93a9179860f",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [

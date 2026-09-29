@@ -1,6 +1,6 @@
 //! Immutable review data and bounded delivery, independent of workspace freshness.
 use super::{PlanId, PlanReview};
-use crate::{Engine, EngineError, Intent, MutationAnswer, PageBudget, Rename, Rewrite};
+use crate::{Engine, EngineError, Intent, Move, MutationAnswer, PageBudget, Rename, Rewrite};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::sync::Arc;
@@ -11,12 +11,14 @@ use std::sync::Arc;
 pub enum PlanPreview {
     Rename(Arc<Rename>),
     Rewrite(Arc<Rewrite>),
+    Move(Arc<Move>),
 }
 impl PlanPreview {
     pub(crate) fn from_mutation(value: &MutationAnswer) -> Result<Self, EngineError> {
         match value {
             MutationAnswer::Rename(r) => Ok(Self::Rename(Arc::new(r.clone()))),
             MutationAnswer::Rewrite(r) => Ok(Self::Rewrite(Arc::new(r.clone()))),
+            MutationAnswer::Move(r) => Ok(Self::Move(Arc::new(r.clone()))),
             _ => Err(EngineError::InvalidPlan),
         }
     }
@@ -24,12 +26,14 @@ impl PlanPreview {
         match self {
             Self::Rename(r) => &r.files,
             Self::Rewrite(r) => &r.files,
+            Self::Move(r) => &r.files,
         }
     }
     fn intent(&self) -> Intent {
         match self {
             Self::Rename(r) => Intent::Rename(r.intent.clone()),
             Self::Rewrite(r) => Intent::Rewrite(r.intent.clone()),
+            Self::Move(r) => Intent::Move(r.intent.clone()),
         }
     }
 }
@@ -96,6 +100,9 @@ impl PlanReviewCursor {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ReviewSection {
+    Move,
+    Notice,
+    Respelling,
     Declaration,
     Occurrence,
     File,
@@ -109,6 +116,15 @@ pub struct ReviewTotals {
     pub occurrences: usize,
     pub files: usize,
     pub edits: usize,
+    #[serde(default, skip_serializing_if = "ReviewTotals::zero")]
+    pub notices: usize,
+    #[serde(default, skip_serializing_if = "ReviewTotals::zero")]
+    pub respellings: usize,
+}
+impl ReviewTotals {
+    fn zero(value: &usize) -> bool {
+        *value == 0
+    }
 }
 /// Metadata uses the corresponding ordinary preview record shape. Text fields
 /// replaced by empty strings are reconstructed by following JSON-pointer chunks.
@@ -161,6 +177,7 @@ pub enum PlanReviewKind {
 pub enum ReviewMutation {
     Rename,
     Rewrite,
+    Move,
 }
 
 pub(crate) struct CapturedReview {
@@ -181,12 +198,14 @@ impl CapturedReview {
                 occurrences: 0,
                 files: 0,
                 edits: 0,
+                notices: 0,
+                respellings: 0,
             },
             records: vec![],
         };
         let rename = match &review.preview {
             PlanPreview::Rename(r) => Some(r.clone()),
-            PlanPreview::Rewrite(_) => None,
+            PlanPreview::Rewrite(_) | PlanPreview::Move(_) => None,
         };
         if let Some(r) = rename {
             review.totals.declarations = r.declarations.len();
@@ -205,6 +224,36 @@ impl CapturedReview {
                     index,
                     None,
                     serde_json::to_value(occurrence).expect("occurrence serializes"),
+                );
+            }
+        }
+        if let PlanPreview::Move(moved) = &review.preview {
+            let moved = moved.clone();
+            let mut metadata = serde_json::json!({"from": moved.from, "to": moved.to});
+            if let Some(address) = &moved.from_address {
+                metadata["from_address"] =
+                    serde_json::to_value(address).expect("address serializes");
+            }
+            if let Some(address) = &moved.to_address {
+                metadata["to_address"] = serde_json::to_value(address).expect("address serializes");
+            }
+            review.record(ReviewSection::Move, 0, None, metadata);
+            review.totals.notices = moved.notices.len();
+            review.totals.respellings = moved.respellings.len();
+            for (index, notice) in moved.notices.iter().enumerate() {
+                review.record(
+                    ReviewSection::Notice,
+                    index,
+                    None,
+                    serde_json::to_value(notice).expect("notice serializes"),
+                );
+            }
+            for (index, respelling) in moved.respellings.iter().enumerate() {
+                review.record(
+                    ReviewSection::Respelling,
+                    index,
+                    None,
+                    serde_json::to_value(respelling).expect("respelling serializes"),
                 );
             }
         }
@@ -274,7 +323,10 @@ impl CapturedReview {
                 for (key, value) in object {
                     let pointer =
                         format!("{pointer}/{}", key.replace('~', "~0").replace('/', "~1"));
-                    if matches!(key.as_str(), "text" | "line" | "replacement") && value.is_string()
+                    if matches!(
+                        key.as_str(),
+                        "text" | "line" | "replacement" | "import" | "item" | "from" | "to"
+                    ) && value.is_string()
                     {
                         let text = value.as_str().expect("string").to_owned();
                         if !text.is_empty() {
@@ -318,6 +370,7 @@ impl CapturedReview {
             mutation: match self.preview {
                 PlanPreview::Rename(_) => ReviewMutation::Rename,
                 PlanPreview::Rewrite(_) => ReviewMutation::Rewrite,
+                PlanPreview::Move(_) => ReviewMutation::Move,
             },
             intent: (record == 0 && offset == 0).then(|| self.preview.intent()),
             totals: self.totals.clone(),

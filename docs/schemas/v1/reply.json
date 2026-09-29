@@ -40,6 +40,9 @@
           "$ref": "#/$defs/PlanReviewReply"
         },
         {
+          "$ref": "#/$defs/PlanReviewReply"
+        },
+        {
           "$ref": "#/$defs/PlanReviewPage"
         },
         {
@@ -2877,6 +2880,9 @@
         },
         {
           "$ref": "#/$defs/Rewrite"
+        },
+        {
+          "$ref": "#/$defs/Move"
         }
       ]
     },
@@ -4200,12 +4206,16 @@
     "ReviewMutation": {
       "enum": [
         "rename",
-        "rewrite"
+        "rewrite",
+        "move"
       ],
       "type": "string"
     },
     "ReviewSection": {
       "enum": [
+        "move",
+        "notice",
+        "respelling",
         "declaration",
         "occurrence",
         "file",
@@ -4231,7 +4241,17 @@
           "minimum": 0,
           "type": "integer"
         },
+        "notices": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
         "occurrences": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "respellings": {
           "format": "uint",
           "minimum": 0,
           "type": "integer"
@@ -5177,7 +5197,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:session:reply:2aed5b30dd86ba5249e470ef86a10e8311c74630b631d252db741aaf4ca40d72",
+  "$id": "urn:vvv:schema:1:session:reply:49d6807e7ac248775f8d03f65357fee2d91e210363095b5d9489533815dff40d",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "The reply to a [`Call`]: its `id`, then the usual envelope.",
   "oneOf": [
