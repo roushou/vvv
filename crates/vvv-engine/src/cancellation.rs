@@ -1,11 +1,13 @@
-//! Cooperative cancellation for one read-only call, with atomic publication.
+//! Cooperative cancellation for one read or explicit validation call.
+//! Read publication is atomic; validation retains evidence before reporting cancellation.
 use crate::EngineError;
 use std::sync::{
     Arc, Mutex,
     atomic::{AtomicBool, AtomicU8, Ordering},
 };
 
-/// A single-use read-call cancellation handle. Clones cancel the same call.
+/// A single-use cancellation handle for reads and explicit validation.
+/// Clones cancel the same call.
 /// Cancellation stops at the next engine checkpoint, not within a parser invocation.
 #[derive(Debug, Clone, Default)]
 pub struct ReadCancellation(Arc<ReadState>);

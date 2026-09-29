@@ -1,0 +1,195 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
+---
+[
+  {
+    "result": {
+      "after": "7143e7c46377df5845905245508d3f562660732213c75586f3b511bee3abb923",
+      "before": "7143e7c46377df5845905245508d3f562660732213c75586f3b511bee3abb923",
+      "checks": [
+        {
+          "command": {
+            "args": [
+              "--exact",
+              "corpus_validation_command",
+              "--ignored",
+              "--nocapture"
+            ],
+            "name": "check renamed declarations",
+            "program": "<corpus test executable>"
+          },
+          "duration_ms": 0,
+          "exit_code": 0,
+          "failure": null,
+          "outcome": "passed",
+          "stderr": {
+            "bytes_seen": 0,
+            "complete": true,
+            "text": "",
+            "truncated": false
+          },
+          "stdout": {
+            "bytes_seen": 44,
+            "complete": true,
+            "text": "\nrunning 1 test\nrenamed declaration checked\n",
+            "truncated": false
+          }
+        }
+      ],
+      "extra_inputs": [],
+      "history_id": 1,
+      "input_files": 16,
+      "passed": true,
+      "plan_id": "cursor-1",
+      "run": 1,
+      "source_state": "unchanged",
+      "sources": [
+        {
+          "content": "52060753a9f5d068796c112590a9b2a0223b26c0eb359def5f9c8a19e7dbfc77",
+          "path": "src/ambiguous.rs"
+        },
+        {
+          "content": "fce9155dbb00bd055b7c0ecd48f0d3833f3d70b629cafa9216cc942e3511f124",
+          "path": "src/bindings.rs"
+        },
+        {
+          "content": "a69d3bd39dbc6e8fb29a02b99f944042350ec3a68f365323dc114b2dc4a3f6fb",
+          "path": "src/bridge.rs"
+        },
+        {
+          "content": "f4b4b556b79f7cc7054da080fcdb91b46360d60d7cf8f3728099449a69fa3811",
+          "path": "src/consumer.rs"
+        },
+        {
+          "content": "ea162d12329bef82f6edc569158973e1195c23d13922c1bf2134ad32f9e41401",
+          "path": "src/lexical.rs"
+        },
+        {
+          "content": "1b3a9b272ed340fb37fc53bcb9d7770f9c8adf5c29b999d2e8aaa63dfce999c6",
+          "path": "src/origin.rs"
+        },
+        {
+          "content": "23d68d180273d53278ea9bdd42ea4131c1a450b961dcbd243a1d6c1f0d4e85ab",
+          "path": "src/test/check.rs"
+        }
+      ]
+    },
+    "schema": 1,
+    "status": "ok"
+  },
+  {
+    "result": {
+      "lifetime_seconds": 600,
+      "plan_id": "cursor-1",
+      "receipt": {
+        "files": [
+          {
+            "content": "52060753a9f5d068796c112590a9b2a0223b26c0eb359def5f9c8a19e7dbfc77",
+            "path": "src/ambiguous.rs"
+          },
+          {
+            "content": "fce9155dbb00bd055b7c0ecd48f0d3833f3d70b629cafa9216cc942e3511f124",
+            "path": "src/bindings.rs"
+          },
+          {
+            "content": "a69d3bd39dbc6e8fb29a02b99f944042350ec3a68f365323dc114b2dc4a3f6fb",
+            "path": "src/bridge.rs"
+          },
+          {
+            "content": "f4b4b556b79f7cc7054da080fcdb91b46360d60d7cf8f3728099449a69fa3811",
+            "path": "src/consumer.rs"
+          },
+          {
+            "content": "ea162d12329bef82f6edc569158973e1195c23d13922c1bf2134ad32f9e41401",
+            "path": "src/lexical.rs"
+          },
+          {
+            "content": "1b3a9b272ed340fb37fc53bcb9d7770f9c8adf5c29b999d2e8aaa63dfce999c6",
+            "path": "src/origin.rs"
+          },
+          {
+            "content": "23d68d180273d53278ea9bdd42ea4131c1a450b961dcbd243a1d6c1f0d4e85ab",
+            "path": "src/test/check.rs"
+          }
+        ],
+        "history_id": 1,
+        "plan_id": "cursor-1"
+      },
+      "state": "applied",
+      "validation": {
+        "after": "7143e7c46377df5845905245508d3f562660732213c75586f3b511bee3abb923",
+        "before": "7143e7c46377df5845905245508d3f562660732213c75586f3b511bee3abb923",
+        "checks": [
+          {
+            "command": {
+              "args": [
+                "--exact",
+                "corpus_validation_command",
+                "--ignored",
+                "--nocapture"
+              ],
+              "name": "check renamed declarations",
+              "program": "<corpus test executable>"
+            },
+            "duration_ms": 0,
+            "exit_code": 0,
+            "failure": null,
+            "outcome": "passed",
+            "stderr": {
+              "bytes_seen": 0,
+              "complete": true,
+              "text": "",
+              "truncated": false
+            },
+            "stdout": {
+              "bytes_seen": 44,
+              "complete": true,
+              "text": "\nrunning 1 test\nrenamed declaration checked\n",
+              "truncated": false
+            }
+          }
+        ],
+        "extra_inputs": [],
+        "history_id": 1,
+        "input_files": 16,
+        "passed": true,
+        "plan_id": "cursor-1",
+        "run": 1,
+        "source_state": "unchanged",
+        "sources": [
+          {
+            "content": "52060753a9f5d068796c112590a9b2a0223b26c0eb359def5f9c8a19e7dbfc77",
+            "path": "src/ambiguous.rs"
+          },
+          {
+            "content": "fce9155dbb00bd055b7c0ecd48f0d3833f3d70b629cafa9216cc942e3511f124",
+            "path": "src/bindings.rs"
+          },
+          {
+            "content": "a69d3bd39dbc6e8fb29a02b99f944042350ec3a68f365323dc114b2dc4a3f6fb",
+            "path": "src/bridge.rs"
+          },
+          {
+            "content": "f4b4b556b79f7cc7054da080fcdb91b46360d60d7cf8f3728099449a69fa3811",
+            "path": "src/consumer.rs"
+          },
+          {
+            "content": "ea162d12329bef82f6edc569158973e1195c23d13922c1bf2134ad32f9e41401",
+            "path": "src/lexical.rs"
+          },
+          {
+            "content": "1b3a9b272ed340fb37fc53bcb9d7770f9c8adf5c29b999d2e8aaa63dfce999c6",
+            "path": "src/origin.rs"
+          },
+          {
+            "content": "23d68d180273d53278ea9bdd42ea4131c1a450b961dcbd243a1d6c1f0d4e85ab",
+            "path": "src/test/check.rs"
+          }
+        ]
+      }
+    },
+    "schema": 1,
+    "status": "ok"
+  }
+]

@@ -1,0 +1,171 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
+---
+[
+  {
+    "result": {
+      "after": "cd62d06ca9372f49f3c2ce2124328fd500f6970b64cc86ef75650bfc84fd6536",
+      "before": "cd62d06ca9372f49f3c2ce2124328fd500f6970b64cc86ef75650bfc84fd6536",
+      "checks": [
+        {
+          "command": {
+            "args": [
+              "--exact",
+              "corpus_validation_command",
+              "--ignored",
+              "--nocapture"
+            ],
+            "name": "check renamed declarations",
+            "program": "<corpus test executable>"
+          },
+          "duration_ms": 0,
+          "exit_code": 0,
+          "failure": null,
+          "outcome": "passed",
+          "stderr": {
+            "bytes_seen": 0,
+            "complete": true,
+            "text": "",
+            "truncated": false
+          },
+          "stdout": {
+            "bytes_seen": 44,
+            "complete": true,
+            "text": "\nrunning 1 test\nrenamed declaration checked\n",
+            "truncated": false
+          }
+        }
+      ],
+      "extra_inputs": [],
+      "history_id": 1,
+      "input_files": 10,
+      "passed": true,
+      "plan_id": "cursor-1",
+      "run": 1,
+      "source_state": "unchanged",
+      "sources": [
+        {
+          "content": "a6071768fd6dd1f336dfc9d82a62588a96e789c4be78b331a19f695d4ea826b7",
+          "path": "src/barrel.ts"
+        },
+        {
+          "content": "6f58dddd878de870b1a01598724121097ed4962b4e0444782c051d5391449edd",
+          "path": "src/bindings.ts"
+        },
+        {
+          "content": "0ed8d5b087a1fe5b038863fa470623d6aaa3eaba93e2f6413da7f55c8a5f9dfc",
+          "path": "src/consumer.ts"
+        },
+        {
+          "content": "d985838b41693b1d552c7a1e4bd4814565071e70674af1a0ac694d265f06627e",
+          "path": "src/forward.ts"
+        },
+        {
+          "content": "4d60b940ba7985cd6c99eea864cbe3d0a4982264592b94013b2f39977ed53a2c",
+          "path": "src/origin.ts"
+        }
+      ]
+    },
+    "schema": 1,
+    "status": "ok"
+  },
+  {
+    "result": {
+      "lifetime_seconds": 600,
+      "plan_id": "cursor-1",
+      "receipt": {
+        "files": [
+          {
+            "content": "a6071768fd6dd1f336dfc9d82a62588a96e789c4be78b331a19f695d4ea826b7",
+            "path": "src/barrel.ts"
+          },
+          {
+            "content": "6f58dddd878de870b1a01598724121097ed4962b4e0444782c051d5391449edd",
+            "path": "src/bindings.ts"
+          },
+          {
+            "content": "0ed8d5b087a1fe5b038863fa470623d6aaa3eaba93e2f6413da7f55c8a5f9dfc",
+            "path": "src/consumer.ts"
+          },
+          {
+            "content": "d985838b41693b1d552c7a1e4bd4814565071e70674af1a0ac694d265f06627e",
+            "path": "src/forward.ts"
+          },
+          {
+            "content": "4d60b940ba7985cd6c99eea864cbe3d0a4982264592b94013b2f39977ed53a2c",
+            "path": "src/origin.ts"
+          }
+        ],
+        "history_id": 1,
+        "plan_id": "cursor-1"
+      },
+      "state": "applied",
+      "validation": {
+        "after": "cd62d06ca9372f49f3c2ce2124328fd500f6970b64cc86ef75650bfc84fd6536",
+        "before": "cd62d06ca9372f49f3c2ce2124328fd500f6970b64cc86ef75650bfc84fd6536",
+        "checks": [
+          {
+            "command": {
+              "args": [
+                "--exact",
+                "corpus_validation_command",
+                "--ignored",
+                "--nocapture"
+              ],
+              "name": "check renamed declarations",
+              "program": "<corpus test executable>"
+            },
+            "duration_ms": 0,
+            "exit_code": 0,
+            "failure": null,
+            "outcome": "passed",
+            "stderr": {
+              "bytes_seen": 0,
+              "complete": true,
+              "text": "",
+              "truncated": false
+            },
+            "stdout": {
+              "bytes_seen": 44,
+              "complete": true,
+              "text": "\nrunning 1 test\nrenamed declaration checked\n",
+              "truncated": false
+            }
+          }
+        ],
+        "extra_inputs": [],
+        "history_id": 1,
+        "input_files": 10,
+        "passed": true,
+        "plan_id": "cursor-1",
+        "run": 1,
+        "source_state": "unchanged",
+        "sources": [
+          {
+            "content": "a6071768fd6dd1f336dfc9d82a62588a96e789c4be78b331a19f695d4ea826b7",
+            "path": "src/barrel.ts"
+          },
+          {
+            "content": "6f58dddd878de870b1a01598724121097ed4962b4e0444782c051d5391449edd",
+            "path": "src/bindings.ts"
+          },
+          {
+            "content": "0ed8d5b087a1fe5b038863fa470623d6aaa3eaba93e2f6413da7f55c8a5f9dfc",
+            "path": "src/consumer.ts"
+          },
+          {
+            "content": "d985838b41693b1d552c7a1e4bd4814565071e70674af1a0ac694d265f06627e",
+            "path": "src/forward.ts"
+          },
+          {
+            "content": "4d60b940ba7985cd6c99eea864cbe3d0a4982264592b94013b2f39977ed53a2c",
+            "path": "src/origin.ts"
+          }
+        ]
+      }
+    },
+    "schema": 1,
+    "status": "ok"
+  }
+]

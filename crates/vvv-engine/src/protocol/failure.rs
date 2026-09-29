@@ -9,6 +9,9 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum ErrorCode {
+    InvalidPlan,
+    PlanExpired,
+    PlanConsumed,
     CursorExpired,
     InvalidCursor,
     RetentionLimit,
@@ -220,6 +223,9 @@ mod tests {
     #[test]
     fn every_code_keeps_its_wire_spelling() {
         for code in [
+            ErrorCode::InvalidPlan,
+            ErrorCode::PlanExpired,
+            ErrorCode::PlanConsumed,
             ErrorCode::CursorExpired,
             ErrorCode::InvalidCursor,
             ErrorCode::RetentionLimit,
@@ -246,6 +252,9 @@ mod tests {
             ErrorCode::RecoveryFailed,
         ] {
             let documented = match code {
+                ErrorCode::InvalidPlan => "invalid_plan",
+                ErrorCode::PlanExpired => "plan_expired",
+                ErrorCode::PlanConsumed => "plan_consumed",
                 ErrorCode::CursorExpired => "cursor_expired",
                 ErrorCode::InvalidCursor => "invalid_cursor",
                 ErrorCode::RetentionLimit => "retention_limit",

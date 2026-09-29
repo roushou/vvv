@@ -247,6 +247,11 @@ impl SchemaDocument {
             };
         }
         match command {
+            Command::DiscardPlan => contract!(crate::PlanReview),
+            Command::ApplyPlan => contract!(crate::PlanReceipt),
+            Command::ValidatePlan => contract!(crate::ValidationReport),
+            Command::InspectPlan => contract!(crate::PlanReview),
+            Command::PrepareRename => contract!(crate::PlanReview),
             Command::Schema => contract!(SchemaDocument),
             Command::SearchPage => contract!(crate::SearchPage),
             Command::ContextPage => contract!(crate::ContextPage),

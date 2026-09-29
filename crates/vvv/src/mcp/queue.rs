@@ -21,6 +21,19 @@ struct State {
     active: Option<(u64, ReadCancellation)>,
     closed: bool,
 }
+impl State {
+    fn start(&mut self) -> Option<Job> {
+        let job = self.jobs.pop_front()?;
+        // Queued writes can be cancelled. Once dequeued, let the transaction
+        // finish and preserve its receipt for retries.
+        self.active = job
+            .call
+            .request
+            .is_cancellable()
+            .then(|| (job.id, job.cancellation.clone()));
+        Some(job)
+    }
+}
 struct Job {
     id: u64,
     call: Call,
@@ -121,8 +134,7 @@ impl WorkQueue {
                     if state.closed {
                         return;
                     }
-                    if let Some(job) = state.jobs.pop_front() {
-                        state.active = Some((job.id, job.cancellation.clone()));
+                    if let Some(job) = state.start() {
                         break job;
                     }
                     state = self
@@ -131,9 +143,12 @@ impl WorkQueue {
                         .unwrap_or_else(std::sync::PoisonError::into_inner);
                 }
             };
-            let reply = job
-                .call
-                .execute_with_cancellation(&engine, &job.cancellation);
+            let reply = if job.call.request.is_cancellable() {
+                job.call
+                    .execute_with_cancellation(&engine, &job.cancellation)
+            } else {
+                job.call.execute(&engine)
+            };
             self.state
                 .lock()
                 .unwrap_or_else(std::sync::PoisonError::into_inner)
@@ -170,6 +185,29 @@ mod tests {
                 Err(oneshot::error::TryRecvError::Closed)
             ));
         }
+    }
+
+    #[test]
+    fn apply_cancellation_stops_queued_work_but_never_an_active_transaction() {
+        let queue = WorkQueue::new();
+        let call = || {
+            serde_json::from_str::<Call>(
+                r#"{"command":"apply_plan","plan_id":"p1.0000000000000000.0000000000000001"}"#,
+            )
+            .unwrap()
+        };
+        let (queued, mut dropped) = queue.submit(call()).unwrap();
+        assert!(queued.cancel());
+        assert!(matches!(
+            dropped.try_recv(),
+            Err(oneshot::error::TryRecvError::Closed)
+        ));
+        let (active, _) = queue.submit(call()).unwrap();
+        let job = queue.state.lock().unwrap().start().unwrap();
+        assert!(!active.cancel());
+        queue.close();
+        assert!(!job.cancellation.is_cancelled());
+        assert!(queue.state.lock().unwrap().jobs.is_empty());
     }
 
     #[test]

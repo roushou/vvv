@@ -70,7 +70,7 @@
       ]
     },
     "ContentId": {
-      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "description": "Digest of complete file contents, independent of their path.",
       "type": "string"
     },
     "LanguageId": {
@@ -479,7 +479,7 @@
       ]
     }
   },
-  "$id": "urn:vvv:schema:1:references:result:f040a97951b96705bfd23e6a5d7c0198184581ee2bcbb20e8ee38d177aed050a",
+  "$id": "urn:vvv:schema:1:references:result:b03146f9e9b0d4072b16383d9759f241dcb11002ce20bab961eedf623cb785df",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "`references <name>`: the declarations called `name` and every token that\nspells it, each judged against the declaration meant.",
   "properties": {

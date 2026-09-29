@@ -94,11 +94,21 @@ result caching or changing the interactive preview protocol.
 ## Context and agent interface coverage
 
 Context incoming scans are bounded and same-spelling only. Alias-complete
-references, structural test identification, and signature versus body expansion
-need dedicated evidence and protocol contracts. Relationship queries classify call
+references and structural test identification need dedicated evidence and protocol
+contracts. Signature extraction for initialized variables/constants and other
+unsupported declaration forms needs grammar-specific contracts. Relationship queries classify call
 expressions and follow named imports, but receiver-dependent targets, wildcard and
 namespace alias enumeration, anonymous caller identities, and resumable relationship
 scans remain open.
 Session output budgets do not impose execution deadlines. MCP cancellation is
 cooperative; parser invocations and individual filesystem operations are not preempted. Measure whole-workspace validation latency for
 paged queries on large repositories before narrowing their invalidation scope.
+
+## Reviewed mutations
+
+Retained session handles currently cover rename. Extend the same review/receipt
+contract to other mutation intents, add bounded review pagination for very large
+changes. Validation execution needs a Windows process-tree and bounded pipe-capture
+implementation. Measure full-input capture latency on large repositories; ignored
+inputs and ambient tool/dependency versions need explicit coverage contracts before
+broadening validation claims.

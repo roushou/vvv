@@ -9,15 +9,31 @@ use crate::history::HistoryError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EngineError {
+    #[error("validation requires a disk workspace on Unix")]
+    ValidationUnavailable,
+    #[error(
+        "validation requires an applied plan, one to four valid check commands, and relative extra input paths"
+    )]
+    InvalidValidation,
+    #[error("invalid plan handle")]
+    InvalidPlan,
+    #[error("plan expired or belongs to another session; prepare and review a new plan")]
+    PlanExpired,
+    #[error("plan cannot be applied again; inspect its terminal outcome")]
+    PlanConsumed,
+    #[error("workspace changed since review; prepare and review a new plan")]
+    StalePlan,
+    #[error("plan retention limit reached; discard pending plans or wait for expiry")]
+    PlanRetentionLimit,
     #[error(
         "search paths must be workspace-relative with / separators and no .. components; package filters must be nonempty"
     )]
     InvalidSearchScope,
     #[error("request cancelled")]
     ReadCancelled,
-    #[error("a cancellation handle can execute only one read-only call")]
+    #[error("a cancellation handle can execute only one call")]
     ReusedCancellation,
-    #[error("cooperative cancellation is only supported for read-only calls")]
+    #[error("cooperative cancellation is only supported for reads and explicit validation")]
     MutationCancellation,
     #[error("query sources changed; start a new query")]
     StaleQuery,
@@ -129,12 +145,20 @@ impl EngineError {
     /// The stable code a client branches on.
     pub fn code(&self) -> ErrorCode {
         match self {
+            Self::InvalidPlan => ErrorCode::InvalidPlan,
+            Self::PlanExpired => ErrorCode::PlanExpired,
+            Self::PlanConsumed => ErrorCode::PlanConsumed,
+            Self::StalePlan => ErrorCode::Stale,
+            Self::PlanRetentionLimit => ErrorCode::RetentionLimit,
             Self::InvalidSearchScope => ErrorCode::BadRequest,
             Self::ReadCancelled => ErrorCode::Cancelled,
             Self::ReusedCancellation | Self::MutationCancellation => ErrorCode::BadRequest,
             #[cfg(feature = "schema")]
             Self::InvalidSchemaQuery => ErrorCode::BadRequest,
-            Self::InvalidBudget | Self::MutationBudget => ErrorCode::BadRequest,
+            Self::InvalidBudget
+            | Self::InvalidValidation
+            | Self::ValidationUnavailable
+            | Self::MutationBudget => ErrorCode::BadRequest,
             Self::StaleQuery => ErrorCode::Stale,
             Self::CursorExpired => ErrorCode::CursorExpired,
             Self::InvalidCursor => ErrorCode::InvalidCursor,
@@ -186,6 +210,10 @@ impl EngineError {
     /// What to try instead, when the error suggests something.
     pub fn hint(&self) -> Option<String> {
         match self {
+            Self::InvalidPlan => Some("Pass the exact plan_id returned by prepare_rename".into()),
+            Self::PlanExpired | Self::StalePlan => Some("Prepare a new plan and review its diff before applying".into()),
+            Self::PlanConsumed => Some("Use inspect_plan to retrieve the recorded outcome; do not retry by rebuilding the mutation".into()),
+            Self::PlanRetentionLimit => Some("Discard pending plans, narrow the rename, or wait for terminal outcomes to expire".into()),
             Self::InvalidBudget => Some("Use discover to check supported output and context budget ranges".into()),
             Self::OutputLimit { .. } => Some("Increase max_output_bytes, narrow the query, or request bounded context".into()),
             Self::NoSuchSymbol { name, .. } => Some(format!(

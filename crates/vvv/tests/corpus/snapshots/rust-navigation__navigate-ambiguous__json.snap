@@ -8,7 +8,7 @@ exit 0
   "status": "ok",
   "schema": 1,
   "result": {
-    "snapshot": "fbf0356ca99d5fa0de7f760ad06869041d016ebbb0883a351303b53b3a9a7664",
+    "snapshot": "c29743270c3a17c41244db39d385f42b38f2ed0cb129abb689b5d38e36363235",
     "outcome": "ambiguous",
     "candidates": [
       {

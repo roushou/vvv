@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+Definition  src/signatures.ts:1:1
+/** Preserve the object return type and generic constraint. */
+export function build<T extends { value: number }>(input: T): { value: T }
+--- stderr ---

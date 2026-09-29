@@ -28,6 +28,7 @@ pub mod query;
 pub mod resolve;
 pub mod search;
 pub mod semantics;
+pub mod signature;
 pub mod symbol;
 pub mod text;
 
@@ -51,5 +52,6 @@ pub use resolve::{
 };
 pub use search::{Capture, CaptureValue, RawMatch, Role, SearchError};
 pub use semantics::{ReachKind, Semantics, VisibilityRule};
+pub use signature::{DeclarationSignature, SignatureRule};
 pub use symbol::{Modifier, ModifierAt, Symbol, SymbolKind, SymbolRule, UnknownSymbolKind};
 pub use text::{Position, SourceText, Span};

@@ -50,7 +50,7 @@
       "description": "`$A` binds one node; `$$$A` binds a sequence."
     },
     "ContentId": {
-      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "description": "Digest of complete file contents, independent of their path.",
       "type": "string"
     },
     "ContinuationRecovery": {
@@ -68,6 +68,9 @@
       "oneOf": [
         {
           "enum": [
+            "invalid_plan",
+            "plan_expired",
+            "plan_consumed",
             "cursor_expired",
             "invalid_cursor",
             "retention_limit",
@@ -846,7 +849,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:search_page:response:af178a43869f49055792a61822cc8285ef5bad0f662706c80c35449df9630be9",
+  "$id": "urn:vvv:schema:1:search_page:response:b458ef5a80892aa821abb286cc17ed61c8c879dedb8712d61b8de999ac585d63",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [

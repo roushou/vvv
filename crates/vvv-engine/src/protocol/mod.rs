@@ -102,8 +102,8 @@ pub use crate::capabilities::navigation::{
 pub use source::{ContentId, SourceAnchor, SymbolRef};
 
 pub use crate::capabilities::context::{
-    ContextBudget, ContextCandidate, ContextItem, ContextOmissions, ContextOutcome, ContextQuery,
-    ContextRelation, ContextReply,
+    ContextBudget, ContextCandidate, ContextDetail, ContextItem, ContextOmissions, ContextOutcome,
+    ContextQuery, ContextRelation, ContextReply, ContextSignature,
 };
 
 pub use crate::capabilities::discovery::{Capability, Discovery, DiscoveryQuery};
@@ -128,4 +128,14 @@ pub use failure::ContinuationRecovery;
 pub use crate::capabilities::relationships::{
     Relationship, RelationshipBudget, RelationshipCoverage, RelationshipKind, RelationshipLimit,
     RelationshipLimitation, RelationshipResolution, Relationships, RelationshipsQuery,
+};
+
+pub use crate::capabilities::plans::{
+    ApplyPlanQuery, DiscardPlanQuery, InspectPlanQuery, PlanId, PlanReceipt, PlanReview,
+    PlanStatus, PrepareRenameQuery,
+};
+
+pub use crate::capabilities::validation::{
+    CheckCommand, CheckFailure, CheckOperation, CheckOutcome, CheckOutput, CheckResult,
+    ValidatePlanQuery, ValidationBudget, ValidationReport, ValidationSourceState,
 };

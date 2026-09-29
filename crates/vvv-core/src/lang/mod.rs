@@ -86,6 +86,7 @@ pub struct Grammar {
     /// Modifiers that export a declaration under a name other than its own.
     pub non_named_exports: &'static [&'static str],
     pub symbols: &'static [SymbolRule],
+    pub signatures: &'static [crate::SignatureRule],
     pub identifiers: &'static [&'static str],
     pub imports: ImportGrammar,
     pub highlights: &'static [HighlightRule],
@@ -114,6 +115,7 @@ impl Grammar {
         named_modules: false,
         non_named_exports: &[],
         symbols: &[],
+        signatures: &[],
         identifiers: &[],
         imports: ImportGrammar::EMPTY,
         highlights: &[],

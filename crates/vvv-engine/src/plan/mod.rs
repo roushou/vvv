@@ -2,9 +2,9 @@
 //! and recovery to [`Transaction`], retaining a [`Receipt`] for undo.
 //!
 //! A plan remembers a fingerprint of every file it touches. Preview and apply
-//! refuse to proceed if a file changed since planning, so an agent that runs
-//! `rewrite` (preview) and later `rewrite --apply` cannot corrupt edits made
-//! in between.
+//! refuse to proceed if a file changed since planning. Retained session handles
+//! apply the original reviewed plan; separate preview/apply CLI invocations each
+//! build a new plan and do not retain the first invocation's edits.
 
 use std::collections::BTreeMap;
 #[cfg(test)]

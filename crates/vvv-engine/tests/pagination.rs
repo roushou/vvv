@@ -85,6 +85,7 @@ impl Fixture {
     }
     fn context_query(&self, references: bool, bytes: usize) -> ContextPageQuery {
         ContextPageQuery {
+            detail: vvv_engine::ContextDetail::Body,
             include_enclosing: false,
             origin: NavigationQuery::at("a.p", Position::new(1, 4)).origin,
             selection: Selection::All,
@@ -208,6 +209,7 @@ fn context_resumes_each_frontier_with_first_evidence_and_bounded_work() {
     let f = Fixture::context("body");
     let query = f.context_query(true, 4096);
     let expected = ContextQuery {
+        detail: vvv_engine::ContextDetail::Body,
         include_enclosing: false,
         origin: query.origin.clone(),
         selection: Selection::All,
@@ -438,6 +440,7 @@ fn ambiguity_is_preserved_and_expansion_tokens_become_stale_with_their_query() {
         Languages::new().with(Fake::default()),
     );
     let query = ContextPageQuery {
+        detail: vvv_engine::ContextDetail::Body,
         include_enclosing: false,
         origin: NavigationQuery::at("a.p", Position::new(2, 0)).origin,
         selection: Selection::All,

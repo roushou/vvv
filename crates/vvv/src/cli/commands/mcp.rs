@@ -1,7 +1,7 @@
 use crate::{context::Context, mcp::McpSession};
 use clap::Args;
 
-/// Serve read-only MCP tools over stdio for this workspace
+/// Serve navigation, reviewed-plan, and validation MCP tools over stdio for this workspace
 #[derive(Debug, Args)]
 pub struct McpCmd;
 impl McpCmd {

@@ -888,3 +888,54 @@ construction, traversal, and validation; publication acquires the store only aft
 those succeed. `Engine::touched` increments a shared revision without taking a
 store or graph lock, invalidating queries even after failed mutation attempts.
 Engine dispatch routes typed requests without owning capability behavior.
+
+## Retained mutation handles
+
+`capabilities/plans.rs` owns preparation, inspection, application, discard, and
+report composition for reviewed rename plans. `plan_store.rs` retains executable
+plans and terminal outcomes, shared by engine clones. Ordinary mutation requests
+keep their existing lifecycle. Session handles are references to captured plans;
+clients cannot submit replacement edits or change the captured intent on apply.
+
+Preparation uses a fresh content-verified `QuerySnapshot`, preserves any configured
+library oracle, plans against that graph, and revalidates before publication. It
+checks the complete review's output budget before retaining a handle. Application
+consumes the retained executable plan after operation exclusion, revalidates the
+input snapshot and engine revision, and delegates writes/history/recovery to `Apply`.
+This session capability scans before apply; direct typed `Apply` remains a
+fingerprint-bound operation without refreshing the source graph. Store locks never
+span graph construction or filesystem work.
+
+Successful receipts are retained so retries cannot write twice. Failed attempts
+retain their structured failure and cannot execute again. Fixed monotonic expiry,
+entry limits, and conservative byte accounting bound the store; capacity pressure
+never evicts pending plans or successful receipts. Discarded tombstones may be
+reclaimed on the next preparation. MCP distinguishes queued cancellation from
+active application: reads are cooperative, active writes finish their transaction.
+
+### Validation of applied plans
+
+`capabilities/validation.rs` owns explicit check commands, budgets, version evidence,
+execution, and report composition. Its `process.rs` owns Unix process groups and
+bounded, cancellable pipe capture. `Workspace::disk` enables execution; virtual and
+staged workspaces cannot launch programs against their unrelated host paths.
+The engine names no language or build system. The caller supplies program/argv,
+which run with inherited permissions/environment and can have side effects outside
+the transaction model. This external execution capability does not format or plan
+source edits and provides no rollback or sandbox. MCP advertises it as non-read-only
+and open-world. Engine-owned mutations still require a `Plan`.
+
+The plan store retains its input snapshot after successful apply, replacing changed
+content identities with the versions written by the transaction. Validation first
+checks this baseline, then fingerprints visible files, planner configuration inputs,
+and caller-listed extra inputs before, between, and after commands. A report links
+the apply receipt to these observations and bounded command results. It preserves
+failures/cancellation independently of apply success. The latest report replaces
+its predecessor within the plan's existing memory/expiry bounds. Capacity and
+metadata budgets are checked before execution; serialization only trims logs.
+
+Operation exclusion covers the batch, but store locks never cover process execution
+or input capture. Cancellation can stop validation without cancelling an apply
+transaction. Recording the report and final source observation ignore cancellation
+so evidence survives an interrupted response; the client can inspect it. Checks
+invalidate graph trust because external programs can create or change files.

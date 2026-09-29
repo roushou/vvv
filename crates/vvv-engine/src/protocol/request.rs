@@ -24,6 +24,11 @@ use super::{
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(tag = "command", rename_all = "snake_case")]
 pub enum Request {
+    DiscardPlan(crate::DiscardPlanQuery),
+    ApplyPlan(crate::ApplyPlanQuery),
+    ValidatePlan(crate::ValidatePlanQuery),
+    InspectPlan(crate::InspectPlanQuery),
+    PrepareRename(crate::PrepareRenameQuery),
     #[cfg(feature = "schema")]
     Schema(crate::SchemaQuery),
     SearchPage(crate::SearchPageQuery),
@@ -83,12 +88,21 @@ pub enum Request {
 impl Request {
     /// Whether running this request can write. The picker's hub asks only
     /// these; a mutation goes through an `Intent` and `Apply`.
+    /// Reads and explicit checks can stop; applying a transaction cannot.
+    pub fn is_cancellable(&self) -> bool {
+        self.is_read_only() || matches!(self, Self::ValidatePlan(_))
+    }
     pub fn is_read_only(&self) -> bool {
         self.command().is_read_only()
     }
 
     pub fn command(&self) -> super::Command {
         match self {
+            Self::DiscardPlan(_) => super::Command::DiscardPlan,
+            Self::ApplyPlan(_) => super::Command::ApplyPlan,
+            Self::ValidatePlan(_) => super::Command::ValidatePlan,
+            Self::InspectPlan(_) => super::Command::InspectPlan,
+            Self::PrepareRename(_) => super::Command::PrepareRename,
             #[cfg(feature = "schema")]
             Self::Schema(_) => super::Command::Schema,
             Self::SearchPage(_) => super::Command::SearchPage,
@@ -132,6 +146,11 @@ impl Request {
 // worth a `Box` in every client's match.
 #[allow(clippy::large_enum_variant)]
 pub enum Answer {
+    DiscardPlan(crate::PlanReview),
+    ApplyPlan(crate::PlanReceipt),
+    ValidatePlan(crate::ValidationReport),
+    InspectPlan(crate::PlanReview),
+    PrepareRename(crate::PlanReview),
     #[cfg(feature = "schema")]
     Schema(crate::SchemaDocument),
     SearchPage(crate::SearchPage),
@@ -177,6 +196,7 @@ impl Answer {
     /// The history entry a written answer recorded, if any.
     pub fn history_id(&self) -> Option<u64> {
         match self {
+            Self::ApplyPlan(r) => Some(r.history_id),
             Self::Rewrite(r) => r.state.history_id(),
             Self::Rename(r) => r.state.history_id(),
             Self::Move(r) => r.state.history_id(),

@@ -1,0 +1,258 @@
+{
+  "$defs": {
+    "CheckCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "args": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "A caller-defined label, such as formatting, compilation, or unit tests.",
+          "type": "string"
+        },
+        "program": {
+          "description": "Executed directly, without implicit shell parsing.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "program",
+        "args"
+      ],
+      "type": "object"
+    },
+    "CheckFailure": {
+      "properties": {
+        "operation": {
+          "$ref": "#/$defs/CheckOperation"
+        },
+        "os_code": {
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "operation",
+        "os_code"
+      ],
+      "type": "object"
+    },
+    "CheckOperation": {
+      "enum": [
+        "spawn",
+        "capture",
+        "wait",
+        "terminate"
+      ],
+      "type": "string"
+    },
+    "CheckOutcome": {
+      "enum": [
+        "not_run",
+        "passed",
+        "failed",
+        "timed_out",
+        "cancelled",
+        "error"
+      ],
+      "type": "string"
+    },
+    "CheckOutput": {
+      "properties": {
+        "bytes_seen": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "complete": {
+          "description": "False when capture stopped before EOF or a read failed.",
+          "type": "boolean"
+        },
+        "text": {
+          "type": "string"
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "text",
+        "bytes_seen",
+        "truncated",
+        "complete"
+      ],
+      "type": "object"
+    },
+    "CheckResult": {
+      "properties": {
+        "command": {
+          "$ref": "#/$defs/CheckCommand"
+        },
+        "duration_ms": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "exit_code": {
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "failure": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CheckFailure"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outcome": {
+          "$ref": "#/$defs/CheckOutcome"
+        },
+        "stderr": {
+          "$ref": "#/$defs/CheckOutput"
+        },
+        "stdout": {
+          "$ref": "#/$defs/CheckOutput"
+        }
+      },
+      "required": [
+        "command",
+        "outcome",
+        "exit_code",
+        "duration_ms",
+        "stdout",
+        "stderr",
+        "failure"
+      ],
+      "type": "object"
+    },
+    "ContentId": {
+      "description": "Digest of complete file contents, independent of their path.",
+      "type": "string"
+    },
+    "PlanId": {
+      "description": "Opaque handle scoped to an engine session, not a serializable edit plan.",
+      "type": "string"
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "SnapshotId": {
+      "$ref": "#/$defs/ContentId",
+      "description": "Opaque identity of captured source and project inputs; not a disk transaction."
+    },
+    "SourceVersion": {
+      "properties": {
+        "content": {
+          "$ref": "#/$defs/ContentId"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        }
+      },
+      "required": [
+        "path",
+        "content"
+      ],
+      "type": "object"
+    },
+    "ValidationSourceState": {
+      "enum": [
+        "unchanged",
+        "changed",
+        "unavailable"
+      ],
+      "type": "string"
+    }
+  },
+  "$id": "urn:vvv:schema:1:validate_plan:result:393143bcc9ebf3f9e7d3912223da08355e4a6584c97b6ab7393acc21ba6a7c2d",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "after": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/SnapshotId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "before": {
+      "$ref": "#/$defs/SnapshotId"
+    },
+    "checks": {
+      "items": {
+        "$ref": "#/$defs/CheckResult"
+      },
+      "type": "array"
+    },
+    "extra_inputs": {
+      "items": {
+        "$ref": "#/$defs/RelPath"
+      },
+      "type": "array"
+    },
+    "history_id": {
+      "format": "uint64",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "input_files": {
+      "format": "uint",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "passed": {
+      "description": "True only when every command succeeded and observed inputs stayed unchanged.",
+      "type": "boolean"
+    },
+    "plan_id": {
+      "$ref": "#/$defs/PlanId"
+    },
+    "run": {
+      "description": "Monotonically increasing within this retained plan.",
+      "format": "uint64",
+      "minimum": 0,
+      "type": "integer"
+    },
+    "source_state": {
+      "$ref": "#/$defs/ValidationSourceState"
+    },
+    "sources": {
+      "items": {
+        "$ref": "#/$defs/SourceVersion"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "plan_id",
+    "history_id",
+    "run",
+    "sources",
+    "before",
+    "after",
+    "input_files",
+    "extra_inputs",
+    "source_state",
+    "passed",
+    "checks"
+  ],
+  "title": "validate_plan result",
+  "type": "object"
+}

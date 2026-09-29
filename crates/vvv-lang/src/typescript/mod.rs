@@ -361,3 +361,69 @@ mod call_tests {
         assert!(calls.iter().all(|c| c.span.contains(&c.callee)));
     }
 }
+
+#[cfg(test)]
+mod signature_tests {
+    use super::{Tsx, TypeScript};
+    use vvv_core::Language;
+
+    #[test]
+    fn signatures_preserve_export_docs_and_object_types_in_both_grammars() {
+        let cases = [
+            (
+                "/** café */\r\nexport function build<T extends { x: number }>(x: T): { value: T }",
+                " { return { value: x }; }",
+                "build",
+            ),
+            (
+                "export class Worker<T>",
+                " { work(x: T): { value: T } { return { value: x }; } }",
+                "Worker",
+            ),
+            (
+                "export interface Work<T>",
+                " { work(x: T): { value: T }; }",
+                "Work",
+            ),
+            ("export type Alias = { value: number };", "", "Alias"),
+        ];
+        for (header, body, name) in cases {
+            let source = format!("{header}{body}");
+            for facts in [
+                TypeScript::new().facts(&source).unwrap(),
+                Tsx::new().facts(&source).unwrap(),
+            ] {
+                let symbol = facts.symbols.iter().find(|s| s.name == name).unwrap();
+                let signature = facts
+                    .signatures
+                    .iter()
+                    .find(|s| s.name_span == symbol.name_span)
+                    .unwrap();
+                assert_eq!(
+                    &source[signature.span.start..signature.span.end],
+                    header,
+                    "{name}"
+                );
+            }
+        }
+        let source = "class Worker { /** doc */ work(x: number): { value: number } { return { value: x }; } }\nexport const factory = () => 1;";
+        let facts = TypeScript::new().facts(source).unwrap();
+        let method = facts.symbols.iter().find(|s| s.name == "work").unwrap();
+        let signature = facts
+            .signatures
+            .iter()
+            .find(|s| s.name_span == method.name_span)
+            .unwrap();
+        assert_eq!(
+            &source[signature.span.start..signature.span.end],
+            "/** doc */ work(x: number): { value: number }"
+        );
+        let variable = facts.symbols.iter().find(|s| s.name == "factory").unwrap();
+        assert!(
+            !facts
+                .signatures
+                .iter()
+                .any(|s| s.name_span == variable.name_span)
+        );
+    }
+}

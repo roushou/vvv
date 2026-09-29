@@ -1,4 +1,4 @@
-//! Optional, read-only MCP adapter. The engine owns all source intelligence.
+//! Optional MCP adapter with explicit read and reviewed-plan tools. The engine owns all source intelligence.
 pub(crate) mod catalog;
 mod queue;
 mod transport;

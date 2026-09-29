@@ -103,6 +103,37 @@
       ],
       "type": "object"
     },
+    "PlanLimits": {
+      "properties": {
+        "lifetime_seconds": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_plan_bytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_plans": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_total_bytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_plans",
+        "max_plan_bytes",
+        "max_total_bytes",
+        "lifetime_seconds"
+      ],
+      "type": "object"
+    },
     "QueryLimits": {
       "properties": {
         "lifetime_seconds": {
@@ -158,6 +189,31 @@
       ],
       "type": "object"
     },
+    "ValidationBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_bytes": {
+          "default": 16384,
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 4096,
+          "type": "integer"
+        },
+        "timeout_ms": {
+          "default": 60000,
+          "description": "Deadline for the command batch, including between-command captures.\nInitial and final input capture and process cleanup are outside this limit.",
+          "format": "uint64",
+          "maximum": 300000,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "timeout_ms",
+        "max_bytes"
+      ],
+      "type": "object"
+    },
     "WorkBudget": {
       "additionalProperties": false,
       "properties": {
@@ -183,7 +239,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:discover:result:5b51cd63342972f09e1658d18b064970c2a7b90dafa32c7ccff55f8811e52e86",
+  "$id": "urn:vvv:schema:1:discover:result:e31639a4e1d8540dbb48260441c9299f0e51ff989c8a2aaf8cf482a20b0badd5",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {
     "commands": {
@@ -220,6 +276,9 @@
     "page_maximum": {
       "$ref": "#/$defs/PageBudget"
     },
+    "plan_retention": {
+      "$ref": "#/$defs/PlanLimits"
+    },
     "query_retention": {
       "$ref": "#/$defs/QueryLimits"
     },
@@ -232,6 +291,12 @@
       "default": false,
       "type": "boolean"
     },
+    "validation_available": {
+      "type": "boolean"
+    },
+    "validation_defaults": {
+      "$ref": "#/$defs/ValidationBudget"
+    },
     "work_defaults": {
       "$ref": "#/$defs/WorkBudget"
     },
@@ -241,6 +306,8 @@
   },
   "required": [
     "schemas_available",
+    "validation_available",
+    "validation_defaults",
     "schema",
     "languages",
     "commands",
@@ -249,6 +316,7 @@
     "work_defaults",
     "work_maximum",
     "query_retention",
+    "plan_retention",
     "context_defaults",
     "context_maximum",
     "min_output_bytes",

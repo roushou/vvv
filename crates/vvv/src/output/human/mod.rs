@@ -235,6 +235,7 @@ mod tests {
             snapshot: ContentId::of(text).into(),
             outcome: ContextOutcome::Resolved,
             items: vec![ContextItem {
+                signature: None,
                 target,
                 relation: ContextRelation::Definition,
                 via: None,
@@ -256,6 +257,35 @@ mod tests {
         insta::assert_snapshot!(render(|reporter| reporter
             .report(&Answer::Context(reply))
             .unwrap()));
+    }
+
+    #[test]
+    fn applied_plan_validation() {
+        let report = serde_json::from_value::<vvv_engine::ValidationReport>(serde_json::json!({
+            "plan_id":"p1.example", "history_id":1,"run":1,"sources":[],
+            "before":"source-version", "after":"source-version","input_files":2,"extra_inputs":[],"source_state":"unchanged","passed":false,
+            "checks":[{"command":{"name":"compile","program":"cargo","args":["check"]},"outcome":"failed","exit_code":101,"duration_ms":12,"stdout":{"text":"","bytes_seen":0,"truncated":false,"complete":true},"stderr":{"text":"error: expected Engine, found Runtime\n","bytes_seen":38,"truncated":false,"complete":true},"failure":null}]
+        })).unwrap();
+        insta::assert_snapshot!(
+            "validation_failure",
+            render(|r| r.report(&Answer::ValidatePlan(report.clone())).unwrap())
+        );
+        let review = vvv_engine::PlanReview {
+            plan_id: report.plan_id.clone(),
+            lifetime_seconds: 600,
+            status: vvv_engine::PlanStatus::Applied {
+                receipt: vvv_engine::PlanReceipt {
+                    plan_id: report.plan_id.clone(),
+                    history_id: 1,
+                    files: vec![],
+                },
+            },
+            validation: Some(report),
+        };
+        insta::assert_snapshot!(
+            "inspect_validation",
+            render(|r| r.report(&Answer::InspectPlan(review)).unwrap())
+        );
     }
 
     #[test]

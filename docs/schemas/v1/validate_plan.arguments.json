@@ -1,0 +1,96 @@
+{
+  "$defs": {
+    "CheckCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "args": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "A caller-defined label, such as formatting, compilation, or unit tests.",
+          "type": "string"
+        },
+        "program": {
+          "description": "Executed directly, without implicit shell parsing.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "program"
+      ],
+      "type": "object"
+    },
+    "PlanId": {
+      "description": "Opaque handle scoped to an engine session, not a serializable edit plan.",
+      "type": "string"
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "ValidationBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_bytes": {
+          "default": 16384,
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 4096,
+          "type": "integer"
+        },
+        "timeout_ms": {
+          "default": 60000,
+          "description": "Deadline for the command batch, including between-command captures.\nInitial and final input capture and process cleanup are outside this limit.",
+          "format": "uint64",
+          "maximum": 300000,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "$id": "urn:vvv:schema:1:validate_plan:arguments:f2a6f668772cb1200b236e062ea77ea992bd9173552237d67032b48cbfe58a4c",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "budget": {
+      "$ref": "#/$defs/ValidationBudget",
+      "default": {
+        "max_bytes": 16384,
+        "timeout_ms": 60000
+      }
+    },
+    "checks": {
+      "items": {
+        "$ref": "#/$defs/CheckCommand"
+      },
+      "maxItems": 4,
+      "minItems": 1,
+      "type": "array"
+    },
+    "extra_inputs": {
+      "default": [],
+      "description": "Explicit hidden/ignored inputs, in addition to workspace-visible files.",
+      "items": {
+        "$ref": "#/$defs/RelPath"
+      },
+      "maxItems": 32,
+      "type": "array"
+    },
+    "plan_id": {
+      "$ref": "#/$defs/PlanId"
+    }
+  },
+  "required": [
+    "plan_id",
+    "checks"
+  ],
+  "title": "validate_plan arguments",
+  "type": "object"
+}

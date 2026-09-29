@@ -22,6 +22,21 @@
     "Answer": {
       "anyOf": [
         {
+          "$ref": "#/$defs/PlanReview"
+        },
+        {
+          "$ref": "#/$defs/PlanReceipt"
+        },
+        {
+          "$ref": "#/$defs/ValidationReport"
+        },
+        {
+          "$ref": "#/$defs/PlanReview"
+        },
+        {
+          "$ref": "#/$defs/PlanReview"
+        },
+        {
           "$ref": "#/$defs/SchemaDocument"
         },
         {
@@ -252,6 +267,145 @@
       ],
       "description": "`$A` binds one node; `$$$A` binds a sequence."
     },
+    "CheckCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "args": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "A caller-defined label, such as formatting, compilation, or unit tests.",
+          "type": "string"
+        },
+        "program": {
+          "description": "Executed directly, without implicit shell parsing.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "program",
+        "args"
+      ],
+      "type": "object"
+    },
+    "CheckFailure": {
+      "properties": {
+        "operation": {
+          "$ref": "#/$defs/CheckOperation"
+        },
+        "os_code": {
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "operation",
+        "os_code"
+      ],
+      "type": "object"
+    },
+    "CheckOperation": {
+      "enum": [
+        "spawn",
+        "capture",
+        "wait",
+        "terminate"
+      ],
+      "type": "string"
+    },
+    "CheckOutcome": {
+      "enum": [
+        "not_run",
+        "passed",
+        "failed",
+        "timed_out",
+        "cancelled",
+        "error"
+      ],
+      "type": "string"
+    },
+    "CheckOutput": {
+      "properties": {
+        "bytes_seen": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "complete": {
+          "description": "False when capture stopped before EOF or a read failed.",
+          "type": "boolean"
+        },
+        "text": {
+          "type": "string"
+        },
+        "truncated": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "text",
+        "bytes_seen",
+        "truncated",
+        "complete"
+      ],
+      "type": "object"
+    },
+    "CheckResult": {
+      "properties": {
+        "command": {
+          "$ref": "#/$defs/CheckCommand"
+        },
+        "duration_ms": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "exit_code": {
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "failure": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CheckFailure"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "outcome": {
+          "$ref": "#/$defs/CheckOutcome"
+        },
+        "stderr": {
+          "$ref": "#/$defs/CheckOutput"
+        },
+        "stdout": {
+          "$ref": "#/$defs/CheckOutput"
+        }
+      },
+      "required": [
+        "command",
+        "outcome",
+        "exit_code",
+        "duration_ms",
+        "stdout",
+        "stderr",
+        "failure"
+      ],
+      "type": "object"
+    },
     "Confidence": {
       "description": "How sure a rename is that an occurrence refers to its target declaration.",
       "oneOf": [
@@ -299,7 +453,7 @@
       "type": "object"
     },
     "ContentId": {
-      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "description": "Digest of complete file contents, independent of their path.",
       "type": "string"
     },
     "ContextBudget": {
@@ -362,6 +516,7 @@
     "ContextItem": {
       "properties": {
         "complete": {
+          "description": "Complete for the requested detail, not necessarily the whole declaration.",
           "type": "boolean"
         },
         "excerpt": {
@@ -370,6 +525,16 @@
         },
         "relation": {
           "$ref": "#/$defs/ContextRelation"
+        },
+        "signature": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContextSignature"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "start": {
           "$ref": "#/$defs/Position"
@@ -548,6 +713,39 @@
         "references_by_name"
       ],
       "type": "object"
+    },
+    "ContextSignature": {
+      "description": "Present only for signature requests; absence preserves the body contract.",
+      "oneOf": [
+        {
+          "properties": {
+            "outcome": {
+              "const": "available",
+              "type": "string"
+            },
+            "requested": {
+              "$ref": "#/$defs/SourceAnchor"
+            }
+          },
+          "required": [
+            "outcome",
+            "requested"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "outcome": {
+              "const": "unsupported",
+              "type": "string"
+            }
+          },
+          "required": [
+            "outcome"
+          ],
+          "type": "object"
+        }
+      ]
     },
     "ContextUnresolved": {
       "properties": {
@@ -869,6 +1067,9 @@
         "page_maximum": {
           "$ref": "#/$defs/PageBudget"
         },
+        "plan_retention": {
+          "$ref": "#/$defs/PlanLimits"
+        },
         "query_retention": {
           "$ref": "#/$defs/QueryLimits"
         },
@@ -881,6 +1082,12 @@
           "default": false,
           "type": "boolean"
         },
+        "validation_available": {
+          "type": "boolean"
+        },
+        "validation_defaults": {
+          "$ref": "#/$defs/ValidationBudget"
+        },
         "work_defaults": {
           "$ref": "#/$defs/WorkBudget"
         },
@@ -890,6 +1097,8 @@
       },
       "required": [
         "schemas_available",
+        "validation_available",
+        "validation_defaults",
         "schema",
         "languages",
         "commands",
@@ -898,6 +1107,7 @@
         "work_defaults",
         "work_maximum",
         "query_retention",
+        "plan_retention",
         "context_defaults",
         "context_maximum",
         "min_output_bytes",
@@ -926,6 +1136,9 @@
       "oneOf": [
         {
           "enum": [
+            "invalid_plan",
+            "plan_expired",
+            "plan_consumed",
             "cursor_expired",
             "invalid_cursor",
             "retention_limit",
@@ -2549,7 +2762,15 @@
     },
     "PagedContextItem": {
       "properties": {
+        "body_expansion": {
+          "description": "In signature mode, retrieve the entire declaration from its beginning.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "complete": {
+          "description": "Complete for the requested detail, not necessarily the whole declaration.",
           "type": "boolean"
         },
         "excerpt": {
@@ -2564,6 +2785,16 @@
         },
         "relation": {
           "$ref": "#/$defs/ContextRelation"
+        },
+        "signature": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContextSignature"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "start": {
           "$ref": "#/$defs/Position"
@@ -2595,6 +2826,158 @@
         "text",
         "complete",
         "expansion"
+      ],
+      "type": "object"
+    },
+    "PlanId": {
+      "description": "Opaque handle scoped to an engine session, not a serializable edit plan.",
+      "type": "string"
+    },
+    "PlanLimits": {
+      "properties": {
+        "lifetime_seconds": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_plan_bytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_plans": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_total_bytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_plans",
+        "max_plan_bytes",
+        "max_total_bytes",
+        "lifetime_seconds"
+      ],
+      "type": "object"
+    },
+    "PlanReceipt": {
+      "properties": {
+        "files": {
+          "description": "Contents written by the transaction. A replay reports this historical result.",
+          "items": {
+            "$ref": "#/$defs/SourceVersion"
+          },
+          "type": "array"
+        },
+        "history_id": {
+          "description": "Committed history entry, used by the existing history/undo lifecycle.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "plan_id": {
+          "$ref": "#/$defs/PlanId"
+        }
+      },
+      "required": [
+        "plan_id",
+        "history_id",
+        "files"
+      ],
+      "type": "object"
+    },
+    "PlanReview": {
+      "oneOf": [
+        {
+          "properties": {
+            "preview": {
+              "$ref": "#/$defs/Rename"
+            },
+            "state": {
+              "const": "prepared",
+              "type": "string"
+            }
+          },
+          "required": [
+            "state",
+            "preview"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "receipt": {
+              "$ref": "#/$defs/PlanReceipt"
+            },
+            "state": {
+              "const": "applied",
+              "type": "string"
+            }
+          },
+          "required": [
+            "state",
+            "receipt"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "failure": {
+              "$ref": "#/$defs/Failure"
+            },
+            "state": {
+              "const": "failed",
+              "type": "string"
+            }
+          },
+          "required": [
+            "state",
+            "failure"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "state": {
+              "const": "discarded",
+              "type": "string"
+            }
+          },
+          "required": [
+            "state"
+          ],
+          "type": "object"
+        }
+      ],
+      "properties": {
+        "lifetime_seconds": {
+          "description": "Fixed lifetime from preparation; inspection/retry does not extend it.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "plan_id": {
+          "$ref": "#/$defs/PlanId"
+        },
+        "validation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ValidationReport"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Latest explicitly requested validation; does not change the apply receipt."
+        }
+      },
+      "required": [
+        "plan_id",
+        "lifetime_seconds"
       ],
       "type": "object"
     },
@@ -4004,6 +4387,21 @@
       ],
       "type": "object"
     },
+    "SourceVersion": {
+      "properties": {
+        "content": {
+          "$ref": "#/$defs/ContentId"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        }
+      },
+      "required": [
+        "path",
+        "content"
+      ],
+      "type": "object"
+    },
     "Span": {
       "description": "Half-open byte range `[start, end)` inside a single file.",
       "properties": {
@@ -4265,6 +4663,114 @@
       ],
       "type": "object"
     },
+    "ValidationBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_bytes": {
+          "default": 16384,
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 4096,
+          "type": "integer"
+        },
+        "timeout_ms": {
+          "default": 60000,
+          "description": "Deadline for the command batch, including between-command captures.\nInitial and final input capture and process cleanup are outside this limit.",
+          "format": "uint64",
+          "maximum": 300000,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "timeout_ms",
+        "max_bytes"
+      ],
+      "type": "object"
+    },
+    "ValidationReport": {
+      "properties": {
+        "after": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SnapshotId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "before": {
+          "$ref": "#/$defs/SnapshotId"
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/CheckResult"
+          },
+          "type": "array"
+        },
+        "extra_inputs": {
+          "items": {
+            "$ref": "#/$defs/RelPath"
+          },
+          "type": "array"
+        },
+        "history_id": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "input_files": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "passed": {
+          "description": "True only when every command succeeded and observed inputs stayed unchanged.",
+          "type": "boolean"
+        },
+        "plan_id": {
+          "$ref": "#/$defs/PlanId"
+        },
+        "run": {
+          "description": "Monotonically increasing within this retained plan.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "source_state": {
+          "$ref": "#/$defs/ValidationSourceState"
+        },
+        "sources": {
+          "items": {
+            "$ref": "#/$defs/SourceVersion"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "plan_id",
+        "history_id",
+        "run",
+        "sources",
+        "before",
+        "after",
+        "input_files",
+        "extra_inputs",
+        "source_state",
+        "passed",
+        "checks"
+      ],
+      "type": "object"
+    },
+    "ValidationSourceState": {
+      "enum": [
+        "unchanged",
+        "changed",
+        "unavailable"
+      ],
+      "type": "string"
+    },
     "WorkBudget": {
       "additionalProperties": false,
       "properties": {
@@ -4435,7 +4941,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:session:reply:bcb1b64a3016ab385c544ee9e6c980b8e8ff7fa1fabb38f4af1466ae35444c35",
+  "$id": "urn:vvv:schema:1:session:reply:00017c063ecc3cc6e41a00336d76372d5edf36c231565cfa1e89edcaf8f8d26d",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "The reply to a [`Call`]: its `id`, then the usual envelope.",
   "oneOf": [

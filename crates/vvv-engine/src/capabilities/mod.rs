@@ -5,6 +5,8 @@
 //!
 //! | Command | Owning module (relative to `src/`) |
 //! | --- | --- |
+//! | `prepare_rename`, `inspect_plan`, `apply_plan`, `discard_plan` | `capabilities/plans.rs` |
+//! | `validate_plan` | `capabilities/validation.rs` |
 //! | `schema` | `capabilities/schema.rs` |
 //! | `search_page` | `capabilities/search.rs` |
 //! | `context_page` | `capabilities/context.rs` |
@@ -58,3 +60,7 @@ pub(crate) mod excerpts;
 pub(crate) mod pagination;
 
 pub(crate) mod relationships;
+
+pub(crate) mod plans;
+
+pub(crate) mod validation;

@@ -1,0 +1,8 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+expression: "render(|r| r.report(&Answer::ValidatePlan(report.clone())).unwrap())"
+---
+Validation did not pass
+compile: failed
+error: expected Engine, found Runtime
+--- stderr ---

@@ -12,6 +12,7 @@ use crate::plan::{ApplyError, Fingerprint};
 pub struct Workspace {
     root: PathBuf,
     vfs: Arc<dyn Vfs>,
+    execution: bool,
 }
 
 impl Workspace {
@@ -22,13 +23,18 @@ impl Workspace {
             path: root.to_path_buf(),
             source,
         })?;
-        Ok(Self::new(root, Arc::new(DiskVfs::new())))
+        Ok(Self {
+            root,
+            vfs: Arc::new(DiskVfs::new()),
+            execution: true,
+        })
     }
 
     pub fn new(root: impl Into<PathBuf>, vfs: Arc<dyn Vfs>) -> Self {
         Self {
             root: root.into(),
             vfs,
+            execution: false,
         }
     }
 
@@ -37,6 +43,10 @@ impl Workspace {
     /// files are untouched until a plan is applied here.
     pub fn staged(&self) -> Workspace {
         Workspace::new(self.root.clone(), Arc::new(Overlay::over(self.vfs.clone())))
+    }
+
+    pub(crate) fn execution_root(&self) -> Option<&Path> {
+        self.execution.then_some(&self.root)
     }
 
     pub fn root(&self) -> &Path {

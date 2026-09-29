@@ -1,7 +1,7 @@
 {
   "$defs": {
     "ContentId": {
-      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "description": "Digest of complete file contents, independent of their path.",
       "type": "string"
     },
     "ContextBudget": {
@@ -40,6 +40,14 @@
       },
       "type": "object"
     },
+    "ContextDetail": {
+      "description": "Source detail requested for every context item. Bodies remain the default.",
+      "enum": [
+        "body",
+        "signature"
+      ],
+      "type": "string"
+    },
     "ContextQuery": {
       "properties": {
         "budget": {
@@ -51,9 +59,13 @@
             "max_lookups": 64
           }
         },
+        "detail": {
+          "$ref": "#/$defs/ContextDetail",
+          "default": "body"
+        },
         "include_enclosing": {
           "default": false,
-          "description": "Include the enclosing declaration's full body as a separate item.",
+          "description": "Include the enclosing declaration at the requested detail as a separate item.",
           "type": "boolean"
         },
         "origin": {
@@ -314,7 +326,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:context:request:c04fbe0ae6797baf7a4ea45a33e7dd18e139ad642f511637c7521457775d55fd",
+  "$id": "urn:vvv:schema:1:context:request:00fadddc9dd658621542747af7419e33b9320ec502786896abbb124bd1d01df0",
   "$ref": "#/$defs/ContextQuery",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {

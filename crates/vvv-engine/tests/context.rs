@@ -205,6 +205,7 @@ fn enclosing_body_is_opt_in_and_the_location_survives_paging() {
     );
     for include_enclosing in [false, true] {
         let page = ContextPageQuery {
+            detail: vvv_engine::ContextDetail::Body,
             origin: origin.clone(),
             selection: Selection::All,
             references: false,

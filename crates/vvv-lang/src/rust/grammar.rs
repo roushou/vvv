@@ -3,6 +3,7 @@
 
 use vvv_core::HighlightKind as H;
 use vvv_core::ReachKind as R;
+use vvv_core::SignatureRule;
 use vvv_core::SymbolKind::{self, *};
 use vvv_core::{
     Grammar, HighlightRule, ImportGrammar, ImportNesting, ImportRule, ModifierAt, PathSyntax,
@@ -125,6 +126,18 @@ const HIGHLIGHTS: &[HighlightRule] = &[
 ];
 
 pub(crate) const GRAMMAR: Grammar = Grammar {
+    signatures: &[
+        SignatureRule::header("function_item", "body"),
+        SignatureRule::whole("function_signature_item"),
+        SignatureRule::header("struct_item", "body").body_kind("field_declaration_list"),
+        SignatureRule::header("union_item", "body"),
+        SignatureRule::header("enum_item", "body"),
+        SignatureRule::header("trait_item", "body"),
+        SignatureRule::header("impl_item", "body"),
+        SignatureRule::header("mod_item", "body"),
+        SignatureRule::whole("type_item"),
+        SignatureRule::whole("field_declaration"),
+    ],
     navigation_values: &["identifier"],
     calls: &[vvv_core::CallRule {
         node: "call_expression",

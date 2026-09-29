@@ -6,6 +6,75 @@ use crate::{
 };
 use serde::{Deserialize, Serialize};
 
+/// Source detail requested for every context item. Bodies remain the default.
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum ContextDetail {
+    #[default]
+    Body,
+    Signature,
+}
+
+/// Present only for signature requests; absence preserves the body contract.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(tag = "outcome", rename_all = "snake_case")]
+pub enum ContextSignature {
+    Available { requested: SourceAnchor },
+    Unsupported,
+}
+
+/// The selected source range, shared by one-shot and paged assembly.
+struct ContextExtent {
+    span: Span,
+    signature: Option<ContextSignature>,
+}
+impl ContextExtent {
+    fn capture(
+        detail: ContextDetail,
+        target: &SymbolRef,
+        file: &crate::Candidate,
+    ) -> Result<Self, EngineError> {
+        let declaration = target.declaration.span;
+        if detail == ContextDetail::Body {
+            return Ok(Self {
+                span: declaration,
+                signature: None,
+            });
+        }
+        let span = file
+            .facts()?
+            .signatures
+            .iter()
+            .find(|signature| signature.name_span == target.name_span)
+            .map(|signature| signature.span)
+            .filter(|span| {
+                declaration.contains(span)
+                    && span.contains(&target.name_span)
+                    && file.text().get(span.start..span.end).is_some()
+            });
+        Ok(match span {
+            Some(span) => Self {
+                span,
+                signature: Some(ContextSignature::Available {
+                    requested: SourceAnchor {
+                        span,
+                        ..target.declaration.clone()
+                    },
+                }),
+            },
+            None => Self {
+                span: Span::new(declaration.start, declaration.start),
+                signature: Some(ContextSignature::Unsupported),
+            },
+        })
+    }
+    fn supported(&self) -> bool {
+        !matches!(self.signature, Some(ContextSignature::Unsupported))
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(default, deny_unknown_fields)]
@@ -66,13 +135,15 @@ impl ContextBudget {
 pub struct ContextQuery {
     pub origin: NavigationOrigin,
     #[serde(default)]
+    pub detail: ContextDetail,
+    #[serde(default)]
     pub selection: Selection,
     #[serde(default)]
     pub budget: ContextBudget,
     /// Include incoming references with this exact spelling, validated by navigation.
     #[serde(default)]
     pub references: bool,
-    /// Include the enclosing declaration's full body as a separate item.
+    /// Include the enclosing declaration at the requested detail as a separate item.
     #[serde(default)]
     pub include_enclosing: bool,
 }
@@ -80,6 +151,7 @@ impl ContextQuery {
     pub fn new(origin: NavigationOrigin) -> Self {
         Self {
             origin,
+            detail: ContextDetail::Body,
             selection: Selection::All,
             budget: ContextBudget::default(),
             references: false,
@@ -136,28 +208,27 @@ impl ContextQuery {
                     .clone();
                 let enclosing = ContextPending::enclosing(&target, &preview.source.symbols);
                 context.enclosing = enclosing.as_ref().map(|item| item.target.clone());
+                let file = graph.file(&target.declaration.path)?;
+                let selected = ContextExtent::capture(self.detail, &target, &file)?;
                 context.add(
-                    target.clone(),
-                    &preview.source.text,
-                    ContextRelation::Definition,
-                    None,
+                    ContextPending {
+                        target: target.clone(),
+                        relation: ContextRelation::Definition,
+                        via: None,
+                    },
+                    &file,
+                    self.detail,
                     &self.budget,
-                );
+                )?;
                 if self.include_enclosing
                     && let Some(item) = enclosing
                 {
-                    context.add(
-                        item.target,
-                        &preview.source.text,
-                        item.relation,
-                        item.via,
-                        &self.budget,
-                    );
+                    context.add(item, &file, self.detail, &self.budget)?;
                 }
                 let mut lookups = 0;
                 for anchor in preview.identifiers {
                     graph.check_read()?;
-                    if anchor.span == target.name_span {
+                    if anchor.span == target.name_span || !selected.span.contains(&anchor.span) {
                         continue;
                     }
                     if lookups == self.budget.max_lookups {
@@ -172,18 +243,11 @@ impl ContextQuery {
                     snapshots.push(reply.snapshot);
                     match reply.outcome {
                         NavigationOutcome::Resolved {
-                            target: related,
-                            preview,
-                            ..
+                            target: related, ..
                         } => {
                             if let Some(item) = ContextPending::outgoing(&target, related, anchor) {
-                                context.add(
-                                    item.target,
-                                    &preview.source.text,
-                                    item.relation,
-                                    item.via,
-                                    &self.budget,
-                                );
+                                let file = graph.file(&item.target.declaration.path)?;
+                                context.add(item, &file, self.detail, &self.budget)?;
                             }
                         }
                         other => context.omissions.resolution(&other),
@@ -226,13 +290,7 @@ impl ContextQuery {
                                     if let Some(item) =
                                         ContextPending::incoming(&target, anchor, &file)?
                                     {
-                                        context.add(
-                                            item.target,
-                                            file.text(),
-                                            item.relation,
-                                            item.via,
-                                            &self.budget,
-                                        );
+                                        context.add(item, &file, self.detail, &self.budget)?;
                                     } else {
                                         context.omissions.no_container += 1;
                                     }
@@ -246,10 +304,12 @@ impl ContextQuery {
             }
         }
         graph.validate_versions(&observed)?;
-        context.snapshot = ContentId::of(
-            &serde_json::to_string(&(snapshots, observed)).expect("context inputs serialize"),
-        )
-        .into();
+        let identity = match self.detail {
+            ContextDetail::Body => serde_json::to_string(&(snapshots, observed)),
+            ContextDetail::Signature => serde_json::to_string(&(snapshots, observed, self.detail)),
+        }
+        .expect("context inputs serialize");
+        context.snapshot = ContentId::of(&identity).into();
         context.fit(&self.budget)?;
         Ok(context)
     }
@@ -304,7 +364,10 @@ pub struct ContextItem {
     pub excerpt: SourceAnchor,
     pub start: crate::Position,
     pub text: String,
+    /// Complete for the requested detail, not necessarily the whole declaration.
     pub complete: bool,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub signature: Option<ContextSignature>,
 }
 #[derive(Debug, Default, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -329,23 +392,29 @@ impl ContextOmissions {
 impl ContextReply {
     fn add(
         &mut self,
-        target: SymbolRef,
-        source: &str,
-        relation: ContextRelation,
-        via: Option<SourceAnchor>,
+        pending: ContextPending,
+        file: &crate::Candidate,
+        detail: ContextDetail,
         budget: &ContextBudget,
-    ) {
+    ) -> Result<(), EngineError> {
+        let ContextPending {
+            target,
+            relation,
+            via,
+        } = pending;
+        let source = file.text();
         if (self.enclosing.as_ref() == Some(&target)
             && relation != ContextRelation::EnclosingDeclaration)
             || self.items.iter().any(|item| item.target == target)
         {
-            return;
+            return Ok(());
         }
         if self.items.len() >= budget.max_items {
             self.omissions.item_limit += 1;
-            return;
+            return Ok(());
         }
-        let extent = target.declaration.span;
+        let selected = ContextExtent::capture(detail, &target, file)?;
+        let extent = selected.span;
         let mut end = extent
             .end
             .min(extent.start.saturating_add(budget.max_bytes / 2));
@@ -356,8 +425,8 @@ impl ContextReply {
             span: Span::new(extent.start, end),
             ..target.declaration.clone()
         };
-        let complete = end == extent.end;
-        if !complete {
+        let complete = selected.supported() && end == extent.end;
+        if end < extent.end {
             self.omissions.byte_limit += 1;
         }
         self.items.push(ContextItem {
@@ -368,7 +437,9 @@ impl ContextReply {
             text: source[extent.start..end].to_owned(),
             excerpt,
             complete,
+            signature: selected.signature,
         });
+        Ok(())
     }
     fn fit(&mut self, budget: &ContextBudget) -> Result<(), EngineError> {
         loop {
@@ -392,6 +463,9 @@ impl ContextReply {
                     }
                     item.complete = false;
                 } else {
+                    if matches!(item.signature, Some(ContextSignature::Unsupported)) {
+                        self.omissions.byte_limit += 1;
+                    }
                     self.items.pop();
                 }
             } else {
@@ -442,7 +516,9 @@ impl crate::report::Document {
                     format!(":{}:{}", item.start.line + 1, item.start.column + 1),
                 )]);
             doc.body(item.text.lines().map(|s| Line::of(Role::Plain, s)));
-            if !item.complete {
+            if matches!(item.signature, Some(ContextSignature::Unsupported)) {
+                doc.notes([Line::of(Role::Dim, "Signature extraction is not supported for this declaration; request body detail")]);
+            } else if !item.complete {
                 doc.notes([Line::of(
                     Role::Dim,
                     "Excerpt shortened by the output budget",
@@ -463,10 +539,12 @@ impl crate::report::Document {
 pub struct ContextPageQuery {
     pub origin: NavigationOrigin,
     #[serde(default)]
+    pub detail: ContextDetail,
+    #[serde(default)]
     pub selection: Selection,
     #[serde(default)]
     pub references: bool,
-    /// Include the enclosing declaration's full body as a separate item.
+    /// Include the enclosing declaration at the requested detail as a separate item.
     #[serde(default)]
     pub include_enclosing: bool,
     #[serde(default)]
@@ -496,6 +574,9 @@ pub struct PagedContextItem {
     #[serde(flatten)]
     pub item: ContextItem,
     pub expansion: Option<crate::Cursor>,
+    /// In signature mode, retrieve the entire declaration from its beginning.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub body_expansion: Option<crate::Cursor>,
 }
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
@@ -521,6 +602,7 @@ impl ContextUnresolved {
 }
 #[derive(Debug, Serialize)]
 pub(crate) struct ContextSeed {
+    detail: ContextDetail,
     outcome: ContextOutcome,
     target: Option<SymbolRef>,
     name: String,
@@ -560,6 +642,7 @@ impl ContextPageQuery {
             &self.selection,
             self.references,
             self.include_enclosing,
+            self.detail,
         );
         let state = ContextSession {
             seen: if self.include_enclosing {
@@ -592,6 +675,7 @@ impl ContextSeed {
             &mut vec![],
         )?;
         let mut seed = Self {
+            detail: query.detail,
             outcome: ContextOutcome::Resolved,
             target: None,
             name: String::new(),
@@ -637,10 +721,12 @@ impl ContextSeed {
                         seed.initial.push(item);
                     }
                 }
+                let file = graph.file(&target.declaration.path)?;
+                let selected = ContextExtent::capture(query.detail, &target, &file)?;
                 seed.outgoing = preview
                     .identifiers
                     .into_iter()
-                    .filter(|a| a.span != target.name_span)
+                    .filter(|a| a.span != target.name_span && selected.span.contains(&a.span))
                     .collect();
                 if query.references {
                     seed.incoming = graph
@@ -781,7 +867,14 @@ impl ContextSession {
                 break;
             };
             let source = graph.file(&pending.target.declaration.path)?;
-            let extent = pending.target.declaration.span;
+            let selected = ContextExtent::capture(seed.detail, &pending.target, &source)?;
+            let extent = selected.span;
+            let body =
+                (seed.detail == ContextDetail::Signature).then(|| super::excerpts::Excerpt {
+                    target: pending.target.clone(),
+                    requested: pending.target.declaration.span,
+                    next: pending.target.declaration.span.start,
+                });
             let text = &source.text()[extent.start..extent.end];
             let mut end = text.len().min(budget.max_bytes);
             while !text.is_char_boundary(end) {
@@ -798,6 +891,7 @@ impl ContextSession {
             loop {
                 let excerpt = super::excerpts::Excerpt {
                     target: pending.target.clone(),
+                    requested: extent,
                     next: extent.start + end,
                 };
                 let expansion = (end < text.len())
@@ -813,9 +907,13 @@ impl ContextSession {
                         },
                         start: source.file().source().position(extent.start),
                         text: text[..end].to_owned(),
-                        complete: end == text.len(),
+                        complete: selected.supported() && end == text.len(),
+                        signature: selected.signature.clone(),
                     },
                     expansion,
+                    body_expansion: body.as_ref().map(|excerpt| {
+                        session.token(engine, &Checkpoint::Excerpt(excerpt.clone()))
+                    }),
                 });
                 match budget.check(&PageReply::Context(page.clone())) {
                     Ok(()) => {
@@ -850,6 +948,9 @@ impl ContextSession {
             };
             if excerpt.next < extent.end {
                 session.retain(Checkpoint::Excerpt(excerpt));
+            }
+            if let Some(body) = body {
+                session.retain(Checkpoint::Excerpt(body));
             }
             self = after;
         }

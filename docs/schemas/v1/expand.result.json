@@ -1,7 +1,7 @@
 {
   "$defs": {
     "ContentId": {
-      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "description": "Digest of complete file contents, independent of their path.",
       "type": "string"
     },
     "LanguageId": {
@@ -132,7 +132,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:expand:result:c5c5d8637eaa339f0791db9ce4d0809df75ceade826ac96a09ff6171c3d38bb8",
+  "$id": "urn:vvv:schema:1:expand:result:a6ee7f839053ec0867499ff885f5ea7eef2238bd41f91dfc90ff0418365b6742",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {
     "done": {

@@ -14,6 +14,7 @@ mod imports;
 mod language;
 mod navigation;
 mod searcher;
+mod signatures;
 mod symbols;
 
 pub use language::AstGrepLanguage;

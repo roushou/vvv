@@ -12,6 +12,16 @@ pub(crate) struct QuerySnapshot {
 }
 
 impl QuerySnapshot {
+    pub(crate) fn with_versions(mut self, versions: &[crate::SourceVersion]) -> Self {
+        for version in versions {
+            self.sources
+                .insert(version.path.clone(), version.content.clone());
+        }
+        self
+    }
+    pub(crate) fn inputs(&self) -> &BTreeMap<RelPath, ContentId> {
+        &self.sources
+    }
     pub(crate) fn capture(engine: &Engine) -> Result<(Graph, Self), EngineError> {
         let mut graph = Graph::new(engine.workspace().clone(), engine.languages().clone());
         graph.cancellation = engine.cancellation();

@@ -50,7 +50,7 @@
       "description": "`$A` binds one node; `$$$A` binds a sequence."
     },
     "ContentId": {
-      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "description": "Digest of complete file contents, independent of their path.",
       "type": "string"
     },
     "ContextCandidate": {
@@ -77,6 +77,39 @@
         "reference_in_test_path"
       ],
       "type": "string"
+    },
+    "ContextSignature": {
+      "description": "Present only for signature requests; absence preserves the body contract.",
+      "oneOf": [
+        {
+          "properties": {
+            "outcome": {
+              "const": "available",
+              "type": "string"
+            },
+            "requested": {
+              "$ref": "#/$defs/SourceAnchor"
+            }
+          },
+          "required": [
+            "outcome",
+            "requested"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "outcome": {
+              "const": "unsupported",
+              "type": "string"
+            }
+          },
+          "required": [
+            "outcome"
+          ],
+          "type": "object"
+        }
+      ]
     },
     "ContextUnresolved": {
       "properties": {
@@ -137,6 +170,9 @@
       "oneOf": [
         {
           "enum": [
+            "invalid_plan",
+            "plan_expired",
+            "plan_consumed",
             "cursor_expired",
             "invalid_cursor",
             "retention_limit",
@@ -373,7 +409,15 @@
     },
     "PagedContextItem": {
       "properties": {
+        "body_expansion": {
+          "description": "In signature mode, retrieve the entire declaration from its beginning.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "complete": {
+          "description": "Complete for the requested detail, not necessarily the whole declaration.",
           "type": "boolean"
         },
         "excerpt": {
@@ -388,6 +432,16 @@
         },
         "relation": {
           "$ref": "#/$defs/ContextRelation"
+        },
+        "signature": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContextSignature"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "start": {
           "$ref": "#/$defs/Position"
@@ -1110,7 +1164,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:continue:response:91ffe083f385f1838737f3a773ae61939cdff14d88fc8e0a12938aff3a69198a",
+  "$id": "urn:vvv:schema:1:continue:response:628e7c61d6b60f7cce27c60c9eb09bcc6999cf02b7449bb6e85bd657290b0756",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [

@@ -2,7 +2,7 @@
 use serde::{Deserialize, Serialize};
 use vvv_core::{LanguageId, RelPath, Span, SymbolKind};
 
-/// Digest of the complete UTF-8 source text, independent of its path.
+/// Digest of complete file contents, independent of their path.
 #[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(transparent)]
@@ -11,6 +11,10 @@ pub struct ContentId(String);
 impl ContentId {
     pub(crate) fn from_fingerprint(value: &crate::plan::Fingerprint) -> Self {
         Self(value.as_str().to_owned())
+    }
+
+    pub(crate) fn of_bytes(bytes: &[u8]) -> Self {
+        Self(blake3::hash(bytes).to_hex().to_string())
     }
 
     pub fn of(text: &str) -> Self {

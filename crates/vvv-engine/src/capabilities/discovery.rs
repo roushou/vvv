@@ -9,6 +9,8 @@ pub struct DiscoveryQuery {}
 pub struct Discovery {
     #[serde(default)]
     pub schemas_available: bool,
+    pub validation_available: bool,
+    pub validation_defaults: crate::ValidationBudget,
     pub schema: u32,
     pub languages: Vec<crate::LanguageId>,
     pub commands: Vec<Capability>,
@@ -17,6 +19,7 @@ pub struct Discovery {
     pub work_defaults: crate::WorkBudget,
     pub work_maximum: crate::WorkBudget,
     pub query_retention: crate::QueryLimits,
+    pub plan_retention: crate::PlanLimits,
     pub context_defaults: crate::ContextBudget,
     pub context_maximum: crate::ContextBudget,
     pub min_output_bytes: usize,
@@ -37,6 +40,8 @@ impl DiscoveryQuery {
     pub fn execute(self, engine: &crate::Engine) -> Discovery {
         Discovery {
             schema: crate::protocol::SCHEMA,
+            validation_available: crate::ValidatePlanQuery::available(engine),
+            validation_defaults: crate::ValidationBudget::default(),
             languages: engine.language_ids(),
             schemas_available: cfg!(feature = "schema"),
             commands: crate::Command::ALL
@@ -54,6 +59,7 @@ impl DiscoveryQuery {
             work_defaults: crate::WorkBudget::default(),
             work_maximum: crate::WorkBudget::MAXIMUM,
             query_retention: crate::QueryLimits::default(),
+            plan_retention: crate::PlanLimits::default(),
             context_defaults: crate::ContextBudget::default(),
             context_maximum: crate::ContextBudget::MAXIMUM,
             min_output_bytes: crate::ContextBudget::MIN_BYTES,

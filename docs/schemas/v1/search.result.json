@@ -50,7 +50,7 @@
       "description": "`$A` binds one node; `$$$A` binds a sequence."
     },
     "ContentId": {
-      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "description": "Digest of complete file contents, independent of their path.",
       "type": "string"
     },
     "LanguageId": {
@@ -390,7 +390,7 @@
       ]
     }
   },
-  "$id": "urn:vvv:schema:1:search:result:e4dba0205e9e8f3500dd931265023eb34d5722a5914904e224cc2deb3b4c9cd8",
+  "$id": "urn:vvv:schema:1:search:result:9e82859b1de51a710c5960b99b6df8e9774a7dcc641a952826832315e25b5c63",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "`vvv search`: what was found, and which languages could not be asked.",
   "properties": {

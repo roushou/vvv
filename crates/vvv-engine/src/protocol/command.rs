@@ -5,6 +5,11 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(rename_all = "snake_case")]
 pub enum Command {
+    DiscardPlan,
+    ApplyPlan,
+    ValidatePlan,
+    InspectPlan,
+    PrepareRename,
     #[cfg(feature = "schema")]
     Schema,
     SearchPage,
@@ -38,6 +43,11 @@ pub enum Command {
 
 impl Command {
     pub const ALL: &[Self] = &[
+        Self::DiscardPlan,
+        Self::ApplyPlan,
+        Self::ValidatePlan,
+        Self::InspectPlan,
+        Self::PrepareRename,
         #[cfg(feature = "schema")]
         Self::Schema,
         Self::SearchPage,
@@ -71,6 +81,11 @@ impl Command {
 
     pub fn as_str(self) -> &'static str {
         match self {
+            Self::DiscardPlan => "discard_plan",
+            Self::ApplyPlan => "apply_plan",
+            Self::ValidatePlan => "validate_plan",
+            Self::InspectPlan => "inspect_plan",
+            Self::PrepareRename => "prepare_rename",
             #[cfg(feature = "schema")]
             Self::Schema => "schema",
             Self::SearchPage => "search_page",
@@ -105,6 +120,11 @@ impl Command {
 
     pub fn parameters(self) -> &'static [&'static str] {
         match self {
+            Self::DiscardPlan => &["plan_id"],
+            Self::ApplyPlan => &["plan_id"],
+            Self::ValidatePlan => &["plan_id", "checks", "extra_inputs", "budget"],
+            Self::InspectPlan => &["plan_id", "max_bytes"],
+            Self::PrepareRename => &["intent", "max_bytes"],
             #[cfg(feature = "schema")]
             Self::Schema => &["for_command", "contract"],
             Self::SearchPage => &["query", "scope", "page"],
@@ -113,6 +133,7 @@ impl Command {
                 "selection",
                 "references",
                 "include_enclosing",
+                "detail",
                 "page",
                 "work",
             ],
@@ -125,6 +146,7 @@ impl Command {
                 "budget",
                 "references",
                 "include_enclosing",
+                "detail",
             ],
             Self::Relationships => &["origin", "selection", "kind", "scope", "budget"],
             Self::Navigate | Self::Resolve => &["origin", "selection"],
@@ -159,6 +181,10 @@ impl Command {
 
     pub fn is_read_only(self) -> bool {
         match self {
+            Self::DiscardPlan => true,
+            Self::ApplyPlan | Self::ValidatePlan => false,
+            Self::InspectPlan => true,
+            Self::PrepareRename => true,
             #[cfg(feature = "schema")]
             Self::Schema => true,
             Self::SearchPage => true,

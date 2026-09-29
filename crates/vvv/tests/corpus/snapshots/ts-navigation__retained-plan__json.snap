@@ -1,0 +1,1157 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
+---
+[
+  {
+    "result": {
+      "lifetime_seconds": 600,
+      "plan_id": "cursor-1",
+      "preview": {
+        "applied": false,
+        "declarations": [
+          {
+            "address": {
+              "package": "",
+              "path": [
+                "src",
+                "origin.ts",
+                "Engine"
+              ]
+            },
+            "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
+            "end": {
+              "column": 45,
+              "line": 0
+            },
+            "id": "fed22e5f1593",
+            "kind": "class_declaration",
+            "language": "typescript",
+            "line": "export class Engine { public run(): void {} }",
+            "path": "src/origin.ts",
+            "role": "declaration",
+            "span": {
+              "end": 45,
+              "start": 7
+            },
+            "start": {
+              "column": 7,
+              "line": 0
+            },
+            "symbol": {
+              "extent": {
+                "end": 45,
+                "start": 0
+              },
+              "kind": "class",
+              "name": "Engine",
+              "name_span": {
+                "end": 19,
+                "start": 13
+              },
+              "span": {
+                "end": 45,
+                "start": 7
+              },
+              "visibility": {
+                "span": {
+                  "end": 6,
+                  "start": 0
+                },
+                "text": "export"
+              }
+            },
+            "text": "class Engine { public run(): void {} }"
+          }
+        ],
+        "files": [
+          {
+            "diff": "--- a/src/barrel.ts\n+++ b/src/barrel.ts\n@@ -1 +1 @@\n-export { Engine as Motor } from './origin';\n+export { Runtime as Motor } from './origin';\n",
+            "edits": [
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 15,
+                  "start": 9
+                }
+              }
+            ],
+            "path": "src/barrel.ts"
+          },
+          {
+            "diff": "--- a/src/bindings.ts\n+++ b/src/bindings.ts\n@@ -2,11 +2,11 @@\n import * as API from './origin';\n import { PublicEngine } from './local';\n type DefaultUse = Runtime;\n-type NamespaceUse = API.Engine;\n+type NamespaceUse = API.Runtime;\n type LocalExportUse = PublicEngine;\n-import { Engine } from './local';\n-type DirectLocalExport = Engine;\n+import { Runtime } from './local';\n+type DirectLocalExport = Runtime;\n class Local {}\n type WrongNamespace = Unknown.Local;\n-import { Engine as Forwarded } from './forward';\n+import { Runtime as Forwarded } from './forward';\n type Forward = Forwarded;\n",
+            "edits": [
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 163,
+                  "start": 157
+                }
+              },
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 216,
+                  "start": 210
+                }
+              },
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 266,
+                  "start": 260
+                }
+              },
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 335,
+                  "start": 329
+                }
+              }
+            ],
+            "path": "src/bindings.ts"
+          },
+          {
+            "diff": "--- a/src/consumer.ts\n+++ b/src/consumer.ts\n@@ -2,7 +2,7 @@\n import { Model } from './origin';\n import { Hidden } from './origin';\n type App = Runtime;\n-type Missing = Engine;\n+type Missing = Runtime;\n type Private = Hidden;\n function generic<Runtime>(value: Runtime): Runtime { return value; }\n interface Box { value: Runtime }\n",
+            "edits": [
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 155,
+                  "start": 149
+                }
+              }
+            ],
+            "path": "src/consumer.ts"
+          },
+          {
+            "diff": "--- a/src/forward.ts\n+++ b/src/forward.ts\n@@ -1,2 +1,2 @@\n-import { Engine } from './origin';\n-export { Engine };\n+import { Runtime } from './origin';\n+export { Runtime };\n",
+            "edits": [
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 15,
+                  "start": 9
+                }
+              },
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 50,
+                  "start": 44
+                }
+              }
+            ],
+            "path": "src/forward.ts"
+          },
+          {
+            "diff": "--- a/src/origin.ts\n+++ b/src/origin.ts\n@@ -1,3 +1,3 @@\n-export class Engine { public run(): void {} }\n-export interface Model { engine: Engine }\n+export class Runtime { public run(): void {} }\n+export interface Model { engine: Runtime }\n class Hidden {}\n",
+            "edits": [
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 19,
+                  "start": 13
+                }
+              },
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 85,
+                  "start": 79
+                }
+              }
+            ],
+            "path": "src/origin.ts"
+          }
+        ],
+        "intent": {
+          "declared_in": "src/origin.ts",
+          "name": "Engine",
+          "symbol": "class",
+          "to": "Runtime"
+        },
+        "occurrences": [
+          {
+            "confidence": "resolved",
+            "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
+            "end": {
+              "column": 19,
+              "line": 0
+            },
+            "id": "403fe879d616",
+            "kind": "type_identifier",
+            "language": "typescript",
+            "line": "export class Engine { public run(): void {} }",
+            "path": "src/origin.ts",
+            "reason": "declaring",
+            "role": "use",
+            "span": {
+              "end": 19,
+              "start": 13
+            },
+            "start": {
+              "column": 13,
+              "line": 0
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "resolved",
+            "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
+            "end": {
+              "column": 39,
+              "line": 1
+            },
+            "id": "5eb68c7607ea",
+            "kind": "type_identifier",
+            "language": "typescript",
+            "line": "export interface Model { engine: Engine }",
+            "path": "src/origin.ts",
+            "reason": "declaring",
+            "role": "use",
+            "span": {
+              "end": 85,
+              "start": 79
+            },
+            "start": {
+              "column": 33,
+              "line": 1
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "resolved",
+            "content": "3b4afc4cde0d20b760c6a9d645bec9256487d91a2b23d4fcf42a8904755903d8",
+            "end": {
+              "column": 15,
+              "line": 0
+            },
+            "id": "52c6f701950a",
+            "kind": "identifier",
+            "language": "typescript",
+            "line": "export { Engine as Motor } from './origin';",
+            "path": "src/barrel.ts",
+            "reason": "opened",
+            "role": "use",
+            "span": {
+              "end": 15,
+              "start": 9
+            },
+            "start": {
+              "column": 9,
+              "line": 0
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "resolved",
+            "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
+            "end": {
+              "column": 30,
+              "line": 4
+            },
+            "id": "17b4721a5b3c",
+            "kind": "type_identifier",
+            "language": "typescript",
+            "line": "type NamespaceUse = API.Engine;",
+            "path": "src/bindings.ts",
+            "reason": "opened",
+            "role": "use",
+            "span": {
+              "end": 163,
+              "start": 157
+            },
+            "start": {
+              "column": 24,
+              "line": 4
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "resolved",
+            "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
+            "end": {
+              "column": 15,
+              "line": 6
+            },
+            "id": "7c3731360989",
+            "kind": "identifier",
+            "language": "typescript",
+            "line": "import { Engine } from './local';",
+            "path": "src/bindings.ts",
+            "reason": "opened",
+            "role": "use",
+            "span": {
+              "end": 216,
+              "start": 210
+            },
+            "start": {
+              "column": 9,
+              "line": 6
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "resolved",
+            "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
+            "end": {
+              "column": 31,
+              "line": 7
+            },
+            "id": "8d32a4492c60",
+            "kind": "type_identifier",
+            "language": "typescript",
+            "line": "type DirectLocalExport = Engine;",
+            "path": "src/bindings.ts",
+            "reason": "opened",
+            "role": "use",
+            "span": {
+              "end": 266,
+              "start": 260
+            },
+            "start": {
+              "column": 25,
+              "line": 7
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "resolved",
+            "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
+            "end": {
+              "column": 15,
+              "line": 10
+            },
+            "id": "2aa4fdabc017",
+            "kind": "identifier",
+            "language": "typescript",
+            "line": "import { Engine as Forwarded } from './forward';",
+            "path": "src/bindings.ts",
+            "reason": "opened",
+            "role": "use",
+            "span": {
+              "end": 335,
+              "start": 329
+            },
+            "start": {
+              "column": 9,
+              "line": 10
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "resolved",
+            "content": "5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af",
+            "end": {
+              "column": 21,
+              "line": 4
+            },
+            "id": "fd8c7270b5fc",
+            "kind": "type_identifier",
+            "language": "typescript",
+            "line": "type Missing = Engine;",
+            "path": "src/consumer.ts",
+            "reason": "opened",
+            "role": "use",
+            "span": {
+              "end": 155,
+              "start": 149
+            },
+            "start": {
+              "column": 15,
+              "line": 4
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "resolved",
+            "content": "238c14eb7df369418419fdfd7b3c149af998421315327c41f19cd9ca1760d4ff",
+            "end": {
+              "column": 15,
+              "line": 0
+            },
+            "id": "7070690144d7",
+            "kind": "identifier",
+            "language": "typescript",
+            "line": "import { Engine } from './origin';",
+            "path": "src/forward.ts",
+            "reason": "opened",
+            "role": "use",
+            "span": {
+              "end": 15,
+              "start": 9
+            },
+            "start": {
+              "column": 9,
+              "line": 0
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "resolved",
+            "content": "238c14eb7df369418419fdfd7b3c149af998421315327c41f19cd9ca1760d4ff",
+            "end": {
+              "column": 15,
+              "line": 1
+            },
+            "id": "81963eb3f6ba",
+            "kind": "identifier",
+            "language": "typescript",
+            "line": "export { Engine };",
+            "path": "src/forward.ts",
+            "reason": "opened",
+            "role": "use",
+            "span": {
+              "end": 50,
+              "start": 44
+            },
+            "start": {
+              "column": 9,
+              "line": 1
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "other",
+            "content": "c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10",
+            "end": {
+              "column": 12,
+              "line": 0
+            },
+            "id": "9c91a3755f32",
+            "kind": "type_identifier",
+            "language": "typescript",
+            "line": "class Engine {}",
+            "path": "src/local.ts",
+            "reason": "other-declaration",
+            "role": "use",
+            "span": {
+              "end": 12,
+              "start": 6
+            },
+            "start": {
+              "column": 6,
+              "line": 0
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "other",
+            "content": "c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10",
+            "end": {
+              "column": 15,
+              "line": 1
+            },
+            "id": "3ec079752241",
+            "kind": "identifier",
+            "language": "typescript",
+            "line": "export { Engine as PublicEngine };",
+            "path": "src/local.ts",
+            "reason": "other-declaration",
+            "role": "use",
+            "span": {
+              "end": 31,
+              "start": 25
+            },
+            "start": {
+              "column": 9,
+              "line": 1
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "other",
+            "content": "c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10",
+            "end": {
+              "column": 15,
+              "line": 2
+            },
+            "id": "fe8ed6f85ce9",
+            "kind": "identifier",
+            "language": "typescript",
+            "line": "export { Engine };",
+            "path": "src/local.ts",
+            "reason": "other-declaration",
+            "role": "use",
+            "span": {
+              "end": 66,
+              "start": 60
+            },
+            "start": {
+              "column": 9,
+              "line": 2
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "other",
+            "content": "e7468058b8510dee8d46d90044a4ba40bd208e55b7b3846c8ebee792f1cbde5c",
+            "end": {
+              "column": 19,
+              "line": 0
+            },
+            "id": "df45e449feae",
+            "kind": "type_identifier",
+            "language": "typescript",
+            "line": "export class Engine {}",
+            "path": "src/other.ts",
+            "reason": "other-declaration",
+            "role": "use",
+            "span": {
+              "end": 19,
+              "start": 13
+            },
+            "start": {
+              "column": 13,
+              "line": 0
+            },
+            "text": "Engine"
+          }
+        ]
+      },
+      "state": "prepared"
+    },
+    "schema": 1,
+    "status": "ok"
+  },
+  {
+    "result": {
+      "lifetime_seconds": 600,
+      "plan_id": "cursor-1",
+      "preview": {
+        "applied": false,
+        "declarations": [
+          {
+            "address": {
+              "package": "",
+              "path": [
+                "src",
+                "origin.ts",
+                "Engine"
+              ]
+            },
+            "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
+            "end": {
+              "column": 45,
+              "line": 0
+            },
+            "id": "fed22e5f1593",
+            "kind": "class_declaration",
+            "language": "typescript",
+            "line": "export class Engine { public run(): void {} }",
+            "path": "src/origin.ts",
+            "role": "declaration",
+            "span": {
+              "end": 45,
+              "start": 7
+            },
+            "start": {
+              "column": 7,
+              "line": 0
+            },
+            "symbol": {
+              "extent": {
+                "end": 45,
+                "start": 0
+              },
+              "kind": "class",
+              "name": "Engine",
+              "name_span": {
+                "end": 19,
+                "start": 13
+              },
+              "span": {
+                "end": 45,
+                "start": 7
+              },
+              "visibility": {
+                "span": {
+                  "end": 6,
+                  "start": 0
+                },
+                "text": "export"
+              }
+            },
+            "text": "class Engine { public run(): void {} }"
+          }
+        ],
+        "files": [
+          {
+            "diff": "--- a/src/barrel.ts\n+++ b/src/barrel.ts\n@@ -1 +1 @@\n-export { Engine as Motor } from './origin';\n+export { Runtime as Motor } from './origin';\n",
+            "edits": [
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 15,
+                  "start": 9
+                }
+              }
+            ],
+            "path": "src/barrel.ts"
+          },
+          {
+            "diff": "--- a/src/bindings.ts\n+++ b/src/bindings.ts\n@@ -2,11 +2,11 @@\n import * as API from './origin';\n import { PublicEngine } from './local';\n type DefaultUse = Runtime;\n-type NamespaceUse = API.Engine;\n+type NamespaceUse = API.Runtime;\n type LocalExportUse = PublicEngine;\n-import { Engine } from './local';\n-type DirectLocalExport = Engine;\n+import { Runtime } from './local';\n+type DirectLocalExport = Runtime;\n class Local {}\n type WrongNamespace = Unknown.Local;\n-import { Engine as Forwarded } from './forward';\n+import { Runtime as Forwarded } from './forward';\n type Forward = Forwarded;\n",
+            "edits": [
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 163,
+                  "start": 157
+                }
+              },
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 216,
+                  "start": 210
+                }
+              },
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 266,
+                  "start": 260
+                }
+              },
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 335,
+                  "start": 329
+                }
+              }
+            ],
+            "path": "src/bindings.ts"
+          },
+          {
+            "diff": "--- a/src/consumer.ts\n+++ b/src/consumer.ts\n@@ -2,7 +2,7 @@\n import { Model } from './origin';\n import { Hidden } from './origin';\n type App = Runtime;\n-type Missing = Engine;\n+type Missing = Runtime;\n type Private = Hidden;\n function generic<Runtime>(value: Runtime): Runtime { return value; }\n interface Box { value: Runtime }\n",
+            "edits": [
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 155,
+                  "start": 149
+                }
+              }
+            ],
+            "path": "src/consumer.ts"
+          },
+          {
+            "diff": "--- a/src/forward.ts\n+++ b/src/forward.ts\n@@ -1,2 +1,2 @@\n-import { Engine } from './origin';\n-export { Engine };\n+import { Runtime } from './origin';\n+export { Runtime };\n",
+            "edits": [
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 15,
+                  "start": 9
+                }
+              },
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 50,
+                  "start": 44
+                }
+              }
+            ],
+            "path": "src/forward.ts"
+          },
+          {
+            "diff": "--- a/src/origin.ts\n+++ b/src/origin.ts\n@@ -1,3 +1,3 @@\n-export class Engine { public run(): void {} }\n-export interface Model { engine: Engine }\n+export class Runtime { public run(): void {} }\n+export interface Model { engine: Runtime }\n class Hidden {}\n",
+            "edits": [
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 19,
+                  "start": 13
+                }
+              },
+              {
+                "replacement": "Runtime",
+                "span": {
+                  "end": 85,
+                  "start": 79
+                }
+              }
+            ],
+            "path": "src/origin.ts"
+          }
+        ],
+        "intent": {
+          "declared_in": "src/origin.ts",
+          "name": "Engine",
+          "symbol": "class",
+          "to": "Runtime"
+        },
+        "occurrences": [
+          {
+            "confidence": "resolved",
+            "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
+            "end": {
+              "column": 19,
+              "line": 0
+            },
+            "id": "403fe879d616",
+            "kind": "type_identifier",
+            "language": "typescript",
+            "line": "export class Engine { public run(): void {} }",
+            "path": "src/origin.ts",
+            "reason": "declaring",
+            "role": "use",
+            "span": {
+              "end": 19,
+              "start": 13
+            },
+            "start": {
+              "column": 13,
+              "line": 0
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "resolved",
+            "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
+            "end": {
+              "column": 39,
+              "line": 1
+            },
+            "id": "5eb68c7607ea",
+            "kind": "type_identifier",
+            "language": "typescript",
+            "line": "export interface Model { engine: Engine }",
+            "path": "src/origin.ts",
+            "reason": "declaring",
+            "role": "use",
+            "span": {
+              "end": 85,
+              "start": 79
+            },
+            "start": {
+              "column": 33,
+              "line": 1
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "resolved",
+            "content": "3b4afc4cde0d20b760c6a9d645bec9256487d91a2b23d4fcf42a8904755903d8",
+            "end": {
+              "column": 15,
+              "line": 0
+            },
+            "id": "52c6f701950a",
+            "kind": "identifier",
+            "language": "typescript",
+            "line": "export { Engine as Motor } from './origin';",
+            "path": "src/barrel.ts",
+            "reason": "opened",
+            "role": "use",
+            "span": {
+              "end": 15,
+              "start": 9
+            },
+            "start": {
+              "column": 9,
+              "line": 0
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "resolved",
+            "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
+            "end": {
+              "column": 30,
+              "line": 4
+            },
+            "id": "17b4721a5b3c",
+            "kind": "type_identifier",
+            "language": "typescript",
+            "line": "type NamespaceUse = API.Engine;",
+            "path": "src/bindings.ts",
+            "reason": "opened",
+            "role": "use",
+            "span": {
+              "end": 163,
+              "start": 157
+            },
+            "start": {
+              "column": 24,
+              "line": 4
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "resolved",
+            "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
+            "end": {
+              "column": 15,
+              "line": 6
+            },
+            "id": "7c3731360989",
+            "kind": "identifier",
+            "language": "typescript",
+            "line": "import { Engine } from './local';",
+            "path": "src/bindings.ts",
+            "reason": "opened",
+            "role": "use",
+            "span": {
+              "end": 216,
+              "start": 210
+            },
+            "start": {
+              "column": 9,
+              "line": 6
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "resolved",
+            "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
+            "end": {
+              "column": 31,
+              "line": 7
+            },
+            "id": "8d32a4492c60",
+            "kind": "type_identifier",
+            "language": "typescript",
+            "line": "type DirectLocalExport = Engine;",
+            "path": "src/bindings.ts",
+            "reason": "opened",
+            "role": "use",
+            "span": {
+              "end": 266,
+              "start": 260
+            },
+            "start": {
+              "column": 25,
+              "line": 7
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "resolved",
+            "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
+            "end": {
+              "column": 15,
+              "line": 10
+            },
+            "id": "2aa4fdabc017",
+            "kind": "identifier",
+            "language": "typescript",
+            "line": "import { Engine as Forwarded } from './forward';",
+            "path": "src/bindings.ts",
+            "reason": "opened",
+            "role": "use",
+            "span": {
+              "end": 335,
+              "start": 329
+            },
+            "start": {
+              "column": 9,
+              "line": 10
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "resolved",
+            "content": "5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af",
+            "end": {
+              "column": 21,
+              "line": 4
+            },
+            "id": "fd8c7270b5fc",
+            "kind": "type_identifier",
+            "language": "typescript",
+            "line": "type Missing = Engine;",
+            "path": "src/consumer.ts",
+            "reason": "opened",
+            "role": "use",
+            "span": {
+              "end": 155,
+              "start": 149
+            },
+            "start": {
+              "column": 15,
+              "line": 4
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "resolved",
+            "content": "238c14eb7df369418419fdfd7b3c149af998421315327c41f19cd9ca1760d4ff",
+            "end": {
+              "column": 15,
+              "line": 0
+            },
+            "id": "7070690144d7",
+            "kind": "identifier",
+            "language": "typescript",
+            "line": "import { Engine } from './origin';",
+            "path": "src/forward.ts",
+            "reason": "opened",
+            "role": "use",
+            "span": {
+              "end": 15,
+              "start": 9
+            },
+            "start": {
+              "column": 9,
+              "line": 0
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "resolved",
+            "content": "238c14eb7df369418419fdfd7b3c149af998421315327c41f19cd9ca1760d4ff",
+            "end": {
+              "column": 15,
+              "line": 1
+            },
+            "id": "81963eb3f6ba",
+            "kind": "identifier",
+            "language": "typescript",
+            "line": "export { Engine };",
+            "path": "src/forward.ts",
+            "reason": "opened",
+            "role": "use",
+            "span": {
+              "end": 50,
+              "start": 44
+            },
+            "start": {
+              "column": 9,
+              "line": 1
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "other",
+            "content": "c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10",
+            "end": {
+              "column": 12,
+              "line": 0
+            },
+            "id": "9c91a3755f32",
+            "kind": "type_identifier",
+            "language": "typescript",
+            "line": "class Engine {}",
+            "path": "src/local.ts",
+            "reason": "other-declaration",
+            "role": "use",
+            "span": {
+              "end": 12,
+              "start": 6
+            },
+            "start": {
+              "column": 6,
+              "line": 0
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "other",
+            "content": "c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10",
+            "end": {
+              "column": 15,
+              "line": 1
+            },
+            "id": "3ec079752241",
+            "kind": "identifier",
+            "language": "typescript",
+            "line": "export { Engine as PublicEngine };",
+            "path": "src/local.ts",
+            "reason": "other-declaration",
+            "role": "use",
+            "span": {
+              "end": 31,
+              "start": 25
+            },
+            "start": {
+              "column": 9,
+              "line": 1
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "other",
+            "content": "c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10",
+            "end": {
+              "column": 15,
+              "line": 2
+            },
+            "id": "fe8ed6f85ce9",
+            "kind": "identifier",
+            "language": "typescript",
+            "line": "export { Engine };",
+            "path": "src/local.ts",
+            "reason": "other-declaration",
+            "role": "use",
+            "span": {
+              "end": 66,
+              "start": 60
+            },
+            "start": {
+              "column": 9,
+              "line": 2
+            },
+            "text": "Engine"
+          },
+          {
+            "confidence": "other",
+            "content": "e7468058b8510dee8d46d90044a4ba40bd208e55b7b3846c8ebee792f1cbde5c",
+            "end": {
+              "column": 19,
+              "line": 0
+            },
+            "id": "df45e449feae",
+            "kind": "type_identifier",
+            "language": "typescript",
+            "line": "export class Engine {}",
+            "path": "src/other.ts",
+            "reason": "other-declaration",
+            "role": "use",
+            "span": {
+              "end": 19,
+              "start": 13
+            },
+            "start": {
+              "column": 13,
+              "line": 0
+            },
+            "text": "Engine"
+          }
+        ]
+      },
+      "state": "prepared"
+    },
+    "schema": 1,
+    "status": "ok"
+  },
+  {
+    "result": {
+      "files": [
+        {
+          "content": "a6071768fd6dd1f336dfc9d82a62588a96e789c4be78b331a19f695d4ea826b7",
+          "path": "src/barrel.ts"
+        },
+        {
+          "content": "6f58dddd878de870b1a01598724121097ed4962b4e0444782c051d5391449edd",
+          "path": "src/bindings.ts"
+        },
+        {
+          "content": "0ed8d5b087a1fe5b038863fa470623d6aaa3eaba93e2f6413da7f55c8a5f9dfc",
+          "path": "src/consumer.ts"
+        },
+        {
+          "content": "d985838b41693b1d552c7a1e4bd4814565071e70674af1a0ac694d265f06627e",
+          "path": "src/forward.ts"
+        },
+        {
+          "content": "4d60b940ba7985cd6c99eea864cbe3d0a4982264592b94013b2f39977ed53a2c",
+          "path": "src/origin.ts"
+        }
+      ],
+      "history_id": 1,
+      "plan_id": "cursor-1"
+    },
+    "schema": 1,
+    "status": "ok"
+  },
+  {
+    "result": {
+      "files": [
+        {
+          "content": "a6071768fd6dd1f336dfc9d82a62588a96e789c4be78b331a19f695d4ea826b7",
+          "path": "src/barrel.ts"
+        },
+        {
+          "content": "6f58dddd878de870b1a01598724121097ed4962b4e0444782c051d5391449edd",
+          "path": "src/bindings.ts"
+        },
+        {
+          "content": "0ed8d5b087a1fe5b038863fa470623d6aaa3eaba93e2f6413da7f55c8a5f9dfc",
+          "path": "src/consumer.ts"
+        },
+        {
+          "content": "d985838b41693b1d552c7a1e4bd4814565071e70674af1a0ac694d265f06627e",
+          "path": "src/forward.ts"
+        },
+        {
+          "content": "4d60b940ba7985cd6c99eea864cbe3d0a4982264592b94013b2f39977ed53a2c",
+          "path": "src/origin.ts"
+        }
+      ],
+      "history_id": 1,
+      "plan_id": "cursor-1"
+    },
+    "schema": 1,
+    "status": "ok"
+  },
+  {
+    "result": {
+      "lifetime_seconds": 600,
+      "plan_id": "cursor-1",
+      "receipt": {
+        "files": [
+          {
+            "content": "a6071768fd6dd1f336dfc9d82a62588a96e789c4be78b331a19f695d4ea826b7",
+            "path": "src/barrel.ts"
+          },
+          {
+            "content": "6f58dddd878de870b1a01598724121097ed4962b4e0444782c051d5391449edd",
+            "path": "src/bindings.ts"
+          },
+          {
+            "content": "0ed8d5b087a1fe5b038863fa470623d6aaa3eaba93e2f6413da7f55c8a5f9dfc",
+            "path": "src/consumer.ts"
+          },
+          {
+            "content": "d985838b41693b1d552c7a1e4bd4814565071e70674af1a0ac694d265f06627e",
+            "path": "src/forward.ts"
+          },
+          {
+            "content": "4d60b940ba7985cd6c99eea864cbe3d0a4982264592b94013b2f39977ed53a2c",
+            "path": "src/origin.ts"
+          }
+        ],
+        "history_id": 1,
+        "plan_id": "cursor-1"
+      },
+      "state": "applied"
+    },
+    "schema": 1,
+    "status": "ok"
+  },
+  {
+    "result": {
+      "files": [
+        {
+          "content": "a6071768fd6dd1f336dfc9d82a62588a96e789c4be78b331a19f695d4ea826b7",
+          "path": "src/barrel.ts"
+        },
+        {
+          "content": "6f58dddd878de870b1a01598724121097ed4962b4e0444782c051d5391449edd",
+          "path": "src/bindings.ts"
+        },
+        {
+          "content": "0ed8d5b087a1fe5b038863fa470623d6aaa3eaba93e2f6413da7f55c8a5f9dfc",
+          "path": "src/consumer.ts"
+        },
+        {
+          "content": "d985838b41693b1d552c7a1e4bd4814565071e70674af1a0ac694d265f06627e",
+          "path": "src/forward.ts"
+        },
+        {
+          "content": "4d60b940ba7985cd6c99eea864cbe3d0a4982264592b94013b2f39977ed53a2c",
+          "path": "src/origin.ts"
+        }
+      ],
+      "history_id": 1,
+      "plan_id": "cursor-1"
+    },
+    "schema": 1,
+    "status": "ok"
+  }
+]

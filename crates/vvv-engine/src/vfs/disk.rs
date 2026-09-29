@@ -24,6 +24,9 @@ impl DiskVfs {
 }
 
 impl Vfs for DiskVfs {
+    fn read_bytes(&self, path: &Path) -> Result<Vec<u8>, VfsError> {
+        std::fs::read(path).map_err(|error| Self::io(path, error))
+    }
     fn read(&self, path: &Path) -> Result<String, VfsError> {
         let bytes = std::fs::read(path).map_err(|e| Self::io(path, e))?;
         String::from_utf8(bytes).map_err(|_| VfsError::InvalidUtf8 {

@@ -1,7 +1,7 @@
 {
   "$defs": {
     "ContentId": {
-      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "description": "Digest of complete file contents, independent of their path.",
       "type": "string"
     },
     "ContextCandidate": {
@@ -22,6 +22,7 @@
     "ContextItem": {
       "properties": {
         "complete": {
+          "description": "Complete for the requested detail, not necessarily the whole declaration.",
           "type": "boolean"
         },
         "excerpt": {
@@ -30,6 +31,16 @@
         },
         "relation": {
           "$ref": "#/$defs/ContextRelation"
+        },
+        "signature": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContextSignature"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "start": {
           "$ref": "#/$defs/Position"
@@ -121,6 +132,39 @@
         "reference_in_test_path"
       ],
       "type": "string"
+    },
+    "ContextSignature": {
+      "description": "Present only for signature requests; absence preserves the body contract.",
+      "oneOf": [
+        {
+          "properties": {
+            "outcome": {
+              "const": "available",
+              "type": "string"
+            },
+            "requested": {
+              "$ref": "#/$defs/SourceAnchor"
+            }
+          },
+          "required": [
+            "outcome",
+            "requested"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "outcome": {
+              "const": "unsupported",
+              "type": "string"
+            }
+          },
+          "required": [
+            "outcome"
+          ],
+          "type": "object"
+        }
+      ]
     },
     "LanguageId": {
       "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
@@ -264,7 +308,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:context:result:ed949efd3c6d62ea0593b01c2654bb5d088d95087576c6ca3b1bcf4ee591201f",
+  "$id": "urn:vvv:schema:1:context:result:b0583ab47fa2169ba708319e6111ea6944c193bea783877a487b1490ee32cd6f",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "oneOf": [
     {

@@ -41,12 +41,22 @@ impl Client {
             ProtocolVersion::V_2025_11_25
         );
         let tools = service.list_all_tools().await.unwrap();
-        assert_eq!(tools.len(), 7);
+        assert_eq!(tools.len(), 12);
         assert!(
             tools
                 .iter()
-                .all(|t| t.annotations.as_ref().unwrap().read_only_hint == Some(true))
+                .all(|t| t.annotations.as_ref().unwrap().read_only_hint
+                    == Some(!matches!(
+                        t.name.as_ref(),
+                        "vvv_apply_plan" | "vvv_validate_plan"
+                    )))
         );
+        for tool in &tools {
+            assert_eq!(
+                tool.annotations.as_ref().unwrap().open_world_hint,
+                Some(tool.name == "vvv_validate_plan")
+            );
+        }
         let schemas = tools
             .iter()
             .map(|tool| {
@@ -117,7 +127,9 @@ impl Client {
         match &mut value {
             Value::Object(map) => {
                 for (name, value) in map {
-                    if ["next_cursor", "expansion"].contains(&name.as_str()) && value.is_string() {
+                    if ["next_cursor", "expansion", "body_expansion"].contains(&name.as_str())
+                        && value.is_string()
+                    {
                         *value = json!("<cursor>");
                     } else {
                         *value = Self::normalized(value.take());
@@ -501,4 +513,175 @@ async fn relationships_follow_import_aliases_and_preserve_unresolved_call_sites(
             .any(|i| i["spelling"] == "execute" && i["outcome"] == "confirmed")
     );
     client.close().await;
+}
+
+#[cfg(feature = "rust")]
+#[tokio::test]
+async fn signature_context_matches_serve_and_expands_both_views_through_sdk() {
+    let fixture = Fixture::new();
+    let signature = format!(
+        "{}pub fn run<T: Copy>(input: T) -> T where T: Send",
+        "/// é🙂 documentation\r\n".repeat(120)
+    );
+    let source = format!(
+        "{signature} {{\n{} input\n}}",
+        "// implementation\n".repeat(120)
+    );
+    std::fs::write(fixture.root.join("src/lib.rs"), &source).unwrap();
+    let client = Client::new(&fixture.root).await;
+    let arguments = json!({"origin":{"kind":"position","path":"src/lib.rs","position":{"line":120,"column":7}},"detail":"signature","page":{"max_items":1,"max_bytes":2048}});
+    let context = client.call("vvv_context", arguments.clone()).await;
+    assert_eq!(context["status"], "ok");
+    let mut request = arguments;
+    request["command"] = "context_page".into();
+    request["max_output_bytes"] = 16384.into();
+    assert_eq!(
+        Client::normalized(context.clone()),
+        Client::normalized(fixture.engine_call(request.clone()))
+    );
+    assert_eq!(
+        Client::normalized(context.clone()),
+        Client::normalized(fixture.serve_call(request))
+    );
+    let item = &context["result"]["items"][0];
+    assert_eq!(item["signature"]["outcome"], "available");
+    assert_eq!(item["complete"], false);
+    for (handle, initial, expected) in [
+        (
+            "expansion",
+            item["text"].as_str().unwrap(),
+            signature.as_str(),
+        ),
+        ("body_expansion", "", source.as_str()),
+    ] {
+        let mut cursor = item[handle].clone();
+        assert!(cursor.is_string());
+        let mut text = initial.to_owned();
+        while !cursor.is_null() {
+            let arguments = json!({"cursor":cursor,"max_bytes":2048});
+            let reply = client.call("vvv_expand", arguments.clone()).await;
+            assert_eq!(reply["status"], "ok");
+            assert_eq!(reply, client.call("vvv_expand", arguments).await);
+            let result = &reply["result"];
+            assert!(serde_json::to_vec(result).unwrap().len() <= 2048);
+            assert_eq!(result["requested"]["span"]["end"], expected.len());
+            assert_eq!(result["excerpt"]["span"]["start"], text.len());
+            text.push_str(result["text"].as_str().unwrap());
+            cursor = result["next_cursor"].clone();
+        }
+        assert_eq!(text, expected);
+    }
+    client.close().await;
+}
+
+#[cfg(any(feature = "rust", feature = "typescript"))]
+#[tokio::test]
+async fn reviewed_rename_applies_once_and_stale_plans_never_write() {
+    let fixture = Fixture::new();
+    #[cfg(feature = "rust")]
+    let path = "src/lib.rs";
+    #[cfg(all(not(feature = "rust"), feature = "typescript"))]
+    let path = "src/lib.ts";
+    #[cfg(all(not(feature = "rust"), feature = "typescript"))]
+    {
+        std::fs::write(fixture.root.join("package.json"), r#"{"name":"probe"}"#).unwrap();
+        std::fs::write(fixture.root.join(path), "export class Engine {}\nexport function run(engine: Engine): Engine { return engine; }\n").unwrap();
+    }
+    let before = std::fs::read_to_string(fixture.root.join(path)).unwrap();
+    let client = Client::new(&fixture.root).await;
+    let prepared = client.call("vvv_prepare_rename", json!({"intent":{"name":"Engine","to":"Runtime","declared_in":path},"max_bytes":65536,"max_output_bytes":65536})).await;
+    assert_eq!(prepared["status"], "ok", "{prepared}");
+    assert_eq!(prepared["result"]["state"], "prepared");
+    assert_eq!(prepared["result"]["preview"]["applied"], false);
+    assert_eq!(
+        std::fs::read_to_string(fixture.root.join(path)).unwrap(),
+        before
+    );
+    let handle = json!({"plan_id":prepared["result"]["plan_id"]});
+    assert_eq!(
+        client.call("vvv_inspect_plan", handle.clone()).await,
+        prepared
+    );
+    let invalid_budget = client
+        .service
+        .call_tool(
+            CallToolRequestParams::new("vvv_apply_plan").with_arguments(
+                json!({"plan_id":prepared["result"]["plan_id"],"max_output_bytes":1024})
+                    .as_object()
+                    .unwrap()
+                    .clone(),
+            ),
+        )
+        .await;
+    assert!(invalid_budget.is_err());
+    let applied = client.call("vvv_apply_plan", handle.clone()).await;
+    assert_eq!(applied["status"], "ok", "{applied}");
+    assert_eq!(client.call("vvv_apply_plan", handle.clone()).await, applied);
+    assert_eq!(
+        client.call("vvv_inspect_plan", handle.clone()).await["result"]["receipt"],
+        applied["result"]
+    );
+    assert_eq!(
+        std::fs::read_to_string(fixture.root.join(path)).unwrap(),
+        before.replace("Engine", "Runtime")
+    );
+    #[cfg(unix)]
+    {
+        let checked = client.call("vvv_validate_plan", json!({
+            "plan_id": handle["plan_id"],
+            "checks": [{"name":"source assertion", "program":std::env::current_exe().unwrap(),"args":["--exact","validation_source_fixture","--ignored","--nocapture"]}],
+            "budget":{"timeout_ms":2000,"max_bytes":4096}
+        })).await;
+        assert_eq!(checked["status"], "ok", "{checked}");
+        assert_eq!(checked["result"]["passed"], true, "{checked}");
+        assert_eq!(checked["result"]["sources"], applied["result"]["files"]);
+        assert!(serde_json::to_vec(&checked["result"]).unwrap().len() <= 4096);
+        let inspected = client.call("vvv_inspect_plan", handle.clone()).await;
+        assert_eq!(inspected["result"]["validation"], checked["result"]);
+        assert_eq!(client.call("vvv_apply_plan", handle.clone()).await, applied);
+    }
+    let next = client.call("vvv_prepare_rename", json!({"intent":{"name":"Runtime","to":"Worker","declared_in":path},"max_bytes":65536,"max_output_bytes":65536})).await;
+    assert_eq!(next["status"], "ok");
+    let changed = format!("{}\n// editor change", before.replace("Engine", "Runtime"));
+    std::fs::write(fixture.root.join(path), &changed).unwrap();
+    let next_handle = json!({"plan_id":next["result"]["plan_id"]});
+    let stale = client.call("vvv_apply_plan", next_handle.clone()).await;
+    assert_eq!(stale["code"], "stale");
+    assert_eq!(
+        client.call("vvv_inspect_plan", next_handle.clone()).await["result"]["failure"]["code"],
+        "stale"
+    );
+    assert_eq!(
+        client.call("vvv_apply_plan", next_handle).await["code"],
+        "plan_consumed"
+    );
+    assert_eq!(
+        std::fs::read_to_string(fixture.root.join(path)).unwrap(),
+        changed
+    );
+    let discard = client.call("vvv_prepare_rename", json!({"intent":{"name":"Runtime","to":"Worker","declared_in":path},"max_bytes":65536,"max_output_bytes":65536})).await;
+    let handle = json!({"plan_id":discard["result"]["plan_id"]});
+    assert_eq!(
+        client.call("vvv_discard_plan", handle.clone()).await["result"]["state"],
+        "discarded"
+    );
+    assert_eq!(
+        client.call("vvv_apply_plan", handle).await["code"],
+        "plan_consumed"
+    );
+    client.close().await;
+}
+
+#[cfg(all(unix, any(feature = "rust", feature = "typescript")))]
+#[test]
+#[ignore = "subprocess used by MCP validation workflow"]
+fn validation_source_fixture() {
+    #[cfg(feature = "rust")]
+    let path = "src/lib.rs";
+    #[cfg(all(not(feature = "rust"), feature = "typescript"))]
+    let path = "src/lib.ts";
+    let source = std::fs::read_to_string(path).unwrap();
+    assert!(source.contains("Runtime"));
+    assert!(!source.contains("Engine"));
+    println!("renamed source checked");
 }

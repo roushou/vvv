@@ -1085,3 +1085,72 @@ mod call_tests {
         assert!(calls.iter().all(|c| c.span.contains(&c.callee)));
     }
 }
+
+#[cfg(test)]
+mod signature_tests {
+    use super::Rust;
+    use vvv_core::Language;
+
+    #[test]
+    fn signatures_preserve_docs_attributes_constraints_and_tuple_fields() {
+        let cases = [
+            (
+                "/// café\r\n#[inline]\r\npub fn build<const N: usize>(a: [u8; { 2 }]) -> [u8; N]\r\nwhere [u8; N]: Sized",
+                " { [0; N] }",
+                "build",
+            ),
+            ("pub struct Tuple<T>(T) where T: Copy;", "", "Tuple"),
+            (
+                "pub struct Named<T> where T: Copy",
+                " { value: T }",
+                "Named",
+            ),
+            ("pub enum Choice<T>", " { Some(T), None }", "Choice"),
+            (
+                "pub trait Work<T>: Sized where T: Copy",
+                " { fn work(&self); }",
+                "Work",
+            ),
+            ("impl<T: Copy> Work<T> for T", " { fn work(&self) {} }", "T"),
+            ("pub type Alias = [u8; { 2 }];", "", "Alias"),
+        ];
+        for (header, body, name) in cases {
+            let source = format!("{header}{body}");
+            let facts = Rust::new().facts(&source).unwrap();
+            let symbol = facts
+                .symbols
+                .iter()
+                .find(|symbol| symbol.name == name)
+                .unwrap();
+            let signature = facts
+                .signatures
+                .iter()
+                .find(|s| s.name_span == symbol.name_span)
+                .unwrap();
+            assert_eq!(
+                &source[signature.span.start..signature.span.end],
+                header,
+                "{name}"
+            );
+        }
+        let source = "trait Work { /// Required.\nfn work(&self) -> u8; }\nconst VALUE: u8 = 1;";
+        let facts = Rust::new().facts(source).unwrap();
+        let work = facts.symbols.iter().find(|s| s.name == "work").unwrap();
+        let signature = facts
+            .signatures
+            .iter()
+            .find(|s| s.name_span == work.name_span)
+            .unwrap();
+        assert_eq!(
+            &source[signature.span.start..signature.span.end],
+            "/// Required.\nfn work(&self) -> u8;"
+        );
+        let constant = facts.symbols.iter().find(|s| s.name == "VALUE").unwrap();
+        assert!(
+            !facts
+                .signatures
+                .iter()
+                .any(|s| s.name_span == constant.name_span)
+        );
+    }
+}

@@ -8,7 +8,7 @@ exit 0
   "status": "ok",
   "schema": 1,
   "result": {
-    "snapshot": "d7c17711c78f14f02255d97c078a8f42bfaf0cfff6794a071c3684ce544f878b",
+    "snapshot": "bb8268148d09f6eef6962be194f3f93d9531a43632595801609064ee1e50a1c4",
     "outcome": "resolved",
     "target": {
       "language": "typescript",

@@ -14,6 +14,7 @@ pub struct ProviderVersion {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct SourceVersion {
     pub path: RelPath,
     pub content: ContentId,

@@ -1,0 +1,10 @@
+---
+source: crates/vvv/src/output/human/mod.rs
+expression: "render(|r| r.report(&Answer::InspectPlan(review)).unwrap())"
+---
+Applied reviewed plan (history 1)
+Validation did not pass
+compile: failed
+error: expected Engine, found Runtime
+--- stderr ---
+Plan: p1.example

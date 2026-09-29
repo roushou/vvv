@@ -4,6 +4,7 @@
 use vvv_core::HighlightKind as H;
 use vvv_core::ModifierAt::Parent;
 use vvv_core::ReachKind as R;
+use vvv_core::SignatureRule;
 use vvv_core::SymbolKind::{self, *};
 use vvv_core::{
     Grammar, HighlightRule, ImportGrammar, ImportRule, PathSyntax, ReExportRule, Semantics,
@@ -92,6 +93,19 @@ const HIGHLIGHTS: &[HighlightRule] = &[
 ];
 
 pub(crate) const GRAMMAR: Grammar = Grammar {
+    signatures: &[
+        SignatureRule::header("function_declaration", "body"),
+        SignatureRule::header("generator_function_declaration", "body"),
+        SignatureRule::header("method_definition", "body"),
+        SignatureRule::whole("method_signature"),
+        SignatureRule::whole("abstract_method_signature"),
+        SignatureRule::header("class_declaration", "body"),
+        SignatureRule::header("abstract_class_declaration", "body"),
+        SignatureRule::header("interface_declaration", "body"),
+        SignatureRule::header("enum_declaration", "body"),
+        SignatureRule::whole("type_alias_declaration"),
+        SignatureRule::whole("property_signature"),
+    ],
     navigation_values: &["identifier"],
     calls: &[vvv_core::CallRule {
         node: "call_expression",

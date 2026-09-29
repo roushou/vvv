@@ -301,6 +301,19 @@ impl Corpus {
         // two characters; the snapshots are taken with `/`.
         let text = |bytes: Vec<u8>| {
             let text = String::from_utf8(bytes).unwrap();
+            // Platform support is checked by MCP/engine tests; keep this corpus portable.
+            let text = if json && args[0] == "discover" {
+                text.replace(
+                    "\"validation_available\": true",
+                    "\"validation_available\": \"<platform>\"",
+                )
+                .replace(
+                    "\"validation_available\": false",
+                    "\"validation_available\": \"<platform>\"",
+                )
+            } else {
+                text
+            };
             if !cfg!(windows) {
                 text
             } else if json {
@@ -1182,6 +1195,10 @@ fn rust_navigation_golden() {
         name: "rust-navigation",
         cases: &[
             (
+                "context-signature",
+                &["context", "src/signatures.rs:3:8", "--detail", "signature"],
+            ),
+            (
                 "compact-definition",
                 &["navigate", "src/consumer.rs:5:13", "--compact"],
             ),
@@ -1300,6 +1317,14 @@ fn ts_navigation_golden() {
     golden(&Corpus {
         name: "ts-navigation",
         cases: &[
+            (
+                "context-signature",
+                &["context", "src/signatures.ts:2:17", "--detail", "signature"],
+            ),
+            (
+                "context-signature-unsupported",
+                &["context", "src/signatures.ts:5:14", "--detail", "signature"],
+            ),
             ("named-import", &["navigate", "src/consumer.ts:1:10"]),
             (
                 "context-default-import",
@@ -1342,7 +1367,10 @@ impl PageTranscript {
         match value {
             serde_json::Value::Object(object) => {
                 for (key, value) in object {
-                    if (key == "next_cursor" || key == "expansion") && value.is_string() {
+                    if ["next_cursor", "expansion", "body_expansion", "plan_id"]
+                        .contains(&key.as_str())
+                        && value.is_string()
+                    {
                         let next = format!("cursor-{}", self.cursors.len() + 1);
                         let name = self
                             .cursors
@@ -1379,6 +1407,121 @@ impl PageTranscript {
         self.replies.push(normalized);
         reply
     }
+    #[cfg(unix)]
+    fn validation(corpus: Corpus, path: &str, symbol: &str) {
+        let disk = ValidationCorpus::new(&corpus);
+        let engine = Engine::new(Workspace::disk(&disk.root).unwrap(), Builtins::registry());
+        let prepared = vvv_engine::PrepareRenameQuery {
+            intent: RenameIntent::new("Engine", "Runtime")
+                .declared_in(path)
+                .of_symbol(symbol.parse().unwrap()),
+            max_bytes: 65536,
+        }
+        .execute(&engine)
+        .unwrap();
+        let receipt = vvv_engine::ApplyPlanQuery {
+            plan_id: prepared.plan_id,
+        }
+        .execute(&engine)
+        .unwrap();
+        let mut transcript = Self {
+            replies: vec![],
+            cursors: BTreeMap::new(),
+        };
+        let report = transcript.call(&engine, serde_json::json!({"command":"validate_plan", "plan_id":receipt.plan_id, "checks":[{"name":"check renamed declarations", "program": std::env::current_exe().unwrap(), "args":["--exact","corpus_validation_command", "--ignored", "--nocapture"]}], "budget":{"max_bytes":8192,"timeout_ms":5000}}));
+        assert_eq!(report["result"]["passed"], true);
+        let inspected = transcript.call(
+            &engine,
+            serde_json::json!({"command":"inspect_plan", "plan_id":receipt.plan_id}),
+        );
+        assert_eq!(inspected["result"]["validation"], report["result"]);
+        for reply in &mut transcript.replies {
+            let result = if reply["result"]["validation"].is_object() {
+                &mut reply["result"]["validation"]
+            } else {
+                &mut reply["result"]
+            };
+            result["checks"][0]["command"]["program"] = "<corpus test executable>".into();
+            result["checks"][0]["duration_ms"] = 0.into();
+        }
+        let mut settings = insta::Settings::clone_current();
+        settings.set_snapshot_path("corpus/snapshots");
+        settings.set_prepend_module_to_snapshot(false);
+        settings.bind(|| {
+            insta::assert_snapshot!(
+                format!("{}__validation__json", corpus.name),
+                serde_json::to_string_pretty(&transcript.replies).unwrap()
+            )
+        });
+    }
+    fn plans(corpus: Corpus, path: &str, symbol: &str) {
+        let (vfs, engine) = corpus.engine();
+        let before = snapshot(&vfs);
+        let intent = RenameIntent::new("Engine", "Runtime")
+            .declared_in(path)
+            .of_symbol(symbol.parse().unwrap());
+        let expected = intent.plan(&engine).unwrap();
+        let mut transcript = Self {
+            replies: vec![],
+            cursors: BTreeMap::new(),
+        };
+        let prepared = transcript.call(&engine, serde_json::json!({"command":"prepare_rename","intent":{"name":"Engine","to":"Runtime","declared_in":path,"symbol":symbol},"max_bytes":65536}));
+        let id = &prepared["result"]["plan_id"];
+        let inspected = transcript.call(
+            &engine,
+            serde_json::json!({"command":"inspect_plan","plan_id":id,"max_bytes":65536}),
+        );
+        assert_eq!(inspected, prepared);
+        let applied = transcript.call(
+            &engine,
+            serde_json::json!({"command":"apply_plan","plan_id":id}),
+        );
+        for file in expected.preview() {
+            assert_eq!(
+                vfs.read(&Path::new("/ws").join(&file.path)).unwrap(),
+                file.after
+            );
+        }
+        let replay = transcript.call(
+            &engine,
+            serde_json::json!({"command":"apply_plan","plan_id":id}),
+        );
+        assert_eq!(applied, replay);
+        let inspected = transcript.call(
+            &engine,
+            serde_json::json!({"command":"inspect_plan","plan_id":id}),
+        );
+        assert_eq!(inspected["result"]["receipt"], applied["result"]);
+        let undone = vvv_engine::Ledger::new(&engine).undo().unwrap();
+        assert_eq!(
+            undone.undone.id,
+            applied["result"]["history_id"].as_u64().unwrap()
+        );
+        assert_eq!(snapshot(&vfs), before);
+        assert_eq!(
+            transcript.call(
+                &engine,
+                serde_json::json!({"command":"apply_plan","plan_id":id})
+            ),
+            applied
+        );
+        assert!(
+            vvv_engine::Ledger::new(&engine)
+                .history()
+                .unwrap()
+                .entries
+                .is_empty()
+        );
+        let mut settings = insta::Settings::clone_current();
+        settings.set_snapshot_path("corpus/snapshots");
+        settings.set_prepend_module_to_snapshot(false);
+        settings.bind(|| {
+            insta::assert_snapshot!(
+                format!("{}__retained-plan__json", corpus.name),
+                serde_json::to_string_pretty(&transcript.replies).unwrap()
+            )
+        });
+    }
     fn corpus(corpus: Corpus, path: &str, line: u32, column: u32) {
         let (_, engine) = corpus.engine();
         let mut transcript = Self {
@@ -1414,6 +1557,7 @@ impl PageTranscript {
             items.extend(reply["result"]["items"].as_array().unwrap().clone());
         }
         let expected = vvv_engine::ContextQuery {
+            detail: vvv_engine::ContextDetail::Body,
             include_enclosing: false,
             origin: serde_json::from_value(origin).unwrap(),
             selection: vvv_engine::Selection::All,
@@ -1568,4 +1712,104 @@ fn ts_relationships_golden() {
         ],
         mutations: Vec::new,
     });
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_retained_plan_golden() {
+    PageTranscript::plans(
+        Corpus {
+            name: "rust-navigation",
+            cases: &[],
+            mutations: Vec::new,
+        },
+        "src/origin.rs",
+        "struct",
+    );
+}
+#[cfg(feature = "typescript")]
+#[test]
+fn typescript_retained_plan_golden() {
+    PageTranscript::plans(
+        Corpus {
+            name: "ts-navigation",
+            cases: &[],
+            mutations: Vec::new,
+        },
+        "src/origin.ts",
+        "class",
+    );
+}
+
+#[cfg(all(unix, any(feature = "rust", feature = "typescript")))]
+struct ValidationCorpus {
+    root: PathBuf,
+}
+#[cfg(all(unix, any(feature = "rust", feature = "typescript")))]
+impl ValidationCorpus {
+    fn new(corpus: &Corpus) -> Self {
+        static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+        let root = std::env::temp_dir().join(format!(
+            "vvv-validation-corpus-{}-{}",
+            std::process::id(),
+            NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed)
+        ));
+        let vfs = corpus.memory();
+        for (path, text) in snapshot(&vfs) {
+            let destination = root.join(path.strip_prefix("/ws").unwrap());
+            std::fs::create_dir_all(destination.parent().unwrap()).unwrap();
+            std::fs::write(destination, text).unwrap();
+        }
+        Self { root }
+    }
+}
+#[cfg(all(unix, any(feature = "rust", feature = "typescript")))]
+impl Drop for ValidationCorpus {
+    fn drop(&mut self) {
+        let _ = std::fs::remove_dir_all(&self.root);
+    }
+}
+#[cfg(all(unix, any(feature = "rust", feature = "typescript")))]
+#[test]
+#[ignore = "subprocess fixture for validation corpus"]
+fn corpus_validation_command() {
+    use std::io::Write;
+    let path = if Path::new("src/origin.rs").exists() {
+        "src/origin.rs"
+    } else {
+        "src/origin.ts"
+    };
+    let source = std::fs::read_to_string(path).unwrap();
+    assert!(source.contains("Runtime"));
+    std::io::stdout()
+        .write_all(b"renamed declaration checked\n")
+        .unwrap();
+    std::io::stdout().flush().unwrap();
+    std::process::exit(0);
+}
+#[cfg(all(unix, feature = "rust"))]
+#[test]
+fn rust_validation_golden() {
+    PageTranscript::validation(
+        Corpus {
+            name: "rust-navigation",
+            cases: &[],
+            mutations: Vec::new,
+        },
+        "src/origin.rs",
+        "struct",
+    );
+}
+#[cfg(all(unix, feature = "typescript"))]
+#[test]
+fn typescript_validation_golden() {
+    PageTranscript::validation(
+        Corpus {
+            name: "ts-navigation",
+            cases: &[],
+            mutations: Vec::new,
+        },
+        "src/origin.ts",
+        "class",
+    );
 }

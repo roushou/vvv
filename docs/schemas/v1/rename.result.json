@@ -70,7 +70,7 @@
       ]
     },
     "ContentId": {
-      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "description": "Digest of complete file contents, independent of their path.",
       "type": "string"
     },
     "Diff": {
@@ -629,7 +629,7 @@
       ]
     }
   },
-  "$id": "urn:vvv:schema:1:rename:result:160258e13c2451cf48f142f312e42a500eade1d1ac75298fe9506e83b0897dc8",
+  "$id": "urn:vvv:schema:1:rename:result:f92a93cc70eccce1926dc26cca08f385fb82d53a824e5d17b28b82e40e58c1dc",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "`vvv rename`: the declaration and every occurrence, each judged.",
   "oneOf": [

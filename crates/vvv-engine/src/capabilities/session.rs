@@ -9,13 +9,13 @@ impl Call {
         self.execute_in(engine)
     }
 
-    /// Execute one read-only call with a single-use cooperative cancellation handle.
+    /// Execute one read or explicit validation call with a single-use cooperative cancellation handle.
     pub fn execute_with_cancellation(
         self,
         engine: &Engine,
         cancellation: &crate::ReadCancellation,
     ) -> Reply<Answer> {
-        let result = if !self.request.is_read_only() {
+        let result = if !self.request.is_cancellable() {
             Err(EngineError::MutationCancellation)
         } else {
             cancellation.claim()
@@ -48,6 +48,22 @@ impl Call {
             }
             if let Some(limit) = self.max_output_bytes {
                 match &mut self.request {
+                    crate::Request::PrepareRename(query) => {
+                        crate::PageBudget {
+                            max_bytes: query.max_bytes,
+                            max_items: 1,
+                        }
+                        .validate()?;
+                        query.max_bytes = query.max_bytes.min(limit);
+                    }
+                    crate::Request::InspectPlan(query) => {
+                        crate::PageBudget {
+                            max_bytes: query.max_bytes,
+                            max_items: 1,
+                        }
+                        .validate()?;
+                        query.max_bytes = query.max_bytes.min(limit);
+                    }
                     crate::Request::Relationships(query) => {
                         query.budget.validate()?;
                         query.budget.max_bytes = query.budget.max_bytes.min(limit);

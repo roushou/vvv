@@ -1,0 +1,33 @@
+{
+  "$defs": {
+    "PlanId": {
+      "description": "Opaque handle scoped to an engine session, not a serializable edit plan.",
+      "type": "string"
+    }
+  },
+  "$id": "urn:vvv:schema:1:inspect_plan:request:af826f026b856fcb9480f28abff1038321b7730f692c1e886a4b5d97bf09d59b",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "command": {
+      "const": "inspect_plan",
+      "type": "string"
+    },
+    "max_bytes": {
+      "default": 16384,
+      "format": "uint",
+      "maximum": 1048576,
+      "minimum": 1024,
+      "type": "integer"
+    },
+    "plan_id": {
+      "$ref": "#/$defs/PlanId"
+    }
+  },
+  "required": [
+    "command",
+    "plan_id"
+  ],
+  "title": "inspect_plan request",
+  "type": "object"
+}

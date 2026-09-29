@@ -2,6 +2,11 @@
   "$defs": {
     "Command": {
       "enum": [
+        "discard_plan",
+        "apply_plan",
+        "validate_plan",
+        "inspect_plan",
+        "prepare_rename",
         "schema",
         "search_page",
         "context_page",
@@ -67,7 +72,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:schema:arguments:302d1d55c7e13bc1f167dee51cfa09ee05776789ecdd981bb75c4b5ffb58a446",
+  "$id": "urn:vvv:schema:1:schema:arguments:4586cb2e8c6e1588267df6b913d59aeb851f4d8d254a1f350d516d3721c6b63f",
   "$ref": "#/$defs/SchemaQuery",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {},

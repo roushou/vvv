@@ -1,7 +1,7 @@
 {
   "$defs": {
     "ContentId": {
-      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "description": "Digest of complete file contents, independent of their path.",
       "type": "string"
     },
     "ContextCandidate": {
@@ -28,6 +28,39 @@
         "reference_in_test_path"
       ],
       "type": "string"
+    },
+    "ContextSignature": {
+      "description": "Present only for signature requests; absence preserves the body contract.",
+      "oneOf": [
+        {
+          "properties": {
+            "outcome": {
+              "const": "available",
+              "type": "string"
+            },
+            "requested": {
+              "$ref": "#/$defs/SourceAnchor"
+            }
+          },
+          "required": [
+            "outcome",
+            "requested"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "outcome": {
+              "const": "unsupported",
+              "type": "string"
+            }
+          },
+          "required": [
+            "outcome"
+          ],
+          "type": "object"
+        }
+      ]
     },
     "ContextUnresolved": {
       "properties": {
@@ -88,6 +121,9 @@
       "oneOf": [
         {
           "enum": [
+            "invalid_plan",
+            "plan_expired",
+            "plan_consumed",
             "cursor_expired",
             "invalid_cursor",
             "retention_limit",
@@ -290,7 +326,15 @@
     },
     "PagedContextItem": {
       "properties": {
+        "body_expansion": {
+          "description": "In signature mode, retrieve the entire declaration from its beginning.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "complete": {
+          "description": "Complete for the requested detail, not necessarily the whole declaration.",
           "type": "boolean"
         },
         "excerpt": {
@@ -305,6 +349,16 @@
         },
         "relation": {
           "$ref": "#/$defs/ContextRelation"
+        },
+        "signature": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContextSignature"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "start": {
           "$ref": "#/$defs/Position"
@@ -747,7 +801,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:context_page:response:7792bef117e299047275566d99ceecc2a456950ba517bab0976cf7b46ce3c7a0",
+  "$id": "urn:vvv:schema:1:context_page:response:e2021e353fe3a53d8311a3d506d946f1f82c9a0f704fff1659bb0dce3f68c015",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [

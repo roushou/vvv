@@ -93,7 +93,7 @@
       "type": "object"
     },
     "ContentId": {
-      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "description": "Digest of complete file contents, independent of their path.",
       "type": "string"
     },
     "ContinuationRecovery": {
@@ -131,6 +131,9 @@
       "oneOf": [
         {
           "enum": [
+            "invalid_plan",
+            "plan_expired",
+            "plan_consumed",
             "cursor_expired",
             "invalid_cursor",
             "retention_limit",
@@ -1030,7 +1033,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:batch:response:9d03ed05b84affbd6d1718c3606f0a7df66c62b8ec2f5c60a54fe881be65dad2",
+  "$id": "urn:vvv:schema:1:batch:response:74be34a891af12ed70d08638ffdbe9ee44462456eb6e33b2b83c409816314317",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [

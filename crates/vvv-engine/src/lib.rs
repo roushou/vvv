@@ -96,8 +96,8 @@ pub use capabilities::semantic::{
 };
 
 pub use protocol::{
-    ContextBudget, ContextCandidate, ContextItem, ContextOmissions, ContextOutcome, ContextQuery,
-    ContextRelation, ContextReply,
+    ContextBudget, ContextCandidate, ContextDetail, ContextItem, ContextOmissions, ContextOutcome,
+    ContextQuery, ContextRelation, ContextReply, ContextSignature,
 };
 
 pub use protocol::{Capability, Discovery, DiscoveryQuery, OutputLimit};
@@ -124,3 +124,15 @@ pub use crate::capabilities::relationships::{
 };
 
 pub use vvv_core::CallKind;
+
+mod plan_store;
+pub use plan_store::PlanLimits;
+pub use protocol::{
+    ApplyPlanQuery, DiscardPlanQuery, InspectPlanQuery, PlanId, PlanReceipt, PlanReview,
+    PlanStatus, PrepareRenameQuery,
+};
+
+pub use crate::capabilities::validation::{
+    CheckCommand, CheckFailure, CheckOperation, CheckOutcome, CheckOutput, CheckResult,
+    ValidatePlanQuery, ValidationBudget, ValidationReport, ValidationSourceState,
+};

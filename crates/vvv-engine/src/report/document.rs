@@ -48,6 +48,11 @@ impl Document {
     /// Compose one answer into the blocks its command prints.
     pub fn of(answer: &Answer) -> Self {
         match answer {
+            Answer::DiscardPlan(r) => Self::plan_review(r),
+            Answer::ApplyPlan(r) => Self::plan_receipt(r),
+            Answer::ValidatePlan(r) => Self::validation(r),
+            Answer::InspectPlan(r) => Self::plan_review(r),
+            Answer::PrepareRename(r) => Self::plan_review(r),
             #[cfg(feature = "schema")]
             Answer::Schema(r) => Self::schema(r),
             Answer::SearchPage(r) => Self::search_page(r),

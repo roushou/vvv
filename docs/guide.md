@@ -306,6 +306,28 @@ targets are included once. Each item carries the relationship, exact source rang
 source version, and the occurrence establishing the relationship. `--select`
 resolves an ambiguous starting occurrence using the same candidate IDs as `navigate`.
 
+Use `--detail signature` to read attached documentation, attributes, parameters,
+return types, and constraints without implementation bodies:
+
+```console
+vvv context src/engine.rs:20:12 --detail signature --json
+```
+
+`body` remains the default. Signature mode follows only outgoing identifiers inside
+the signature, and renders related declarations (and `--include-enclosing`) at the
+same detail. Rust and TypeScript use AST body boundaries; braces inside types do
+not end a signature. Container signatures are headers, excluding members; tuple
+structs and type aliases retain their defining types. Unsupported forms, including
+initialized constants and variables, report `signature.outcome: "unsupported"`
+with no source text; request `body` to retrieve them. A complete signature item
+has `complete: true` even though the implementation is omitted.
+
+In `serve` and MCP, pass `detail: "signature"` to `context_page`/`vvv_context`.
+Each signature item provides `body_expansion`: pass it to `expand`/`vvv_expand`
+to read the **whole declaration from its beginning**. An item's `expansion` handle
+instead continues a signature shortened by the output budget. Both handles are
+independent and preserve exact source ranges and versions.
+
 `--references` also scans same-spelling occurrences and includes an enclosing
 declaration only when navigation confirms that it refers to the selected target.
 A confirmed reference under a `test` or `tests` path component is labeled as such;
@@ -328,6 +350,116 @@ is `{ "command": "discover" }`; a call may set `max_output_bytes` to limit its J
 result. An oversized read-only result returns a structured `output_limit` error.
 For `context`, this limit also narrows its excerpt budget. Mutation commands reject
 this option before running, so an output limit cannot hide a successful write.
+
+## Reviewing and applying retained rename plans
+
+Use a single `vvv serve` or MCP session when application must use exactly the edits
+you reviewed. Ordinary `rename` and `rename --apply` invocations still build separate
+plans. Retained handles stay in memory; they do not survive a restart or transfer
+between sessions/workspaces.
+
+In `vvv serve`, send these requests one at a time, substituting the returned
+`plan_id`:
+
+```json
+{"command":"prepare_rename","intent":{"name":"Engine","to":"Runtime","declared_in":"src/engine.rs"}}
+{"command":"inspect_plan","plan_id":"<returned plan_id>"}
+{"command":"apply_plan","plan_id":"<returned plan_id>"}
+```
+
+Preparation does not write files. It returns `state: "prepared"` and a complete
+`preview` with rename occurrences, confidence, skipped/unresolved cases, file edits,
+and diffs. Review these before applying. Increase `max_bytes` (up to 1 MiB) when the
+complete preview does not fit; the engine never removes edits to fit a budget.
+Inspection returns the captured preview, without replanning or claiming it is fresh.
+
+Application checks the captured source inventory, file contents, manifests, and
+walk configuration, then applies the retained edits through the existing transaction
+and undo lifecycle. Changed inputs return `stale` and require a new review. This is
+conservative: even an unrelated source edit can invalidate a plan. These checks do
+not lock out external editors.
+
+A successful result includes the `plan_id`, committed `history_id`, and post-apply
+file content identities. Repeating `apply_plan` returns that same historical receipt
+without writing again, even after undo or later edits. `inspect_plan` also retrieves
+completed receipts and failures. A failed attempt is consumed; inspect its error
+and any recovery details before preparing a replacement. Applying runs source and
+transaction checks; request project validation separately with `validate_plan`. `vvv history` and `vvv undo` use the existing durable history; undo always
+reverses the latest history entry, not an arbitrary plan handle.
+
+`discard_plan` releases a pending plan without writing. Its discarded status is
+retryable until a later preparation reclaims it. Successful receipts remain retained
+until expiry. Limits are 16 retained plans/outcomes, 16 MiB charged per plan, 64 MiB
+combined, and a fixed 10-minute lifetime from preparation. Inspection and retry do
+not extend that lifetime. Capacity failure preserves other pending plans and receipts.
+
+MCP provides `vvv_prepare_rename`, `vvv_inspect_plan`, `vvv_apply_plan`, and
+`vvv_discard_plan` with the same arguments, omitting `command`. Only `vvv_apply_plan`
+can write. Queued calls can be cancelled; once apply starts it finishes its
+transaction. If a response is interrupted, inspect or retry the same handle.
+
+## Validating an applied change
+
+After `apply_plan`, ask the same session to run explicit check commands:
+
+```json
+{
+  "command": "validate_plan",
+  "plan_id": "<returned plan_id>",
+  "checks": [
+    {
+      "name": "format",
+      "program": "cargo",
+      "args": ["fmt", "--all", "--check"]
+    },
+    { "name": "compile", "program": "cargo", "args": ["check", "--workspace"] },
+    {
+      "name": "targeted tests",
+      "program": "cargo",
+      "args": ["test", "-p", "my-library", "engine::tests"]
+    }
+  ],
+  "extra_inputs": [".cargo/config.toml"],
+  "budget": { "timeout_ms": 120000, "max_bytes": 16384 }
+}
+```
+
+Replace the commands and test target with your project's checks. Omit
+`extra_inputs` if there are no additional hidden/ignored files to include; every
+listed file must exist. MCP exposes the same request as `vvv_validate_plan`.
+`discover.validation_available` reports availability: Unix disk workspaces are
+supported; virtual workspaces and Windows do not execute validation programs.
+
+Commands run in order from the workspace root with no implicit shell and no stdin.
+They inherit the session's environment and permissions and **are not sandboxed**:
+compilers, build scripts, and tests can write files or access the network. Use a
+formatter's check mode. vvv does not choose or install commands, format code
+automatically, or roll back their effects. MCP marks this tool as able to write
+and access external resources.
+
+Each result records the exact command, outcome, exit code, elapsed time, and separate
+bounded stdout/stderr. `passed` requires all checks to succeed and the observed
+inputs to remain unchanged. Failures do not undo the applied plan. `inspect_plan`
+retains the latest validation under `validation`, while the apply receipt stays
+unchanged. Another validation request reruns the commands and increments `run`.
+Cancellation and timeout stop the active process group; after an interrupted
+response, inspect the plan. Checks not started remain `not_run`.
+
+Validation rejects source or inventory changes since apply before starting. It
+records digests of workspace-visible files, including binary resources, the
+planner's source/configuration inputs, and explicit `extra_inputs`. Source changes
+during the checks prevent a pass and stop later checks. Ignored build outputs and
+unlisted hidden files, installed dependencies, tools, environment variables, and
+external services are outside that evidence. Before/after observations cannot detect
+a transient change that is reverted between captures. These results are recorded
+evidence for the observed inputs, not a sandbox or a lock on the workspace.
+
+At most four commands run per request. The default batch deadline is 60 seconds,
+up to 5 minutes; input capture before/after the batch and process cleanup can add
+latency. Output defaults to 16 KiB, configurable from 4 KiB to 1 MiB. Logs can be
+truncated; statuses and input identities are retained. Inspecting a large recorded
+report may require increasing both `max_bytes` and MCP's `max_output_bytes`.
+Validation uses the plan's original ten-minute expiry and does not extend it.
 
 ## Paging results in an agent session
 
@@ -848,11 +980,14 @@ For clients that use an `mcpServers` configuration, add:
 }
 ```
 
-The client must support MCP `2025-11-25`. The seven tools are read-only:
+The client must support MCP `2025-11-25`. Navigation tools are read-only:
 `vvv_discover`, `vvv_search`, `vvv_navigate`, `vvv_relationships`, `vvv_context`,
-`vvv_continue`, and `vvv_expand`. Their input and output schemas are available through `tools/list`.
-Discovery describes the engine's full command catalog; only those seven tools are
-exposed through MCP.
+`vvv_continue`, and `vvv_expand`. Reviewed changes use `vvv_prepare_rename`,
+`vvv_inspect_plan`, `vvv_discard_plan`, and the writing tool `vvv_apply_plan`.
+`vvv_validate_plan` runs explicitly supplied project checks after apply.
+Their input and output schemas and mutation annotations are available through
+`tools/list`. Discovery describes the full engine catalog; `tools/list` is the
+MCP allowlist.
 
 For example, call `vvv_search` with
 `{"query":{"name":"Engine"},"scope":{"packages":["vvv-engine"],"paths":["crates/vvv-engine/src"]}}`.
@@ -881,12 +1016,14 @@ can return multiple candidates or an unavailable outcome; inspect that outcome
 before proceeding. Navigation returns compact locations and evidence; use context
 for source excerpts. Very large candidate sets can still exceed the output budget.
 
-Each tool defaults to a 16 KiB engine result budget, configurable with
-`max_output_bytes` up to 1 MiB. Protocol framing has separate limits described in
+Read tools default to a 16 KiB engine result budget (32 KiB for discovery),
+configurable with `max_output_bytes` up to 1 MiB. Apply does not accept output
+budgets; its compact receipt is checked against a 1 MiB maximum before writes. Protocol framing has separate limits described in
 [the MCP contract](protocol.md#mcp-stdio-adapter). Cancellation removes queued work
-or stops active work at the next engine checkpoint; a parser invocation or pending
-filesystem operation is not forcibly interrupted. Closing stdin cancels work and
-ends the session. Source resolution uses the same engine and ast-grep plugins as
+or stops active read work at the next engine checkpoint; a parser invocation or
+pending filesystem operation is not forcibly interrupted. Active apply finishes
+its transaction. Closing stdin cancels queued/read work and ends the session once
+any active apply completes. Source resolution uses the same engine and ast-grep plugins as
 the CLI; no language server is launched.
 
 ## Restricting search to paths and packages

@@ -176,7 +176,8 @@ artifact identity; the catalog hashes canonical generated data.
 ## `vvv context`
 
 The request accepts the same `origin` and `selection` as `navigate`, an optional
-`budget`, `references` (default false), and `include_enclosing` (default false).
+`budget`, `detail` (`"body"` by default or `"signature"`), `references` (default false),
+and `include_enclosing` (default false).
 Budget fields default independently:
 
 | Field         | Default | Allowed range |
@@ -201,10 +202,28 @@ Each item has:
 - `excerpt`: a `SourceAnchor` for precisely the returned bytes.
 - `start`: the excerpt's zero-based line/character position.
 - `text`: the source substring, without added ellipses or reformatted indentation.
-- `complete`: whether the entire target extent is present.
+- `complete`: whether the requested detail is fully present.
+- `signature`: present only in signature mode, either
+  `{ "outcome": "available", "requested": <SourceAnchor> }` identifying the full
+  signature range, or `{ "outcome": "unsupported" }`.
+
+Signature ranges include attached comments/documentation and attributes, followed
+by the exact AST declaration header, excluding its implementation/member body and
+trailing whitespace before that body. Parameters, generic constraints, return types,
+and braces inside types remain intact. Bodyless supported declarations (including
+type aliases and tuple structs) retain their complete extent. Signatures are source
+excerpts, not generated summaries or inferred types. Unsupported forms return empty
+`text`, a zero-length `excerpt` at the declaration start, and `complete: false`;
+this does not increment the byte-limit omission count. Request body detail to read
+the declaration. `target.declaration` always identifies the full declaration.
+
+In signature mode, outgoing navigation examines only identifiers in the seed's
+signature. Related items and an explicitly included enclosing item use the same
+detail. Incoming reference scanning is unchanged. A one-shot signature can be
+expanded by requesting body detail with the returned target as a symbol origin.
 
 The optional `enclosing` field identifies the nearest enclosing declaration as a
-`SymbolRef`. Its body is included only when `include_enclosing: true`; the same
+`SymbolRef`. It is included at the requested detail only when `include_enclosing: true`; the same
 owner is not reintroduced through outgoing or incoming relationships by default.
 Items are ordered seed first, the optional enclosing body second, outgoing
 occurrences in source order, then incoming files/tokens in path/source order. Each target
@@ -235,7 +254,7 @@ item with a new context request using its `target` as a symbol origin.
 
 ## Paged queries and exact source expansion
 
-`context_page` shares context's `include_enclosing` opt-in and returns the same
+`context_page` shares context's `detail` and `include_enclosing` options and returns the same
 optional `enclosing` location on each page, including empty progress pages.
 
 `search_page`, `context_page`, `continue`, and `expand` are read-only session and
@@ -277,7 +296,9 @@ Context results contain `kind: "context"`, `snapshot`, the existing context
 `outcome`, `items`, `references_by_name`, `work: {lookups, files}`,
 `unresolved: {ambiguous, unavailable, no_container}`, `traversal_complete`, and
 `next_cursor`. Each item has the existing `ContextItem` fields plus `expansion`,
-an independent excerpt cursor or null. Ambiguity candidates remain complete and
+an independent excerpt cursor or null. Signature items also carry `body_expansion`,
+an independent cursor starting at the full declaration's beginning, including when
+signature extraction is unsupported. It is absent for body-detail items. Ambiguity candidates remain complete and
 indivisible. `continue` returns the same operation-specific shape, distinguished
 by `kind`.
 
@@ -292,13 +313,15 @@ new declaration. A terminal empty page can confirm exhaustion; a nonterminal emp
 page always advances the frontier. Complete incoming evidence is still limited
 to the exact spelling, and test-path relationships do not establish test coverage.
 
-Expansion results contain `snapshot`, `target`, `requested` (the full declaration
-anchor), `excerpt` (the returned anchored range), `start`, exact `text`, `done`,
+Expansion results contain `snapshot`, `target`, `requested` (the full range of the
+selected signature or declaration), `excerpt` (the returned anchored range), `start`, exact `text`, `done`,
 and `next_cursor`. Concatenating the initial item text and its expansion chunks
-reconstructs the complete declaration, including documentation and indentation.
+reconstructs the requested signature or declaration, including documentation and
+indentation. With `body_expansion`, concatenate expansion chunks alone: the handle
+starts at the declaration beginning, so appending them to a signature duplicates it.
 Ranges are absolute half-open UTF-8 bytes; `start` is a zero-based line/character
 position. No ellipses or formatting are inserted. `done` marks the final chunk;
-an item's `complete` means that item contains the entire declaration. Continuing
+an item's `complete` means it contains the entire requested detail. Continuing
 relationships does not consume an excerpt cursor, or vice versa.
 
 Cursors are opaque, retryable, process-local handles. The same retained cursor
@@ -1000,6 +1023,162 @@ history id. Interfaces consume `Execution::into_answer()` before serializing the
 wire `Answer`. Executable plans and committed completion handles are not
 serialized.
 
+## Retained rename plans
+
+Four commands share the engine's session-owned plan store. They are available to
+library clients and through `vvv serve`; MCP maps the same requests to tools.
+Only `apply_plan` writes workspace files. These commands do not change existing
+`rename` or `apply: true` semantics.
+
+```json
+{"command":"prepare_rename","intent":{"name":"Engine","to":"Runtime","declared_in":"src/engine.rs"},"max_bytes":16384}
+{"command":"inspect_plan","plan_id":"<opaque handle>","max_bytes":16384}
+{"command":"apply_plan","plan_id":"<opaque handle>"}
+{"command":"discard_plan","plan_id":"<opaque handle>"}
+```
+
+`prepare_rename.intent` is a `RenameIntent`: `name`, `to`, optional `symbol`,
+`language`, `declared_in`, and `selection`. Preparation and inspection accept
+`max_bytes` (default 16384, range 1024–1048576), narrowed by the call's optional
+`max_output_bytes`. Preparation rejects oversized reviews before publishing a
+handle. No edits or ambiguity candidates are omitted to fit the output budget.
+Apply rejects `max_output_bytes` before consuming the plan or writing; its compact
+receipt is size-checked before transaction execution.
+
+Preparation, inspection, and discard return `plan_id`, `lifetime_seconds` (fixed
+from preparation, not a remaining-time counter), and a tagged lifecycle:
+
+| `state`     | Additional data                                       |
+| ----------- | ----------------------------------------------------- |
+| `prepared`  | `preview`: complete existing `Rename` preview payload |
+| `applied`   | `receipt`: the successful apply result                |
+| `failed`    | `failure`: original structured `Failure`              |
+| `discarded` | None                                                  |
+
+Inspection returns captured evidence, not newly resolved edits or a freshness
+verdict. Before application, the engine compares the complete captured input
+inventory, contents, manifests, and walk configuration against a fresh capture,
+and checks its mutation revision. Existing plan fingerprints and transaction
+recovery remain authoritative during writes. Unrelated source edits may invalidate
+a plan; external filesystem writes are not locked out. The engine preserves the
+configured library `Oracle` during preparation but does not version external
+oracle state; applying uses the captured edits rather than asking it again.
+
+Apply returns `{plan_id, history_id, files: [{path, content}]}`. `history_id` is the
+committed durable undo entry; `files` contains content identities written by the transaction.
+The response is a transaction receipt, not a compiler/test result. Formatting,
+compilation, linting, and tests can be requested separately with `validate_plan`. `history` and `undo` keep
+their existing stack semantics; undo does not accept a plan handle.
+
+Successful apply is idempotent within the retention window: replay returns its
+original receipt even after subsequent edits or undo, without another transaction.
+A failed attempt records its structured error and consumes the executable plan;
+repeat apply returns `plan_consumed`. Inspect before preparing a replacement,
+especially after `recovery_failed`. Discard releases pending executable edits;
+it never undoes writes or removes a successful receipt. Discarded tombstones are
+retryable until the next preparation reclaims them.
+
+`plan_id` is opaque, process-local, and scoped to one engine and its clones. It is
+not authentication, a durable bookmark, or a client-supplied edit payload. Malformed
+handles return `invalid_plan`; unknown, expired, or foreign handles return
+`plan_expired`; discarded/failed plans return `plan_consumed` on apply. Source
+changes return `stale`. Prepare and review a new plan after expiry or staleness.
+
+Discovery's `plan_retention` reports `max_plans: 16`, `max_plan_bytes: 16777216`,
+`max_total_bytes: 67108864`, and `lifetime_seconds: 600`. Monotonic expiry is fixed
+at preparation and includes terminal outcomes. Retention charges source copies,
+edit/review data, snapshots, and allocation overhead conservatively; it is not a
+limit on temporary parser/planner memory. `retention_limit` rejects a new plan
+without evicting pending plans or successful receipts. Discard pending plans,
+narrow the rename, or wait for expiry. Restarting the session loses handles but
+keeps committed undo history.
+
+## Applied-plan validation
+
+`validate_plan` is a separate capability. It requires an applied, unexpired retained
+plan and does not change the receipt or undo history. It runs caller-supplied
+programs directly, without an implicit shell, with the disk workspace root as cwd,
+null stdin, and the session's environment and permissions. It is **not read-only**
+and does not sandbox programs or recover their effects. Use formatter check mode;
+validation never chooses commands itself. `discover.validation_available` is true
+only for Unix disk workspaces, and `validation_defaults` publishes the default
+budget. Windows and virtual workspaces return `bad_request` without execution.
+
+```json
+{
+  "command": "validate_plan",
+  "plan_id": "<handle>",
+  "checks": [
+    { "name": "format", "program": "cargo", "args": ["fmt", "--check"] },
+    { "name": "compile", "program": "cargo", "args": ["check", "--workspace"] }
+  ],
+  "extra_inputs": [],
+  "budget": { "timeout_ms": 60000, "max_bytes": 16384 }
+}
+```
+
+`checks` has one to four entries. Each `name` is nonempty and at most 128 bytes;
+`program` is nonempty, and `args` defaults to an empty array with at most 64 entries.
+Program/argument NULs are invalid. Labels, programs, and arguments together are at
+most 8192 UTF-8 bytes. `extra_inputs` defaults to empty and accepts at most 32 existing
+workspace-relative file paths, without `..`, root, or `.` components. `budget`
+defaults to `{timeout_ms: 60000, max_bytes: 16384}`. Deadline range is 1–300000 ms;
+result-byte range is 4096–1048576. Invalid shapes/plan states return `bad_request`;
+invalid budgets return `bad_request`. Unknown/expired plans use existing plan errors.
+Call-level `max_output_bytes` is rejected before execution; use `budget.max_bytes`.
+
+Before launching anything, the engine compares the planner's full input snapshot,
+updated with the contents written by apply, to the workspace. Differences return
+`stale`. It captures workspace-visible files (including raw binary contents),
+planner source/configuration inputs, and explicit extra inputs twice before launch.
+The engine's `.vvv` directory is excluded from the walk. Caller-specified inputs
+are still explicit. The digest covers paths and complete contents; `input_files`
+counts unique inputs. It observes inputs again between commands and after the batch.
+Ignored/hidden files not captured this way, tool versions, ambient environment,
+installed dependencies, and external services are not versioned. There is no atomic
+filesystem snapshot or exclusion of external writers; reverted transient changes
+between captures are not observable.
+
+The result is a `ValidationReport`:
+
+| Field                              | Meaning                                                            |
+| ---------------------------------- | ------------------------------------------------------------------ |
+| `plan_id`, `history_id`, `sources` | Applied receipt identity and written file versions                 |
+| `run`                              | Starts at 1 and increases for each recorded run on this handle     |
+| `before`, `after`                  | Input snapshot digests; `after` is null when capture fails         |
+| `input_files`, `extra_inputs`      | Initial unique input count and caller's extra paths                |
+| `source_state`                     | `unchanged`, `changed`, or `unavailable`                           |
+| `passed`                           | Every check passed and the observed inputs stayed unchanged        |
+| `checks`                           | Ordered command descriptions and results, including checks not run |
+
+Each check includes `command: {name, program, args}`, `outcome`, nullable
+`exit_code`, `duration_ms`, `stdout`, `stderr`, and nullable `failure`. Outcomes are
+`not_run`, `passed`, `failed`, `timed_out`, `cancelled`, or `error`. A nonzero exit
+is `failed`; spawn/capture/wait/termination failures are `error`, with typed
+`failure: {operation, os_code}` (the OS code can be null). Signal exits can have
+null exit codes. Each output is `{text, bytes_seen, truncated, complete}`: lossy
+UTF-8 text, total bytes observed before capture stops, whether the stored prefix
+was shortened, and whether EOF was reached. JSON escaping counts against the result
+budget. Logs can shrink at UTF-8 boundaries; statuses and identities never disappear.
+Oversized metadata or retention capacity fails before any program is launched.
+
+Commands execute sequentially; a command failure does not skip later checks.
+Changed/unavailable inputs stop the batch. The deadline covers the batch including
+between-command input captures; initial/final capture and cleanup are additional
+latency. Individual filesystem/parser operations are not preempted. Cancellation or
+timeout kills the active Unix process group and reaps its leader; output drain has
+a bounded grace period. This is process cleanup, not containment of programs that
+escape their group. No later program launches after cancellation or deadline expiry.
+
+A completed report is retained as optional `PlanReview.validation`, replacing the
+previous report within the existing memory and fixed expiry limits. Each validation
+request reruns checks; it is not idempotent. Cancellation during execution still
+records the evidence before returning a cancellation error; use `inspect_plan` after
+an interrupted response. Cancellation before execution can leave no new report.
+The original apply receipt remains retryable and unchanged. Failed checks are an
+`ok` protocol result with `passed: false`, not an apply failure. Inspection returns
+historical evidence and does not recheck current sources.
+
 ## MCP stdio adapter
 
 `vvv -C <root> mcp` is an optional CLI adapter over the same in-process engine.
@@ -1009,28 +1188,38 @@ rejected during initialization. `serve` retains its existing JSON-lines contract
 Only MCP messages go to stdout, including when `--json` is supplied; startup
 errors go to stderr. The workspace is fixed at launch.
 
-`tools/list` returns all seven tools in one response, with generated JSON Schema
+`tools/list` returns all twelve tools in one response, with generated JSON Schema
 inputs and per-command `Response` output schemas. A tool-list cursor is invalid.
 
-| MCP tool            | Engine request  |
-| ------------------- | --------------- |
-| `vvv_discover`      | `discover`      |
-| `vvv_search`        | `search_page`   |
-| `vvv_navigate`      | `resolve`       |
-| `vvv_relationships` | `relationships` |
-| `vvv_context`       | `context_page`  |
-| `vvv_continue`      | `continue`      |
-| `vvv_expand`        | `expand`        |
+| MCP tool             | Engine request   |
+| -------------------- | ---------------- |
+| `vvv_discover`       | `discover`       |
+| `vvv_search`         | `search_page`    |
+| `vvv_navigate`       | `resolve`        |
+| `vvv_relationships`  | `relationships`  |
+| `vvv_context`        | `context_page`   |
+| `vvv_continue`       | `continue`       |
+| `vvv_expand`         | `expand`         |
+| `vvv_prepare_rename` | `prepare_rename` |
+| `vvv_inspect_plan`   | `inspect_plan`   |
+| `vvv_apply_plan`     | `apply_plan`     |
+| `vvv_discard_plan`   | `discard_plan`   |
+| `vvv_validate_plan`  | `validate_plan`  |
 
-Arguments are the command's generated `arguments` schema, extended with
-`max_output_bytes` (default 16384; range 1024–1048576). No `command`, call ID,
-workspace root, or arbitrary command dispatch is accepted. All tools have
-`readOnlyHint: true`, `destructiveHint: false`, and `openWorldHint: false`.
+Arguments are the command's generated `arguments` schema. Read-only tools add
+`max_output_bytes` (default 16384, or 32768 for discovery; range 1024–1048576).
+`vvv_apply_plan` and `vvv_validate_plan` do not accept that field. No `command`, call ID, workspace root,
+or arbitrary command dispatch is accepted. Apply and validation have `readOnlyHint: false` and
+`destructiveHint: true`; other tools have `readOnlyHint: true` and
+`destructiveHint: false`. Validation has `openWorldHint: true`; other tools have `openWorldHint: false`.
 Discovery still reports the full engine catalog; use `tools/list` as the MCP
 allowlist.
 
-Every tool runs through `Call::execute_with_cancellation`, sharing `Call::execute`'s
-budget policy. `structuredContent` contains the original vvv `Response<Answer>`
+Reads and validation run through `Call::execute_with_cancellation`; apply runs through
+`Call::execute` without a cancellation handle or output budget. Queued applies
+can be cancelled, but active applies finish and retain their terminal outcome.
+Cancellation after apply starts cannot replace its receipt with a cancellation
+error; after an interrupted response, inspect or retry the same handle. `structuredContent` contains the original vvv `Response<Answer>`
 without an MCP request ID. A text block contains the same JSON for compatibility.
 Engine failures set `isError: true` and retain typed recovery fields. Ambiguous and
 unavailable navigation are successful results with `isError: false`. Unknown tools
@@ -1039,14 +1228,14 @@ source excerpts. Oversized candidate sets still return `output_limit`.
 
 Limits apply independently:
 
-| Resource                                     | Limit                          |
-| -------------------------------------------- | ------------------------------ |
-| Incoming SDK codec frame                     | 64 KiB                         |
-| JSON-encoded request ID                      | 256 bytes                      |
-| Admitted requests, including pending replies | 32                             |
-| Engine execution                             | One worker, eight queued calls |
-| Serialized engine result                     | 16 KiB default, 1 MiB maximum  |
-| Outgoing JSON-RPC message                    | 8 MiB                          |
+| Resource                                     | Limit                                                                         |
+| -------------------------------------------- | ----------------------------------------------------------------------------- |
+| Incoming SDK codec frame                     | 64 KiB                                                                        |
+| JSON-encoded request ID                      | 256 bytes                                                                     |
+| Admitted requests, including pending replies | 32                                                                            |
+| Engine execution                             | One worker, eight queued calls                                                |
+| Serialized engine result                     | Reads: 16 KiB default (discovery 32 KiB), 1 MiB maximum; apply: 1 MiB maximum |
+| Outgoing JSON-RPC message                    | 8 MiB                                                                         |
 
 The outgoing allowance reserves space for structured content, its escaped text
 copy, envelopes, and IDs before execution. Oversized error payloads become a small

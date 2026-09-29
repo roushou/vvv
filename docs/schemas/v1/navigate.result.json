@@ -50,7 +50,7 @@
       "description": "`$A` binds one node; `$$$A` binds a sequence."
     },
     "ContentId": {
-      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "description": "Digest of complete file contents, independent of their path.",
       "type": "string"
     },
     "DefinitionCandidate": {
@@ -513,7 +513,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:navigate:result:33460033c977f60fc9d74c4911ce248eb464533e45af0bacc600258819f49a20",
+  "$id": "urn:vvv:schema:1:navigate:result:040d13da1c8d8f8f48b248f875adde5ecf7b68a10a5e9640b23d906f323bfd4e",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "oneOf": [
     {

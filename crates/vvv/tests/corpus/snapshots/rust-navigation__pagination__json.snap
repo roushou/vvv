@@ -59,7 +59,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         "pattern": "Engine"
       },
       "skipped": [],
-      "snapshot": "a6c46089db89bf7dffc108d8fced454c1e893ceebc60e32dfb886022cb832425",
+      "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
     },
     "schema": 1,
@@ -220,7 +220,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         "pattern": "Engine"
       },
       "skipped": [],
-      "snapshot": "a6c46089db89bf7dffc108d8fced454c1e893ceebc60e32dfb886022cb832425",
+      "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
     },
     "schema": 1,
@@ -365,7 +365,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         "pattern": "Engine"
       },
       "skipped": [],
-      "snapshot": "a6c46089db89bf7dffc108d8fced454c1e893ceebc60e32dfb886022cb832425",
+      "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
     },
     "schema": 1,
@@ -450,7 +450,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         "pattern": "Engine"
       },
       "skipped": [],
-      "snapshot": "a6c46089db89bf7dffc108d8fced454c1e893ceebc60e32dfb886022cb832425",
+      "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
     },
     "schema": 1,
@@ -535,7 +535,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         "pattern": "Engine"
       },
       "skipped": [],
-      "snapshot": "a6c46089db89bf7dffc108d8fced454c1e893ceebc60e32dfb886022cb832425",
+      "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
     },
     "schema": 1,
@@ -620,7 +620,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         "pattern": "Engine"
       },
       "skipped": [],
-      "snapshot": "a6c46089db89bf7dffc108d8fced454c1e893ceebc60e32dfb886022cb832425",
+      "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
     },
     "schema": 1,
@@ -705,7 +705,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         "pattern": "Engine"
       },
       "skipped": [],
-      "snapshot": "a6c46089db89bf7dffc108d8fced454c1e893ceebc60e32dfb886022cb832425",
+      "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
     },
     "schema": 1,
@@ -790,7 +790,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         "pattern": "Engine"
       },
       "skipped": [],
-      "snapshot": "a6c46089db89bf7dffc108d8fced454c1e893ceebc60e32dfb886022cb832425",
+      "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
     },
     "schema": 1,
@@ -875,7 +875,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         "pattern": "Engine"
       },
       "skipped": [],
-      "snapshot": "a6c46089db89bf7dffc108d8fced454c1e893ceebc60e32dfb886022cb832425",
+      "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
     },
     "schema": 1,
@@ -960,7 +960,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         "pattern": "Engine"
       },
       "skipped": [],
-      "snapshot": "a6c46089db89bf7dffc108d8fced454c1e893ceebc60e32dfb886022cb832425",
+      "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
     },
     "schema": 1,
@@ -1022,7 +1022,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         "pattern": "Engine"
       },
       "skipped": [],
-      "snapshot": "a6c46089db89bf7dffc108d8fced454c1e893ceebc60e32dfb886022cb832425",
+      "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
     },
     "schema": 1,
@@ -1071,7 +1071,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-11",
       "outcome": "resolved",
       "references_by_name": true,
-      "snapshot": "9925dcf3a3ca1a7189ef85f564b7cba4f23207b78299ccadb1accba03418ac1f",
+      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
       "unresolved": {
         "ambiguous": 0,
@@ -1136,7 +1136,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-12",
       "outcome": "resolved",
       "references_by_name": true,
-      "snapshot": "9925dcf3a3ca1a7189ef85f564b7cba4f23207b78299ccadb1accba03418ac1f",
+      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
       "unresolved": {
         "ambiguous": 1,
@@ -1243,7 +1243,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-13",
       "outcome": "resolved",
       "references_by_name": true,
-      "snapshot": "9925dcf3a3ca1a7189ef85f564b7cba4f23207b78299ccadb1accba03418ac1f",
+      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
       "unresolved": {
         "ambiguous": 0,
@@ -1265,7 +1265,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-14",
       "outcome": "resolved",
       "references_by_name": true,
-      "snapshot": "9925dcf3a3ca1a7189ef85f564b7cba4f23207b78299ccadb1accba03418ac1f",
+      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
       "unresolved": {
         "ambiguous": 0,
@@ -1372,7 +1372,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-15",
       "outcome": "resolved",
       "references_by_name": true,
-      "snapshot": "9925dcf3a3ca1a7189ef85f564b7cba4f23207b78299ccadb1accba03418ac1f",
+      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
       "unresolved": {
         "ambiguous": 0,
@@ -1394,7 +1394,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-16",
       "outcome": "resolved",
       "references_by_name": true,
-      "snapshot": "9925dcf3a3ca1a7189ef85f564b7cba4f23207b78299ccadb1accba03418ac1f",
+      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
       "unresolved": {
         "ambiguous": 0,
@@ -1416,7 +1416,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-17",
       "outcome": "resolved",
       "references_by_name": true,
-      "snapshot": "9925dcf3a3ca1a7189ef85f564b7cba4f23207b78299ccadb1accba03418ac1f",
+      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
       "unresolved": {
         "ambiguous": 0,
@@ -1438,7 +1438,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-18",
       "outcome": "resolved",
       "references_by_name": true,
-      "snapshot": "9925dcf3a3ca1a7189ef85f564b7cba4f23207b78299ccadb1accba03418ac1f",
+      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
       "unresolved": {
         "ambiguous": 0,
@@ -1545,7 +1545,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-19",
       "outcome": "resolved",
       "references_by_name": true,
-      "snapshot": "9925dcf3a3ca1a7189ef85f564b7cba4f23207b78299ccadb1accba03418ac1f",
+      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
       "unresolved": {
         "ambiguous": 0,
@@ -1567,7 +1567,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-20",
       "outcome": "resolved",
       "references_by_name": true,
-      "snapshot": "9925dcf3a3ca1a7189ef85f564b7cba4f23207b78299ccadb1accba03418ac1f",
+      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
       "unresolved": {
         "ambiguous": 0,
@@ -1589,7 +1589,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-21",
       "outcome": "resolved",
       "references_by_name": true,
-      "snapshot": "9925dcf3a3ca1a7189ef85f564b7cba4f23207b78299ccadb1accba03418ac1f",
+      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
       "unresolved": {
         "ambiguous": 0,
@@ -1599,6 +1599,28 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "work": {
         "files": 2,
         "lookups": 4
+      }
+    },
+    "schema": 1,
+    "status": "ok"
+  },
+  {
+    "result": {
+      "items": [],
+      "kind": "context",
+      "next_cursor": "cursor-22",
+      "outcome": "resolved",
+      "references_by_name": true,
+      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
+      "traversal_complete": false,
+      "unresolved": {
+        "ambiguous": 0,
+        "no_container": 0,
+        "unavailable": 0
+      },
+      "work": {
+        "files": 2,
+        "lookups": 1
       }
     },
     "schema": 1,
@@ -1651,11 +1673,11 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         }
       ],
       "kind": "context",
-      "next_cursor": "cursor-22",
+      "next_cursor": null,
       "outcome": "resolved",
       "references_by_name": true,
-      "snapshot": "9925dcf3a3ca1a7189ef85f564b7cba4f23207b78299ccadb1accba03418ac1f",
-      "traversal_complete": false,
+      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
+      "traversal_complete": true,
       "unresolved": {
         "ambiguous": 0,
         "no_container": 1,
@@ -1664,28 +1686,6 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "work": {
         "files": 2,
         "lookups": 3
-      }
-    },
-    "schema": 1,
-    "status": "ok"
-  },
-  {
-    "result": {
-      "items": [],
-      "kind": "context",
-      "next_cursor": null,
-      "outcome": "resolved",
-      "references_by_name": true,
-      "snapshot": "9925dcf3a3ca1a7189ef85f564b7cba4f23207b78299ccadb1accba03418ac1f",
-      "traversal_complete": true,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 0,
-        "unavailable": 0
-      },
-      "work": {
-        "files": 1,
-        "lookups": 1
       }
     },
     "schema": 1,

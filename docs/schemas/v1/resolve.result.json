@@ -20,7 +20,7 @@
       "type": "object"
     },
     "ContentId": {
-      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "description": "Digest of complete file contents, independent of their path.",
       "type": "string"
     },
     "DefinitionLocation": {
@@ -241,7 +241,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:resolve:result:1b18bf668530aaac98633e439f51400c6b2ea9ec11d4be0007a4ca81ee4f36a3",
+  "$id": "urn:vvv:schema:1:resolve:result:eceb05eaa5369f697f9fbe83d4d83bd668bb8ef9428ab905030d58aa2c962807",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "oneOf": [
     {

@@ -15,8 +15,38 @@
       ],
       "type": "object"
     },
+    "CheckCommand": {
+      "additionalProperties": false,
+      "properties": {
+        "args": {
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "name": {
+          "description": "A caller-defined label, such as formatting, compilation, or unit tests.",
+          "type": "string"
+        },
+        "program": {
+          "description": "Executed directly, without implicit shell parsing.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "program"
+      ],
+      "type": "object"
+    },
     "Command": {
       "enum": [
+        "discard_plan",
+        "apply_plan",
+        "validate_plan",
+        "inspect_plan",
+        "prepare_rename",
         "schema",
         "search_page",
         "context_page",
@@ -49,7 +79,7 @@
       "type": "string"
     },
     "ContentId": {
-      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "description": "Digest of complete file contents, independent of their path.",
       "type": "string"
     },
     "ContextBudget": {
@@ -88,6 +118,14 @@
       },
       "type": "object"
     },
+    "ContextDetail": {
+      "description": "Source detail requested for every context item. Bodies remain the default.",
+      "enum": [
+        "body",
+        "signature"
+      ],
+      "type": "string"
+    },
     "ContextQuery": {
       "properties": {
         "budget": {
@@ -99,9 +137,13 @@
             "max_lookups": 64
           }
         },
+        "detail": {
+          "$ref": "#/$defs/ContextDetail",
+          "default": "body"
+        },
         "include_enclosing": {
           "default": false,
-          "description": "Include the enclosing declaration's full body as a separate item.",
+          "description": "Include the enclosing declaration at the requested detail as a separate item.",
           "type": "boolean"
         },
         "origin": {
@@ -449,6 +491,10 @@
         }
       },
       "type": "object"
+    },
+    "PlanId": {
+      "description": "Opaque handle scoped to an engine session, not a serializable edit plan.",
+      "type": "string"
     },
     "Position": {
       "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
@@ -977,6 +1023,27 @@
       "description": "Replacement text with meta-variable holes: `bar($$$ARGS)`, `$NAME_v2`.\n\nVariables are `$NAME` (single capture) or `$$$NAME` (sequence capture);\na name is `[A-Z_][A-Z0-9_]*`. Anything else is literal.",
       "type": "string"
     },
+    "ValidationBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_bytes": {
+          "default": 16384,
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 4096,
+          "type": "integer"
+        },
+        "timeout_ms": {
+          "default": 60000,
+          "description": "Deadline for the command batch, including between-command captures.\nInitial and final input capture and process cleanup are outside this limit.",
+          "format": "uint64",
+          "maximum": 300000,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
     "WhereQuery": {
       "description": "`vvv where <name> [--from <file>]`: where a name is declared, and the\nimport that reaches each site from `from`.",
       "properties": {
@@ -1020,10 +1087,129 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:session:call:7bc93a44bed3937690c4f6e7c63afa10acc665c84b6d1830db08afa49d4ca28e",
+  "$id": "urn:vvv:schema:1:session:call:d3dc6f8fb0b3ca4d76ac91b51fdd9a653ea79695293bed2dff1549ada2d5cbd8",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "A request on a session's wire (`vvv serve`): the request with whatever\n`id` the caller chose, echoed on the [`Reply`].",
   "oneOf": [
+    {
+      "properties": {
+        "command": {
+          "const": "discard_plan",
+          "type": "string"
+        },
+        "plan_id": {
+          "$ref": "#/$defs/PlanId"
+        }
+      },
+      "required": [
+        "command",
+        "plan_id"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "command": {
+          "const": "apply_plan",
+          "type": "string"
+        },
+        "plan_id": {
+          "$ref": "#/$defs/PlanId"
+        }
+      },
+      "required": [
+        "command",
+        "plan_id"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "budget": {
+          "$ref": "#/$defs/ValidationBudget",
+          "default": {
+            "max_bytes": 16384,
+            "timeout_ms": 60000
+          }
+        },
+        "checks": {
+          "items": {
+            "$ref": "#/$defs/CheckCommand"
+          },
+          "maxItems": 4,
+          "minItems": 1,
+          "type": "array"
+        },
+        "command": {
+          "const": "validate_plan",
+          "type": "string"
+        },
+        "extra_inputs": {
+          "default": [],
+          "description": "Explicit hidden/ignored inputs, in addition to workspace-visible files.",
+          "items": {
+            "$ref": "#/$defs/RelPath"
+          },
+          "maxItems": 32,
+          "type": "array"
+        },
+        "plan_id": {
+          "$ref": "#/$defs/PlanId"
+        }
+      },
+      "required": [
+        "command",
+        "plan_id",
+        "checks"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "command": {
+          "const": "inspect_plan",
+          "type": "string"
+        },
+        "max_bytes": {
+          "default": 16384,
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 1024,
+          "type": "integer"
+        },
+        "plan_id": {
+          "$ref": "#/$defs/PlanId"
+        }
+      },
+      "required": [
+        "command",
+        "plan_id"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "command": {
+          "const": "prepare_rename",
+          "type": "string"
+        },
+        "intent": {
+          "$ref": "#/$defs/RenameIntent"
+        },
+        "max_bytes": {
+          "default": 16384,
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 1024,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "command",
+        "intent"
+      ],
+      "type": "object"
+    },
     {
       "$ref": "#/$defs/SchemaQuery",
       "properties": {
@@ -1073,9 +1259,13 @@
           "const": "context_page",
           "type": "string"
         },
+        "detail": {
+          "$ref": "#/$defs/ContextDetail",
+          "default": "body"
+        },
         "include_enclosing": {
           "default": false,
-          "description": "Include the enclosing declaration's full body as a separate item.",
+          "description": "Include the enclosing declaration at the requested detail as a separate item.",
           "type": "boolean"
         },
         "origin": {

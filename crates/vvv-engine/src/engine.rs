@@ -23,6 +23,7 @@ pub struct Engine {
     /// Invalidation does not acquire or refresh the graph.
     dirty: Arc<AtomicBool>,
     queries: Arc<Mutex<crate::query_store::QueryStore>>,
+    plans: Arc<Mutex<crate::plan_store::PlanStore>>,
     query_revision: Arc<AtomicU64>,
     cancellation: Option<crate::ReadCancellation>,
 }
@@ -54,6 +55,7 @@ impl Engine {
             queries: Arc::new(Mutex::new(crate::query_store::QueryStore::default())),
             query_revision: Arc::new(AtomicU64::new(0)),
             cancellation: None,
+            plans: Arc::new(Mutex::new(crate::plan_store::PlanStore::default())),
         }
     }
 
@@ -79,6 +81,21 @@ impl Engine {
         self.check_read()?;
         let result = (|| {
             Ok(match request {
+                crate::Request::DiscardPlan(query) => {
+                    Execution::Completed(crate::Answer::DiscardPlan(query.execute_in(self)?))
+                }
+                crate::Request::ValidatePlan(query) => {
+                    Execution::Completed(crate::Answer::ValidatePlan(query.execute_in(self)?))
+                }
+                crate::Request::ApplyPlan(query) => {
+                    Execution::Completed(crate::Answer::ApplyPlan(query.execute_in(self)?))
+                }
+                crate::Request::InspectPlan(query) => {
+                    Execution::Completed(crate::Answer::InspectPlan(query.execute_in(self)?))
+                }
+                crate::Request::PrepareRename(query) => {
+                    Execution::Completed(crate::Answer::PrepareRename(query.execute_in(self)?))
+                }
                 #[cfg(feature = "schema")]
                 crate::Request::Schema(query) => {
                     Execution::Completed(crate::Answer::Schema(query.execute()?))
@@ -236,6 +253,11 @@ impl Engine {
         self.languages.iter().map(|l| l.id().clone()).collect()
     }
 
+    pub(crate) fn plans(&self) -> MutexGuard<'_, crate::plan_store::PlanStore> {
+        self.plans
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+    }
     pub(crate) fn queries(&self) -> MutexGuard<'_, crate::query_store::QueryStore> {
         self.queries
             .lock()
@@ -248,6 +270,12 @@ impl Engine {
     pub(crate) fn with_cancellation(&self, cancellation: crate::ReadCancellation) -> Self {
         Self {
             cancellation: Some(cancellation),
+            ..self.clone()
+        }
+    }
+    pub(crate) fn without_cancellation(&self) -> Self {
+        Self {
+            cancellation: None,
             ..self.clone()
         }
     }
@@ -267,6 +295,10 @@ impl Engine {
             Some(c) => c.complete(publish),
             None => publish(),
         }
+    }
+
+    pub(crate) fn oracle(&self) -> Option<Arc<dyn Oracle>> {
+        self.oracle.clone()
     }
 
     pub(crate) fn workspace(&self) -> &Workspace {

@@ -14,6 +14,9 @@ use crate::text::Span;
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Facts {
+    /// Supported declaration headers; missing entries mean extraction is unsupported.
+    #[serde(default)]
+    pub signatures: Vec<crate::DeclarationSignature>,
     #[serde(default)]
     pub calls: Vec<crate::CallSite>,
     /// Whether this plugin supplies call classification.

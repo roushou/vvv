@@ -9,7 +9,8 @@ use crate::{EngineError, FileChange, Intent, Mutation, MutationAnswer, Workspace
 /// What a mutating command returns: the result as a preview — `applied` is
 /// false, `files` shows what would change — and, kept beside it, the plan(s)
 /// [`Apply`](crate::Apply) writes. The plan never leaves the
-/// process: a result that crossed to a client has nothing to apply.
+/// process. Session plan handles reference it without accepting executable edits
+/// back from a client; an ordinary serialized mutation result has no apply handle.
 /// Queries cannot carry executable plans:
 ///
 /// ```compile_fail,E0277

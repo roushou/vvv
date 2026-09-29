@@ -1,7 +1,15 @@
 {
   "$defs": {
     "ContentId": {
-      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "description": "Digest of complete file contents, independent of their path.",
+      "type": "string"
+    },
+    "ContextDetail": {
+      "description": "Source detail requested for every context item. Bodies remain the default.",
+      "enum": [
+        "body",
+        "signature"
+      ],
       "type": "string"
     },
     "LanguageId": {
@@ -284,7 +292,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:context_page:request:b48f115ebc28b461f1eaa93a7d1347d6ee8b638218d4a03d15c11cb8f5b50734",
+  "$id": "urn:vvv:schema:1:context_page:request:f9a795866421657ce5320aeefa1e1bf236272216f3369184a93295029e848771",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
   "properties": {
@@ -292,9 +300,13 @@
       "const": "context_page",
       "type": "string"
     },
+    "detail": {
+      "$ref": "#/$defs/ContextDetail",
+      "default": "body"
+    },
     "include_enclosing": {
       "default": false,
-      "description": "Include the enclosing declaration's full body as a separate item.",
+      "description": "Include the enclosing declaration at the requested detail as a separate item.",
       "type": "boolean"
     },
     "origin": {

@@ -98,6 +98,10 @@ impl Stamp {
 
 pub trait Vfs: Send + Sync {
     fn read(&self, path: &Path) -> Result<String, VfsError>;
+    /// Raw inputs for validation, including non-UTF-8 resources.
+    fn read_bytes(&self, path: &Path) -> Result<Vec<u8>, VfsError> {
+        self.read(path).map(String::into_bytes)
+    }
     /// The file's current [`Stamp`], without reading it.
     fn stamp(&self, path: &Path) -> Result<Stamp, VfsError>;
     /// Write a whole file, creating parent directories as needed.

@@ -34,7 +34,7 @@
       "type": "object"
     },
     "ContentId": {
-      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "description": "Digest of complete file contents, independent of their path.",
       "type": "string"
     },
     "ContextBudget": {
@@ -125,6 +125,9 @@
         "page_maximum": {
           "$ref": "#/$defs/PageBudget"
         },
+        "plan_retention": {
+          "$ref": "#/$defs/PlanLimits"
+        },
         "query_retention": {
           "$ref": "#/$defs/QueryLimits"
         },
@@ -137,6 +140,12 @@
           "default": false,
           "type": "boolean"
         },
+        "validation_available": {
+          "type": "boolean"
+        },
+        "validation_defaults": {
+          "$ref": "#/$defs/ValidationBudget"
+        },
         "work_defaults": {
           "$ref": "#/$defs/WorkBudget"
         },
@@ -146,6 +155,8 @@
       },
       "required": [
         "schemas_available",
+        "validation_available",
+        "validation_defaults",
         "schema",
         "languages",
         "commands",
@@ -154,6 +165,7 @@
         "work_defaults",
         "work_maximum",
         "query_retention",
+        "plan_retention",
         "context_defaults",
         "context_maximum",
         "min_output_bytes",
@@ -166,6 +178,9 @@
       "oneOf": [
         {
           "enum": [
+            "invalid_plan",
+            "plan_expired",
+            "plan_consumed",
             "cursor_expired",
             "invalid_cursor",
             "retention_limit",
@@ -383,6 +398,37 @@
       "required": [
         "max_items",
         "max_bytes"
+      ],
+      "type": "object"
+    },
+    "PlanLimits": {
+      "properties": {
+        "lifetime_seconds": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_plan_bytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_plans": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "max_total_bytes": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "max_plans",
+        "max_plan_bytes",
+        "max_total_bytes",
+        "lifetime_seconds"
       ],
       "type": "object"
     },
@@ -658,6 +704,31 @@
       ],
       "type": "object"
     },
+    "ValidationBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_bytes": {
+          "default": 16384,
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 4096,
+          "type": "integer"
+        },
+        "timeout_ms": {
+          "default": 60000,
+          "description": "Deadline for the command batch, including between-command captures.\nInitial and final input capture and process cleanup are outside this limit.",
+          "format": "uint64",
+          "maximum": 300000,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "timeout_ms",
+        "max_bytes"
+      ],
+      "type": "object"
+    },
     "WorkBudget": {
       "additionalProperties": false,
       "properties": {
@@ -683,7 +754,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:discover:response:f3ffdbd83dae102ee11c05de0d11b8a270d06fb473c3b72e23ec684cec770880",
+  "$id": "urn:vvv:schema:1:discover:response:36f7057e298b5e3e8a90f719be2b33f2a6ce196e9e4f95175e0a3fe22688dd92",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [

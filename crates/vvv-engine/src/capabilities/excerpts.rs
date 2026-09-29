@@ -28,6 +28,7 @@ pub struct Expansion {
 #[derive(Debug, Clone, Serialize)]
 pub(crate) struct Excerpt {
     pub target: SymbolRef,
+    pub requested: Span,
     pub next: usize,
 }
 impl ExpandQuery {
@@ -58,7 +59,7 @@ impl Excerpt {
         budget: crate::PageBudget,
     ) -> Result<Expansion, EngineError> {
         let file = graph.file(&self.target.declaration.path)?;
-        let text = &file.text()[self.next..self.target.declaration.span.end];
+        let text = &file.text()[self.next..self.requested.end];
         let minimum = text.chars().next().map_or(0, char::len_utf8);
         let mut length = text.len().min(budget.max_bytes);
         while !text.is_char_boundary(length) {
@@ -67,14 +68,18 @@ impl Excerpt {
         loop {
             let after = Self {
                 target: self.target.clone(),
+                requested: self.requested,
                 next: self.next + length,
             };
-            let done = after.next == self.target.declaration.span.end;
+            let done = after.next == self.requested.end;
             let next = Checkpoint::Excerpt(after);
             let reply = Expansion {
                 snapshot: session.root.identity.clone(),
                 target: self.target.clone(),
-                requested: self.target.declaration.clone(),
+                requested: SourceAnchor {
+                    span: self.requested,
+                    ..self.target.declaration.clone()
+                },
                 excerpt: SourceAnchor {
                     span: Span::new(self.next, self.next + length),
                     ..self.target.declaration.clone()

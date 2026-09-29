@@ -28,7 +28,7 @@
       "type": "string"
     },
     "ContentId": {
-      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "description": "Digest of complete file contents, independent of their path.",
       "type": "string"
     },
     "DefinitionLocation": {
@@ -572,7 +572,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:relationships:result:3733e4bec38876f39db1811101e26b10af91a556dc030e7561cddbcf86625ec9",
+  "$id": "urn:vvv:schema:1:relationships:result:29254ae082f38d4195394024eecefdb5d37e9d32940ec7a18f51c33fbb146f1c",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {
     "coverage": {

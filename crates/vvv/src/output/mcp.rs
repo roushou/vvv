@@ -60,6 +60,21 @@ impl McpIssue {
 impl ToolKind {
     pub fn description(self) -> &'static str {
         match self {
+            Self::PrepareRename => {
+                "Prepare a rename without writing files. Review the complete preview, including skipped/unresolved occurrences. Retains the exact executable plan in this session for 10 minutes. Return plan_id to apply only after review; narrowing or budget failure never silently drops edits."
+            }
+            Self::InspectPlan => {
+                "Inspect the captured preview or terminal outcome of a retained plan. Does not replan or extend its lifetime. Apply checks current sources separately."
+            }
+            Self::ValidatePlan => {
+                "Run explicitly supplied programs and argv in the workspace after applying a retained plan. Use formatting check mode. Programs are not sandboxed and may write or access the network. Unix disk workspaces only. Captures bounded output and source-change evidence; inspect_plan retains the latest run, including after cancellation. Each call runs the checks again. Uses budget.max_bytes, not max_output_bytes."
+            }
+            Self::ApplyPlan => {
+                "Write the exact reviewed plan_id and record undo history. Rejects changed workspace inputs. Repeating a successful handle returns its original receipt without writing again. Once started, application finishes despite cancellation; inspect the handle after an interrupted response. Does not run formatters, compilers, or tests."
+            }
+            Self::DiscardPlan => {
+                "Release a pending plan without changing source files. Repeating discard is safe; completed receipts remain available until expiry."
+            }
             Self::Discover => {
                 "List the build's languages, engine commands, schemas, and limits. The MCP tool allowlist is tools/list."
             }
@@ -73,7 +88,7 @@ impl ToolKind {
                 "Resolve an exact source position, occurrence, or symbol to compact locations and evidence. Inspect resolved, ambiguous, or unavailable outcomes. Fetch source bodies with vvv_context."
             }
             Self::Context => {
-                "Retrieve exact declaration excerpts and related declarations. Enclosing locations are metadata; set include_enclosing to request their bodies. Follow next_cursor even on empty progress pages; expand text with each item's expansion handle."
+                "Retrieve exact declaration excerpts and related declarations. Use detail: signature for attached docs and headers, or body (default) for full declarations. Enclosing locations are metadata unless include_enclosing is set. Follow next_cursor even on empty pages. expansion continues a truncated excerpt; body_expansion retrieves the full declaration from its start."
             }
             Self::Continue => {
                 "Continue a retained search or context query in this session. Retryable; edits require restarting the original query."

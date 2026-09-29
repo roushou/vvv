@@ -50,7 +50,7 @@
       "description": "`$A` binds one node; `$$$A` binds a sequence."
     },
     "ContentId": {
-      "description": "Digest of the complete UTF-8 source text, independent of its path.",
+      "description": "Digest of complete file contents, independent of their path.",
       "type": "string"
     },
     "ContextCandidate": {
@@ -77,6 +77,39 @@
         "reference_in_test_path"
       ],
       "type": "string"
+    },
+    "ContextSignature": {
+      "description": "Present only for signature requests; absence preserves the body contract.",
+      "oneOf": [
+        {
+          "properties": {
+            "outcome": {
+              "const": "available",
+              "type": "string"
+            },
+            "requested": {
+              "$ref": "#/$defs/SourceAnchor"
+            }
+          },
+          "required": [
+            "outcome",
+            "requested"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "outcome": {
+              "const": "unsupported",
+              "type": "string"
+            }
+          },
+          "required": [
+            "outcome"
+          ],
+          "type": "object"
+        }
+      ]
     },
     "ContextUnresolved": {
       "properties": {
@@ -156,7 +189,15 @@
     },
     "PagedContextItem": {
       "properties": {
+        "body_expansion": {
+          "description": "In signature mode, retrieve the entire declaration from its beginning.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "complete": {
+          "description": "Complete for the requested detail, not necessarily the whole declaration.",
           "type": "boolean"
         },
         "excerpt": {
@@ -171,6 +212,16 @@
         },
         "relation": {
           "$ref": "#/$defs/ContextRelation"
+        },
+        "signature": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContextSignature"
+            },
+            {
+              "type": "null"
+            }
+          ]
         },
         "start": {
           "$ref": "#/$defs/Position"
@@ -719,7 +770,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:continue:result:9be66dededc118473fc36e640a4da67f65d30583bb72280aee150e67faaaf918",
+  "$id": "urn:vvv:schema:1:continue:result:227b54ddea453ff903d7b3c6072dd0c4febe8c9d5c164727cd24381f9626e977",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "anyOf": [
     {
