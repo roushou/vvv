@@ -96,6 +96,12 @@ pub struct SymbolRule {
     /// child's, repeatedly: `Foo` inside the `generic_type` `Foo<'a>` an
     /// `impl` is for.
     pub name_inner: Option<&'static str>,
+    /// Declaration kinds this non-declaration piece can belong to.
+    pub companion_of: &'static [SymbolKind],
+    /// Whether the declaration statement can be moved independently.
+    pub movable: bool,
+    /// Transparent statement wrappers for move scope evidence.
+    pub move_scope_wrappers: &'static [&'static str],
 }
 
 impl SymbolRule {
@@ -109,6 +115,9 @@ impl SymbolRule {
             leading: &[],
             visibility: None,
             name_inner: None,
+            companion_of: &[],
+            move_scope_wrappers: &[],
+            movable: true,
         }
     }
 
@@ -123,7 +132,25 @@ impl SymbolRule {
             leading: &[],
             visibility: None,
             name_inner: None,
+            companion_of: &[],
+            move_scope_wrappers: &[],
+            movable: true,
         }
+    }
+
+    pub const fn movable(mut self, supported: bool) -> Self {
+        self.movable = supported;
+        self
+    }
+
+    pub const fn move_scope_wrappers(mut self, kinds: &'static [&'static str]) -> Self {
+        self.move_scope_wrappers = kinds;
+        self
+    }
+
+    pub const fn companion_of(mut self, kinds: &'static [SymbolKind]) -> Self {
+        self.companion_of = kinds;
+        self
     }
 
     pub const fn name_inner(mut self, field: &'static str) -> Self {
@@ -151,4 +178,34 @@ impl SymbolRule {
         self.within = Some(ancestor);
         self
     }
+}
+
+/// Move evidence for one declaration. Missing evidence means unsupported.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct DeclarationPieces {
+    pub declaration: Span,
+    /// False for declaration forms without independently owned movable text.
+    pub supported: bool,
+    /// Lexical declaration scope; used to distinguish local same-named bindings.
+    pub scope: Span,
+    pub top_level: bool,
+    pub companions: Vec<CompanionPiece>,
+}
+
+/// A syntax-owned relationship, never inferred by the engine from a name.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct CompanionPiece {
+    pub span: Span,
+    pub ownership: CompanionOwnership,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum CompanionOwnership {
+    SameScopeTarget,
+    AmbiguousTarget,
+    UnsupportedTarget,
 }

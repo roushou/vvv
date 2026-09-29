@@ -226,6 +226,25 @@
             }
           ],
           "description": "Effects that could not be restored after a failed mutation."
+        },
+        "symbol_move_candidates": {
+          "items": {
+            "$ref": "#/$defs/SymbolMoveCandidate"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "symbol_move_unsupported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolMoveUnsupported"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -237,6 +256,94 @@
     "LanguageId": {
       "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
       "type": "string"
+    },
+    "Match": {
+      "properties": {
+        "address": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Address"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "For a declaration in an addressable file: its module address, the\nvalue `outline` gives it. Filled by the engine, which has the project."
+        },
+        "captures": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CaptureValue"
+          },
+          "type": "object"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Complete source version; absent only in older serialized matches."
+        },
+        "end": {
+          "$ref": "#/$defs/Position"
+        },
+        "id": {
+          "$ref": "#/$defs/MatchId"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "language": {
+          "$ref": "#/$defs/LanguageId"
+        },
+        "line": {
+          "default": "",
+          "description": "The source line on which the match starts, for display in context.",
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "role": {
+          "$ref": "#/$defs/Role",
+          "default": "use"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        },
+        "start": {
+          "$ref": "#/$defs/Position"
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Symbol"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "path",
+        "language",
+        "span",
+        "start",
+        "end",
+        "kind",
+        "text",
+        "line",
+        "role"
+      ],
+      "type": "object"
     },
     "MatchId": {
       "description": "Content-derived identifier: the same file, range and text yield the same id\nacross runs, so a selection made from one `search` can drive a later command.",
@@ -803,6 +910,69 @@
         }
       ]
     },
+    "SymbolMoveCandidate": {
+      "properties": {
+        "declaration": {
+          "$ref": "#/$defs/Match"
+        },
+        "pieces": {
+          "items": {
+            "$ref": "#/$defs/SymbolMovePiece"
+          },
+          "type": "array"
+        },
+        "unsupported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolMoveUnsupported"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "declaration",
+        "pieces"
+      ],
+      "type": "object"
+    },
+    "SymbolMoveOwnership": {
+      "enum": [
+        "declaration",
+        "same_scope_target"
+      ],
+      "type": "string"
+    },
+    "SymbolMovePiece": {
+      "properties": {
+        "ownership": {
+          "$ref": "#/$defs/SymbolMoveOwnership"
+        },
+        "symbol": {
+          "$ref": "#/$defs/Symbol"
+        }
+      },
+      "required": [
+        "symbol",
+        "ownership"
+      ],
+      "type": "object"
+    },
+    "SymbolMoveUnsupported": {
+      "enum": [
+        "missing_evidence",
+        "same_file",
+        "destination_binding_conflict",
+        "nested_declaration",
+        "unsupported_declaration_kind",
+        "competing_binding",
+        "ambiguous_companion",
+        "unsupported_companion_target"
+      ],
+      "type": "string"
+    },
     "search": {
       "properties": {
         "items": {
@@ -849,7 +1019,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:search_page:response:b458ef5a80892aa821abb286cc17ed61c8c879dedb8712d61b8de999ac585d63",
+  "$id": "urn:vvv:schema:1:search_page:response:e76efedf25f7fc5d823f9513da2c88edce6947e7d3e043027745d746610c83d5",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [
@@ -930,6 +1100,25 @@
         "status": {
           "const": "error",
           "type": "string"
+        },
+        "symbol_move_candidates": {
+          "items": {
+            "$ref": "#/$defs/SymbolMoveCandidate"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "symbol_move_unsupported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolMoveUnsupported"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [

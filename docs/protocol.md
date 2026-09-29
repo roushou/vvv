@@ -856,6 +856,7 @@ change — a directory move lists each file.
 ```json
 { "intent": { "name": "Config", "from": "src/util.rs", "to": "src/config.rs" },
   "applied": false,
+  "declaration": Match, "pieces": [ SymbolMovePiece, … ],
   "from": Address, "to": Address,
   "notices": [ Notice, … ],
   "respellings": [ Respelling, … ],
@@ -864,7 +865,7 @@ change — a directory move lists each file.
 
 `from`/`to` are the declaration's addresses before and after; `respellings` are the
 consumers rewritten in place, as for a file move. The Intent is
-`{ "command": "move_symbol", "name", "from", "to" }`. Notices: `unreachable` as for a file
+`{ "command": "move_symbol", "name", "from", "to", "selection"?, "expected_content"? }`. Notices: `unreachable` as for a file
 move; `redundant_import` (`import`) when the destination imported the declaration inside
 a grouped statement vvv does not split for this.
 
@@ -1098,7 +1099,8 @@ keeps committed undo history.
 `prepare_move` takes `intent: {from: RelPath, to: RelPath}`, `max_bytes`, and optional
 `page`, and returns the existing `PlanReviewReply`. Paths must be nonempty,
 workspace-relative, and contain no `..` components; violations return `bad_request`.
-Only file/directory moves are admitted; symbol moves and batches are unsupported.
+This command admits file/directory moves. Use `prepare_move_symbol` for declarations;
+retained batches are unsupported.
 Complete previews use the ordinary `Move` shape, including normalized source and
 destination, optional module addresses, notices, respellings, files, and `moved_to`.
 The existing transaction checks destination occupancy again and never replaces
@@ -1112,6 +1114,44 @@ and compares inventory outside the reviewed transitions. Source/destination ance
 ignore configuration is captured with absence evidence and observed before, between,
 and after commands. Post-apply external changes are not adopted into the baseline.
 Inspection and receipt replay retain their existing historical semantics.
+
+### Selected and retained symbol moves
+
+`symbol_move_candidates` takes `{name: string, from: RelPath}` and returns
+`{content: ContentId, candidates: [SymbolMoveCandidate, …]}`. Candidates retain all
+matching addressable declarations in source order, including unsupported ones.
+Each has `declaration: Match`, `pieces: [SymbolMovePiece, …]`, and optional
+`unsupported: SymbolMoveUnsupported`. Each supported piece contains `symbol: Symbol`
+and `ownership: "declaration" | "same_scope_target"`. Piece spans refer to the
+source file; extents include owned documentation, attributes, and export wrappers.
+Candidate match ids use the existing file/span/text identity contract.
+
+`move_symbol` adds optional `selection: Selection` (default `"all"`) and
+`expected_content: ContentId`. One candidate with default selection proceeds;
+otherwise exactly one candidate must be selected. Invalid ids or ordinals return
+`bad_selection`; a mismatched content identity returns `stale`. Zero or multiple
+selected candidates return `bad_selection` with optional
+`Failure.symbol_move_candidates` containing the complete candidate list. Selection
+precedes support checks and never silently drops unsupported candidates. A selected
+unsupported declaration returns `unmovable` with `Failure.symbol_move_unsupported`.
+
+Reasons are `missing_evidence`, `nested_declaration`, `competing_binding`,
+`ambiguous_companion`, `unsupported_declaration_kind` (module declarations, standalone signatures, or variable declarators), and `unsupported_companion_target`; destination checks add
+`same_file` and `destination_binding_conflict`. The planner uses module/name
+addresses, so conditional/overloaded peers sharing that address are unsupported.
+Rust same-scope unqualified targets establish impl ownership, including generic
+and trait impls. Qualified, shadowed, or cross-scope targets without a local owner
+are unsupported evidence. Conditional compilation and type inference are not used.
+
+`prepare_move_symbol` accepts `intent: {name, from: RelPath, to: RelPath,
+selection?, expected_content?}`, `max_bytes`, and optional `page`, returning
+`PlanReviewReply`. Both paths follow retained move relative-path restrictions;
+source and destination must be existing files of the same language. Complete
+previews use `MoveSymbol`, with selected `declaration`, source-ordered `pieces`,
+addresses, notices, respellings, and exact file edits. Its private baseline derives
+expected final contents before writes and preserves inventory. Existing retained
+expiry, retention, stale checks, recovery, validation, and historical receipt rules
+apply without replanning. Retained batches are unsupported.
 
 ### Paged plan reviews
 
@@ -1134,8 +1174,8 @@ Paged preparation and prepared-plan inspection return `PlanReviewPage`, with:
 
 - `kind: "plan_review"`, `plan_id`, fixed `lifetime_seconds`, and `review_id` (the
   content identity of the complete captured mutation preview).
-- `mutation: "rename"`, `"rewrite"`, or `"move"`, `totals: {declarations, occurrences, files, edits}`.
-  Nonzero move `notices` and `respellings` counts are additional optional totals.
+- `mutation: "rename"`, `"rewrite"`, `"move"`, or `"move_symbol"`, `totals: {declarations, occurrences, files, edits}`.
+  Nonzero `notices`, `respellings`, and symbol-move `pieces` counts are additional optional totals.
 - `intent`: complete tagged mutation intent on the first page only.
 - `items`: ordered metadata/text records; `next_cursor`: continuation or null.
 
@@ -1144,10 +1184,11 @@ validation evidence. Continuation pages contain immutable review content without
 live lifecycle or validation fields. They never imply current source validity.
 
 Record sections are `declaration`, `occurrence`, `file`, `edit`, and `diff`, plus
-`move`, `notice`, and `respelling` for moves. The single `move` record carries
+`move`, `notice`, and `respelling` for moves, and `piece` for symbol moves. The single `move` record carries
 normalized `from`/`to` and optional module addresses; notice and respelling records
-retain their ordinary wire shapes and order. Move records precede notices,
-respellings, and files.
+retain their ordinary wire shapes and order. For file moves, move records precede notices, respellings, and files. For symbol moves,
+the address-valued move record precedes the selected declaration, owned pieces,
+notices, respellings, and files.
 Each record has `index` (zero-based within its section) and, for edits,
 `file_index` (zero-based owning file). Declaration and occurrence order matches the
 complete rename preview, so the occurrence selection ordinal is `index + 1`.
@@ -1193,7 +1234,7 @@ Clients decide when review is sufficient; apply does not count fetched pages.
 
 Rust preparation/inspection return `PlanReviewReply::Complete(PlanReview)` or
 `::Page(PlanReviewPage)`; `PlanStatus::Prepared.preview` is `PlanPreview` with
-shared immutable rename/rewrite/move payloads. Default rename JSON retains its
+shared immutable rename/rewrite/file-move/symbol-move payloads. Default rename JSON retains its
 existing shape. `review_plan` returns `PlanReviewPage`.
 
 ## Applied-plan validation
@@ -1294,26 +1335,28 @@ rejected during initialization. `serve` retains its existing JSON-lines contract
 Only MCP messages go to stdout, including when `--json` is supplied; startup
 errors go to stderr. The workspace is fixed at launch.
 
-`tools/list` returns all fifteen tools in one response, with generated JSON Schema
+`tools/list` returns all seventeen tools in one response, with generated JSON Schema
 inputs and per-command `Response` output schemas. A tool-list cursor is invalid.
 
-| MCP tool              | Engine request    |
-| --------------------- | ----------------- |
-| `vvv_discover`        | `discover`        |
-| `vvv_search`          | `search_page`     |
-| `vvv_navigate`        | `resolve`         |
-| `vvv_relationships`   | `relationships`   |
-| `vvv_context`         | `context_page`    |
-| `vvv_continue`        | `continue`        |
-| `vvv_expand`          | `expand`          |
-| `vvv_prepare_rename`  | `prepare_rename`  |
-| `vvv_prepare_rewrite` | `prepare_rewrite` |
-| `vvv_prepare_move`    | `prepare_move`    |
-| `vvv_review_plan`     | `review_plan`     |
-| `vvv_inspect_plan`    | `inspect_plan`    |
-| `vvv_apply_plan`      | `apply_plan`      |
-| `vvv_discard_plan`    | `discard_plan`    |
-| `vvv_validate_plan`   | `validate_plan`   |
+| MCP tool                     | Engine request           |
+| ---------------------------- | ------------------------ |
+| `vvv_discover`               | `discover`               |
+| `vvv_search`                 | `search_page`            |
+| `vvv_navigate`               | `resolve`                |
+| `vvv_relationships`          | `relationships`          |
+| `vvv_context`                | `context_page`           |
+| `vvv_continue`               | `continue`               |
+| `vvv_expand`                 | `expand`                 |
+| `vvv_prepare_rename`         | `prepare_rename`         |
+| `vvv_prepare_rewrite`        | `prepare_rewrite`        |
+| `vvv_prepare_move`           | `prepare_move`           |
+| `vvv_symbol_move_candidates` | `symbol_move_candidates` |
+| `vvv_prepare_move_symbol`    | `prepare_move_symbol`    |
+| `vvv_review_plan`            | `review_plan`            |
+| `vvv_inspect_plan`           | `inspect_plan`           |
+| `vvv_apply_plan`             | `apply_plan`             |
+| `vvv_discard_plan`           | `discard_plan`           |
+| `vvv_validate_plan`          | `validate_plan`          |
 
 Arguments are the command's generated `arguments` schema. Read-only tools add
 `max_output_bytes` (default 16384, or 32768 for discovery; range 1024–1048576).

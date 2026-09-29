@@ -4,12 +4,17 @@ mod extraction;
 mod file;
 mod reachability;
 mod rebase;
+mod selection;
 mod set;
 mod symbol;
 mod widen;
 
 pub use extraction::ExtractionError;
 pub use file::{Move, MoveIntent};
+pub use selection::{
+    SymbolMoveCandidate, SymbolMoveCandidates, SymbolMoveCandidatesQuery, SymbolMoveOwnership,
+    SymbolMovePiece, SymbolMoveUnsupported,
+};
 pub use symbol::{MoveSymbol, MoveSymbolIntent};
 
 pub(crate) use extraction::Extraction;

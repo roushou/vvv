@@ -14,6 +14,8 @@ use crate::text::Span;
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Facts {
+    #[serde(default)]
+    pub declaration_pieces: Vec<crate::DeclarationPieces>,
     /// Supported declaration headers; missing entries mean extraction is unsupported.
     #[serde(default)]
     pub signatures: Vec<crate::DeclarationSignature>,

@@ -1,5 +1,60 @@
 {
-  "$id": "urn:vvv:schema:1:move_symbol:request:9372202bab6f4337af2eebf0a8bbb9eec4e98d8a84c011c26d887ad2bcdfa54b",
+  "$defs": {
+    "ContentId": {
+      "description": "Digest of complete file contents, independent of their path.",
+      "type": "string"
+    },
+    "MatchId": {
+      "description": "Content-derived identifier: the same file, range and text yield the same id\nacross runs, so a selection made from one `search` can drive a later command.",
+      "type": "string"
+    },
+    "Selection": {
+      "description": "Which matches of a search a later command acts on.\n\nIds are content-derived, so a selection made from `vvv search` can be\nhanded to `vvv rewrite` in a separate process. Ordinals are the 1-based\npositions in the same search's result order, which is what human output\nnumbers rows with. Either kind that no longer resolves means the files\nchanged in between; the selection is then refused rather than silently\nnarrowed.",
+      "oneOf": [
+        {
+          "enum": [
+            "all"
+          ],
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ids": {
+              "items": {
+                "$ref": "#/$defs/MatchId"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ids"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ordinals": {
+              "items": {
+                "format": "uint",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ordinals"
+          ],
+          "type": "object"
+        }
+      ]
+    }
+  },
+  "$id": "urn:vvv:schema:1:move_symbol:request:de14d6d0ca769ec04de1f3b00bf5b6814a5e1cb471e0002df18d893231d4579a",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Move one declaration — with what belongs to it in the text, and for Rust\nits `impl` blocks — from the file declaring it to another file of the\nsame language, and make every reference follow.",
   "properties": {
@@ -11,12 +66,25 @@
       "const": "move_symbol",
       "type": "string"
     },
+    "expected_content": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/ContentId"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
     "from": {
       "description": "The file declaring it.",
       "type": "string"
     },
     "name": {
       "type": "string"
+    },
+    "selection": {
+      "$ref": "#/$defs/Selection"
     },
     "to": {
       "description": "The file to declare it in; it must exist.",

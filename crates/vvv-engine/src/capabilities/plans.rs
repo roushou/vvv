@@ -1,4 +1,4 @@
-//! Session-owned, reviewable rename, rewrite, and file move plans. Executable edits never cross the wire.
+//! Session-owned, reviewable rename, rewrite, file move, and symbol move plans. Executable edits never cross the wire.
 pub(crate) mod review;
 use crate::capabilities::validation::baseline::ValidationBaseline;
 use crate::graph::query_snapshot::QuerySnapshot;
@@ -79,6 +79,65 @@ impl PrepareRewriteQuery {
         let revision = engine.query_revision();
         let (mut graph, snapshot) = QuerySnapshot::capture(engine)?;
         let planned = self.intent.plan_in(&mut graph, engine.workspace())?;
+        RetainedPlan::publish(
+            engine,
+            planned.into_mutation(),
+            snapshot,
+            revision,
+            budget,
+            self.page.is_some(),
+        )
+    }
+}
+/// Workspace-relative selected declaration move between existing files.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields)]
+pub struct PrepareMoveSymbolIntent {
+    pub name: String,
+    pub from: crate::RelPath,
+    pub to: crate::RelPath,
+    #[serde(default, skip_serializing_if = "crate::Selection::is_all")]
+    pub selection: crate::Selection,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expected_content: Option<crate::ContentId>,
+}
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(deny_unknown_fields)]
+pub struct PrepareMoveSymbolQuery {
+    pub intent: PrepareMoveSymbolIntent,
+    #[serde(default = "PrepareRenameQuery::default_max_bytes")]
+    #[cfg_attr(feature = "schema", schemars(range(min = 1024, max = 1048576)))]
+    pub max_bytes: usize,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub page: Option<crate::PageBudget>,
+}
+impl PrepareMoveSymbolQuery {
+    pub fn execute(self, engine: &Engine) -> Result<PlanReviewReply, EngineError> {
+        let _operation = engine.operation();
+        self.execute_in(engine)
+    }
+    pub(crate) fn execute_in(self, engine: &Engine) -> Result<PlanReviewReply, EngineError> {
+        PrepareMoveIntent {
+            from: self.intent.from.clone(),
+            to: self.intent.to.clone(),
+        }
+        .validate()?;
+        let budget = PlanReviewReply::budget(self.max_bytes, self.page.as_ref())?;
+        let revision = engine.query_revision();
+        let (mut graph, snapshot) = QuerySnapshot::capture(engine)?;
+        if let Some(oracle) = engine.oracle() {
+            graph = graph.with_oracle(oracle);
+        }
+        let mut intent = crate::MoveSymbolIntent::new(
+            self.intent.name,
+            self.intent.from.to_path_buf(),
+            self.intent.to.to_path_buf(),
+        )
+        .selecting(self.intent.selection);
+        intent.expected_content = self.intent.expected_content;
+        let planned = intent.plan_in(&mut graph, engine.workspace())?;
         RetainedPlan::publish(
             engine,
             planned.into_mutation(),
@@ -413,6 +472,7 @@ impl crate::report::Document {
                 PlanPreview::Rename(r) => Self::rename(r),
                 PlanPreview::Rewrite(r) => Self::rewrite(r),
                 PlanPreview::Move(r) => Self::move_file(r),
+                PlanPreview::MoveSymbol(r) => Self::move_symbol(r),
             },
             PlanStatus::Applied { receipt } => Self::plan_receipt(receipt),
             PlanStatus::Failed { failure } => Self::error(failure),

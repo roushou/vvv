@@ -44,7 +44,11 @@ mod rewrite;
 mod vfs;
 mod workspace;
 
-pub use capabilities::moves::{ExtractionError, Move, MoveIntent, MoveSymbol, MoveSymbolIntent};
+pub use capabilities::moves::{
+    ExtractionError, Move, MoveIntent, MoveSymbol, MoveSymbolIntent, SymbolMoveCandidate,
+    SymbolMoveCandidates, SymbolMoveCandidatesQuery, SymbolMoveOwnership, SymbolMovePiece,
+    SymbolMoveUnsupported,
+};
 pub use capabilities::rename::{Rename, RenameIntent};
 pub use engine::{Engine, Execution, ExecutionKind};
 pub use error::{EngineError, RecoveryError};
@@ -130,8 +134,9 @@ pub use plan_store::PlanLimits;
 pub use protocol::{
     ApplyPlanQuery, DiscardPlanQuery, InspectPlanQuery, PlanId, PlanPreview, PlanReceipt,
     PlanReview, PlanReviewCursor, PlanReviewItem, PlanReviewKind, PlanReviewPage, PlanReviewReply,
-    PlanStatus, PrepareMoveIntent, PrepareMoveQuery, PrepareRenameQuery, PrepareRewriteQuery,
-    ReviewMutation, ReviewPlanQuery, ReviewSection, ReviewTotals,
+    PlanStatus, PrepareMoveIntent, PrepareMoveQuery, PrepareMoveSymbolIntent,
+    PrepareMoveSymbolQuery, PrepareRenameQuery, PrepareRewriteQuery, ReviewMutation,
+    ReviewPlanQuery, ReviewSection, ReviewTotals,
 };
 
 pub use crate::capabilities::validation::{

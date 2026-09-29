@@ -63,6 +63,10 @@ pub enum ErrorCode {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Failure {
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub symbol_move_candidates: Option<Vec<crate::SymbolMoveCandidate>>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub symbol_move_unsupported: Option<crate::SymbolMoveUnsupported>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub continuation: Option<ContinuationRecovery>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub output_limit: Option<OutputLimit>,
@@ -85,6 +89,8 @@ impl Failure {
             recovery: None,
             output_limit: None,
             continuation: None,
+            symbol_move_candidates: None,
+            symbol_move_unsupported: None,
         }
     }
 
@@ -102,6 +108,12 @@ impl Failure {
 impl From<&EngineError> for Failure {
     fn from(error: &EngineError) -> Self {
         let mut failure = Failure::new(error.code(), format!("{error:#}"));
+        if let EngineError::SymbolMoveSelection { candidates } = error {
+            failure.symbol_move_candidates = Some(candidates.clone());
+        }
+        if let EngineError::UnsupportedSymbolMove { reason, .. } = error {
+            failure.symbol_move_unsupported = Some(*reason);
+        }
         if let EngineError::Recovery(recovery) = error {
             failure = failure.with_recovery(recovery.details.clone());
         }

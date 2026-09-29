@@ -107,7 +107,7 @@ impl Fixture {
                     .into();
             }
         }
-        if pages[0]["mutation"] == "move" {
+        if pages[0]["mutation"] == "move" || pages[0]["mutation"] == "move_symbol" {
             let metadata = records.remove(&("move".into(), 0, None)).unwrap();
             result
                 .as_object_mut()
@@ -123,6 +123,15 @@ impl Fixture {
                     result[field] = values.into();
                 }
             }
+        }
+        if pages[0]["mutation"] == "move_symbol" {
+            result["declaration"] = records.remove(&("declaration".into(), 0, None)).unwrap();
+            result["pieces"] = records
+                .iter()
+                .filter(|((section, _, _), _)| section == "piece")
+                .map(|(_, value)| value.clone())
+                .collect::<Vec<_>>()
+                .into();
         }
         result
     }
@@ -344,5 +353,30 @@ fn move_pages_reassemble_notices_respellings_addresses_and_empty_diffs() {
     assert_eq!(
         f.call(json!({"command":"apply_plan","plan_id":first["plan_id"]})),
         reply
+    );
+}
+
+#[test]
+fn symbol_move_pages_reconstruct_identity_pieces_addresses_and_exact_edits() {
+    let f = Fixture::new("pub def foo\n");
+    f.vfs.write(Path::new("/ws/b.p"), "def bar\n").unwrap();
+    let candidates =
+        f.call(json!({"command":"symbol_move_candidates", "name":"foo", "from":"a.p"}));
+    let intent = json!({"name":"foo","from":"a.p","to":"b.p","selection":{"ids":[candidates["result"]["candidates"][0]["declaration"]["id"]]},"expected_content":candidates["result"]["content"]});
+    let full = f.prepare("prepare_move_symbol", intent.clone(), false);
+    let paged = f.prepare("prepare_move_symbol", intent, true);
+    let pages = f.pages(paged.clone());
+    assert_eq!(paged["mutation"], "move_symbol");
+    assert_eq!(paged["totals"]["pieces"], 1);
+    assert_eq!(Fixture::reconstruct(&pages), full["preview"]);
+    f.vfs.write(Path::new("/ws/a.p"), "changed").unwrap();
+    assert_eq!(
+        f.pages(paged),
+        pages,
+        "captured review changed after source edit"
+    );
+    assert_eq!(
+        f.call(json!({"command":"apply_plan", "plan_id":pages[0]["plan_id"]}))["code"],
+        "stale"
     );
 }

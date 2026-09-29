@@ -1,0 +1,8 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 1
+--- stdout ---
+--- stderr ---
+✗ select exactly one symbol-move declaration: 1: ec45f5ab12c9 src/selection.rs:3, 2: 4f139e06e574 src/selection.rs:6

@@ -251,7 +251,10 @@ impl SchemaDocument {
             Command::ApplyPlan => contract!(crate::PlanReceipt),
             Command::ValidatePlan => contract!(crate::ValidationReport),
             Command::InspectPlan => contract!(crate::PlanReviewReply),
-            Command::PrepareRename | Command::PrepareRewrite | Command::PrepareMove => {
+            Command::PrepareRename
+            | Command::PrepareRewrite
+            | Command::PrepareMove
+            | Command::PrepareMoveSymbol => {
                 contract!(crate::PlanReviewReply)
             }
             Command::ReviewPlan => contract!(crate::PlanReviewPage),
@@ -280,6 +283,7 @@ impl SchemaDocument {
             Command::Rename => contract!(crate::Rename),
             Command::Move => contract!(crate::Move),
             Command::MoveSymbol => contract!(crate::MoveSymbol),
+            Command::SymbolMoveCandidates => contract!(crate::SymbolMoveCandidates),
             Command::Batch => contract!(crate::Batch),
             Command::History => contract!(crate::History),
             Command::Undo => contract!(crate::Undo),

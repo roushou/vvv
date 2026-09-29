@@ -13,6 +13,8 @@ pub(crate) enum ToolKind {
     PrepareRename,
     PrepareRewrite,
     PrepareMove,
+    PrepareMoveSymbol,
+    SymbolMoveCandidates,
     ReviewPlan,
     Discover,
     Search,
@@ -23,7 +25,7 @@ pub(crate) enum ToolKind {
     Expand,
 }
 impl ToolKind {
-    pub const ALL: [Self; 15] = [
+    pub const ALL: [Self; 17] = [
         Self::DiscardPlan,
         Self::ApplyPlan,
         Self::ValidatePlan,
@@ -31,6 +33,8 @@ impl ToolKind {
         Self::PrepareRename,
         Self::PrepareRewrite,
         Self::PrepareMove,
+        Self::PrepareMoveSymbol,
+        Self::SymbolMoveCandidates,
         Self::ReviewPlan,
         Self::Discover,
         Self::Search,
@@ -56,6 +60,8 @@ impl ToolKind {
             Self::PrepareRename => "vvv_prepare_rename",
             Self::PrepareRewrite => "vvv_prepare_rewrite",
             Self::PrepareMove => "vvv_prepare_move",
+            Self::PrepareMoveSymbol => "vvv_prepare_move_symbol",
+            Self::SymbolMoveCandidates => "vvv_symbol_move_candidates",
             Self::ReviewPlan => "vvv_review_plan",
             Self::Discover => "vvv_discover",
             Self::Search => "vvv_search",
@@ -75,6 +81,8 @@ impl ToolKind {
             Self::PrepareRename => Command::PrepareRename,
             Self::PrepareRewrite => Command::PrepareRewrite,
             Self::PrepareMove => Command::PrepareMove,
+            Self::PrepareMoveSymbol => Command::PrepareMoveSymbol,
+            Self::SymbolMoveCandidates => Command::SymbolMoveCandidates,
             Self::ReviewPlan => Command::ReviewPlan,
             Self::Discover => Command::Discover,
             Self::Search => Command::SearchPage,

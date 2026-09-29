@@ -19,6 +19,36 @@
       ],
       "type": "object"
     },
+    "Capture": {
+      "description": "One meta-variable binding.",
+      "properties": {
+        "span": {
+          "$ref": "#/$defs/Span"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "span",
+        "text"
+      ],
+      "type": "object"
+    },
+    "CaptureValue": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Capture"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/Capture"
+          },
+          "type": "array"
+        }
+      ],
+      "description": "`$A` binds one node; `$$$A` binds a sequence."
+    },
     "Consumer": {
       "properties": {
         "depth": {
@@ -222,6 +252,25 @@
             }
           ],
           "description": "Effects that could not be restored after a failed mutation."
+        },
+        "symbol_move_candidates": {
+          "items": {
+            "$ref": "#/$defs/SymbolMoveCandidate"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "symbol_move_unsupported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolMoveUnsupported"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -251,6 +300,118 @@
         "name",
         "address",
         "consumers"
+      ],
+      "type": "object"
+    },
+    "LanguageId": {
+      "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
+      "type": "string"
+    },
+    "Match": {
+      "properties": {
+        "address": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Address"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "For a declaration in an addressable file: its module address, the\nvalue `outline` gives it. Filled by the engine, which has the project."
+        },
+        "captures": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CaptureValue"
+          },
+          "type": "object"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Complete source version; absent only in older serialized matches."
+        },
+        "end": {
+          "$ref": "#/$defs/Position"
+        },
+        "id": {
+          "$ref": "#/$defs/MatchId"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "language": {
+          "$ref": "#/$defs/LanguageId"
+        },
+        "line": {
+          "default": "",
+          "description": "The source line on which the match starts, for display in context.",
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "role": {
+          "$ref": "#/$defs/Role",
+          "default": "use"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        },
+        "start": {
+          "$ref": "#/$defs/Position"
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Symbol"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "path",
+        "language",
+        "span",
+        "start",
+        "end",
+        "kind",
+        "text",
+        "line",
+        "role"
+      ],
+      "type": "object"
+    },
+    "MatchId": {
+      "description": "Content-derived identifier: the same file, range and text yield the same id\nacross runs, so a selection made from one `search` can drive a later command.",
+      "type": "string"
+    },
+    "Modifier": {
+      "description": "A visibility modifier as it appears in the source.",
+      "properties": {
+        "span": {
+          "$ref": "#/$defs/Span"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "span",
+        "text"
       ],
       "type": "object"
     },
@@ -290,6 +451,26 @@
     "PackageId": {
       "description": "The name a package goes by in paths: a Rust crate's lib name (`fff`, not\n`fff-search`), a TypeScript package's name. The layout decides the spelling.",
       "type": "string"
+    },
+    "Position": {
+      "description": "Zero-based line and character column. Columns count `char`s, not bytes,\nso they are safe to show to humans and editors.",
+      "properties": {
+        "column": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "line": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "line",
+        "column"
+      ],
+      "type": "object"
     },
     "Recovery": {
       "description": "A recovery result; unknown states are separate from confirmed residual effects.",
@@ -469,6 +650,15 @@
       "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
       "type": "string"
     },
+    "Role": {
+      "description": "What position a match occupies in its file: the declaration itself, a\ntoken inside an import statement, or any other use. Views lead with\ndeclarations and dim imports; the engine orders results by it.",
+      "enum": [
+        "declaration",
+        "import",
+        "use"
+      ],
+      "type": "string"
+    },
     "SourceAnchor": {
       "properties": {
         "content": {
@@ -507,9 +697,146 @@
         "end"
       ],
       "type": "object"
+    },
+    "Symbol": {
+      "description": "A declaration found in one file.",
+      "properties": {
+        "extent": {
+          "$ref": "#/$defs/Span",
+          "description": "The declaration with what belongs to it in the text: leading\nattributes and doc comments, an enclosing `export`. What moving the\ndeclaration cuts; what an outline shows."
+        },
+        "kind": {
+          "$ref": "#/$defs/SymbolKind"
+        },
+        "name": {
+          "type": "string"
+        },
+        "name_span": {
+          "$ref": "#/$defs/Span",
+          "description": "The identifier token itself: what a rename replaces."
+        },
+        "span": {
+          "$ref": "#/$defs/Span",
+          "description": "The declaration node."
+        },
+        "visibility": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Modifier"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The visibility as written (`pub(crate)`, `export`); `None` when the\ndeclaration has no modifier. What it means is the language's\n[`Semantics`](crate::Semantics)."
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "name_span",
+        "span",
+        "extent"
+      ],
+      "type": "object"
+    },
+    "SymbolKind": {
+      "description": "What a declaration declares, in vocabulary shared by every language.",
+      "oneOf": [
+        {
+          "enum": [
+            "type-parameter",
+            "parameter",
+            "function",
+            "method",
+            "struct",
+            "class",
+            "enum",
+            "variant",
+            "trait",
+            "interface",
+            "type-alias",
+            "const",
+            "static",
+            "variable",
+            "field",
+            "module",
+            "macro"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "impl",
+          "description": "An `impl` block, named after the type it is for. Not a declaration a\npath can reach; it travels with its type when the type moves.",
+          "type": "string"
+        }
+      ]
+    },
+    "SymbolMoveCandidate": {
+      "properties": {
+        "declaration": {
+          "$ref": "#/$defs/Match"
+        },
+        "pieces": {
+          "items": {
+            "$ref": "#/$defs/SymbolMovePiece"
+          },
+          "type": "array"
+        },
+        "unsupported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolMoveUnsupported"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "declaration",
+        "pieces"
+      ],
+      "type": "object"
+    },
+    "SymbolMoveOwnership": {
+      "enum": [
+        "declaration",
+        "same_scope_target"
+      ],
+      "type": "string"
+    },
+    "SymbolMovePiece": {
+      "properties": {
+        "ownership": {
+          "$ref": "#/$defs/SymbolMoveOwnership"
+        },
+        "symbol": {
+          "$ref": "#/$defs/Symbol"
+        }
+      },
+      "required": [
+        "symbol",
+        "ownership"
+      ],
+      "type": "object"
+    },
+    "SymbolMoveUnsupported": {
+      "enum": [
+        "missing_evidence",
+        "same_file",
+        "destination_binding_conflict",
+        "nested_declaration",
+        "unsupported_declaration_kind",
+        "competing_binding",
+        "ambiguous_companion",
+        "unsupported_companion_target"
+      ],
+      "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:impact:response:41f315bed2725e706e765398e6b8cb52c1fe7f30d8a7bfb13c533b648bd1494a",
+  "$id": "urn:vvv:schema:1:impact:response:5ad083a04abbae5ce5e14e2381a185b1072611261b56b6bdf643b0a27cbeb644",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [
@@ -590,6 +917,25 @@
         "status": {
           "const": "error",
           "type": "string"
+        },
+        "symbol_move_candidates": {
+          "items": {
+            "$ref": "#/$defs/SymbolMoveCandidate"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "symbol_move_unsupported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolMoveUnsupported"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [

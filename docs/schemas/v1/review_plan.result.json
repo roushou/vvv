@@ -117,12 +117,25 @@
     "MoveSymbolIntent": {
       "description": "Move one declaration — with what belongs to it in the text, and for Rust\nits `impl` blocks — from the file declaring it to another file of the\nsame language, and make every reference follow.",
       "properties": {
+        "expected_content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "from": {
           "description": "The file declaring it.",
           "type": "string"
         },
         "name": {
           "type": "string"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
         },
         "to": {
           "description": "The file to declare it in; it must exist.",
@@ -347,13 +360,15 @@
       "enum": [
         "rename",
         "rewrite",
-        "move"
+        "move",
+        "move_symbol"
       ],
       "type": "string"
     },
     "ReviewSection": {
       "enum": [
         "move",
+        "piece",
         "notice",
         "respelling",
         "declaration",
@@ -387,6 +402,11 @@
           "type": "integer"
         },
         "occurrences": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "pieces": {
           "format": "uint",
           "minimum": 0,
           "type": "integer"
@@ -506,7 +526,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:review_plan:result:8bf7ebb164fe1357d0dc86505b40f99b4d230bd0bc3aec85f0e3e4dc3d57caf9",
+  "$id": "urn:vvv:schema:1:review_plan:result:80e4e0ec90f1a28c32b1f365a4706c47d805ba69b89377caf97fee69464c7c28",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {
     "intent": {

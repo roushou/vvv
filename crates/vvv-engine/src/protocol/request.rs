@@ -31,6 +31,8 @@ pub enum Request {
     PrepareRename(crate::PrepareRenameQuery),
     PrepareRewrite(crate::PrepareRewriteQuery),
     PrepareMove(crate::PrepareMoveQuery),
+    PrepareMoveSymbol(crate::PrepareMoveSymbolQuery),
+    SymbolMoveCandidates(crate::SymbolMoveCandidatesQuery),
     ReviewPlan(crate::ReviewPlanQuery),
     #[cfg(feature = "schema")]
     Schema(crate::SchemaQuery),
@@ -108,6 +110,8 @@ impl Request {
             Self::PrepareRename(_) => super::Command::PrepareRename,
             Self::PrepareRewrite(_) => super::Command::PrepareRewrite,
             Self::PrepareMove(_) => super::Command::PrepareMove,
+            Self::PrepareMoveSymbol(_) => super::Command::PrepareMoveSymbol,
+            Self::SymbolMoveCandidates(_) => super::Command::SymbolMoveCandidates,
             Self::ReviewPlan(_) => super::Command::ReviewPlan,
             #[cfg(feature = "schema")]
             Self::Schema(_) => super::Command::Schema,
@@ -159,6 +163,8 @@ pub enum Answer {
     PrepareRename(crate::PlanReviewReply),
     PrepareRewrite(crate::PlanReviewReply),
     PrepareMove(crate::PlanReviewReply),
+    PrepareMoveSymbol(crate::PlanReviewReply),
+    SymbolMoveCandidates(crate::SymbolMoveCandidates),
     ReviewPlan(crate::PlanReviewPage),
     #[cfg(feature = "schema")]
     Schema(crate::SchemaDocument),

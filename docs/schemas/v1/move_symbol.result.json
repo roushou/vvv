@@ -19,6 +19,40 @@
       ],
       "type": "object"
     },
+    "Capture": {
+      "description": "One meta-variable binding.",
+      "properties": {
+        "span": {
+          "$ref": "#/$defs/Span"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "span",
+        "text"
+      ],
+      "type": "object"
+    },
+    "CaptureValue": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Capture"
+        },
+        {
+          "items": {
+            "$ref": "#/$defs/Capture"
+          },
+          "type": "array"
+        }
+      ],
+      "description": "`$A` binds one node; `$$$A` binds a sequence."
+    },
+    "ContentId": {
+      "description": "Digest of complete file contents, independent of their path.",
+      "type": "string"
+    },
     "Diff": {
       "description": "One file's change: the unified diff text (the wire) and its hunks (the\nmodel).",
       "type": "string"
@@ -74,15 +108,140 @@
       ],
       "type": "object"
     },
+    "LanguageId": {
+      "description": "Stable identifier of a language (`rust`, `typescript`, ...).",
+      "type": "string"
+    },
+    "Match": {
+      "properties": {
+        "address": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Address"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "For a declaration in an addressable file: its module address, the\nvalue `outline` gives it. Filled by the engine, which has the project."
+        },
+        "captures": {
+          "additionalProperties": {
+            "$ref": "#/$defs/CaptureValue"
+          },
+          "type": "object"
+        },
+        "content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Complete source version; absent only in older serialized matches."
+        },
+        "end": {
+          "$ref": "#/$defs/Position"
+        },
+        "id": {
+          "$ref": "#/$defs/MatchId"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "language": {
+          "$ref": "#/$defs/LanguageId"
+        },
+        "line": {
+          "default": "",
+          "description": "The source line on which the match starts, for display in context.",
+          "type": "string"
+        },
+        "path": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "role": {
+          "$ref": "#/$defs/Role",
+          "default": "use"
+        },
+        "span": {
+          "$ref": "#/$defs/Span"
+        },
+        "start": {
+          "$ref": "#/$defs/Position"
+        },
+        "symbol": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Symbol"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "path",
+        "language",
+        "span",
+        "start",
+        "end",
+        "kind",
+        "text",
+        "line",
+        "role"
+      ],
+      "type": "object"
+    },
+    "MatchId": {
+      "description": "Content-derived identifier: the same file, range and text yield the same id\nacross runs, so a selection made from one `search` can drive a later command.",
+      "type": "string"
+    },
+    "Modifier": {
+      "description": "A visibility modifier as it appears in the source.",
+      "properties": {
+        "span": {
+          "$ref": "#/$defs/Span"
+        },
+        "text": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "span",
+        "text"
+      ],
+      "type": "object"
+    },
     "MoveSymbolIntent": {
       "description": "Move one declaration — with what belongs to it in the text, and for Rust\nits `impl` blocks — from the file declaring it to another file of the\nsame language, and make every reference follow.",
       "properties": {
+        "expected_content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "from": {
           "description": "The file declaring it.",
           "type": "string"
         },
         "name": {
           "type": "string"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
         },
         "to": {
           "description": "The file to declare it in; it must exist.",
@@ -268,6 +427,60 @@
       ],
       "type": "object"
     },
+    "Role": {
+      "description": "What position a match occupies in its file: the declaration itself, a\ntoken inside an import statement, or any other use. Views lead with\ndeclarations and dim imports; the engine orders results by it.",
+      "enum": [
+        "declaration",
+        "import",
+        "use"
+      ],
+      "type": "string"
+    },
+    "Selection": {
+      "description": "Which matches of a search a later command acts on.\n\nIds are content-derived, so a selection made from `vvv search` can be\nhanded to `vvv rewrite` in a separate process. Ordinals are the 1-based\npositions in the same search's result order, which is what human output\nnumbers rows with. Either kind that no longer resolves means the files\nchanged in between; the selection is then refused rather than silently\nnarrowed.",
+      "oneOf": [
+        {
+          "enum": [
+            "all"
+          ],
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ids": {
+              "items": {
+                "$ref": "#/$defs/MatchId"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ids"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ordinals": {
+              "items": {
+                "format": "uint",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ordinals"
+          ],
+          "type": "object"
+        }
+      ]
+    },
     "Span": {
       "description": "Half-open byte range `[start, end)` inside a single file.",
       "properties": {
@@ -287,9 +500,105 @@
         "end"
       ],
       "type": "object"
+    },
+    "Symbol": {
+      "description": "A declaration found in one file.",
+      "properties": {
+        "extent": {
+          "$ref": "#/$defs/Span",
+          "description": "The declaration with what belongs to it in the text: leading\nattributes and doc comments, an enclosing `export`. What moving the\ndeclaration cuts; what an outline shows."
+        },
+        "kind": {
+          "$ref": "#/$defs/SymbolKind"
+        },
+        "name": {
+          "type": "string"
+        },
+        "name_span": {
+          "$ref": "#/$defs/Span",
+          "description": "The identifier token itself: what a rename replaces."
+        },
+        "span": {
+          "$ref": "#/$defs/Span",
+          "description": "The declaration node."
+        },
+        "visibility": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Modifier"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The visibility as written (`pub(crate)`, `export`); `None` when the\ndeclaration has no modifier. What it means is the language's\n[`Semantics`](crate::Semantics)."
+        }
+      },
+      "required": [
+        "kind",
+        "name",
+        "name_span",
+        "span",
+        "extent"
+      ],
+      "type": "object"
+    },
+    "SymbolKind": {
+      "description": "What a declaration declares, in vocabulary shared by every language.",
+      "oneOf": [
+        {
+          "enum": [
+            "type-parameter",
+            "parameter",
+            "function",
+            "method",
+            "struct",
+            "class",
+            "enum",
+            "variant",
+            "trait",
+            "interface",
+            "type-alias",
+            "const",
+            "static",
+            "variable",
+            "field",
+            "module",
+            "macro"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "impl",
+          "description": "An `impl` block, named after the type it is for. Not a declaration a\npath can reach; it travels with its type when the type moves.",
+          "type": "string"
+        }
+      ]
+    },
+    "SymbolMoveOwnership": {
+      "enum": [
+        "declaration",
+        "same_scope_target"
+      ],
+      "type": "string"
+    },
+    "SymbolMovePiece": {
+      "properties": {
+        "ownership": {
+          "$ref": "#/$defs/SymbolMoveOwnership"
+        },
+        "symbol": {
+          "$ref": "#/$defs/Symbol"
+        }
+      },
+      "required": [
+        "symbol",
+        "ownership"
+      ],
+      "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:move_symbol:result:7bb4e5095f77973e777fb00189080743004b4dc5b8ab14915ebab3b53846c614",
+  "$id": "urn:vvv:schema:1:move_symbol:result:fd1bf877d669c387269e84e58af1ab7f7eb093e092c1d3945cf4351eea59ee2a",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "`vvv move --symbol`: one declaration moved between files.",
   "oneOf": [
@@ -322,6 +631,9 @@
     }
   ],
   "properties": {
+    "declaration": {
+      "$ref": "#/$defs/Match"
+    },
     "files": {
       "items": {
         "$ref": "#/$defs/FileChange"
@@ -341,6 +653,12 @@
       },
       "type": "array"
     },
+    "pieces": {
+      "items": {
+        "$ref": "#/$defs/SymbolMovePiece"
+      },
+      "type": "array"
+    },
     "respellings": {
       "description": "Consumers rewritten in place; every other edit in `files` is the\ndeclaration itself moving.",
       "items": {
@@ -354,6 +672,8 @@
   },
   "required": [
     "intent",
+    "declaration",
+    "pieces",
     "from",
     "to",
     "files"

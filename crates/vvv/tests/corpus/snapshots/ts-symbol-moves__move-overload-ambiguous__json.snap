@@ -1,0 +1,243 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 1
+--- stdout ---
+{
+  "status": "error",
+  "schema": 1,
+  "symbol_move_candidates": [
+    {
+      "declaration": {
+        "content": "91b0ce28e17aa567a6e99969a3ba013c02ff4f26f5cee7048b267b435cd01c2b",
+        "id": "b667fd45c3d9",
+        "path": "src/move_selection.ts",
+        "language": "typescript",
+        "span": {
+          "start": 87,
+          "end": 130
+        },
+        "start": {
+          "line": 2,
+          "column": 7
+        },
+        "end": {
+          "line": 2,
+          "column": 50
+        },
+        "kind": "function",
+        "text": "function overloaded(value: string): string;",
+        "line": "export function overloaded(value: string): string;",
+        "symbol": {
+          "kind": "function",
+          "name": "overloaded",
+          "name_span": {
+            "start": 96,
+            "end": 106
+          },
+          "span": {
+            "start": 87,
+            "end": 130
+          },
+          "extent": {
+            "start": 80,
+            "end": 130
+          },
+          "visibility": {
+            "span": {
+              "start": 80,
+              "end": 86
+            },
+            "text": "export"
+          }
+        },
+        "role": "declaration"
+      },
+      "pieces": [
+        {
+          "symbol": {
+            "kind": "function",
+            "name": "overloaded",
+            "name_span": {
+              "start": 96,
+              "end": 106
+            },
+            "span": {
+              "start": 87,
+              "end": 130
+            },
+            "extent": {
+              "start": 80,
+              "end": 130
+            },
+            "visibility": {
+              "span": {
+                "start": 80,
+                "end": 86
+              },
+              "text": "export"
+            }
+          },
+          "ownership": "declaration"
+        }
+      ],
+      "unsupported": "unsupported_declaration_kind"
+    },
+    {
+      "declaration": {
+        "content": "91b0ce28e17aa567a6e99969a3ba013c02ff4f26f5cee7048b267b435cd01c2b",
+        "id": "2e52811ff070",
+        "path": "src/move_selection.ts",
+        "language": "typescript",
+        "span": {
+          "start": 138,
+          "end": 181
+        },
+        "start": {
+          "line": 3,
+          "column": 7
+        },
+        "end": {
+          "line": 3,
+          "column": 50
+        },
+        "kind": "function",
+        "text": "function overloaded(value: number): number;",
+        "line": "export function overloaded(value: number): number;",
+        "symbol": {
+          "kind": "function",
+          "name": "overloaded",
+          "name_span": {
+            "start": 147,
+            "end": 157
+          },
+          "span": {
+            "start": 138,
+            "end": 181
+          },
+          "extent": {
+            "start": 131,
+            "end": 181
+          },
+          "visibility": {
+            "span": {
+              "start": 131,
+              "end": 137
+            },
+            "text": "export"
+          }
+        },
+        "role": "declaration"
+      },
+      "pieces": [
+        {
+          "symbol": {
+            "kind": "function",
+            "name": "overloaded",
+            "name_span": {
+              "start": 147,
+              "end": 157
+            },
+            "span": {
+              "start": 138,
+              "end": 181
+            },
+            "extent": {
+              "start": 131,
+              "end": 181
+            },
+            "visibility": {
+              "span": {
+                "start": 131,
+                "end": 137
+              },
+              "text": "export"
+            }
+          },
+          "ownership": "declaration"
+        }
+      ],
+      "unsupported": "unsupported_declaration_kind"
+    },
+    {
+      "declaration": {
+        "content": "91b0ce28e17aa567a6e99969a3ba013c02ff4f26f5cee7048b267b435cd01c2b",
+        "id": "d4d482102905",
+        "path": "src/move_selection.ts",
+        "language": "typescript",
+        "span": {
+          "start": 189,
+          "end": 250
+        },
+        "start": {
+          "line": 4,
+          "column": 7
+        },
+        "end": {
+          "line": 4,
+          "column": 68
+        },
+        "kind": "function",
+        "text": "function overloaded(value: string | number) { return value; }",
+        "line": "export function overloaded(value: string | number) { return value; }",
+        "symbol": {
+          "kind": "function",
+          "name": "overloaded",
+          "name_span": {
+            "start": 198,
+            "end": 208
+          },
+          "span": {
+            "start": 189,
+            "end": 250
+          },
+          "extent": {
+            "start": 182,
+            "end": 250
+          },
+          "visibility": {
+            "span": {
+              "start": 182,
+              "end": 188
+            },
+            "text": "export"
+          }
+        },
+        "role": "declaration"
+      },
+      "pieces": [
+        {
+          "symbol": {
+            "kind": "function",
+            "name": "overloaded",
+            "name_span": {
+              "start": 198,
+              "end": 208
+            },
+            "span": {
+              "start": 189,
+              "end": 250
+            },
+            "extent": {
+              "start": 182,
+              "end": 250
+            },
+            "visibility": {
+              "span": {
+                "start": 182,
+                "end": 188
+              },
+              "text": "export"
+            }
+          },
+          "ownership": "declaration"
+        }
+      ],
+      "unsupported": "competing_binding"
+    }
+  ],
+  "code": "bad_selection",
+  "message": "select exactly one symbol-move declaration: 1: b667fd45c3d9 src/move_selection.ts:3, 2: 2e52811ff070 src/move_selection.ts:4, 3: d4d482102905 src/move_selection.ts:5"
+}
+--- stderr ---

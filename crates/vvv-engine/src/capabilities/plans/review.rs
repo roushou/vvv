@@ -12,6 +12,7 @@ pub enum PlanPreview {
     Rename(Arc<Rename>),
     Rewrite(Arc<Rewrite>),
     Move(Arc<Move>),
+    MoveSymbol(Arc<crate::MoveSymbol>),
 }
 impl PlanPreview {
     pub(crate) fn from_mutation(value: &MutationAnswer) -> Result<Self, EngineError> {
@@ -19,6 +20,7 @@ impl PlanPreview {
             MutationAnswer::Rename(r) => Ok(Self::Rename(Arc::new(r.clone()))),
             MutationAnswer::Rewrite(r) => Ok(Self::Rewrite(Arc::new(r.clone()))),
             MutationAnswer::Move(r) => Ok(Self::Move(Arc::new(r.clone()))),
+            MutationAnswer::MoveSymbol(r) => Ok(Self::MoveSymbol(Arc::new(r.clone()))),
             _ => Err(EngineError::InvalidPlan),
         }
     }
@@ -27,6 +29,7 @@ impl PlanPreview {
             Self::Rename(r) => &r.files,
             Self::Rewrite(r) => &r.files,
             Self::Move(r) => &r.files,
+            Self::MoveSymbol(r) => &r.files,
         }
     }
     fn intent(&self) -> Intent {
@@ -34,6 +37,7 @@ impl PlanPreview {
             Self::Rename(r) => Intent::Rename(r.intent.clone()),
             Self::Rewrite(r) => Intent::Rewrite(r.intent.clone()),
             Self::Move(r) => Intent::Move(r.intent.clone()),
+            Self::MoveSymbol(r) => Intent::MoveSymbol(r.intent.clone()),
         }
     }
 }
@@ -101,6 +105,7 @@ impl PlanReviewCursor {
 #[serde(rename_all = "snake_case")]
 pub enum ReviewSection {
     Move,
+    Piece,
     Notice,
     Respelling,
     Declaration,
@@ -120,6 +125,8 @@ pub struct ReviewTotals {
     pub notices: usize,
     #[serde(default, skip_serializing_if = "ReviewTotals::zero")]
     pub respellings: usize,
+    #[serde(default, skip_serializing_if = "ReviewTotals::zero")]
+    pub pieces: usize,
 }
 impl ReviewTotals {
     fn zero(value: &usize) -> bool {
@@ -178,6 +185,7 @@ pub enum ReviewMutation {
     Rename,
     Rewrite,
     Move,
+    MoveSymbol,
 }
 
 pub(crate) struct CapturedReview {
@@ -200,12 +208,13 @@ impl CapturedReview {
                 edits: 0,
                 notices: 0,
                 respellings: 0,
+                pieces: 0,
             },
             records: vec![],
         };
         let rename = match &review.preview {
             PlanPreview::Rename(r) => Some(r.clone()),
-            PlanPreview::Rewrite(_) | PlanPreview::Move(_) => None,
+            PlanPreview::Rewrite(_) | PlanPreview::Move(_) | PlanPreview::MoveSymbol(_) => None,
         };
         if let Some(r) = rename {
             review.totals.declarations = r.declarations.len();
@@ -238,6 +247,49 @@ impl CapturedReview {
                 metadata["to_address"] = serde_json::to_value(address).expect("address serializes");
             }
             review.record(ReviewSection::Move, 0, None, metadata);
+            review.totals.notices = moved.notices.len();
+            review.totals.respellings = moved.respellings.len();
+            for (index, notice) in moved.notices.iter().enumerate() {
+                review.record(
+                    ReviewSection::Notice,
+                    index,
+                    None,
+                    serde_json::to_value(notice).expect("notice serializes"),
+                );
+            }
+            for (index, respelling) in moved.respellings.iter().enumerate() {
+                review.record(
+                    ReviewSection::Respelling,
+                    index,
+                    None,
+                    serde_json::to_value(respelling).expect("respelling serializes"),
+                );
+            }
+        }
+        if let PlanPreview::MoveSymbol(moved) = &review.preview {
+            let moved = moved.clone();
+            review.record(
+                ReviewSection::Move,
+                0,
+                None,
+                serde_json::json!({"from": moved.from, "to": moved.to}),
+            );
+            review.totals.declarations = 1;
+            review.totals.pieces = moved.pieces.len();
+            review.record(
+                ReviewSection::Declaration,
+                0,
+                None,
+                serde_json::to_value(&moved.declaration).expect("declaration serializes"),
+            );
+            for (index, piece) in moved.pieces.iter().enumerate() {
+                review.record(
+                    ReviewSection::Piece,
+                    index,
+                    None,
+                    serde_json::to_value(piece).expect("piece serializes"),
+                );
+            }
             review.totals.notices = moved.notices.len();
             review.totals.respellings = moved.respellings.len();
             for (index, notice) in moved.notices.iter().enumerate() {
@@ -371,6 +423,7 @@ impl CapturedReview {
                 PlanPreview::Rename(_) => ReviewMutation::Rename,
                 PlanPreview::Rewrite(_) => ReviewMutation::Rewrite,
                 PlanPreview::Move(_) => ReviewMutation::Move,
+                PlanPreview::MoveSymbol(_) => ReviewMutation::MoveSymbol,
             },
             intent: (record == 0 && offset == 0).then(|| self.preview.intent()),
             totals: self.totals.clone(),

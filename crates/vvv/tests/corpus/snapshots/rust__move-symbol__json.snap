@@ -13,6 +13,79 @@ exit 0
       "from": "core/src/util.rs",
       "to": "core/src/geometry/mod.rs"
     },
+    "declaration": {
+      "content": "2dec45417c4094592bf5b6158fd1efbbc2ce9350841e716ac62e58628e842d3a",
+      "id": "3a3b9573ec14",
+      "path": "core/src/util.rs",
+      "language": "rust",
+      "span": {
+        "start": 32,
+        "end": 81
+      },
+      "start": {
+        "line": 2,
+        "column": 0
+      },
+      "end": {
+        "line": 4,
+        "column": 1
+      },
+      "kind": "function",
+      "text": "pub fn area(side: u32) -> u32 {\n    side * side\n}",
+      "line": "pub fn area(side: u32) -> u32 {",
+      "symbol": {
+        "kind": "function",
+        "name": "area",
+        "name_span": {
+          "start": 39,
+          "end": 43
+        },
+        "span": {
+          "start": 32,
+          "end": 81
+        },
+        "extent": {
+          "start": 32,
+          "end": 81
+        },
+        "visibility": {
+          "span": {
+            "start": 32,
+            "end": 35
+          },
+          "text": "pub"
+        }
+      },
+      "role": "declaration"
+    },
+    "pieces": [
+      {
+        "symbol": {
+          "kind": "function",
+          "name": "area",
+          "name_span": {
+            "start": 39,
+            "end": 43
+          },
+          "span": {
+            "start": 32,
+            "end": 81
+          },
+          "extent": {
+            "start": 32,
+            "end": 81
+          },
+          "visibility": {
+            "span": {
+              "start": 32,
+              "end": 35
+            },
+            "text": "pub"
+          }
+        },
+        "ownership": "declaration"
+      }
+    ],
     "applied": false,
     "from": {
       "package": "corpus_core",

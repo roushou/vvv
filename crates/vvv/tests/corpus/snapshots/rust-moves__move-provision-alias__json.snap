@@ -13,6 +13,79 @@ exit 0
       "from": "src/origin.rs",
       "to": "src/b.rs"
     },
+    "declaration": {
+      "content": "fe52f362c29faa20a5a9e2867ef10365facd9f7117b06aedf832a12455f9d749",
+      "id": "e8e300541438",
+      "path": "src/origin.rs",
+      "language": "rust",
+      "span": {
+        "start": 49,
+        "end": 72
+      },
+      "start": {
+        "line": 3,
+        "column": 0
+      },
+      "end": {
+        "line": 3,
+        "column": 23
+      },
+      "kind": "function",
+      "text": "pub fn moved(_: Dep) {}",
+      "line": "pub fn moved(_: Dep) {}",
+      "symbol": {
+        "kind": "function",
+        "name": "moved",
+        "name_span": {
+          "start": 56,
+          "end": 61
+        },
+        "span": {
+          "start": 49,
+          "end": 72
+        },
+        "extent": {
+          "start": 49,
+          "end": 72
+        },
+        "visibility": {
+          "span": {
+            "start": 49,
+            "end": 52
+          },
+          "text": "pub"
+        }
+      },
+      "role": "declaration"
+    },
+    "pieces": [
+      {
+        "symbol": {
+          "kind": "function",
+          "name": "moved",
+          "name_span": {
+            "start": 56,
+            "end": 61
+          },
+          "span": {
+            "start": 49,
+            "end": 72
+          },
+          "extent": {
+            "start": 49,
+            "end": 72
+          },
+          "visibility": {
+            "span": {
+              "start": 49,
+              "end": 52
+            },
+            "text": "pub"
+          }
+        },
+        "ownership": "declaration"
+      }
+    ],
     "applied": false,
     "from": {
       "package": "corpus_moves",

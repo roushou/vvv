@@ -49,6 +49,8 @@
         "prepare_rename",
         "prepare_rewrite",
         "prepare_move",
+        "prepare_move_symbol",
+        "symbol_move_candidates",
         "review_plan",
         "schema",
         "search_page",
@@ -363,12 +365,25 @@
     "MoveSymbolIntent": {
       "description": "Move one declaration — with what belongs to it in the text, and for Rust\nits `impl` blocks — from the file declaring it to another file of the\nsame language, and make every reference follow.",
       "properties": {
+        "expected_content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "from": {
           "description": "The file declaring it.",
           "type": "string"
         },
         "name": {
           "type": "string"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
         },
         "to": {
           "description": "The file to declare it in; it must exist.",
@@ -535,6 +550,40 @@
         }
       },
       "required": [
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
+    "PrepareMoveSymbolIntent": {
+      "additionalProperties": false,
+      "description": "Workspace-relative selected declaration move between existing files.",
+      "properties": {
+        "expected_content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "from": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "name": {
+          "type": "string"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
+        },
+        "to": {
+          "$ref": "#/$defs/RelPath"
+        }
+      },
+      "required": [
+        "name",
         "from",
         "to"
       ],
@@ -1111,7 +1160,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:session:call:da7aeb4fc4c56f06cb0cb35679ca3f975dd794fcfa664b20f1b66b974d2217a5",
+  "$id": "urn:vvv:schema:1:session:call:b077ab5f843f5c11640b0ef7d247a489e914a10a8fd93dfd51f049e3a9ccb4b9",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "A request on a session's wire (`vvv serve`): the request with whatever\n`id` the caller chose, echoed on the [`Reply`].",
   "oneOf": [
@@ -1317,6 +1366,59 @@
       "required": [
         "command",
         "intent"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "command": {
+          "const": "prepare_move_symbol",
+          "type": "string"
+        },
+        "intent": {
+          "$ref": "#/$defs/PrepareMoveSymbolIntent"
+        },
+        "max_bytes": {
+          "default": 16384,
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 1024,
+          "type": "integer"
+        },
+        "page": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PageBudget"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "command",
+        "intent"
+      ],
+      "type": "object"
+    },
+    {
+      "properties": {
+        "command": {
+          "const": "symbol_move_candidates",
+          "type": "string"
+        },
+        "from": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "command",
+        "name",
+        "from"
       ],
       "type": "object"
     },
@@ -1820,12 +1922,25 @@
           "const": "move_symbol",
           "type": "string"
         },
+        "expected_content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "from": {
           "description": "The file declaring it.",
           "type": "string"
         },
         "name": {
           "type": "string"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
         },
         "to": {
           "description": "The file to declare it in; it must exist.",

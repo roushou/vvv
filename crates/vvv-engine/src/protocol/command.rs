@@ -12,6 +12,8 @@ pub enum Command {
     PrepareRename,
     PrepareRewrite,
     PrepareMove,
+    PrepareMoveSymbol,
+    SymbolMoveCandidates,
     ReviewPlan,
     #[cfg(feature = "schema")]
     Schema,
@@ -53,6 +55,8 @@ impl Command {
         Self::PrepareRename,
         Self::PrepareRewrite,
         Self::PrepareMove,
+        Self::PrepareMoveSymbol,
+        Self::SymbolMoveCandidates,
         Self::ReviewPlan,
         #[cfg(feature = "schema")]
         Self::Schema,
@@ -94,6 +98,8 @@ impl Command {
             Self::PrepareRename => "prepare_rename",
             Self::PrepareRewrite => "prepare_rewrite",
             Self::PrepareMove => "prepare_move",
+            Self::PrepareMoveSymbol => "prepare_move_symbol",
+            Self::SymbolMoveCandidates => "symbol_move_candidates",
             Self::ReviewPlan => "review_plan",
             #[cfg(feature = "schema")]
             Self::Schema => "schema",
@@ -133,10 +139,12 @@ impl Command {
             Self::ApplyPlan => &["plan_id"],
             Self::ValidatePlan => &["plan_id", "checks", "extra_inputs", "budget"],
             Self::InspectPlan => &["plan_id", "max_bytes", "page"],
-            Self::PrepareRename | Self::PrepareRewrite | Self::PrepareMove => {
-                &["intent", "max_bytes", "page"]
-            }
+            Self::PrepareRename
+            | Self::PrepareRewrite
+            | Self::PrepareMove
+            | Self::PrepareMoveSymbol => &["intent", "max_bytes", "page"],
             Self::ReviewPlan => &["cursor", "page"],
+            Self::SymbolMoveCandidates => &["name", "from"],
             #[cfg(feature = "schema")]
             Self::Schema => &["for_command", "contract"],
             Self::SearchPage => &["query", "scope", "page"],
@@ -184,7 +192,14 @@ impl Command {
                 "apply",
             ],
             Self::Move => &["from", "to", "apply"],
-            Self::MoveSymbol => &["name", "from", "to", "apply"],
+            Self::MoveSymbol => &[
+                "name",
+                "from",
+                "to",
+                "selection",
+                "expected_content",
+                "apply",
+            ],
             Self::Batch => &["intents", "apply"],
             Self::History => &[],
             Self::Undo => &[],
@@ -196,9 +211,12 @@ impl Command {
             Self::DiscardPlan => true,
             Self::ApplyPlan | Self::ValidatePlan => false,
             Self::InspectPlan => true,
-            Self::PrepareRename | Self::PrepareRewrite | Self::PrepareMove | Self::ReviewPlan => {
-                true
-            }
+            Self::PrepareRename
+            | Self::PrepareRewrite
+            | Self::PrepareMove
+            | Self::PrepareMoveSymbol
+            | Self::SymbolMoveCandidates
+            | Self::ReviewPlan => true,
             #[cfg(feature = "schema")]
             Self::Schema => true,
             Self::SearchPage => true,

@@ -246,6 +246,25 @@
             }
           ],
           "description": "Effects that could not be restored after a failed mutation."
+        },
+        "symbol_move_candidates": {
+          "items": {
+            "$ref": "#/$defs/SymbolMoveCandidate"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "symbol_move_unsupported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolMoveUnsupported"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -906,9 +925,72 @@
           "type": "string"
         }
       ]
+    },
+    "SymbolMoveCandidate": {
+      "properties": {
+        "declaration": {
+          "$ref": "#/$defs/Match"
+        },
+        "pieces": {
+          "items": {
+            "$ref": "#/$defs/SymbolMovePiece"
+          },
+          "type": "array"
+        },
+        "unsupported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolMoveUnsupported"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "declaration",
+        "pieces"
+      ],
+      "type": "object"
+    },
+    "SymbolMoveOwnership": {
+      "enum": [
+        "declaration",
+        "same_scope_target"
+      ],
+      "type": "string"
+    },
+    "SymbolMovePiece": {
+      "properties": {
+        "ownership": {
+          "$ref": "#/$defs/SymbolMoveOwnership"
+        },
+        "symbol": {
+          "$ref": "#/$defs/Symbol"
+        }
+      },
+      "required": [
+        "symbol",
+        "ownership"
+      ],
+      "type": "object"
+    },
+    "SymbolMoveUnsupported": {
+      "enum": [
+        "missing_evidence",
+        "same_file",
+        "destination_binding_conflict",
+        "nested_declaration",
+        "unsupported_declaration_kind",
+        "competing_binding",
+        "ambiguous_companion",
+        "unsupported_companion_target"
+      ],
+      "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:references:response:8e23a2d5e6e9e00a2dcd8e7a5946d4396d4b697e1e0f37bbbbfc00fb374d5bde",
+  "$id": "urn:vvv:schema:1:references:response:e18cf2bacca5f748874c837f5be041078e880494dac6edf29ebeb9a1bbbed455",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [
@@ -989,6 +1071,25 @@
         "status": {
           "const": "error",
           "type": "string"
+        },
+        "symbol_move_candidates": {
+          "items": {
+            "$ref": "#/$defs/SymbolMoveCandidate"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "symbol_move_unsupported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolMoveUnsupported"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [

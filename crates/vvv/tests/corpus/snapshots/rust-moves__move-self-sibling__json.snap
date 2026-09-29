@@ -13,6 +13,79 @@ exit 0
       "from": "src/selfrefs.rs",
       "to": "src/b.rs"
     },
+    "declaration": {
+      "content": "97dbc68b87781859d1c842588bb0a5a740f158541cb5e9bf649601b019e65a5c",
+      "id": "9671b3911491",
+      "path": "src/selfrefs.rs",
+      "language": "rust",
+      "span": {
+        "start": 0,
+        "end": 66
+      },
+      "start": {
+        "line": 0,
+        "column": 0
+      },
+      "end": {
+        "line": 3,
+        "column": 1
+      },
+      "kind": "function",
+      "text": "pub fn recursive() {\n    self::recursive();\n    self::sibling();\n}",
+      "line": "pub fn recursive() {",
+      "symbol": {
+        "kind": "function",
+        "name": "recursive",
+        "name_span": {
+          "start": 7,
+          "end": 16
+        },
+        "span": {
+          "start": 0,
+          "end": 66
+        },
+        "extent": {
+          "start": 0,
+          "end": 66
+        },
+        "visibility": {
+          "span": {
+            "start": 0,
+            "end": 3
+          },
+          "text": "pub"
+        }
+      },
+      "role": "declaration"
+    },
+    "pieces": [
+      {
+        "symbol": {
+          "kind": "function",
+          "name": "recursive",
+          "name_span": {
+            "start": 7,
+            "end": 16
+          },
+          "span": {
+            "start": 0,
+            "end": 66
+          },
+          "extent": {
+            "start": 0,
+            "end": 66
+          },
+          "visibility": {
+            "span": {
+              "start": 0,
+              "end": 3
+            },
+            "text": "pub"
+          }
+        },
+        "ownership": "declaration"
+      }
+    ],
     "applied": false,
     "from": {
       "package": "corpus_moves",

@@ -1154,3 +1154,78 @@ mod signature_tests {
         );
     }
 }
+
+#[cfg(test)]
+mod move_pieces_tests {
+    use super::Rust;
+    use vvv_core::{CompanionOwnership, Language, SymbolKind};
+
+    #[test]
+    fn generic_and_trait_impls_belong_to_the_exact_type_in_their_scope() {
+        let source = "/// docs\n#[derive(Clone)]\npub struct Selected<T>(T);\nimpl<T> Selected<T> {}\nimpl<T: Default> Default for Selected<T> {}\nmod child { struct Selected; impl Selected {} }";
+        let facts = Rust::new().facts(source).unwrap();
+        let declarations: Vec<_> = facts
+            .symbols
+            .iter()
+            .filter(|symbol| symbol.name == "Selected" && symbol.kind == SymbolKind::Struct)
+            .collect();
+        let root = facts
+            .declaration_pieces
+            .iter()
+            .find(|pieces| pieces.declaration == declarations[0].span)
+            .unwrap();
+        assert!(root.top_level);
+        assert_eq!(root.companions.len(), 2);
+        assert!(
+            root.companions
+                .iter()
+                .all(|piece| piece.ownership == CompanionOwnership::SameScopeTarget)
+        );
+        assert!(
+            source[declarations[0].extent.start..declarations[0].extent.end]
+                .starts_with("/// docs")
+        );
+        let child = facts
+            .declaration_pieces
+            .iter()
+            .find(|pieces| pieces.declaration == declarations[1].span)
+            .unwrap();
+        assert!(!child.top_level);
+        assert_eq!(child.companions.len(), 1);
+    }
+    #[test]
+    fn conditional_qualified_and_shadowed_targets_do_not_guess_ownership() {
+        for (source, expected) in [
+            (
+                "#[cfg(unix)] struct S; #[cfg(windows)] struct S; impl S {}",
+                CompanionOwnership::AmbiguousTarget,
+            ),
+            (
+                "struct S; impl crate::S {}",
+                CompanionOwnership::UnsupportedTarget,
+            ),
+            (
+                "struct S; mod child { use super::S; impl S {} }",
+                CompanionOwnership::UnsupportedTarget,
+            ),
+            (
+                "struct S; impl<S> Trait for S {}",
+                CompanionOwnership::UnsupportedTarget,
+            ),
+        ] {
+            let facts = Rust::new().facts(source).unwrap();
+            let declaration = facts
+                .symbols
+                .iter()
+                .find(|symbol| symbol.kind == SymbolKind::Struct)
+                .unwrap();
+            let pieces = facts
+                .declaration_pieces
+                .iter()
+                .find(|pieces| pieces.declaration == declaration.span)
+                .unwrap();
+            assert_eq!(pieces.companions.len(), 1, "{source}");
+            assert_eq!(pieces.companions[0].ownership, expected, "{source}");
+        }
+    }
+}

@@ -1,0 +1,145 @@
+{
+  "$defs": {
+    "ContentId": {
+      "description": "Digest of complete file contents, independent of their path.",
+      "type": "string"
+    },
+    "MatchId": {
+      "description": "Content-derived identifier: the same file, range and text yield the same id\nacross runs, so a selection made from one `search` can drive a later command.",
+      "type": "string"
+    },
+    "PageBudget": {
+      "additionalProperties": false,
+      "properties": {
+        "max_bytes": {
+          "default": 16384,
+          "format": "uint",
+          "maximum": 1048576,
+          "minimum": 1024,
+          "type": "integer"
+        },
+        "max_items": {
+          "default": 20,
+          "format": "uint",
+          "maximum": 64,
+          "minimum": 1,
+          "type": "integer"
+        }
+      },
+      "type": "object"
+    },
+    "PrepareMoveSymbolIntent": {
+      "additionalProperties": false,
+      "description": "Workspace-relative selected declaration move between existing files.",
+      "properties": {
+        "expected_content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "from": {
+          "$ref": "#/$defs/RelPath"
+        },
+        "name": {
+          "type": "string"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
+        },
+        "to": {
+          "$ref": "#/$defs/RelPath"
+        }
+      },
+      "required": [
+        "name",
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    },
+    "Selection": {
+      "description": "Which matches of a search a later command acts on.\n\nIds are content-derived, so a selection made from `vvv search` can be\nhanded to `vvv rewrite` in a separate process. Ordinals are the 1-based\npositions in the same search's result order, which is what human output\nnumbers rows with. Either kind that no longer resolves means the files\nchanged in between; the selection is then refused rather than silently\nnarrowed.",
+      "oneOf": [
+        {
+          "enum": [
+            "all"
+          ],
+          "type": "string"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ids": {
+              "items": {
+                "$ref": "#/$defs/MatchId"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ids"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "ordinals": {
+              "items": {
+                "format": "uint",
+                "minimum": 0,
+                "type": "integer"
+              },
+              "type": "array",
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "ordinals"
+          ],
+          "type": "object"
+        }
+      ]
+    }
+  },
+  "$id": "urn:vvv:schema:1:prepare_move_symbol:arguments:1c986e2c8396f56d50651dbb3b209bc3b4d4bf38a3b0a235d6ead8c6f20ede54",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "intent": {
+      "$ref": "#/$defs/PrepareMoveSymbolIntent"
+    },
+    "max_bytes": {
+      "default": 16384,
+      "format": "uint",
+      "maximum": 1048576,
+      "minimum": 1024,
+      "type": "integer"
+    },
+    "page": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/PageBudget"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "intent"
+  ],
+  "title": "prepare_move_symbol arguments",
+  "type": "object"
+}

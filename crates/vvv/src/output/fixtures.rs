@@ -545,6 +545,14 @@ pub fn explanation_of_an_import() -> Explanation {
 
 pub fn move_symbol() -> vvv_engine::MoveSymbol {
     vvv_engine::MoveSymbol {
+        declaration: decl(
+            "src/a.rs",
+            0,
+            SymbolKind::Function,
+            "foo",
+            "pub fn foo() {}",
+        ),
+        pieces: vec![],
         intent: vvv_engine::MoveSymbolIntent::new("Config", "src/util.rs", "src/config.rs"),
         state: vvv_engine::MutationState::Preview,
         from: Address::new("cli", ["util", "Config"]),

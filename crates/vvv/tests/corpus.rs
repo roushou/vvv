@@ -188,6 +188,76 @@ const RUST_MOVES: Corpus = Corpus {
     name: "rust-moves",
     cases: &[
         (
+            "move-selection-method-name",
+            &[
+                "move",
+                "src/selection_methods.rs",
+                "src/b.rs",
+                "--symbol",
+                "Selected",
+            ],
+        ),
+        (
+            "move-selection-module",
+            &["move", "src/selection.rs", "src/b.rs", "--symbol", "nested"],
+        ),
+        (
+            "move-selection-ambiguous",
+            &[
+                "move",
+                "src/selection.rs",
+                "src/b.rs",
+                "--symbol",
+                "Selected",
+            ],
+        ),
+        (
+            "move-selection-primary",
+            &[
+                "move",
+                "src/selection.rs",
+                "src/b.rs",
+                "--symbol",
+                "Selected",
+                "--select",
+                "1",
+            ],
+        ),
+        (
+            "move-selection-nested",
+            &[
+                "move",
+                "src/selection.rs",
+                "src/b.rs",
+                "--symbol",
+                "Selected",
+                "--select",
+                "2",
+            ],
+        ),
+        (
+            "move-selection-conditional",
+            &[
+                "move",
+                "src/selection.rs",
+                "src/b.rs",
+                "--symbol",
+                "conditional",
+                "--select",
+                "1",
+            ],
+        ),
+        (
+            "move-selection-qualified",
+            &[
+                "move",
+                "src/selection.rs",
+                "src/b.rs",
+                "--symbol",
+                "Qualified",
+            ],
+        ),
+        (
             "move-self",
             &["move", "src/a.rs", "src/b.rs", "--symbol", "foo"],
         ),
@@ -237,6 +307,11 @@ const RUST_MOVES: Corpus = Corpus {
     ],
     mutations: || {
         vec![
+            Request::MoveSymbol {
+                intent: MoveSymbolIntent::new("Selected", "src/selection.rs", "src/b.rs")
+                    .selecting(vvv_engine::Selection::ordinals([1])),
+                apply: false,
+            },
             Request::MoveSymbol {
                 intent: MoveSymbolIntent::new("foo", "src/a.rs", "src/b.rs"),
                 apply: false,
@@ -1995,4 +2070,77 @@ fn typescript_retained_move_golden() {
         "src/origin.ts",
         "src/relocated.ts",
     );
+}
+
+#[cfg(feature = "typescript")]
+#[test]
+fn typescript_symbol_moves_golden_and_mutation_properties() {
+    let corpus = Corpus {
+        name: "ts-symbol-moves",
+        cases: &[
+            (
+                "move-ambient-refused",
+                &[
+                    "move",
+                    "src/move_ambient.ts",
+                    "src/move_destination.ts",
+                    "--symbol",
+                    "ambient",
+                ],
+            ),
+            ("search-overloads", &["search", "--name", "overloaded"]),
+            (
+                "move-overload-ambiguous",
+                &[
+                    "move",
+                    "src/move_selection.ts",
+                    "src/move_destination.ts",
+                    "--symbol",
+                    "overloaded",
+                ],
+            ),
+            (
+                "move-overload-selected",
+                &[
+                    "move",
+                    "src/move_selection.ts",
+                    "src/move_destination.ts",
+                    "--symbol",
+                    "overloaded",
+                    "--select",
+                    "3",
+                ],
+            ),
+            (
+                "move-wrapper",
+                &[
+                    "move",
+                    "src/move_selection.ts",
+                    "src/move_destination.ts",
+                    "--symbol",
+                    "Widget",
+                ],
+            ),
+        ],
+        mutations: || {
+            vec![
+                Request::MoveSymbol {
+                    intent: MoveSymbolIntent::new(
+                        "Widget",
+                        "src/move_selection.ts",
+                        "src/move_destination.ts",
+                    ),
+                    apply: false,
+                },
+                Request::Rename {
+                    intent: RenameIntent::new("untouched", "retained"),
+                    apply: false,
+                },
+            ]
+        },
+    };
+    golden(&corpus);
+    apply_is_preview(&corpus);
+    undo_is_identity(&corpus);
+    batch_is_composition(&corpus);
 }

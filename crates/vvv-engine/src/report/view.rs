@@ -173,6 +173,25 @@ impl View for Detailed {
                     )
                 })
                 .collect(),
+            Block::SymbolMoveCandidates(candidates) => candidates
+                .iter()
+                .enumerate()
+                .map(|(index, candidate)| {
+                    let declaration = &candidate.declaration;
+                    let mut line = Line::of(Role::Ordinal, (index + 1).to_string())
+                        .and(Role::Plain, format!("  {}  ", declaration.id))
+                        .and(Role::Path, declaration.path.to_string())
+                        .and(
+                            Role::LineNumber,
+                            format!(":{}  ", declaration.start.line + 1),
+                        )
+                        .and_line(Line::hit(declaration, Role::Plain));
+                    if let Some(reason) = candidate.unsupported {
+                        line = line.and(Role::Warning, format!("  ({reason})"));
+                    }
+                    Row::at(line, declaration.path.clone(), declaration.start.line)
+                })
+                .collect(),
             Block::Sites(sites) => sites
                 .iter()
                 .flat_map(|site| lines::SiteLine::new(site).rows())

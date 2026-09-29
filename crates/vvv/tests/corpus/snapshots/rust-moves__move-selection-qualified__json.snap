@@ -1,0 +1,14 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 1
+--- stdout ---
+{
+  "status": "error",
+  "schema": 1,
+  "symbol_move_unsupported": "unsupported_companion_target",
+  "code": "unmovable",
+  "message": "selected declaration cannot be moved: companion target cannot be assigned to this declaration"
+}
+--- stderr ---

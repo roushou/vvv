@@ -18,6 +18,16 @@ pub struct MoveCmd {
     #[arg(long, value_name = "NAME")]
     pub symbol: Option<String>,
 
+    /// Select one declaration row or id; requires --symbol
+    #[arg(
+        short,
+        long,
+        value_delimiter = ',',
+        value_name = "ROWS|IDS",
+        requires = "symbol"
+    )]
+    pub select: Vec<String>,
+
     /// Write the changes instead of previewing them
     #[arg(long)]
     pub apply: bool,
@@ -26,7 +36,8 @@ pub struct MoveCmd {
 impl MoveCmd {
     pub fn run(self, ctx: &Context) -> anyhow::Result<()> {
         if let Some(name) = self.symbol {
-            let intent = MoveSymbolIntent::new(name, self.from, self.to);
+            let intent = MoveSymbolIntent::new(name, self.from, self.to)
+                .selecting(crate::cli::select::Select::new(&self.select).selection()?);
             return ctx.run(Request::MoveSymbol {
                 intent,
                 apply: self.apply,

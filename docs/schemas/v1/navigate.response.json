@@ -276,6 +276,25 @@
             }
           ],
           "description": "Effects that could not be restored after a failed mutation."
+        },
+        "symbol_move_candidates": {
+          "items": {
+            "$ref": "#/$defs/SymbolMoveCandidate"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "symbol_move_unsupported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolMoveUnsupported"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -934,6 +953,69 @@
         }
       ]
     },
+    "SymbolMoveCandidate": {
+      "properties": {
+        "declaration": {
+          "$ref": "#/$defs/Match"
+        },
+        "pieces": {
+          "items": {
+            "$ref": "#/$defs/SymbolMovePiece"
+          },
+          "type": "array"
+        },
+        "unsupported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolMoveUnsupported"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "declaration",
+        "pieces"
+      ],
+      "type": "object"
+    },
+    "SymbolMoveOwnership": {
+      "enum": [
+        "declaration",
+        "same_scope_target"
+      ],
+      "type": "string"
+    },
+    "SymbolMovePiece": {
+      "properties": {
+        "ownership": {
+          "$ref": "#/$defs/SymbolMoveOwnership"
+        },
+        "symbol": {
+          "$ref": "#/$defs/Symbol"
+        }
+      },
+      "required": [
+        "symbol",
+        "ownership"
+      ],
+      "type": "object"
+    },
+    "SymbolMoveUnsupported": {
+      "enum": [
+        "missing_evidence",
+        "same_file",
+        "destination_binding_conflict",
+        "nested_declaration",
+        "unsupported_declaration_kind",
+        "competing_binding",
+        "ambiguous_companion",
+        "unsupported_companion_target"
+      ],
+      "type": "string"
+    },
     "SymbolRef": {
       "description": "A declaration in one source version, not an identity across edits.",
       "properties": {
@@ -969,7 +1051,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:navigate:response:e2ae536e6c6be8321490b3dcf242800e33b5c8cd01f9ebb550aa9c19829a90ab",
+  "$id": "urn:vvv:schema:1:navigate:response:aebd56f5f0505e0ff0097908f8543452742c044d80a2a0b8133acf3a85783c88",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [
@@ -1050,6 +1132,25 @@
         "status": {
           "const": "error",
           "type": "string"
+        },
+        "symbol_move_candidates": {
+          "items": {
+            "$ref": "#/$defs/SymbolMoveCandidate"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "symbol_move_unsupported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolMoveUnsupported"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [

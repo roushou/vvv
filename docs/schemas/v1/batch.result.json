@@ -34,6 +34,10 @@
       ],
       "type": "object"
     },
+    "ContentId": {
+      "description": "Digest of complete file contents, independent of their path.",
+      "type": "string"
+    },
     "Diff": {
       "description": "One file's change: the unified diff text (the wire) and its hunks (the\nmodel).",
       "type": "string"
@@ -187,12 +191,25 @@
     "MoveSymbolIntent": {
       "description": "Move one declaration — with what belongs to it in the text, and for Rust\nits `impl` blocks — from the file declaring it to another file of the\nsame language, and make every reference follow.",
       "properties": {
+        "expected_content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "from": {
           "description": "The file declaring it.",
           "type": "string"
         },
         "name": {
           "type": "string"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
         },
         "to": {
           "description": "The file to declare it in; it must exist.",
@@ -568,7 +585,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:batch:result:60d204f3fb2388cf0ad226d612279629e28a93fb1036c6313cddb2be14b06b3c",
+  "$id": "urn:vvv:schema:1:batch:result:a20176ceb97f1e4c4089af6bd10607a0799d78d049dcf95916130e97f6c6c12d",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "`vvv batch`: several intents planned in sequence and applied as one.",
   "oneOf": [

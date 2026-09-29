@@ -1,0 +1,14 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 1
+--- stdout ---
+{
+  "status": "error",
+  "schema": 1,
+  "symbol_move_unsupported": "unsupported_declaration_kind",
+  "code": "unmovable",
+  "message": "selected declaration cannot be moved: this declaration form cannot be moved independently"
+}
+--- stderr ---

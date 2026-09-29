@@ -15,6 +15,10 @@
       ],
       "type": "object"
     },
+    "ContentId": {
+      "description": "Digest of complete file contents, independent of their path.",
+      "type": "string"
+    },
     "Intent": {
       "description": "Any mutating request, as one value: what history records, what a summary\nrenders, what a remote client sends.",
       "oneOf": [
@@ -113,12 +117,25 @@
     "MoveSymbolIntent": {
       "description": "Move one declaration — with what belongs to it in the text, and for Rust\nits `impl` blocks — from the file declaring it to another file of the\nsame language, and make every reference follow.",
       "properties": {
+        "expected_content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "from": {
           "description": "The file declaring it.",
           "type": "string"
         },
         "name": {
           "type": "string"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
         },
         "to": {
           "description": "The file to declare it in; it must exist.",
@@ -335,7 +352,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:batch:arguments:60fbd628bb52b2490fbd0373fa9e8f34a0a04ad33c54fa8017feceec99a778b2",
+  "$id": "urn:vvv:schema:1:batch:arguments:ac191a0c4b685f8ec23f9be895a6c65997a39e03e2025be1ab11bb437d674f4e",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Several intents planned in sequence, each against the state the previous\none leaves, and applied as one.",
   "properties": {

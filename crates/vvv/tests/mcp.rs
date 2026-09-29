@@ -41,7 +41,7 @@ impl Client {
             ProtocolVersion::V_2025_11_25
         );
         let tools = service.list_all_tools().await.unwrap();
-        assert_eq!(tools.len(), 15);
+        assert_eq!(tools.len(), 17);
         assert!(
             tools
                 .iter()
@@ -851,4 +851,118 @@ fn move_validation_fixture() {
     };
     assert!(Path::new(&format!("src/relocated.{extension}")).exists());
     assert!(!Path::new(&format!("src/origin.{extension}")).exists());
+}
+
+#[cfg(any(feature = "rust", feature = "typescript"))]
+#[tokio::test]
+async fn symbol_move_candidates_select_review_apply_and_validate_exact_pieces() {
+    let fixture = Fixture::new();
+    #[cfg(feature = "rust")]
+    let (from, to, source, destination) = (
+        "src/origin.rs",
+        "src/destination.rs",
+        "/// retained docs\n#[derive(Clone)]\npub struct Engine;\nimpl Engine { pub fn answer() -> i32 { 42 } }\n",
+        "pub fn untouched() {}\n",
+    );
+    #[cfg(all(not(feature = "rust"), feature = "typescript"))]
+    let (from, to, source, destination) = (
+        "src/origin.ts",
+        "src/destination.ts",
+        "/** retained docs */\nexport class Engine { answer() { return 42; } }\n",
+        "export function untouched() {}\n",
+    );
+    #[cfg(feature = "rust")]
+    std::fs::write(
+        fixture.root.join("src/lib.rs"),
+        "pub mod origin;\npub mod destination;\npub use origin::Engine;\n",
+    )
+    .unwrap();
+    #[cfg(all(not(feature = "rust"), feature = "typescript"))]
+    {
+        std::fs::write(fixture.root.join("package.json"), "{\"name\":\"probe\"}").unwrap();
+        std::fs::write(
+            fixture.root.join("src/lib.ts"),
+            "export { Engine } from './origin';\n",
+        )
+        .unwrap();
+    }
+    std::fs::write(fixture.root.join(from), source).unwrap();
+    std::fs::write(fixture.root.join(to), destination).unwrap();
+    let client = Client::new(&fixture.root).await;
+    let discovered = client
+        .call(
+            "vvv_symbol_move_candidates",
+            json!({"name":"Engine", "from":from}),
+        )
+        .await;
+    assert_eq!(discovered["status"], "ok", "{discovered}");
+    assert_eq!(
+        discovered["result"]["candidates"].as_array().unwrap().len(),
+        1
+    );
+    assert!(discovered["result"]["candidates"][0]["unsupported"].is_null());
+    let prepared = client.call("vvv_prepare_move_symbol", json!({"intent":{"name":"Engine","from":from,"to":to,"selection":{"ids":[discovered["result"]["candidates"][0]["declaration"]["id"]]},"expected_content":discovered["result"]["content"]},"page":{"max_items":2,"max_bytes":2048},"max_output_bytes":2048})).await;
+    assert_eq!(prepared["status"], "ok", "{prepared}");
+    assert_eq!(prepared["result"]["mutation"], "move_symbol");
+    let mut page = prepared["result"].clone();
+    let mut count = 0;
+    loop {
+        assert!(serde_json::to_vec(&page).unwrap().len() <= 2048);
+        count += 1;
+        assert!(count < 200);
+        if page["next_cursor"].is_null() {
+            break;
+        }
+        let reviewed = client.call("vvv_review_plan", json!({"cursor":page["next_cursor"],"page":{"max_items":2,"max_bytes":2048},"max_output_bytes":2048})).await;
+        assert_eq!(reviewed["status"], "ok", "{reviewed}");
+        page = reviewed["result"].clone();
+    }
+    assert!(count > 1);
+    let handle = json!({"plan_id":prepared["result"]["plan_id"]});
+    let applied = client.call("vvv_apply_plan", handle.clone()).await;
+    assert_eq!(applied["status"], "ok", "{applied}");
+    assert!(
+        !std::fs::read_to_string(fixture.root.join(from))
+            .unwrap()
+            .contains("struct Engine")
+    );
+    assert!(
+        std::fs::read_to_string(fixture.root.join(to))
+            .unwrap()
+            .contains("retained docs")
+    );
+    #[cfg(any(unix, windows))]
+    {
+        let checked = client.call("vvv_validate_plan", json!({"plan_id":handle["plan_id"],"checks":[{"name":"native symbol assertion","program":std::env::current_exe().unwrap(),"args":["--exact","symbol_validation_fixture","--ignored","--nocapture"]}],"budget":{"timeout_ms":5000,"max_bytes":4096}})).await;
+        assert_eq!(checked["status"], "ok", "{checked}");
+        assert_eq!(checked["result"]["passed"], true, "{checked}");
+        let inspected = client
+            .call(
+                "vvv_inspect_plan",
+                json!({"plan_id":handle["plan_id"],"max_bytes":65536,"max_output_bytes":65536}),
+            )
+            .await;
+        assert_eq!(inspected["result"]["validation"], checked["result"]);
+        assert_eq!(inspected["result"]["receipt"], applied["result"]);
+    }
+    assert_eq!(client.call("vvv_apply_plan", handle).await, applied);
+    client.close().await;
+}
+
+#[test]
+#[ignore = "subprocess fixture used by the MCP symbol move validation workflow"]
+fn symbol_validation_fixture() {
+    let extension = if Path::new("src/destination.rs").exists() {
+        "rs"
+    } else {
+        "ts"
+    };
+    let source = std::fs::read_to_string(format!("src/origin.{extension}")).unwrap();
+    let destination = std::fs::read_to_string(format!("src/destination.{extension}")).unwrap();
+    assert!(!source.contains("struct Engine") && !source.contains("class Engine"));
+    assert!(
+        destination.contains("retained docs")
+            && destination.contains("answer")
+            && destination.contains("untouched")
+    );
 }

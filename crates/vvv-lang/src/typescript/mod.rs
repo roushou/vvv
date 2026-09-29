@@ -427,3 +427,76 @@ mod signature_tests {
         );
     }
 }
+
+#[cfg(test)]
+mod move_pieces_tests {
+    use super::TypeScript;
+    use vvv_core::{Language, SymbolKind};
+    #[test]
+    fn exported_wrapper_and_docs_belong_to_one_declaration() {
+        let source = "/** owned docs */\nexport class Widget { method() {} }\nfunction outer() { class Widget {} }";
+        let facts = TypeScript::new().facts(source).unwrap();
+        let declarations: Vec<_> = facts
+            .symbols
+            .iter()
+            .filter(|symbol| symbol.name == "Widget" && symbol.kind == SymbolKind::Class)
+            .collect();
+        assert_eq!(declarations.len(), 2);
+        let root = facts
+            .declaration_pieces
+            .iter()
+            .find(|pieces| pieces.declaration == declarations[0].span)
+            .unwrap();
+        assert!(root.top_level);
+        assert!(root.companions.is_empty());
+        assert!(
+            source[declarations[0].extent.start..declarations[0].extent.end]
+                .starts_with("/** owned docs */")
+        );
+        assert!(
+            !facts
+                .declaration_pieces
+                .iter()
+                .find(|pieces| pieces.declaration == declarations[1].span)
+                .unwrap()
+                .top_level
+        );
+    }
+}
+
+#[cfg(test)]
+mod move_overload_tests {
+    use super::TypeScript;
+    use vvv_core::Language;
+    #[test]
+    fn overload_signatures_remain_distinct_root_declarations() {
+        let source = "export function f(x: string): string;\nexport function f(x: number): number;\nexport function f(x: string | number) { return x; }";
+        let facts = TypeScript::new().facts(source).unwrap();
+        let declarations: Vec<_> = facts
+            .symbols
+            .iter()
+            .filter(|symbol| symbol.name == "f")
+            .collect();
+        assert_eq!(declarations.len(), 3);
+        assert!(declarations.iter().all(|symbol| {
+            facts
+                .declaration_pieces
+                .iter()
+                .any(|pieces| pieces.declaration == symbol.span && pieces.top_level)
+        }));
+        let ambient = TypeScript::new()
+            .facts("export declare function f(): void;")
+            .unwrap();
+        assert_eq!(ambient.symbols.len(), 1);
+        assert!(ambient.declaration_pieces[0].top_level);
+        assert!(!ambient.declaration_pieces[0].supported);
+        assert_eq!(
+            facts
+                .declaration_pieces
+                .iter()
+                .filter(|pieces| !pieces.supported)
+                .count(),
+            2
+        );
+    }
+}

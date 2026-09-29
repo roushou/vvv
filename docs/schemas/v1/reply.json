@@ -43,6 +43,12 @@
           "$ref": "#/$defs/PlanReviewReply"
         },
         {
+          "$ref": "#/$defs/PlanReviewReply"
+        },
+        {
+          "$ref": "#/$defs/SymbolMoveCandidates"
+        },
+        {
           "$ref": "#/$defs/PlanReviewPage"
         },
         {
@@ -1520,6 +1526,25 @@
             }
           ],
           "description": "Effects that could not be restored after a failed mutation."
+        },
+        "symbol_move_candidates": {
+          "items": {
+            "$ref": "#/$defs/SymbolMoveCandidate"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "symbol_move_unsupported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolMoveUnsupported"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -2284,6 +2309,9 @@
         }
       ],
       "properties": {
+        "declaration": {
+          "$ref": "#/$defs/Match"
+        },
         "files": {
           "items": {
             "$ref": "#/$defs/FileChange"
@@ -2303,6 +2331,12 @@
           },
           "type": "array"
         },
+        "pieces": {
+          "items": {
+            "$ref": "#/$defs/SymbolMovePiece"
+          },
+          "type": "array"
+        },
         "respellings": {
           "description": "Consumers rewritten in place; every other edit in `files` is the\ndeclaration itself moving.",
           "items": {
@@ -2316,6 +2350,8 @@
       },
       "required": [
         "intent",
+        "declaration",
+        "pieces",
         "from",
         "to",
         "files"
@@ -2325,12 +2361,25 @@
     "MoveSymbolIntent": {
       "description": "Move one declaration — with what belongs to it in the text, and for Rust\nits `impl` blocks — from the file declaring it to another file of the\nsame language, and make every reference follow.",
       "properties": {
+        "expected_content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "from": {
           "description": "The file declaring it.",
           "type": "string"
         },
         "name": {
           "type": "string"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
         },
         "to": {
           "description": "The file to declare it in; it must exist.",
@@ -2883,6 +2932,9 @@
         },
         {
           "$ref": "#/$defs/Move"
+        },
+        {
+          "$ref": "#/$defs/MoveSymbol"
         }
       ]
     },
@@ -4207,13 +4259,15 @@
       "enum": [
         "rename",
         "rewrite",
-        "move"
+        "move",
+        "move_symbol"
       ],
       "type": "string"
     },
     "ReviewSection": {
       "enum": [
         "move",
+        "piece",
         "notice",
         "respelling",
         "declaration",
@@ -4247,6 +4301,11 @@
           "type": "integer"
         },
         "occurrences": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "pieces": {
           "format": "uint",
           "minimum": 0,
           "type": "integer"
@@ -4778,6 +4837,87 @@
         }
       ]
     },
+    "SymbolMoveCandidate": {
+      "properties": {
+        "declaration": {
+          "$ref": "#/$defs/Match"
+        },
+        "pieces": {
+          "items": {
+            "$ref": "#/$defs/SymbolMovePiece"
+          },
+          "type": "array"
+        },
+        "unsupported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolMoveUnsupported"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "declaration",
+        "pieces"
+      ],
+      "type": "object"
+    },
+    "SymbolMoveCandidates": {
+      "properties": {
+        "candidates": {
+          "items": {
+            "$ref": "#/$defs/SymbolMoveCandidate"
+          },
+          "type": "array"
+        },
+        "content": {
+          "$ref": "#/$defs/ContentId"
+        }
+      },
+      "required": [
+        "content",
+        "candidates"
+      ],
+      "type": "object"
+    },
+    "SymbolMoveOwnership": {
+      "enum": [
+        "declaration",
+        "same_scope_target"
+      ],
+      "type": "string"
+    },
+    "SymbolMovePiece": {
+      "properties": {
+        "ownership": {
+          "$ref": "#/$defs/SymbolMoveOwnership"
+        },
+        "symbol": {
+          "$ref": "#/$defs/Symbol"
+        }
+      },
+      "required": [
+        "symbol",
+        "ownership"
+      ],
+      "type": "object"
+    },
+    "SymbolMoveUnsupported": {
+      "enum": [
+        "missing_evidence",
+        "same_file",
+        "destination_binding_conflict",
+        "nested_declaration",
+        "unsupported_declaration_kind",
+        "competing_binding",
+        "ambiguous_companion",
+        "unsupported_companion_target"
+      ],
+      "type": "string"
+    },
     "SymbolRef": {
       "description": "A declaration in one source version, not an identity across edits.",
       "properties": {
@@ -5197,7 +5337,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:session:reply:49d6807e7ac248775f8d03f65357fee2d91e210363095b5d9489533815dff40d",
+  "$id": "urn:vvv:schema:1:session:reply:c30d826de035b7df1fbc1809113fd14e03cfbe42e936d75e77b33ba84ce0328e",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "The reply to a [`Call`]: its `id`, then the usual envelope.",
   "oneOf": [
@@ -5278,6 +5418,25 @@
         "status": {
           "const": "error",
           "type": "string"
+        },
+        "symbol_move_candidates": {
+          "items": {
+            "$ref": "#/$defs/SymbolMoveCandidate"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "symbol_move_unsupported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolMoveUnsupported"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [

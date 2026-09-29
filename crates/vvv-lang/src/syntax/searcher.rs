@@ -205,12 +205,14 @@ impl<L: LanguageExt> AstGrepSearcher<L> {
         let declarations = SymbolExtractor::new(self.grammar.symbols).extract(&node, source);
         let signatures = super::signatures::Signatures::new(self.grammar.signatures)
             .extract(&declarations, source);
+        let pieces = SymbolExtractor::new(self.grammar.symbols).pieces(&declarations);
         let symbols = declarations.into_iter().map(|(_, symbol)| symbol).collect();
         let imports =
             ImportExtractor::new(&self.grammar.imports, self.lang.clone()).extract(&node)?;
         let highlights = Highlighter::new(self.grammar.highlights).extract(&node);
         let mut facts = Facts::new(symbols, imports, highlights);
         facts.signatures = signatures;
+        facts.declaration_pieces = pieces;
         super::calls::Calls::new(&self.grammar).extract(&node, &mut facts);
         super::navigation::NavigationFacts::new(&self.grammar).extract(&node, &mut facts);
         let kinds: Vec<u16> = self

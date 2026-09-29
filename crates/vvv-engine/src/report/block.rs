@@ -47,6 +47,7 @@ pub enum Block {
     },
     /// Where a name is declared: the sites `where` found.
     Sites(Vec<Site>),
+    SymbolMoveCandidates(Vec<crate::SymbolMoveCandidate>),
     /// Compact resolved or candidate declaration locations.
     Locations(Vec<crate::DefinitionLocation>),
     Relationships(Vec<crate::Relationship>),

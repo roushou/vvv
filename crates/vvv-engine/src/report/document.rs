@@ -52,9 +52,10 @@ impl Document {
             Answer::ApplyPlan(r) => Self::plan_receipt(r),
             Answer::ValidatePlan(r) => Self::validation(r),
             Answer::InspectPlan(r) => Self::plan_reply(r),
-            Answer::PrepareRename(r) | Answer::PrepareRewrite(r) | Answer::PrepareMove(r) => {
-                Self::plan_reply(r)
-            }
+            Answer::PrepareRename(r)
+            | Answer::PrepareRewrite(r)
+            | Answer::PrepareMove(r)
+            | Answer::PrepareMoveSymbol(r) => Self::plan_reply(r),
             Answer::ReviewPlan(r) => Self::plan_page(r),
             #[cfg(feature = "schema")]
             Answer::Schema(r) => Self::schema(r),
@@ -83,6 +84,7 @@ impl Document {
             Answer::Rename(r) => Self::rename(r),
             Answer::Move(r) => Self::move_file(r),
             Answer::MoveSymbol(r) => Self::move_symbol(r),
+            Answer::SymbolMoveCandidates(r) => Self::symbol_move_candidates(r),
             Answer::Batch(r) => Self::batch(r),
             Answer::Undo(r) => Self::undo(r),
             Answer::History(r) => Self::history(r),

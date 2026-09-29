@@ -15,6 +15,10 @@
       ],
       "type": "object"
     },
+    "ContentId": {
+      "description": "Digest of complete file contents, independent of their path.",
+      "type": "string"
+    },
     "HistoryEntry": {
       "description": "One apply that can still be undone.",
       "properties": {
@@ -170,12 +174,25 @@
     "MoveSymbolIntent": {
       "description": "Move one declaration — with what belongs to it in the text, and for Rust\nits `impl` blocks — from the file declaring it to another file of the\nsame language, and make every reference follow.",
       "properties": {
+        "expected_content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
         "from": {
           "description": "The file declaring it.",
           "type": "string"
         },
         "name": {
           "type": "string"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
         },
         "to": {
           "description": "The file to declare it in; it must exist.",
@@ -392,7 +409,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:undo:result:96ed60a00c02544f1f2db8c825c90892dd893c2f8263e629c901c8a72a7281e1",
+  "$id": "urn:vvv:schema:1:undo:result:be85dc362852b5f4b9697ef8ace44af1a234f3fee965137e43657ef4b92607b2",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "`vvv undo`.",
   "properties": {

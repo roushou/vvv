@@ -9,6 +9,8 @@
         "prepare_rename",
         "prepare_rewrite",
         "prepare_move",
+        "prepare_move_symbol",
+        "symbol_move_candidates",
         "review_plan",
         "schema",
         "search_page",
@@ -75,7 +77,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:schema:arguments:62820017f0804c1cd4284dbf1acd10fb790f76c0e191721f0098aacc92efcbc8",
+  "$id": "urn:vvv:schema:1:schema:arguments:f9e229d9c384b7f627102db5c468b1e3848cf1c2850618e77e83ebcb0d140afe",
   "$ref": "#/$defs/SchemaQuery",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {},

@@ -133,11 +133,17 @@ pub use crate::capabilities::relationships::{
 pub use crate::capabilities::plans::{
     ApplyPlanQuery, DiscardPlanQuery, InspectPlanQuery, PlanId, PlanPreview, PlanReceipt,
     PlanReview, PlanReviewCursor, PlanReviewItem, PlanReviewKind, PlanReviewPage, PlanReviewReply,
-    PlanStatus, PrepareMoveIntent, PrepareMoveQuery, PrepareRenameQuery, PrepareRewriteQuery,
-    ReviewMutation, ReviewPlanQuery, ReviewSection, ReviewTotals,
+    PlanStatus, PrepareMoveIntent, PrepareMoveQuery, PrepareMoveSymbolIntent,
+    PrepareMoveSymbolQuery, PrepareRenameQuery, PrepareRewriteQuery, ReviewMutation,
+    ReviewPlanQuery, ReviewSection, ReviewTotals,
 };
 
 pub use crate::capabilities::validation::{
     CheckCommand, CheckFailure, CheckOperation, CheckOutcome, CheckOutput, CheckResult,
     ValidatePlanQuery, ValidationBudget, ValidationReport, ValidationSourceState,
+};
+
+pub use crate::capabilities::moves::{
+    SymbolMoveCandidate, SymbolMoveCandidates, SymbolMoveCandidatesQuery, SymbolMoveOwnership,
+    SymbolMovePiece, SymbolMoveUnsupported,
 };

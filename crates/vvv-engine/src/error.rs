@@ -9,6 +9,17 @@ use crate::history::HistoryError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EngineError {
+    #[error("select exactly one symbol-move declaration: {}", candidates.iter().enumerate().map(|(index, candidate)| format!("{}: {} {}:{}", index + 1, candidate.declaration.id, candidate.declaration.path, candidate.declaration.start.line + 1)).collect::<Vec<_>>().join(", "))]
+    SymbolMoveSelection {
+        candidates: Vec<crate::SymbolMoveCandidate>,
+    },
+    #[error("selected declaration cannot be moved: {reason}")]
+    UnsupportedSymbolMove {
+        declaration: Box<crate::Match>,
+        reason: crate::SymbolMoveUnsupported,
+    },
+    #[error("invalid symbol-move ownership evidence")]
+    InvalidSymbolMoveEvidence,
     #[error("validation requires a disk workspace on a supported platform")]
     ValidationUnavailable,
     #[error(
@@ -147,6 +158,9 @@ impl EngineError {
     /// The stable code a client branches on.
     pub fn code(&self) -> ErrorCode {
         match self {
+            Self::SymbolMoveSelection { .. } => ErrorCode::BadSelection,
+            Self::UnsupportedSymbolMove { .. } => ErrorCode::Unmovable,
+            Self::InvalidSymbolMoveEvidence => ErrorCode::Conflict,
             Self::InvalidPlan => ErrorCode::InvalidPlan,
             Self::PlanExpired => ErrorCode::PlanExpired,
             Self::PlanConsumed => ErrorCode::PlanConsumed,

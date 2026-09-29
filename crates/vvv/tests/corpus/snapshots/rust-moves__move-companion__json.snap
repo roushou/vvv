@@ -13,6 +13,98 @@ exit 0
       "from": "src/companions.rs",
       "to": "src/b.rs"
     },
+    "declaration": {
+      "content": "0ca78c8e204900bca2c8350af681c354ccd94fe24bafb9acad42e9b66b46f92a",
+      "id": "c96c7461f383",
+      "path": "src/companions.rs",
+      "language": "rust",
+      "span": {
+        "start": 0,
+        "end": 18
+      },
+      "start": {
+        "line": 0,
+        "column": 0
+      },
+      "end": {
+        "line": 0,
+        "column": 18
+      },
+      "kind": "struct",
+      "text": "pub struct Bundle;",
+      "line": "pub struct Bundle;",
+      "symbol": {
+        "kind": "struct",
+        "name": "Bundle",
+        "name_span": {
+          "start": 11,
+          "end": 17
+        },
+        "span": {
+          "start": 0,
+          "end": 18
+        },
+        "extent": {
+          "start": 0,
+          "end": 18
+        },
+        "visibility": {
+          "span": {
+            "start": 0,
+            "end": 3
+          },
+          "text": "pub"
+        }
+      },
+      "role": "declaration"
+    },
+    "pieces": [
+      {
+        "symbol": {
+          "kind": "struct",
+          "name": "Bundle",
+          "name_span": {
+            "start": 11,
+            "end": 17
+          },
+          "span": {
+            "start": 0,
+            "end": 18
+          },
+          "extent": {
+            "start": 0,
+            "end": 18
+          },
+          "visibility": {
+            "span": {
+              "start": 0,
+              "end": 3
+            },
+            "text": "pub"
+          }
+        },
+        "ownership": "declaration"
+      },
+      {
+        "symbol": {
+          "kind": "impl",
+          "name": "Bundle",
+          "name_span": {
+            "start": 25,
+            "end": 31
+          },
+          "span": {
+            "start": 20,
+            "end": 122
+          },
+          "extent": {
+            "start": 20,
+            "end": 122
+          }
+        },
+        "ownership": "same_scope_target"
+      }
+    ],
     "applied": false,
     "from": {
       "package": "corpus_moves",

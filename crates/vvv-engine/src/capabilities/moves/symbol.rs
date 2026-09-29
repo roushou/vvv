@@ -33,6 +33,10 @@ use crate::{
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct MoveSymbolIntent {
     pub name: String,
+    #[serde(default, skip_serializing_if = "crate::Selection::is_all")]
+    pub selection: crate::Selection,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub expected_content: Option<crate::ContentId>,
     /// The file declaring it.
     pub from: PathBuf,
     /// The file to declare it in; it must exist.
@@ -43,6 +47,8 @@ impl MoveSymbolIntent {
     pub fn new(name: impl Into<String>, from: impl Into<PathBuf>, to: impl Into<PathBuf>) -> Self {
         Self {
             name: name.into(),
+            selection: crate::Selection::All,
+            expected_content: None,
             from: from.into(),
             to: to.into(),
         }
@@ -54,6 +60,8 @@ impl MoveSymbolIntent {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct MoveSymbol {
     pub intent: MoveSymbolIntent,
+    pub declaration: crate::Match,
+    pub pieces: Vec<crate::SymbolMovePiece>,
     /// Preview or successful application with its history entry.
     #[serde(flatten)]
     pub state: crate::MutationState,
@@ -82,6 +90,14 @@ impl Mutation for MoveSymbol {
 /// Plan moving one declaration to another file of its language. Nothing is
 /// written; see [`Apply`](crate::Apply).
 impl MoveSymbolIntent {
+    pub fn selecting(mut self, selection: crate::Selection) -> Self {
+        self.selection = selection;
+        self
+    }
+    pub fn expecting(mut self, content: crate::ContentId) -> Self {
+        self.expected_content = Some(content);
+        self
+    }
     /// Plan without writing files.
     pub fn plan(self, engine: &crate::Engine) -> Result<Planned<MoveSymbol>, EngineError> {
         let _operation = engine.operation();
@@ -104,13 +120,45 @@ impl MoveSymbolIntent {
             return Err(EngineError::NoLanguage(to_path.clone().into()));
         }
         let ns = graph.namespace_of(&from_path)?;
-        let extraction = Extraction::of(source.facts()?, source.file(), &self.name, |kind| {
-            ns.is_addressable(kind)
-        })?
-        .ok_or_else(|| EngineError::NoSuchSymbol {
-            name: self.name.clone(),
-            kind: None,
-        })?;
+        if self
+            .expected_content
+            .as_ref()
+            .is_some_and(|content| content != &source.file().content_id())
+        {
+            return Err(EngineError::StaleSource {
+                path: from_path.into(),
+            });
+        }
+        let selected = super::SymbolMoveCandidates::of(&source, &ns, &self.name)?
+            .select(&self.name, &self.selection)?;
+        let dest_facts = dest.facts()?;
+        let destination_reason = if from_path == to_path {
+            Some(crate::SymbolMoveUnsupported::SameFile)
+        } else if dest_facts
+            .symbols
+            .iter()
+            .any(|symbol| symbol.name == self.name && ns.is_addressable(symbol.kind))
+        {
+            Some(crate::SymbolMoveUnsupported::DestinationBindingConflict)
+        } else {
+            None
+        };
+        if let Some(reason) = destination_reason {
+            return Err(EngineError::UnsupportedSymbolMove {
+                declaration: Box::new(selected.declaration),
+                reason,
+            });
+        }
+        let symbol = selected
+            .declaration
+            .symbol
+            .as_ref()
+            .ok_or(EngineError::InvalidSymbolMoveEvidence)?;
+        let extraction = Extraction::of(
+            source.file(),
+            symbol,
+            selected.pieces.iter().map(|piece| &piece.symbol),
+        )?;
         let old_module = ns.address(&from_path)?;
         let old = old_module.join(self.name.as_str());
         let consumers = graph.consumers(&ns, &old, &[&from_path, &to_path])?;
@@ -133,6 +181,8 @@ impl MoveSymbolIntent {
             Intent::MoveSymbol(self.clone()),
             |bound, files| MoveSymbol {
                 intent: self.clone(),
+                declaration: selected.declaration.clone(),
+                pieces: selected.pieces.clone(),
                 state: crate::MutationState::Preview,
                 from,
                 to,
@@ -236,7 +286,12 @@ impl<'a> SymbolMove<'a> {
                     .imports
                     .iter()
                     .any(|i| i.span.contains(&m.span));
-                if !self.extraction.contains(m.span) && !in_import {
+                if !self.extraction.contains(m.span)
+                    && !in_import
+                    && !self.extraction.shadowed(self.source.facts, m.span, |kind| {
+                        self.ns.is_addressable(kind)
+                    })
+                {
                     self.old_file_still_uses = true;
                 }
             } else if m.path != self.to_path

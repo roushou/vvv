@@ -1,0 +1,8 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 1
+--- stdout ---
+--- stderr ---
+✗ selected declaration cannot be moved: companion target cannot be assigned to this declaration

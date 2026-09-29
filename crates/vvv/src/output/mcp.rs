@@ -60,6 +60,12 @@ impl McpIssue {
 impl ToolKind {
     pub fn description(self) -> &'static str {
         match self {
+            Self::PrepareMoveSymbol => {
+                "Prepare a selected declaration move between existing files for review. Does not write; use apply_plan with its exact handle."
+            }
+            Self::SymbolMoveCandidates => {
+                "List every addressable declaration matching a name in a source file, with ids, content identity, owned pieces, and unsupported reasons. Select exactly one supported declaration."
+            }
             Self::PrepareMove => {
                 "Prepare a retained file or directory move. Review exact edits and destinations, then apply its session-local handle."
             }

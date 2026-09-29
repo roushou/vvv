@@ -405,6 +405,25 @@
             }
           ],
           "description": "Effects that could not be restored after a failed mutation."
+        },
+        "symbol_move_candidates": {
+          "items": {
+            "$ref": "#/$defs/SymbolMoveCandidate"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "symbol_move_unsupported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolMoveUnsupported"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [
@@ -668,6 +687,122 @@
       ],
       "type": "object"
     },
+    "MoveSymbol": {
+      "description": "`vvv move --symbol`: one declaration moved between files.",
+      "oneOf": [
+        {
+          "properties": {
+            "applied": {
+              "const": false
+            },
+            "history_id": false
+          },
+          "required": [
+            "applied"
+          ]
+        },
+        {
+          "properties": {
+            "applied": {
+              "const": true
+            },
+            "history_id": {
+              "format": "uint64",
+              "minimum": 0,
+              "type": "integer"
+            }
+          },
+          "required": [
+            "applied",
+            "history_id"
+          ]
+        }
+      ],
+      "properties": {
+        "declaration": {
+          "$ref": "#/$defs/Match"
+        },
+        "files": {
+          "items": {
+            "$ref": "#/$defs/FileChange"
+          },
+          "type": "array"
+        },
+        "from": {
+          "$ref": "#/$defs/Address",
+          "description": "The declaration's address before and after."
+        },
+        "intent": {
+          "$ref": "#/$defs/MoveSymbolIntent"
+        },
+        "notices": {
+          "items": {
+            "$ref": "#/$defs/Notice"
+          },
+          "type": "array"
+        },
+        "pieces": {
+          "items": {
+            "$ref": "#/$defs/SymbolMovePiece"
+          },
+          "type": "array"
+        },
+        "respellings": {
+          "description": "Consumers rewritten in place; every other edit in `files` is the\ndeclaration itself moving.",
+          "items": {
+            "$ref": "#/$defs/Respelling"
+          },
+          "type": "array"
+        },
+        "to": {
+          "$ref": "#/$defs/Address"
+        }
+      },
+      "required": [
+        "intent",
+        "declaration",
+        "pieces",
+        "from",
+        "to",
+        "files"
+      ],
+      "type": "object"
+    },
+    "MoveSymbolIntent": {
+      "description": "Move one declaration — with what belongs to it in the text, and for Rust\nits `impl` blocks — from the file declaring it to another file of the\nsame language, and make every reference follow.",
+      "properties": {
+        "expected_content": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ContentId"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "from": {
+          "description": "The file declaring it.",
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "selection": {
+          "$ref": "#/$defs/Selection"
+        },
+        "to": {
+          "description": "The file to declare it in; it must exist.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "name",
+        "from",
+        "to"
+      ],
+      "type": "object"
+    },
     "Name": {
       "description": "One identifier: a module, a declaration, a file stem. Compared by text.",
       "type": "string"
@@ -898,6 +1033,9 @@
         },
         {
           "$ref": "#/$defs/Move"
+        },
+        {
+          "$ref": "#/$defs/MoveSymbol"
         }
       ]
     },
@@ -1750,6 +1888,69 @@
         }
       ]
     },
+    "SymbolMoveCandidate": {
+      "properties": {
+        "declaration": {
+          "$ref": "#/$defs/Match"
+        },
+        "pieces": {
+          "items": {
+            "$ref": "#/$defs/SymbolMovePiece"
+          },
+          "type": "array"
+        },
+        "unsupported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolMoveUnsupported"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "declaration",
+        "pieces"
+      ],
+      "type": "object"
+    },
+    "SymbolMoveOwnership": {
+      "enum": [
+        "declaration",
+        "same_scope_target"
+      ],
+      "type": "string"
+    },
+    "SymbolMovePiece": {
+      "properties": {
+        "ownership": {
+          "$ref": "#/$defs/SymbolMoveOwnership"
+        },
+        "symbol": {
+          "$ref": "#/$defs/Symbol"
+        }
+      },
+      "required": [
+        "symbol",
+        "ownership"
+      ],
+      "type": "object"
+    },
+    "SymbolMoveUnsupported": {
+      "enum": [
+        "missing_evidence",
+        "same_file",
+        "destination_binding_conflict",
+        "nested_declaration",
+        "unsupported_declaration_kind",
+        "competing_binding",
+        "ambiguous_companion",
+        "unsupported_companion_target"
+      ],
+      "type": "string"
+    },
     "Template": {
       "description": "Replacement text with meta-variable holes: `bar($$$ARGS)`, `$NAME_v2`.\n\nVariables are `$NAME` (single capture) or `$$$NAME` (sequence capture);\na name is `[A-Z_][A-Z0-9_]*`. Anything else is literal.",
       "type": "string"
@@ -1838,7 +2039,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:discard_plan:response:d8aa9b7537b6d6a73b34350202a2c8bba3e8b3b58b882c8d2b439743de8d441d",
+  "$id": "urn:vvv:schema:1:discard_plan:response:a384fdff8a4500c8409b617c249b7ba17f6e437ba3ce2493cc440f2f26aec61e",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [
@@ -1919,6 +2120,25 @@
         "status": {
           "const": "error",
           "type": "string"
+        },
+        "symbol_move_candidates": {
+          "items": {
+            "$ref": "#/$defs/SymbolMoveCandidate"
+          },
+          "type": [
+            "array",
+            "null"
+          ]
+        },
+        "symbol_move_unsupported": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolMoveUnsupported"
+            },
+            {
+              "type": "null"
+            }
+          ]
         }
       },
       "required": [

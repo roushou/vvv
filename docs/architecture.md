@@ -528,7 +528,7 @@ its `Request` on a session engine and writes the `Reply` for JSON-lines clients.
 default), `vvv-tui`; `vvv ui` or bare `vvv` in a terminal hands the engine to the
 picker with the CLI's colour policy and `$VISUAL`/`$EDITOR`.
 
-The optional `mcp` feature adds `mcp/`, a fifteen-tool adapter for navigation, reviewed mutations, and explicit validation using the official
+The optional `mcp` feature adds `mcp/`, a seventeen-tool adapter for navigation, reviewed mutations, and explicit validation using the official
 Rust SDK's codec, lifecycle, and dispatch. Reads and validation call the engine
 in process through `Call::execute_with_cancellation`; apply uses `Call::execute`
 and finishes its active transaction. Both share the ordinary call budget policy. A bounded
@@ -788,6 +788,19 @@ it. A consumer in another package would need `pub`, which is never inferred — 
 need is handed to `Surgery::relocate` instead of edited in place. Nothing is ever
 narrowed, and a move that nobody outside needs changes no modifier.
 
+**Symbol moves select declarations and retain ownership evidence.**
+`capabilities/moves/selection.rs` owns candidate enumeration, identity, and explicit
+single selection. All matching addressable declarations remain visible, with typed
+unsupported reasons. `SymbolRule::companion_of` describes companion target kinds;
+`syntax/symbols.rs` emits `Facts::declaration_pieces` with source spans, top-level
+scope and move-support evidence, and typed companion ownership. No parser node crosses the plugin
+boundary. Same-scope unqualified targets establish ownership; competing declarations,
+qualified or shadowed targets, and cross-scope targets without a local owner do not.
+Module declarations, nested declarations, and competing module/name bindings are refused by the planner.
+The engine's existing module/name addresses cannot identify conditional/overloaded
+peers separately. Extraction receives the selected declaration and explicit owned
+pieces, never a name-based collection. Retained symbol moves use this same planner.
+
 **Extraction validates before slicing.** A symbol move retains the source snapshot
 and checks its declaration extents for valid UTF-8 ranges and overlapping pieces.
 Before rendering, `Site` partitions a symbol move's source edges: moving pieces
@@ -893,8 +906,8 @@ Engine dispatch routes typed requests without owning capability behavior.
 ## Retained mutation handles
 
 `capabilities/plans.rs` owns preparation, inspection, application, discard, and
-report composition for reviewed rename, rewrite, and file/directory move plans. `plan_store.rs` retains executable
-plans and terminal outcomes, shared by engine clones. Ordinary mutation requests
+report composition for reviewed rename, rewrite, file/directory move, and selected
+symbol move plans. `plan_store.rs` retains executable plans and terminal outcomes, shared by engine clones. Ordinary mutation requests
 keep their existing lifecycle. Session handles are references to captured plans;
 clients cannot submit replacement edits or change the captured intent on apply.
 
@@ -914,11 +927,11 @@ never evicts pending plans or successful receipts. Discarded tombstones may be
 reclaimed on the next preparation. MCP distinguishes queued cancellation from
 active application: reads are cooperative, active writes finish their transaction.
 
-`capabilities/plans/review.rs` owns the immutable closed rename/rewrite/move preview,
+`capabilities/plans/review.rs` owns the immutable closed rename/rewrite/file-move/symbol-move preview,
 record construction, exact UTF-8 text chunking, delivery budgets, and review cursor
 positions. `PendingPlan` holds `Planned<MutationAnswer>`; preparation admits only
-rename, rewrite, and file/directory moves. Shared immutable preview allocations keep inspection from
-copying all occurrences and edits. Review pages never access a source tree or
+rename, rewrite, file/directory moves, and selected symbol moves. Shared immutable
+preview allocations keep inspection from copying all occurrences and edits. Review pages never access a source tree or
 reuse source-query checkpoints: they describe captured evidence that remains
 readable after workspace edits, apply, or failed apply. Lifecycle and latest
 validation evidence remain inspection's responsibility.
@@ -928,7 +941,7 @@ page retries add no retained checkpoint allocations. Captured reviews remain cha
 within the existing plan memory limits after completion, and share the original
 fixed expiry. Discard releases pending executable plans, captured reviews, and
 baselines. No proof of page delivery is required for apply; clients own their review
-policy. Symbol moves and batches are not admitted to retained handles.
+policy. Batches are not admitted to retained handles.
 
 ### Validation of applied plans
 

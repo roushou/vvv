@@ -38,30 +38,15 @@ pub(crate) struct Extraction<'a> {
 }
 
 impl<'a> Extraction<'a> {
-    /// The addressable declaration called `name` among `facts`, with its
-    /// pieces; `None` when the file declares no such thing.
+    /// Construct from the selected declaration and explicit owned pieces.
     pub fn of(
-        facts: &'a Facts,
         source: &'a SourceFile,
-        name: &str,
-        is_addressable: impl Fn(SymbolKind) -> bool,
-    ) -> Result<Option<Self>, ExtractionError> {
-        let Some(symbol) = facts
-            .symbols
-            .iter()
-            .find(|s| s.name == name && is_addressable(s.kind))
-        else {
-            return Ok(None);
-        };
-        let mut pieces: Vec<&Symbol> = facts
-            .symbols
-            .iter()
-            .filter(|s| {
-                s.name == name && s.kind != SymbolKind::Method && s.kind != SymbolKind::Field
-            })
-            .collect();
-        pieces.sort_by_key(|s| s.extent);
-        pieces.dedup_by_key(|s| s.extent);
+        symbol: &'a Symbol,
+        pieces: impl IntoIterator<Item = &'a Symbol>,
+    ) -> Result<Self, ExtractionError> {
+        let mut pieces: Vec<_> = pieces.into_iter().collect();
+        pieces.sort_by_key(|piece| piece.extent);
+        pieces.dedup_by_key(|piece| piece.extent);
         let extraction = Self {
             symbol,
             pieces,
@@ -79,7 +64,7 @@ impl<'a> Extraction<'a> {
                 });
             }
         }
-        Ok(Some(extraction))
+        Ok(extraction)
     }
 
     /// Whether `span` lies inside the moved text.
@@ -87,6 +72,30 @@ impl<'a> Extraction<'a> {
         self.pieces
             .iter()
             .any(|p| p.extent.start <= span.start && span.end <= p.extent.end)
+    }
+
+    /// Bare same-named declarations in other lexical scopes do not use this binding.
+    pub fn shadowed(
+        &self,
+        facts: &Facts,
+        span: Span,
+        is_addressable: impl Fn(SymbolKind) -> bool,
+    ) -> bool {
+        facts
+            .symbols
+            .iter()
+            .filter(|symbol| {
+                symbol.name == self.symbol.name
+                    && symbol.span != self.symbol.span
+                    && is_addressable(symbol.kind)
+            })
+            .any(|symbol| {
+                facts.declaration_pieces.iter().any(|pieces| {
+                    pieces.declaration == symbol.span
+                        && !pieces.top_level
+                        && pieces.scope.contains(&span)
+                })
+            })
     }
 
     /// Distinct identifier texts inside the moved text: what it may need
@@ -211,7 +220,11 @@ mod tests {
         }
 
         fn extraction(&self) -> Result<Extraction<'_>, ExtractionError> {
-            Ok(Extraction::of(&self.facts, &self.source, "f", |_| true)?.unwrap())
+            Extraction::of(
+                &self.source,
+                &self.facts.symbols[0],
+                self.facts.symbols.iter(),
+            )
         }
     }
 

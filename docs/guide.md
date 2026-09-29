@@ -415,7 +415,7 @@ Both paths must be nonempty workspace-relative paths with no `..` components.
 The existing move rules apply, including companion files, import rewrites, notices,
 and destination-preserving writes. Inspect, review, apply, discard, and validate
 through the same handle commands as rename. Application does not rerun the planner.
-Retained symbol moves and batches are unsupported.
+Retained batches are unsupported.
 
 Move validation checks final destination contents, disappearance of old source
 entries (allowing case-only aliases), and unchanged inventory outside the reviewed
@@ -424,6 +424,50 @@ including recorded absence. These observations remain checked during commands,
 even for hidden or ignored destinations. No fresh post-apply tree is adopted as
 the reviewed baseline. Receipt retries remain historical after edits or undo.
 
+### Selected and retained symbol moves
+
+`move --symbol NAME` moves one declaration between existing files of the same language.
+A unique supported declaration needs no selection. When several declarations match,
+vvv lists their row numbers and ids; pass `--select ROW_OR_ID` to choose exactly one.
+Selection never substitutes another declaration when the chosen one is unsupported.
+
+```console
+vvv move src/origin.rs src/destination.rs --symbol Engine --select 1
+```
+
+For agents, `symbol_move_candidates` takes `name` and workspace-relative `from`.
+Its reply includes source `content`, all matching addressable declarations in source
+order, ids, supported pieces, and optional typed `unsupported` reasons. Use the id
+and `content` in preparation:
+
+```json
+{
+  "command": "prepare_move_symbol",
+  "intent": {
+    "name": "Engine",
+    "from": "src/origin.rs",
+    "to": "src/destination.rs",
+    "selection": { "ids": ["<declaration-id>"] },
+    "expected_content": "<source-content>"
+  },
+  "page": { "max_items": 20, "max_bytes": 8192 }
+}
+```
+
+MCP exposes `vvv_symbol_move_candidates` and `vvv_prepare_move_symbol`. Apply,
+inspect, review, discard, and validate use existing handle commands. Application
+uses the captured declaration and edits; receipt retries remain historical.
+
+Declarations retain documentation, attributes, and supported export wrappers. Rust
+impl blocks travel only when syntax establishes their target in the declaration's
+scope, including generic and trait impls. Module declarations (use a file move instead), standalone signatures and variable declarators, nested declarations, competing same-module
+bindings (including conditional declarations and overloads), missing ownership evidence,
+and ambiguous or unsupported companion targets are refused. Qualified targets and
+cross-scope targets without a local owner are conservative unsupported cases. A
+destination binding with the same name and moving into the source file are refused.
+TypeScript overload signatures appear as separate function declarations in search
+and candidate discovery. No type inference or conditional compilation decides ownership.
+
 ### Retained rewrites and paged reviews
 
 `prepare_rewrite` retains the existing rewrite intent: `query`, `template`, and
@@ -431,7 +475,7 @@ optional `selection`. MCP exposes it as `vvv_prepare_rewrite`. Captures expand
 from the captured source; application cannot replace the template or selection.
 Use the same inspection, apply, discard, and validation commands as for rename.
 
-For a large rename, rewrite, or file move, supply `page` during preparation or inspection:
+For a large rename, rewrite, file move, or symbol move, supply `page` during preparation or inspection:
 
 ```json
 {"command":"prepare_rewrite","intent":{"query":{"pattern":"increment($X, 1)"},"template":"increment($X, 2)"},"page":{"max_items":20,"max_bytes":8192}}
@@ -835,8 +879,10 @@ the relative style when it still means the same thing. Grouped imports like
 split into their own `use` line when it doesn't.
 
 **One declaration, not the file.** `vvv move --symbol Config src/util.rs src/config.rs`
-moves the declaration called `Config` — with its doc comments and attributes and, in
-Rust, the `impl` blocks for it — to the end of an existing file of the same language.
+moves a uniquely supported declaration called `Config` — with its doc comments,
+attributes, and proven Rust impl companions — to the end of an existing file of the
+same language. Multiple candidates require `--select`; see
+[selected symbol moves](#selected-and-retained-symbol-moves) for support limits.
 Every consumer follows: `use` paths and qualified paths are rewritten, a `pub use`
 re-export points at the new place, the old file imports it back if it still uses it,
 and an import of it in the new file is removed. The imports the moved text relied on
@@ -1042,7 +1088,7 @@ For clients that use an `mcpServers` configuration, add:
 
 The client must support MCP `2025-11-25`. Navigation tools are read-only:
 `vvv_discover`, `vvv_search`, `vvv_navigate`, `vvv_relationships`, `vvv_context`,
-`vvv_continue`, and `vvv_expand`. Reviewed changes use `vvv_prepare_rename`, `vvv_prepare_rewrite`, `vvv_prepare_move`, `vvv_review_plan`,
+`vvv_continue`, `vvv_expand`, and `vvv_symbol_move_candidates`. Reviewed changes use `vvv_prepare_rename`, `vvv_prepare_rewrite`, `vvv_prepare_move`, `vvv_prepare_move_symbol`, `vvv_review_plan`,
 `vvv_inspect_plan`, `vvv_discard_plan`, and the writing tool `vvv_apply_plan`.
 `vvv_validate_plan` runs explicitly supplied project checks after apply.
 Their input and output schemas and mutation annotations are available through

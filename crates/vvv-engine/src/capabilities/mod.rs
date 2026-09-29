@@ -5,7 +5,7 @@
 //!
 //! | Command | Owning module (relative to `src/`) |
 //! | --- | --- |
-//! | `prepare_rename`, `prepare_rewrite`, `prepare_move`, `inspect_plan`, `review_plan`, `apply_plan`, `discard_plan` | `capabilities/plans.rs` |
+//! | `prepare_rename`, `prepare_rewrite`, `prepare_move`, `prepare_move_symbol`, `inspect_plan`, `review_plan`, `apply_plan`, `discard_plan` | `capabilities/plans.rs` |
 //! | `validate_plan` | `capabilities/validation.rs` |
 //! | `schema` | `capabilities/schema.rs` |
 //! | `search_page` | `capabilities/search.rs` |
@@ -29,6 +29,7 @@
 //! | `dead` | `capabilities/usage.rs` |
 //! | `rename` | `capabilities/rename.rs` |
 //! | `move` | `capabilities/moves/file.rs` |
+//! | `symbol_move_candidates` | `capabilities/moves/selection.rs` |
 //! | `move --symbol` | `capabilities/moves/symbol.rs` |
 //! | `rewrite` | `rewrite.rs` |
 //! | `batch` | `batch.rs` |

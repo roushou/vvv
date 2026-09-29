@@ -19,10 +19,12 @@ const fn decl(node: &'static str, kind: SymbolKind) -> SymbolRule {
     SymbolRule::new(node, "name", kind)
         .leading(LEADING)
         .visibility(Parent("export_statement"))
+        .move_scope_wrappers(&["export_statement", "ambient_declaration"])
 }
 
 const SYMBOLS: &[SymbolRule] = &[
     decl("function_declaration", Function),
+    decl("function_signature", Function).movable(false),
     decl("generator_function_declaration", Function),
     SymbolRule::new("method_definition", "name", Method).leading(LEADING),
     SymbolRule::new("method_signature", "name", Method).leading(LEADING),
@@ -34,7 +36,7 @@ const SYMBOLS: &[SymbolRule] = &[
     decl("enum_declaration", Enum),
     SymbolRule::new("enum_assignment", "name", Variant).leading(LEADING),
     SymbolRule::self_named("property_identifier", Variant).under("enum_body"),
-    decl("variable_declarator", Variable),
+    decl("variable_declarator", Variable).movable(false),
     SymbolRule::new("public_field_definition", "name", Field).leading(LEADING),
     SymbolRule::new("property_signature", "name", Field).leading(LEADING),
 ];

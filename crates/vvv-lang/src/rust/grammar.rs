@@ -43,7 +43,8 @@ const SYMBOLS: &[SymbolRule] = &[
     // the blocks travel with it when it moves.
     SymbolRule::new("impl_item", "type", Impl)
         .leading(LEADING)
-        .name_inner("type"),
+        .name_inner("type")
+        .companion_of(&[Struct, Enum, TypeAlias]),
 ];
 
 pub(crate) const SEMANTICS: Semantics = Semantics {

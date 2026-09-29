@@ -13,6 +13,79 @@ exit 0
       "from": "src/origin.rs",
       "to": "src/cleanup.rs"
     },
+    "declaration": {
+      "content": "fe52f362c29faa20a5a9e2867ef10365facd9f7117b06aedf832a12455f9d749",
+      "id": "5366e6f2eb21",
+      "path": "src/origin.rs",
+      "language": "rust",
+      "span": {
+        "start": 74,
+        "end": 92
+      },
+      "start": {
+        "line": 5,
+        "column": 0
+      },
+      "end": {
+        "line": 5,
+        "column": 18
+      },
+      "kind": "function",
+      "text": "pub fn needed() {}",
+      "line": "pub fn needed() {}",
+      "symbol": {
+        "kind": "function",
+        "name": "needed",
+        "name_span": {
+          "start": 81,
+          "end": 87
+        },
+        "span": {
+          "start": 74,
+          "end": 92
+        },
+        "extent": {
+          "start": 74,
+          "end": 92
+        },
+        "visibility": {
+          "span": {
+            "start": 74,
+            "end": 77
+          },
+          "text": "pub"
+        }
+      },
+      "role": "declaration"
+    },
+    "pieces": [
+      {
+        "symbol": {
+          "kind": "function",
+          "name": "needed",
+          "name_span": {
+            "start": 81,
+            "end": 87
+          },
+          "span": {
+            "start": 74,
+            "end": 92
+          },
+          "extent": {
+            "start": 74,
+            "end": 92
+          },
+          "visibility": {
+            "span": {
+              "start": 74,
+              "end": 77
+            },
+            "text": "pub"
+          }
+        },
+        "ownership": "declaration"
+      }
+    ],
     "applied": false,
     "from": {
       "package": "corpus_moves",

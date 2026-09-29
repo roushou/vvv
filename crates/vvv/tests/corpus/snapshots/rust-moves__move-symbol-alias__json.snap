@@ -13,6 +13,79 @@ exit 0
       "from": "src/a.rs",
       "to": "src/b.rs"
     },
+    "declaration": {
+      "content": "072af26e8c453812dd01163ebcfbf8ad1f46e7844faf2510edf2c46b8c75b879",
+      "id": "64cfbb15d00c",
+      "path": "src/a.rs",
+      "language": "rust",
+      "span": {
+        "start": 0,
+        "end": 15
+      },
+      "start": {
+        "line": 0,
+        "column": 0
+      },
+      "end": {
+        "line": 0,
+        "column": 15
+      },
+      "kind": "struct",
+      "text": "pub struct Foo;",
+      "line": "pub struct Foo;",
+      "symbol": {
+        "kind": "struct",
+        "name": "Foo",
+        "name_span": {
+          "start": 11,
+          "end": 14
+        },
+        "span": {
+          "start": 0,
+          "end": 15
+        },
+        "extent": {
+          "start": 0,
+          "end": 15
+        },
+        "visibility": {
+          "span": {
+            "start": 0,
+            "end": 3
+          },
+          "text": "pub"
+        }
+      },
+      "role": "declaration"
+    },
+    "pieces": [
+      {
+        "symbol": {
+          "kind": "struct",
+          "name": "Foo",
+          "name_span": {
+            "start": 11,
+            "end": 14
+          },
+          "span": {
+            "start": 0,
+            "end": 15
+          },
+          "extent": {
+            "start": 0,
+            "end": 15
+          },
+          "visibility": {
+            "span": {
+              "start": 0,
+              "end": 3
+            },
+            "text": "pub"
+          }
+        },
+        "ownership": "declaration"
+      }
+    ],
     "applied": false,
     "from": {
       "package": "corpus_moves",

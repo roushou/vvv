@@ -127,6 +127,14 @@ impl Engine {
                 crate::Request::Context(query) => Execution::Completed(crate::Answer::Context(
                     query.execute_in(&mut *self.graph()?)?,
                 )),
+                crate::Request::PrepareMoveSymbol(query) => {
+                    Execution::Completed(crate::Answer::PrepareMoveSymbol(query.execute_in(self)?))
+                }
+                crate::Request::SymbolMoveCandidates(query) => {
+                    Execution::Completed(crate::Answer::SymbolMoveCandidates(
+                        query.execute_in(&mut *self.graph()?, self.workspace())?,
+                    ))
+                }
                 crate::Request::Relationships(query) => {
                     Execution::Completed(crate::Answer::Relationships(query.execute_in(self)?))
                 }

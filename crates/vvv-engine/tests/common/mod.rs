@@ -31,6 +31,7 @@ pub struct Fake {
     layout: PathLayout,
     symbols: Option<Vec<Symbol>>,
     navigation_facts: Option<Facts>,
+    move_pieces: Option<Vec<vvv_core::DeclarationPieces>>,
 }
 
 impl Fake {
@@ -42,6 +43,7 @@ impl Fake {
             layout: PathLayout::default(),
             symbols: None,
             navigation_facts: None,
+            move_pieces: None,
         }
     }
 
@@ -69,6 +71,11 @@ impl Fake {
 
     pub fn with_navigation_facts(mut self, facts: Facts) -> Self {
         self.navigation_facts = Some(facts);
+        self
+    }
+
+    pub fn with_move_pieces(mut self, pieces: Vec<vvv_core::DeclarationPieces>) -> Self {
+        self.move_pieces = Some(pieces);
         self
     }
 
@@ -192,6 +199,28 @@ impl Language for Fake {
             return Ok(facts.clone());
         }
         let mut facts = Facts::new(self.symbols(source)?, self.imports(source)?, Vec::new());
+        facts.declaration_pieces = facts
+            .symbols
+            .iter()
+            .map(|symbol| vvv_core::DeclarationPieces {
+                declaration: symbol.span,
+                supported: true,
+                scope: facts
+                    .symbols
+                    .iter()
+                    .filter(|other| other.span != symbol.span && other.span.contains(&symbol.span))
+                    .min_by_key(|other| other.span.end - other.span.start)
+                    .map_or(Span::new(0, source.len()), |other| other.span),
+                top_level: !facts
+                    .symbols
+                    .iter()
+                    .any(|other| other.span != symbol.span && other.span.contains(&symbol.span)),
+                companions: vec![],
+            })
+            .collect();
+        if let Some(pieces) = &self.move_pieces {
+            facts.declaration_pieces = pieces.clone();
+        }
         for (start, word) in Self::words(source) {
             facts.push_token(word, "word", Span::new(start, start + word.len()));
             facts.navigation.push(Span::new(start, start + word.len()));

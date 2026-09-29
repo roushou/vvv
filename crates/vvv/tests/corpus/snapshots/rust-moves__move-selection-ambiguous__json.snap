@@ -1,0 +1,223 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 1
+--- stdout ---
+{
+  "status": "error",
+  "schema": 1,
+  "symbol_move_candidates": [
+    {
+      "declaration": {
+        "content": "4b41069130957c60a1d572f934e9b6502f81430a31fcde904612b73241c21fd8",
+        "id": "ec45f5ab12c9",
+        "path": "src/selection.rs",
+        "language": "rust",
+        "span": {
+          "start": 69,
+          "end": 99
+        },
+        "start": {
+          "line": 2,
+          "column": 0
+        },
+        "end": {
+          "line": 2,
+          "column": 30
+        },
+        "kind": "struct",
+        "text": "pub struct Selected<T>(pub T);",
+        "line": "pub struct Selected<T>(pub T);",
+        "symbol": {
+          "kind": "struct",
+          "name": "Selected",
+          "name_span": {
+            "start": 80,
+            "end": 88
+          },
+          "span": {
+            "start": 69,
+            "end": 99
+          },
+          "extent": {
+            "start": 0,
+            "end": 99
+          },
+          "visibility": {
+            "span": {
+              "start": 69,
+              "end": 72
+            },
+            "text": "pub"
+          }
+        },
+        "role": "declaration"
+      },
+      "pieces": [
+        {
+          "symbol": {
+            "kind": "struct",
+            "name": "Selected",
+            "name_span": {
+              "start": 80,
+              "end": 88
+            },
+            "span": {
+              "start": 69,
+              "end": 99
+            },
+            "extent": {
+              "start": 0,
+              "end": 99
+            },
+            "visibility": {
+              "span": {
+                "start": 69,
+                "end": 72
+              },
+              "text": "pub"
+            }
+          },
+          "ownership": "declaration"
+        },
+        {
+          "symbol": {
+            "kind": "impl",
+            "name": "Selected",
+            "name_span": {
+              "start": 108,
+              "end": 116
+            },
+            "span": {
+              "start": 100,
+              "end": 161
+            },
+            "extent": {
+              "start": 100,
+              "end": 161
+            }
+          },
+          "ownership": "same_scope_target"
+        },
+        {
+          "symbol": {
+            "kind": "impl",
+            "name": "Selected",
+            "name_span": {
+              "start": 191,
+              "end": 199
+            },
+            "span": {
+              "start": 162,
+              "end": 250
+            },
+            "extent": {
+              "start": 162,
+              "end": 250
+            }
+          },
+          "ownership": "same_scope_target"
+        }
+      ]
+    },
+    {
+      "declaration": {
+        "content": "4b41069130957c60a1d572f934e9b6502f81430a31fcde904612b73241c21fd8",
+        "id": "4f139e06e574",
+        "path": "src/selection.rs",
+        "language": "rust",
+        "span": {
+          "start": 264,
+          "end": 284
+        },
+        "start": {
+          "line": 5,
+          "column": 13
+        },
+        "end": {
+          "line": 5,
+          "column": 33
+        },
+        "kind": "struct",
+        "text": "pub struct Selected;",
+        "line": "mod nested { pub struct Selected; impl Selected {} }",
+        "symbol": {
+          "kind": "struct",
+          "name": "Selected",
+          "name_span": {
+            "start": 275,
+            "end": 283
+          },
+          "span": {
+            "start": 264,
+            "end": 284
+          },
+          "extent": {
+            "start": 264,
+            "end": 284
+          },
+          "visibility": {
+            "span": {
+              "start": 264,
+              "end": 267
+            },
+            "text": "pub"
+          }
+        },
+        "role": "declaration"
+      },
+      "pieces": [
+        {
+          "symbol": {
+            "kind": "struct",
+            "name": "Selected",
+            "name_span": {
+              "start": 275,
+              "end": 283
+            },
+            "span": {
+              "start": 264,
+              "end": 284
+            },
+            "extent": {
+              "start": 264,
+              "end": 284
+            },
+            "visibility": {
+              "span": {
+                "start": 264,
+                "end": 267
+              },
+              "text": "pub"
+            }
+          },
+          "ownership": "declaration"
+        },
+        {
+          "symbol": {
+            "kind": "impl",
+            "name": "Selected",
+            "name_span": {
+              "start": 290,
+              "end": 298
+            },
+            "span": {
+              "start": 285,
+              "end": 301
+            },
+            "extent": {
+              "start": 285,
+              "end": 301
+            }
+          },
+          "ownership": "same_scope_target"
+        }
+      ],
+      "unsupported": "nested_declaration"
+    }
+  ],
+  "code": "bad_selection",
+  "message": "select exactly one symbol-move declaration: 1: ec45f5ab12c9 src/selection.rs:3, 2: 4f139e06e574 src/selection.rs:6"
+}
+--- stderr ---

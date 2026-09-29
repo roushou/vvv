@@ -1,0 +1,14 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 1
+--- stdout ---
+{
+  "status": "error",
+  "schema": 1,
+  "symbol_move_unsupported": "nested_declaration",
+  "code": "unmovable",
+  "message": "selected declaration cannot be moved: nested declarations cannot be moved independently"
+}
+--- stderr ---

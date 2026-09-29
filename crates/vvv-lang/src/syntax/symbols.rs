@@ -1,6 +1,9 @@
 use ast_grep_core::tree_sitter::{LanguageExt, StrDoc};
 use ast_grep_core::{Doc, Node};
-use vvv_core::{Modifier, ModifierAt, Span, Symbol, SymbolRule};
+use vvv_core::{
+    CompanionOwnership, CompanionPiece, DeclarationPieces, Modifier, ModifierAt, Span, Symbol,
+    SymbolRule,
+};
 
 /// Walks a tree and applies a plugin's [`SymbolRule`] table.
 pub(crate) struct SymbolExtractor<'r> {
@@ -113,6 +116,124 @@ impl<'r> SymbolExtractor<'r> {
             });
         }
         out
+    }
+
+    /// Relationships follow exact unqualified targets in one syntax scope.
+    /// Qualified targets retain conservative evidence instead of guessing ownership.
+    pub(crate) fn pieces<D: Doc>(
+        &self,
+        declarations: &[(Node<'_, D>, Symbol)],
+    ) -> Vec<DeclarationPieces> {
+        let companion_nodes: Vec<_> = declarations
+            .iter()
+            .filter(|(node, _)| {
+                self.rule_for(node)
+                    .is_some_and(|rule| !rule.companion_of.is_empty())
+            })
+            .collect();
+        declarations
+            .iter()
+            .filter(|(node, _)| {
+                self.rule_for(node)
+                    .is_some_and(|rule| rule.companion_of.is_empty())
+            })
+            .map(|(node, symbol)| {
+                let scope = self.scope(node);
+                let top_level = scope
+                    .as_ref()
+                    .is_some_and(|parent| parent.parent().is_none());
+                let mut companions = Vec::new();
+                for (piece_node, piece) in &companion_nodes {
+                    let Some(rule) = self
+                        .rule_for(piece_node)
+                        .filter(|rule| rule.companion_of.contains(&symbol.kind))
+                    else {
+                        continue;
+                    };
+                    let Some(mut target) =
+                        rule.name_field.and_then(|field| piece_node.field(field))
+                    else {
+                        continue;
+                    };
+                    if let Some(inner) = rule.name_inner {
+                        while let Some(child) = target.field(inner) {
+                            target = child;
+                        }
+                    }
+                    let shadowed = piece_node
+                        .field("type_parameters")
+                        .is_some_and(|parameters| {
+                            parameters.dfs().any(|parameter| {
+                                parameter
+                                    .field("name")
+                                    .is_some_and(|name| name.text() == symbol.name)
+                            })
+                        });
+                    let exact = target.text() == symbol.name && !shadowed;
+                    let potential = exact || target.dfs().any(|child| child.text() == symbol.name);
+                    if !potential {
+                        continue;
+                    }
+                    let same_scope = self.scope(piece_node).map(|p| p.range())
+                        == scope.as_ref().map(|p| p.range());
+                    if !same_scope {
+                        let local_owner = exact
+                            && declarations.iter().any(|(owner_node, owner)| {
+                                owner.name == symbol.name
+                                    && rule.companion_of.contains(&owner.kind)
+                                    && self.scope(owner_node).map(|p| p.range())
+                                        == self.scope(piece_node).map(|p| p.range())
+                            });
+                        if !local_owner {
+                            companions.push(CompanionPiece {
+                                span: piece.span,
+                                ownership: CompanionOwnership::UnsupportedTarget,
+                            });
+                        }
+                        continue;
+                    }
+                    let owners = declarations
+                        .iter()
+                        .filter(|(owner_node, owner)| {
+                            owner.name == symbol.name
+                                && rule.companion_of.contains(&owner.kind)
+                                && self.scope(owner_node).map(|p| p.range())
+                                    == scope.as_ref().map(|p| p.range())
+                        })
+                        .count();
+                    companions.push(CompanionPiece {
+                        span: piece.span,
+                        ownership: if !exact {
+                            CompanionOwnership::UnsupportedTarget
+                        } else if owners != 1 {
+                            CompanionOwnership::AmbiguousTarget
+                        } else {
+                            CompanionOwnership::SameScopeTarget
+                        },
+                    });
+                }
+                DeclarationPieces {
+                    declaration: symbol.span,
+                    supported: self.rule_for(node).is_some_and(|rule| rule.movable),
+                    scope: scope.map_or(symbol.span, |scope| scope.range().into()),
+                    top_level,
+                    companions,
+                }
+            })
+            .collect()
+    }
+
+    fn scope<'t, D: Doc>(&self, node: &Node<'t, D>) -> Option<Node<'t, D>> {
+        let rule = self.rule_for(node)?;
+        let mut parent = node.parent()?;
+        loop {
+            let transparent = rule.move_scope_wrappers.contains(&parent.kind().as_ref())
+                || matches!(rule.visibility, Some(ModifierAt::Parent(kind)) if parent.kind() == kind);
+            if !transparent {
+                return Some(parent);
+            }
+            parent = parent.parent()?;
+        }
     }
 
     /// `rule` matched `node`; `lead_start` is where its own leading run
