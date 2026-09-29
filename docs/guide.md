@@ -458,10 +458,13 @@ After `apply_plan`, ask the same session to run explicit check commands:
 Replace the commands and test target with your project's checks. Omit
 `extra_inputs` if there are no additional hidden/ignored files to include; every
 listed file must exist. MCP exposes the same request as `vvv_validate_plan`.
-`discover.validation_available` reports availability: Unix disk workspaces are
-supported; virtual workspaces and Windows do not execute validation programs.
+`discover.validation_available` reports availability: supported Unix and Windows disk workspaces execute checks; virtual workspaces
+do not execute validation programs.
 
 Commands run in order from the workspace root with no implicit shell and no stdin.
+On Windows, programs must be native `.exe` executables; extensionless names resolve
+as `.exe` through the workspace root and `PATH`. Batch files require an explicitly
+named shell program, such as `cmd.exe`, with caller-supplied arguments.
 They inherit the session's environment and permissions and **are not sandboxed**:
 compilers, build scripts, and tests can write files or access the network. Use a
 formatter's check mode. vvv does not choose or install commands, format code

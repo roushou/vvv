@@ -1407,7 +1407,7 @@ impl PageTranscript {
         self.replies.push(normalized);
         reply
     }
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     fn validation(corpus: Corpus, path: &str, symbol: &str) {
         let disk = ValidationCorpus::new(&corpus);
         let engine = Engine::new(Workspace::disk(&disk.root).unwrap(), Builtins::registry());
@@ -1810,11 +1810,11 @@ fn typescript_retained_plan_golden() {
     );
 }
 
-#[cfg(all(unix, any(feature = "rust", feature = "typescript")))]
+#[cfg(all(any(unix, windows), any(feature = "rust", feature = "typescript")))]
 struct ValidationCorpus {
     root: PathBuf,
 }
-#[cfg(all(unix, any(feature = "rust", feature = "typescript")))]
+#[cfg(all(any(unix, windows), any(feature = "rust", feature = "typescript")))]
 impl ValidationCorpus {
     fn new(corpus: &Corpus) -> Self {
         static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
@@ -1832,13 +1832,13 @@ impl ValidationCorpus {
         Self { root }
     }
 }
-#[cfg(all(unix, any(feature = "rust", feature = "typescript")))]
+#[cfg(all(any(unix, windows), any(feature = "rust", feature = "typescript")))]
 impl Drop for ValidationCorpus {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.root);
     }
 }
-#[cfg(all(unix, any(feature = "rust", feature = "typescript")))]
+#[cfg(all(any(unix, windows), any(feature = "rust", feature = "typescript")))]
 #[test]
 #[ignore = "subprocess fixture for validation corpus"]
 fn corpus_validation_command() {
@@ -1856,7 +1856,7 @@ fn corpus_validation_command() {
     std::io::stdout().flush().unwrap();
     std::process::exit(0);
 }
-#[cfg(all(unix, feature = "rust"))]
+#[cfg(all(any(unix, windows), feature = "rust"))]
 #[test]
 fn rust_validation_golden() {
     PageTranscript::validation(
@@ -1869,7 +1869,7 @@ fn rust_validation_golden() {
         "struct",
     );
 }
-#[cfg(all(unix, feature = "typescript"))]
+#[cfg(all(any(unix, windows), feature = "typescript"))]
 #[test]
 fn typescript_validation_golden() {
     PageTranscript::validation(

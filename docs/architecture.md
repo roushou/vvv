@@ -933,8 +933,13 @@ policy. Moves and batches are not admitted to retained handles.
 ### Validation of applied plans
 
 `capabilities/validation.rs` owns explicit check commands, budgets, version evidence,
-execution, and report composition. Its `process.rs` owns Unix process groups and
-bounded, cancellable pipe capture. `Workspace::disk` enables execution; virtual and
+execution, and report composition. Its `process.rs` owns shared polling and bounded, cancellable pipe capture;
+platform backends own Unix process groups or Windows Job Objects. The Windows
+backend uses safe synchronous dependency APIs to assign suspended children before
+resuming them and to capture nonblocking byte pipes. It terminates descendants
+after leader exit, timeout, or cancellation, and closes parent writer handles
+before waiting for EOF. Windows launches native executables only; invoking a
+shell is an explicit caller choice. `Workspace::disk` enables execution; virtual and
 staged workspaces cannot launch programs against their unrelated host paths.
 The engine names no language or build system. The caller supplies program/argv,
 which run with inherited permissions/environment and can have side effects outside

@@ -9,7 +9,7 @@ use crate::history::HistoryError;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EngineError {
-    #[error("validation requires a disk workspace on Unix")]
+    #[error("validation requires a disk workspace on a supported platform")]
     ValidationUnavailable,
     #[error(
         "validation requires an applied plan, one to four valid check commands, and relative extra input paths"

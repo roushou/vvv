@@ -1178,8 +1178,11 @@ programs directly, without an implicit shell, with the disk workspace root as cw
 null stdin, and the session's environment and permissions. It is **not read-only**
 and does not sandbox programs or recover their effects. Use formatter check mode;
 validation never chooses commands itself. `discover.validation_available` is true
-only for Unix disk workspaces, and `validation_defaults` publishes the default
-budget. Windows and virtual workspaces return `bad_request` without execution.
+only for supported Unix and Windows disk workspaces, and `validation_defaults` publishes the default
+budget. Virtual workspaces and unsupported platforms return `bad_request` without execution.
+Windows resolves extensionless program names as `.exe` through the workspace root
+and `PATH`; other extensions are rejected as a spawn failure. To run a batch file,
+the caller must explicitly provide its shell program and arguments.
 
 ```json
 {

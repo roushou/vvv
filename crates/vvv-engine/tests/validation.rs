@@ -1,31 +1,31 @@
 mod common;
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 use common::Fake;
 use std::sync::Arc;
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 use std::{
     path::PathBuf,
     sync::atomic::{AtomicU64, Ordering},
 };
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 use vvv_engine::{ApplyPlanQuery, InspectPlanQuery, PlanReceipt, PrepareRenameQuery, RenameIntent};
 use vvv_engine::{
     CheckCommand, Engine, EngineError, Languages, MemoryVfs, PlanId, ValidatePlanQuery,
     ValidationBudget, Workspace,
 };
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 struct Fixture {
     root: PathBuf,
     engine: Engine,
     receipt: PlanReceipt,
 }
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 impl Fixture {
     fn new(mode: &str) -> Self {
         static NEXT: AtomicU64 = AtomicU64::new(0);
         let root = std::env::temp_dir().join(format!(
-            "vvv-validation-{}-{}",
+            "vvv-validation 世界-{}-{}",
             std::process::id(),
             NEXT.fetch_add(1, Ordering::Relaxed)
         ));
@@ -92,7 +92,7 @@ impl Fixture {
         .validation
     }
 }
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 impl Drop for Fixture {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.root);
@@ -114,6 +114,10 @@ fn validation_command_fixture() {
         "pass" => {
             println!("checked source");
             eprintln!("diagnostic");
+        }
+        "args" => {
+            assert!(std::env::args().any(|argument| argument == "--skip=héllo \"世界\"\\"));
+            println!("arguments preserved");
         }
         "fail" => std::process::exit(7),
         "descendant" => {
@@ -187,7 +191,7 @@ fn virtual_workspaces_never_execute_real_programs() {
         Err(EngineError::ValidationUnavailable)
     ));
 }
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn results_are_versioned_retained_and_do_not_change_the_apply_receipt() {
     use vvv_engine::{CheckOutcome, ValidationSourceState};
@@ -225,7 +229,7 @@ fn results_are_versioned_retained_and_do_not_change_the_apply_receipt() {
         );
     }
 }
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn stale_sources_and_invalid_requests_never_launch_checks() {
     let f = Fixture::new("sleep");
@@ -255,7 +259,7 @@ fn stale_sources_and_invalid_requests_never_launch_checks() {
     ));
     assert!(!f.root.join(".vvv/check-started").exists());
 }
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn input_changes_stop_later_checks_and_cannot_produce_a_pass() {
     for mode in ["change", "hidden", "ignore"] {
@@ -271,7 +275,7 @@ fn input_changes_stop_later_checks_and_cannot_produce_a_pass() {
         assert_eq!(report.checks[1].outcome, vvv_engine::CheckOutcome::NotRun);
     }
 }
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn spawn_failures_and_timeouts_are_structured_and_retained() {
     let f = Fixture::new("sleep");
@@ -291,7 +295,7 @@ fn spawn_failures_and_timeouts_are_structured_and_retained() {
     assert_eq!(report, f.recorded().unwrap());
     assert!(!f.root.join(".vvv/escaped").exists());
 }
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn cancellation_keeps_inspectable_evidence() {
     let f = Fixture::new("sleep");
@@ -322,7 +326,7 @@ fn cancellation_keeps_inspectable_evidence() {
     assert!(!report.passed);
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn successful_leader_exit_cleans_up_descendants_holding_output_pipes() {
     let f = Fixture::new("descendant");
@@ -333,7 +337,7 @@ fn successful_leader_exit_cleans_up_descendants_holding_output_pipes() {
     assert!(!f.root.join(".vvv/escaped").exists());
 }
 
-#[cfg(unix)]
+#[cfg(any(unix, windows))]
 #[test]
 fn rewrite_validation_uses_written_versions_and_retains_review_evidence() {
     let mut f = Fixture::new("pass");
@@ -367,4 +371,43 @@ fn rewrite_validation_uses_written_versions_and_retains_review_evidence() {
         .unwrap(),
         f.receipt
     );
+}
+
+#[cfg(windows)]
+#[test]
+fn validation_executes_inside_an_existing_job() {
+    use process_wrap::std::{CommandWrap, JobObject};
+    let mut command = std::process::Command::new(std::env::current_exe().unwrap());
+    command.args([
+        "--exact",
+        "results_are_versioned_retained_and_do_not_change_the_apply_receipt",
+        "--nocapture",
+    ]);
+    let mut wrapped = CommandWrap::from(command);
+    wrapped.wrap(JobObject);
+    let mut child = wrapped.spawn().unwrap();
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(30);
+    loop {
+        if let Some(status) = child.inner_mut().try_wait().unwrap() {
+            child.start_kill().unwrap();
+            assert!(status.success());
+            break;
+        }
+        if std::time::Instant::now() >= deadline {
+            let _ = child.start_kill();
+            panic!("nested-job fixture timed out");
+        }
+        std::thread::sleep(std::time::Duration::from_millis(10));
+    }
+}
+
+#[cfg(any(unix, windows))]
+#[test]
+fn unicode_paths_and_quoted_arguments_reach_the_native_program() {
+    let fixture = Fixture::new("args");
+    let mut query = fixture.query();
+    query.checks[0].args.push("--skip=héllo \"世界\"\\".into());
+    let report = query.execute(&fixture.engine).unwrap();
+    assert!(report.passed, "{report:?}");
+    assert!(report.checks[0].stdout.text.contains("arguments preserved"));
 }

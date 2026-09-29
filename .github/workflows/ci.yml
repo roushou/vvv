@@ -59,6 +59,10 @@ jobs:
       # `--no-fail-fast` runs every test target even after one fails, so a red run
       # reports all failures at once rather than the first target's.
       - run: cargo test --workspace --all-features --no-fail-fast
+      - run: cargo test -p vvv-core -p vvv-engine --no-default-features
+        if: runner.os == 'Windows'
+      - run: cargo clippy -p vvv-engine --all-targets --all-features
+        if: runner.os == 'Windows'
 
   features:
     name: feature combinations
@@ -80,10 +84,11 @@ jobs:
       - run: cargo build -p vvv-rs --no-default-features --features typescript,schemas
 
   mcp:
-    name: MCP (${{ matrix.features }})
-    runs-on: ubuntu-latest
+    name: MCP (${{ matrix.os }}, ${{ matrix.features }})
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
+        os: [ubuntu-latest, windows-latest]
         features: [mcp, 'mcp,rust', 'mcp,typescript']
     steps:
       - uses: actions/checkout@v7

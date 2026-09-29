@@ -109,7 +109,6 @@ paged queries on large repositories before narrowing their invalidation scope.
 Retained session handles cover rename and rewrite. Extend the same review/receipt
 contract to moves and batches. Moves require baseline path/inventory updates in
 `QuerySnapshot`, beyond content-only `with_versions`, before applied-plan validation
-can describe them correctly. Validation execution needs a Windows process-tree and bounded pipe-capture
-implementation. Measure full-input capture latency on large repositories; ignored
+can describe them correctly. Measure full-input capture latency on large repositories; ignored
 inputs and ambient tool/dependency versions need explicit coverage contracts before
 broadening validation claims.

@@ -136,6 +136,7 @@ pub enum CheckOperation {
     Terminate,
 }
 #[cfg(any(
+    windows,
     target_os = "linux",
     target_os = "android",
     target_os = "macos",

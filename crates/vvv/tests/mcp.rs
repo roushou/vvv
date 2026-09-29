@@ -625,7 +625,7 @@ async fn reviewed_rename_applies_once_and_stale_plans_never_write() {
         std::fs::read_to_string(fixture.root.join(path)).unwrap(),
         before.replace("Engine", "Runtime")
     );
-    #[cfg(unix)]
+    #[cfg(any(unix, windows))]
     {
         let checked = client.call("vvv_validate_plan", json!({
             "plan_id": handle["plan_id"],
