@@ -1,0 +1,69 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "548875291811adcdaf4b2d6fe01978c81ee606f843532c4d642185a84096d885",
+    "outcome": "resolved",
+    "target": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/lib.rs",
+        "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+        "span": {
+          "start": 1445,
+          "end": 1464
+        }
+      },
+      "name_span": {
+        "start": 1450,
+        "end": 1458
+      },
+      "kind": "type-alias"
+    },
+    "id": "3918e6f2a6e5",
+    "name": "OnlyType",
+    "start": {
+      "line": 88,
+      "column": 0
+    },
+    "evidence": {
+      "addresses": [
+        {
+          "package": "local_imports",
+          "path": [
+            "value"
+          ]
+        },
+        {
+          "package": "local_imports",
+          "path": [
+            "OnlyType"
+          ]
+        }
+      ]
+    },
+    "container": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/lib.rs",
+        "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+        "span": {
+          "start": 1445,
+          "end": 1464
+        }
+      },
+      "name_span": {
+        "start": 1450,
+        "end": 1458
+      },
+      "kind": "type-alias"
+    }
+  }
+}
+--- stderr ---

@@ -143,6 +143,7 @@ pub(crate) const GRAMMAR: Grammar = Grammar {
         ],
     }),
     binding_markers: &["mutable_specifier"],
+    import_scopes: &["block"],
     module_scopes: Some(vvv_core::ModuleScopeRule {
         node: "mod_item",
         name: "name",

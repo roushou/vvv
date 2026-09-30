@@ -1,0 +1,1304 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "cd0462d0b00fdcc035ef534b6c0fe239037619cab13e0cfa8296d176861cfd27",
+    "subject": {
+      "outcome": "resolved",
+      "target": {
+        "language": "rust",
+        "declaration": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 12,
+            "end": 27
+          }
+        },
+        "name_span": {
+          "start": 19,
+          "end": 22
+        },
+        "kind": "function"
+      },
+      "id": "56b175291930",
+      "name": "run",
+      "start": {
+        "line": 1,
+        "column": 4
+      },
+      "evidence": {
+        "addresses": []
+      },
+      "container": {
+        "language": "rust",
+        "declaration": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 12,
+            "end": 27
+          }
+        },
+        "name_span": {
+          "start": 19,
+          "end": 22
+        },
+        "kind": "function"
+      }
+    },
+    "kind": "callers",
+    "scope": {
+      "paths": [],
+      "packages": []
+    },
+    "items": [
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 96,
+            "end": 100
+          }
+        },
+        "start": {
+          "line": 6,
+          "column": 4
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 77,
+              "end": 148
+            }
+          },
+          "name_span": {
+            "start": 80,
+            "end": 87
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 12,
+              "end": 27
+            }
+          },
+          "name_span": {
+            "start": 19,
+            "end": 22
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "local_imports",
+              "path": [
+                "work"
+              ]
+            },
+            {
+              "package": "local_imports",
+              "path": [
+                "a",
+                "run"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 139,
+            "end": 143
+          }
+        },
+        "start": {
+          "line": 8,
+          "column": 4
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 77,
+              "end": 148
+            }
+          },
+          "name_span": {
+            "start": 80,
+            "end": 87
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 12,
+              "end": 27
+            }
+          },
+          "name_span": {
+            "start": 19,
+            "end": 22
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "local_imports",
+              "path": [
+                "work"
+              ]
+            },
+            {
+              "package": "local_imports",
+              "path": [
+                "a",
+                "run"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 223,
+            "end": 227
+          }
+        },
+        "start": {
+          "line": 13,
+          "column": 4
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 149,
+              "end": 250
+            }
+          },
+          "name_span": {
+            "start": 152,
+            "end": 159
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 12,
+              "end": 27
+            }
+          },
+          "name_span": {
+            "start": 19,
+            "end": 22
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "local_imports",
+              "path": [
+                "work"
+              ]
+            },
+            {
+              "package": "local_imports",
+              "path": [
+                "tools"
+              ]
+            },
+            {
+              "package": "local_imports",
+              "path": [
+                "a",
+                "run"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 242,
+            "end": 245
+          }
+        },
+        "start": {
+          "line": 14,
+          "column": 11
+        },
+        "spelling": "run",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 149,
+              "end": 250
+            }
+          },
+          "name_span": {
+            "start": 152,
+            "end": 159
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 12,
+              "end": 27
+            }
+          },
+          "name_span": {
+            "start": 19,
+            "end": 22
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "local_imports",
+              "path": [
+                "tools"
+              ]
+            },
+            {
+              "package": "local_imports",
+              "path": [
+                "a",
+                "run"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 300,
+            "end": 304
+          }
+        },
+        "start": {
+          "line": 18,
+          "column": 4
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 251,
+              "end": 384
+            }
+          },
+          "name_span": {
+            "start": 254,
+            "end": 260
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 12,
+              "end": 27
+            }
+          },
+          "name_span": {
+            "start": 19,
+            "end": 22
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "local_imports",
+              "path": [
+                "work"
+              ]
+            },
+            {
+              "package": "local_imports",
+              "path": [
+                "a",
+                "run"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 375,
+            "end": 379
+          }
+        },
+        "start": {
+          "line": 23,
+          "column": 4
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 251,
+              "end": 384
+            }
+          },
+          "name_span": {
+            "start": 254,
+            "end": 260
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 12,
+              "end": 27
+            }
+          },
+          "name_span": {
+            "start": 19,
+            "end": 22
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "local_imports",
+              "path": [
+                "work"
+              ]
+            },
+            {
+              "package": "local_imports",
+              "path": [
+                "a",
+                "run"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 447,
+            "end": 451
+          }
+        },
+        "start": {
+          "line": 27,
+          "column": 4
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 385,
+              "end": 456
+            }
+          },
+          "name_span": {
+            "start": 388,
+            "end": 397
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 12,
+              "end": 27
+            }
+          },
+          "name_span": {
+            "start": 19,
+            "end": 22
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "local_imports",
+              "path": [
+                "work"
+              ]
+            },
+            {
+              "package": "local_imports",
+              "path": [
+                "a",
+                "run"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 527,
+            "end": 531
+          }
+        },
+        "start": {
+          "line": 32,
+          "column": 4
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 457,
+              "end": 536
+            }
+          },
+          "name_span": {
+            "start": 460,
+            "end": 466
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "indirect",
+        "binding": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 506,
+              "end": 522
+            }
+          },
+          "name_span": {
+            "start": 510,
+            "end": 514
+          },
+          "kind": "variable"
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 608,
+            "end": 612
+          }
+        },
+        "start": {
+          "line": 37,
+          "column": 4
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 537,
+              "end": 617
+            }
+          },
+          "name_span": {
+            "start": 540,
+            "end": 551
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "ambiguous",
+        "candidates": [
+          {
+            "target": {
+              "language": "rust",
+              "declaration": {
+                "path": "src/lib.rs",
+                "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+                "span": {
+                  "start": 12,
+                  "end": 27
+                }
+              },
+              "name_span": {
+                "start": 19,
+                "end": 22
+              },
+              "kind": "function"
+            },
+            "id": "56b175291930",
+            "name": "run",
+            "start": {
+              "line": 1,
+              "column": 4
+            },
+            "evidence": {
+              "addresses": [
+                {
+                  "package": "local_imports",
+                  "path": [
+                    "work"
+                  ]
+                },
+                {
+                  "package": "local_imports",
+                  "path": [
+                    "a",
+                    "run"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "target": {
+              "language": "rust",
+              "declaration": {
+                "path": "src/lib.rs",
+                "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+                "span": {
+                  "start": 591,
+                  "end": 603
+                }
+              },
+              "name_span": {
+                "start": 594,
+                "end": 598
+              },
+              "kind": "function"
+            },
+            "id": "7b8a78dcb3ce",
+            "name": "work",
+            "start": {
+              "line": 36,
+              "column": 4
+            },
+            "evidence": {
+              "addresses": []
+            }
+          }
+        ]
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 701,
+            "end": 705
+          }
+        },
+        "start": {
+          "line": 42,
+          "column": 4
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 618,
+              "end": 710
+            }
+          },
+          "name_span": {
+            "start": 621,
+            "end": 630
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "ambiguous",
+        "candidates": [
+          {
+            "target": {
+              "language": "rust",
+              "declaration": {
+                "path": "src/lib.rs",
+                "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+                "span": {
+                  "start": 12,
+                  "end": 27
+                }
+              },
+              "name_span": {
+                "start": 19,
+                "end": 22
+              },
+              "kind": "function"
+            },
+            "id": "56b175291930",
+            "name": "run",
+            "start": {
+              "line": 1,
+              "column": 4
+            },
+            "evidence": {
+              "addresses": [
+                {
+                  "package": "local_imports",
+                  "path": [
+                    "work"
+                  ]
+                },
+                {
+                  "package": "local_imports",
+                  "path": [
+                    "a",
+                    "run"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "target": {
+              "language": "rust",
+              "declaration": {
+                "path": "src/lib.rs",
+                "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+                "span": {
+                  "start": 59,
+                  "end": 74
+                }
+              },
+              "name_span": {
+                "start": 66,
+                "end": 69
+              },
+              "kind": "function"
+            },
+            "id": "1ab526dd6af1",
+            "name": "run",
+            "start": {
+              "line": 4,
+              "column": 8
+            },
+            "evidence": {
+              "addresses": [
+                {
+                  "package": "local_imports",
+                  "path": [
+                    "work"
+                  ]
+                },
+                {
+                  "package": "local_imports",
+                  "path": [
+                    "b",
+                    "run"
+                  ]
+                }
+              ]
+            }
+          }
+        ]
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 774,
+            "end": 778
+          }
+        },
+        "start": {
+          "line": 46,
+          "column": 17
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 761,
+              "end": 783
+            }
+          },
+          "name_span": {
+            "start": 764,
+            "end": 769
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 12,
+              "end": 27
+            }
+          },
+          "name_span": {
+            "start": 19,
+            "end": 22
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "local_imports",
+              "path": [
+                "work"
+              ]
+            },
+            {
+              "package": "local_imports",
+              "path": [
+                "a",
+                "run"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 933,
+            "end": 937
+          }
+        },
+        "start": {
+          "line": 56,
+          "column": 4
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 863,
+              "end": 963
+            }
+          },
+          "name_span": {
+            "start": 866,
+            "end": 877
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "unavailable",
+        "reason": "unsupported_context"
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 955,
+            "end": 958
+          }
+        },
+        "start": {
+          "line": 57,
+          "column": 14
+        },
+        "spelling": "run",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 863,
+              "end": 963
+            }
+          },
+          "name_span": {
+            "start": 866,
+            "end": 877
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 12,
+              "end": 27
+            }
+          },
+          "name_span": {
+            "start": 19,
+            "end": 22
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "local_imports",
+              "path": [
+                "a",
+                "run"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 1001,
+            "end": 1004
+          }
+        },
+        "start": {
+          "line": 61,
+          "column": 4
+        },
+        "spelling": "run",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 964,
+              "end": 1009
+            }
+          },
+          "name_span": {
+            "start": 967,
+            "end": 971
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "unavailable",
+        "reason": "unsupported_context"
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 1297,
+            "end": 1302
+          }
+        },
+        "start": {
+          "line": 78,
+          "column": 8
+        },
+        "spelling": "outer",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 1192,
+              "end": 1311
+            }
+          },
+          "name_span": {
+            "start": 1195,
+            "end": 1199
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 12,
+              "end": 27
+            }
+          },
+          "name_span": {
+            "start": 19,
+            "end": 22
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "local_imports",
+              "path": [
+                "inline",
+                "outer"
+              ]
+            },
+            {
+              "package": "local_imports",
+              "path": [
+                "a",
+                "run"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 1330,
+            "end": 1334
+          }
+        },
+        "start": {
+          "line": 81,
+          "column": 16
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 1314,
+              "end": 1339
+            }
+          },
+          "name_span": {
+            "start": 1317,
+            "end": 1325
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "unavailable",
+        "reason": "unresolved"
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 1609,
+            "end": 1613
+          }
+        },
+        "start": {
+          "line": 95,
+          "column": 4
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 1543,
+              "end": 1635
+            }
+          },
+          "name_span": {
+            "start": 1546,
+            "end": 1553
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 12,
+              "end": 27
+            }
+          },
+          "name_span": {
+            "start": 19,
+            "end": 22
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "local_imports",
+              "path": [
+                "work"
+              ]
+            },
+            {
+              "package": "local_imports",
+              "path": [
+                "a",
+                "run"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 1697,
+            "end": 1701
+          }
+        },
+        "start": {
+          "line": 100,
+          "column": 15
+        },
+        "spelling": "work",
+        "caller": null,
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 12,
+              "end": 27
+            }
+          },
+          "name_span": {
+            "start": 19,
+            "end": 22
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "local_imports",
+              "path": [
+                "work"
+              ]
+            },
+            {
+              "package": "local_imports",
+              "path": [
+                "a",
+                "run"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "span": {
+            "start": 1803,
+            "end": 1807
+          }
+        },
+        "start": {
+          "line": 105,
+          "column": 4
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 1707,
+              "end": 1829
+            }
+          },
+          "name_span": {
+            "start": 1710,
+            "end": 1723
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "span": {
+              "start": 12,
+              "end": 27
+            }
+          },
+          "name_span": {
+            "start": 19,
+            "end": 22
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "local_imports",
+              "path": [
+                "work"
+              ]
+            },
+            {
+              "package": "local_imports",
+              "path": [
+                "tools"
+              ]
+            },
+            {
+              "package": "local_imports",
+              "path": [
+                "a",
+                "run"
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "coverage": {
+      "limitations": [
+        "receiver_types",
+        "indirect_targets",
+        "macro_expansion",
+        "anonymous_callers",
+        "unsupported_bindings",
+        "unenumerated_aliases"
+      ],
+      "files_scanned": 2,
+      "files_remaining": 0,
+      "lookups": 28,
+      "omitted_items": 1,
+      "stopped_by": "bytes",
+      "unsupported_files": 0,
+      "unresolved_imports": 3,
+      "scan_complete": false
+    }
+  }
+}
+--- stderr ---

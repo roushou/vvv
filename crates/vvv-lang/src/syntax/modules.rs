@@ -18,6 +18,59 @@ impl<'a, L: LanguageExt> Modules<'a, L> {
         }
     }
     pub(super) fn extract(&self, root: &Node<'_, StrDoc<L>>, facts: &mut Facts) {
+        facts.import_scopes = root
+            .dfs()
+            .filter(|node| self.grammar.import_scopes.contains(&node.kind().as_ref()))
+            .filter_map(|body| {
+                let imports: Vec<_> = self
+                    .imports
+                    .bindings_in(&body, &facts.imports)
+                    .into_iter()
+                    .filter(|binding| {
+                        let Some(prefix) = facts
+                            .imports
+                            .iter()
+                            .find(|import| import.span == binding.span)
+                        else {
+                            return false;
+                        };
+                        !facts.imports.iter().any(|entry| {
+                            entry.group.as_ref().is_some_and(|group| {
+                                group.prefix == prefix.path
+                                    && group.statement.contains(&prefix.span)
+                                    && prefix.span.end <= group.list.start
+                            })
+                        })
+                    })
+                    .collect();
+                // Globs need namespace and precedence evidence beyond named bindings.
+                (!imports.is_empty()
+                    && imports.iter().all(|binding| {
+                        facts
+                            .imports
+                            .iter()
+                            .any(|import| import.span == binding.span && !import.glob)
+                    }))
+                .then(|| vvv_core::ImportScope {
+                    span: body.range().into(),
+                    aliases: body
+                        .dfs()
+                        .filter_map(|node| {
+                            let rule = self.grammar.imports.alias?;
+                            if node.kind() != rule.under
+                                || !imports
+                                    .iter()
+                                    .any(|binding| Span::from(node.range()).contains(&binding.span))
+                            {
+                                return None;
+                            }
+                            node.field(rule.field).map(|alias| alias.range().into())
+                        })
+                        .collect(),
+                    imports,
+                })
+            })
+            .collect();
         let Some(rule) = self.grammar.module_scopes else {
             return;
         };

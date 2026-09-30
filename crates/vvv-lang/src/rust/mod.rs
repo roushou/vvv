@@ -1337,7 +1337,7 @@ mod module_scope_tests {
             vvv_core::BindingNamespace::Value
         )));
         let alias_use = source.rfind("Alias").unwrap();
-        assert!(!facts.navigation.iter().any(|span| span.start == alias_use));
+        assert!(facts.navigation.iter().any(|span| span.start == alias_use));
     }
 }
 
@@ -1477,5 +1477,74 @@ mod macro_scope_tests {
         constant!(VALUE);
         let VALUE = ();
         let _: () = VALUE;
+    }
+}
+
+#[cfg(test)]
+mod local_import_tests {
+    use super::*;
+    use vvv_core::Language;
+
+    #[test]
+    fn named_block_imports_keep_navigation_ownership_separate_from_mutation() {
+        let source = "use crate::Root; fn f() { use crate::a::{run as work, Data}; work(); { use crate::b::run as work; work(); } }";
+        let facts = Rust::new().facts(source).unwrap();
+        assert_eq!(facts.import_bindings.len(), 1);
+        assert_eq!(facts.module_scopes[0].imports.len(), 1);
+        assert_eq!(facts.import_scopes.len(), 2);
+        assert_eq!(facts.import_scopes[0].imports.len(), 2);
+        assert_eq!(facts.import_scopes[1].imports.len(), 1);
+        for scope in &facts.import_scopes {
+            assert_eq!(scope.aliases.len(), 1);
+            for alias in &scope.aliases {
+                assert_eq!(&source[alias.start..alias.end], "work");
+            }
+        }
+        let calls: Vec<_> = facts
+            .tokens_named("work")
+            .filter(|(span, _)| source[span.end..].starts_with("()"))
+            .map(|(span, _)| span)
+            .collect();
+        assert_eq!(calls.len(), 2);
+        assert!(calls.iter().all(|span| facts.lexical_tokens.contains(span)));
+    }
+
+    #[test]
+    fn local_globs_and_unsupported_patterns_keep_the_block_conservative() {
+        for source in [
+            "fn f() { use crate::a::*; work(); }",
+            "fn f() { use crate::a::work; let Point { x } = point; work(); }",
+        ] {
+            let facts = Rust::new().facts(source).unwrap();
+            let call = source.rfind("work").unwrap();
+            let span = vvv_core::Span::new(call, call + 4);
+            assert!(!facts.lexical_tokens.contains(&span));
+        }
+    }
+
+    #[test]
+    fn rust_compiles_local_import_hoisting_shadowing_and_constant_patterns() {
+        mod values {
+            pub fn answer() -> usize {
+                7
+            }
+            pub const UNIT: () = ();
+        }
+        #[allow(unused_variables)]
+        fn imported(answer: fn() -> usize) -> usize {
+            let _ = answer;
+            assert_eq!(answer(), 7);
+            use values::answer;
+            fn nested() -> usize {
+                answer()
+            }
+            let answer = || 9;
+            assert_eq!(answer(), 9);
+            nested()
+        }
+        assert_eq!(imported(|| 3), 7);
+        use values::UNIT;
+        let UNIT = ();
+        let _: () = UNIT;
     }
 }

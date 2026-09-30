@@ -25,6 +25,7 @@ use vvv_core::{
 };
 
 pub struct Fake {
+    semantics: &'static Semantics,
     id: &'static str,
     extensions: &'static [&'static str],
     surgery: PathSurgery,
@@ -37,6 +38,7 @@ pub struct Fake {
 impl Fake {
     pub fn new(id: &'static str, extensions: &'static [&'static str]) -> Self {
         Self {
+            semantics: &SEMANTICS,
             id,
             extensions,
             surgery: PathSurgery::default(),
@@ -71,6 +73,10 @@ impl Fake {
 
     pub fn with_navigation_facts(mut self, facts: Facts) -> Self {
         self.navigation_facts = Some(facts);
+        self
+    }
+    pub fn with_semantics(mut self, semantics: &'static Semantics) -> Self {
+        self.semantics = semantics;
         self
     }
 
@@ -183,7 +189,7 @@ impl Language for Fake {
     }
 
     fn semantics(&self) -> &'static Semantics {
-        &SEMANTICS
+        self.semantics
     }
 
     fn paths(&self) -> PathSyntax {

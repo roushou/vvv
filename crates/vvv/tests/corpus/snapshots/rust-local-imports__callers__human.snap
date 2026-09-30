@@ -1,0 +1,30 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+run src/lib.rs:2:5 [56b175291930]
+work [confirmed] src/lib.rs:7:5
+work [confirmed] src/lib.rs:9:5
+work [confirmed] src/lib.rs:14:5
+run [confirmed] src/lib.rs:15:12
+work [confirmed] src/lib.rs:19:5
+work [confirmed] src/lib.rs:24:5
+work [confirmed] src/lib.rs:28:5
+work [indirect] src/lib.rs:33:5
+work [ambiguous] src/lib.rs:38:5
+work [ambiguous] src/lib.rs:43:5
+work [confirmed] src/lib.rs:47:18
+work [unresolved] src/lib.rs:57:5
+run [confirmed] src/lib.rs:58:15
+run [unresolved] src/lib.rs:62:5
+outer [confirmed] src/lib.rs:79:9
+work [unresolved] src/lib.rs:82:17
+work [confirmed] src/lib.rs:96:5
+work [confirmed] src/lib.rs:101:16
+work [confirmed] src/lib.rs:106:5
+--- stderr ---
+19 sites; 2 files scanned; 28 lookups
+Candidate scan incomplete; narrow the scope or increase the budget
+Unresolved sites are possible relationships, not confirmed calls. Receiver types, indirect targets, and macro expansion are not inferred.

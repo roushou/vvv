@@ -45,6 +45,21 @@ impl<'a> NavigationFacts<'a> {
                     continue;
                 };
                 let Some(name) = rule.name.and_then(|field| node.field(field)) else {
+                    if self
+                        .grammar
+                        .imports
+                        .statements
+                        .contains(&node.kind().as_ref())
+                        && facts.import_scopes.iter().any(|imports| {
+                            imports.span == Span::from(scope.range())
+                                && imports
+                                    .imports
+                                    .iter()
+                                    .any(|binding| Span::from(node.range()).contains(&binding.span))
+                        })
+                    {
+                        continue;
+                    }
                     unsupported.push(scope.range().into());
                     continue;
                 };

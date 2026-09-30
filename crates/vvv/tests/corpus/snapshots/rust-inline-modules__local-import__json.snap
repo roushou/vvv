@@ -8,9 +8,63 @@ exit 0
   "status": "ok",
   "schema": 1,
   "result": {
-    "snapshot": "fce0273e91fbec0257f719444c60804682df36b0e6bc9d914ab55e1418e3f35a",
-    "outcome": "unavailable",
-    "reason": "unsupported_context"
+    "snapshot": "be9a2d0650d4b2f0fa0e7e4e703538d2b6c555ae0a728746938bffb4ba7cb9a0",
+    "outcome": "resolved",
+    "target": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/lib.rs",
+        "content": "1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a",
+        "span": {
+          "start": 0,
+          "end": 16
+        }
+      },
+      "name_span": {
+        "start": 11,
+        "end": 15
+      },
+      "kind": "struct"
+    },
+    "id": "244ac68a3efe",
+    "name": "Root",
+    "start": {
+      "line": 0,
+      "column": 0
+    },
+    "evidence": {
+      "addresses": [
+        {
+          "package": "inline_navigation",
+          "path": [
+            "tests",
+            "Imported"
+          ]
+        },
+        {
+          "package": "inline_navigation",
+          "path": [
+            "Root"
+          ]
+        }
+      ]
+    },
+    "container": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/lib.rs",
+        "content": "1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a",
+        "span": {
+          "start": 0,
+          "end": 16
+        }
+      },
+      "name_span": {
+        "start": 11,
+        "end": 15
+      },
+      "kind": "struct"
+    }
   }
 }
 --- stderr ---

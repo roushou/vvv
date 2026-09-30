@@ -1143,3 +1143,59 @@ async fn codex_client_preserves_macro_uncertainty_and_recovers_proven_bindings()
     );
     client.close().await;
 }
+
+#[cfg(feature = "rust")]
+#[tokio::test]
+async fn codex_client_navigates_local_imports_and_discovers_repeated_alias_callers() {
+    let fixture = Fixture::new();
+    std::fs::write(
+        fixture.root.join("Cargo.toml"),
+        "[package]\nname=\"local-probe\"\nversion=\"0.1.0\"\nedition=\"2024\"\n",
+    )
+    .unwrap();
+    let source = "mod a { pub fn run() {} }\nmod b { pub fn run() {} }\nfn first() { work(); use crate::a::run as work; }\nfn second() { use crate::b::run as work; work(); }\nfn ambiguous() { use crate::a::run as work; use crate::b::run as work; work(); }\n";
+    std::fs::write(fixture.root.join("src/lib.rs"), source).unwrap();
+    let client = Client::new(&fixture.root).await;
+    let origin = json!({"kind":"position","path":"src/lib.rs","position":{"line":2,"column":13}});
+    let reply = client.call("vvv_navigate", json!({"origin":origin})).await;
+    assert_eq!(reply["result"]["outcome"], "resolved", "{reply}");
+    assert_eq!(reply["result"]["start"]["line"], 0);
+    let context = client
+        .call("vvv_context", json!({"origin":origin,"detail":"signature"}))
+        .await;
+    assert_eq!(context["result"]["outcome"], "resolved", "{context}");
+    let sites = client
+        .call(
+            "vvv_relationships",
+            json!({"origin":{"kind":"symbol","symbol":reply["result"]["target"]},"kind":"callers"}),
+        )
+        .await;
+    let items = sites["result"]["items"].as_array().unwrap();
+    assert!(
+        items
+            .iter()
+            .any(|item| item["start"]["line"] == 2 && item["outcome"] == "confirmed"),
+        "{sites}"
+    );
+    assert!(
+        !items.iter().any(|item| item["start"]["line"] == 3),
+        "{sites}"
+    );
+    let column = source.lines().nth(4).unwrap().rfind("work()").unwrap();
+    let origin =
+        json!({"kind":"position","path":"src/lib.rs","position":{"line":4,"column":column}});
+    let ambiguous = client.call("vvv_navigate", json!({"origin":origin})).await;
+    assert_eq!(ambiguous["result"]["outcome"], "ambiguous", "{ambiguous}");
+    assert_eq!(
+        ambiguous["result"]["candidates"].as_array().unwrap().len(),
+        2
+    );
+    let selected = client
+        .call(
+            "vvv_navigate",
+            json!({"origin":origin,"selection":{"ordinals":[2]}}),
+        )
+        .await;
+    assert_eq!(selected["result"]["outcome"], "resolved", "{selected}");
+    client.close().await;
+}

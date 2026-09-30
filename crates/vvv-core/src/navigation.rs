@@ -111,6 +111,16 @@ pub struct ModuleScopeRule {
     pub body: &'static str,
 }
 
+/// Block-wide named imports for navigation, independent of mutation bindings.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct ImportScope {
+    pub span: Span,
+    pub imports: Vec<ImportBinding>,
+    #[serde(default)]
+    pub aliases: Vec<Span>,
+}
+
 /// A macro whose expansion may introduce items throughout a block and locals
 /// after the invocation. This is navigation evidence, never mutation scope.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

@@ -316,11 +316,24 @@ impl Navigation<'_, '_> {
             span,
         });
         let facts = candidate.facts()?;
+        let mut pattern_declaration = None;
         if let Some(symbol) = facts
             .navigation_symbols()
             .find(|s| s.name_span == span && s.kind != SymbolKind::Impl)
         {
-            return self.resolved(&candidate, symbol, vec![]);
+            if symbol.kind == SymbolKind::Variable
+                && facts
+                    .lexical
+                    .iter()
+                    .any(|binding| binding.symbol.name_span == span && !binding.explicit)
+                && super::navigation_scope::NavigationScope::new(facts, span)
+                    .import_scope(&symbol.name)
+                    .is_some()
+            {
+                pattern_declaration = Some(symbol);
+            } else {
+                return self.resolved(&candidate, symbol, vec![]);
+            }
         }
         let Some((name, _, _)) = facts.tokens().find(|(_, _, s)| *s == span) else {
             return Ok(Self::unavailable(UnavailableReason::NoIdentifier));
@@ -331,14 +344,131 @@ impl Navigation<'_, '_> {
             vvv_core::BindingNamespace::Value
         };
         let scope = super::navigation_scope::NavigationScope::new(facts, span);
+        let import_declaration = facts
+            .imports
+            .iter()
+            .any(|import| import.declares && import.span.contains(&span))
+            || facts
+                .import_scopes
+                .iter()
+                .any(|imports| imports.aliases.contains(&span));
+        let mut local_import = scope.import_scope(name);
+        let mut local_lookup = None;
+        let mut constant_pattern = false;
+        let mut unknown_pattern = local_import.is_some();
+        if local_import.is_some()
+            && facts.lexical_tokens.contains(&span)
+            && scope.permits_module()
+            && !facts.lexical.iter().any(|binding| {
+                binding.visible(name, span, namespace)
+                    && local_import.is_some_and(|imports| binding.scope.len() <= imports.len())
+                    && ((binding.symbol.kind == SymbolKind::Variable && binding.explicit)
+                        || (binding.symbol.kind == SymbolKind::Parameter
+                            && local_import
+                                .is_some_and(|imports| binding.scope.len() < imports.len())))
+            })
+            && let Some(ns) = self.graph.namespace(&candidate.language())
+            && ns.address(candidate.path()).is_ok()
+        {
+            self.validate_project(&ns)?;
+            // Resolve both namespaces before comparing an import with lexical
+            // bindings. A type-only item must not shadow an outer value local.
+            let mut lookup = super::module_navigation::ModuleNavigation::new(&ns).resolve(
+                candidate.source.clone(),
+                span,
+                name,
+                vvv_core::BindingNamespace::Value,
+            )?;
+            for path in &lookup.inputs {
+                self.capture(path)?;
+            }
+            let mut applicable = Vec::new();
+            let known = !lookup.targets.is_empty();
+            unknown_pattern = !known;
+            for target in lookup.targets {
+                let file = self.capture(&target.path)?;
+                let symbol = file
+                    .facts()?
+                    .symbols
+                    .iter()
+                    .find(|symbol| symbol.name_span == target.name_span)
+                    .ok_or_else(|| EngineError::InvalidAnchor {
+                        path: target.path.clone(),
+                    })?;
+                let matches = import_declaration
+                    || match namespace {
+                        vvv_core::BindingNamespace::Type => matches!(
+                            symbol.kind,
+                            SymbolKind::Struct
+                                | SymbolKind::Enum
+                                | SymbolKind::Trait
+                                | SymbolKind::TypeAlias
+                                | SymbolKind::Module
+                        ),
+                        vvv_core::BindingNamespace::Value => matches!(
+                            symbol.kind,
+                            SymbolKind::Function
+                                | SymbolKind::Const
+                                | SymbolKind::Static
+                                | SymbolKind::Struct
+                                | SymbolKind::Variant
+                                | SymbolKind::Module
+                        ),
+                    };
+                if matches {
+                    constant_pattern |= symbol.kind == SymbolKind::Const;
+                    unknown_pattern |= matches!(
+                        symbol.kind,
+                        SymbolKind::Static | SymbolKind::Struct | SymbolKind::Variant
+                    );
+                    applicable.push(target);
+                }
+            }
+            if known && applicable.is_empty() {
+                local_import = None;
+            }
+            unknown_pattern |= constant_pattern && applicable.len() > 1;
+            lookup.targets = applicable;
+            local_lookup = Some(lookup);
+        }
+        if let Some(symbol) = pattern_declaration {
+            if unknown_pattern || !scope.permits_module() {
+                return Ok(Self::unavailable(UnavailableReason::UnsupportedContext));
+            }
+            if !constant_pattern {
+                return self.resolved(&candidate, symbol, vec![]);
+            }
+        }
+        if constant_pattern
+            && unknown_pattern
+            && facts.lexical.iter().any(|binding| {
+                binding.visible(name, span, namespace)
+                    && binding.symbol.kind == SymbolKind::Variable
+                    && !binding.explicit
+            })
+        {
+            return Ok(Self::unavailable(UnavailableReason::UnsupportedContext));
+        }
+        let mut lexical_candidates = Vec::new();
         if facts.lexical_tokens.contains(&span)
+            && !import_declaration
             && let Some(binding) = facts
                 .lexical
                 .iter()
                 .filter(|b| b.visible(name, span, namespace))
+                .filter(|b| local_import.is_none_or(|imports| b.scope.len() <= imports.len()))
+                .filter(|b| {
+                    !(local_import.is_some()
+                        && b.symbol.kind == SymbolKind::Variable
+                        && !b.explicit
+                        && constant_pattern)
+                })
                 .min_by_key(|b| (b.scope.len(), std::cmp::Reverse(b.visible_from)))
         {
             if !scope.permits_binding(binding) {
+                return Ok(Self::unavailable(UnavailableReason::UnsupportedContext));
+            }
+            if unknown_pattern && binding.symbol.kind == SymbolKind::Variable && !binding.explicit {
                 return Ok(Self::unavailable(UnavailableReason::UnsupportedContext));
             }
             let mut candidates = Vec::new();
@@ -359,14 +489,25 @@ impl Navigation<'_, '_> {
                     },
                 });
             }
-            return self.candidates(candidates, UnavailableReason::Unresolved);
+            if local_import == Some(binding.scope)
+                && !matches!(
+                    binding.symbol.kind,
+                    SymbolKind::Variable | SymbolKind::Parameter
+                )
+            {
+                lexical_candidates = candidates;
+            } else {
+                return self.candidates(candidates, UnavailableReason::Unresolved);
+            }
         }
         if facts.lexical.iter().any(|b| {
             b.symbol.name == name
                 && b.namespace == namespace
                 && b.scope.contains(&span)
                 && b.excluded.iter().any(|s| s.contains(&span))
-        }) {
+                && local_import.is_none_or(|imports| b.scope.len() <= imports.len())
+        }) && !import_declaration
+        {
             return Ok(Self::unavailable(UnavailableReason::UnsupportedContext));
         }
         let imported_here = facts
@@ -377,6 +518,9 @@ impl Navigation<'_, '_> {
         if !facts.navigation.contains(&span) && !imported_here && qualified.is_none() {
             return Ok(Self::unavailable(UnavailableReason::UnsupportedContext));
         }
+        if local_import.is_some() && local_lookup.is_none() {
+            return Ok(Self::unavailable(UnavailableReason::UnsupportedContext));
+        }
         if !scope.permits_module() {
             return Ok(Self::unavailable(UnavailableReason::UnsupportedContext));
         }
@@ -385,16 +529,20 @@ impl Navigation<'_, '_> {
         };
         self.validate_project(&ns)?;
         if !facts.module_scopes.is_empty() && ns.address(candidate.path()).is_ok() {
-            let lookup = super::module_navigation::ModuleNavigation::new(&ns).resolve(
-                candidate.source.clone(),
-                span,
-                name,
-                namespace,
-            )?;
+            let lookup = if let Some(lookup) = local_lookup {
+                lookup
+            } else {
+                super::module_navigation::ModuleNavigation::new(&ns).resolve(
+                    candidate.source.clone(),
+                    span,
+                    name,
+                    namespace,
+                )?
+            };
             for path in lookup.inputs {
                 self.capture(&path)?;
             }
-            let mut candidates = Vec::new();
+            let mut candidates = lexical_candidates;
             for target in lookup.targets {
                 let file = self.capture(&target.path)?;
                 let symbol = file
@@ -405,6 +553,16 @@ impl Navigation<'_, '_> {
                     .ok_or_else(|| EngineError::InvalidAnchor {
                         path: target.path.clone(),
                     })?;
+                if local_import.is_some()
+                    && !import_declaration
+                    && namespace == vvv_core::BindingNamespace::Value
+                    && matches!(
+                        symbol.kind,
+                        SymbolKind::TypeAlias | SymbolKind::Trait | SymbolKind::Enum
+                    )
+                {
+                    continue;
+                }
                 candidates.push(DefinitionCandidate {
                     target: Self::symbol(&file, symbol),
                     declaration: Self::declaration(&file, symbol)?,

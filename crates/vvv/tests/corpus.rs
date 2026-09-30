@@ -2435,3 +2435,119 @@ fn typescript_symbol_moves_golden_and_mutation_properties() {
     undo_is_identity(&corpus);
     batch_is_composition(&corpus);
 }
+
+#[cfg(feature = "rust")]
+const RUST_LOCAL_IMPORTS: Corpus = Corpus {
+    name: "rust-local-imports",
+    cases: &[
+        (
+            "before-import",
+            &["navigate", "src/lib.rs:7:5", "--compact"],
+        ),
+        ("after-import", &["navigate", "src/lib.rs:9:5", "--compact"]),
+        (
+            "alias-declaration",
+            &["navigate", "src/lib.rs:8:26", "--compact"],
+        ),
+        ("chained", &["navigate", "src/lib.rs:14:5", "--compact"]),
+        (
+            "qualified-alias",
+            &["navigate", "src/lib.rs:15:12", "--compact"],
+        ),
+        ("inner", &["navigate", "src/lib.rs:22:9", "--compact"]),
+        (
+            "outer-restored",
+            &["navigate", "src/lib.rs:24:5", "--compact"],
+        ),
+        (
+            "parameter-shadowed",
+            &["navigate", "src/lib.rs:28:5", "--compact"],
+        ),
+        (
+            "initializer",
+            &["navigate", "src/lib.rs:32:16", "--compact"],
+        ),
+        (
+            "local-shadow",
+            &["navigate", "src/lib.rs:33:5", "--compact"],
+        ),
+        (
+            "item-ambiguity",
+            &["navigate", "src/lib.rs:38:5", "--compact"],
+        ),
+        (
+            "import-ambiguity",
+            &["navigate", "src/lib.rs:43:5", "--compact"],
+        ),
+        (
+            "nested-item",
+            &["navigate", "src/lib.rs:47:18", "--compact"],
+        ),
+        ("type", &["navigate", "src/lib.rs:52:12", "--compact"]),
+        ("macro", &["navigate", "src/lib.rs:57:5", "--compact"]),
+        (
+            "rooted-macro",
+            &["navigate", "src/lib.rs:58:15", "--compact"],
+        ),
+        ("glob", &["navigate", "src/lib.rs:62:5", "--compact"]),
+        ("cycle", &["navigate", "src/lib.rs:67:5", "--compact"]),
+        ("external", &["navigate", "src/lib.rs:71:5", "--compact"]),
+        ("inline-self", &["navigate", "src/lib.rs:78:9", "--compact"]),
+        (
+            "inline-super",
+            &["navigate", "src/lib.rs:79:9", "--compact"],
+        ),
+        ("isolated", &["navigate", "src/lib.rs:82:17", "--compact"]),
+        (
+            "selected",
+            &["navigate", "src/lib.rs:43:5", "--compact", "--select", "2"],
+        ),
+        (
+            "context",
+            &["context", "src/lib.rs:14:5", "--detail", "signature"],
+        ),
+        ("callers", &["relationships", "callers", "src/lib.rs:2:12"]),
+        (
+            "constant-pattern",
+            &["navigate", "src/lib.rs:86:9", "--compact"],
+        ),
+        (
+            "constant-use",
+            &["navigate", "src/lib.rs:87:13", "--compact"],
+        ),
+        ("namespace", &["navigate", "src/lib.rs:92:5", "--compact"]),
+        (
+            "grouped-call",
+            &["navigate", "src/lib.rs:96:5", "--compact"],
+        ),
+        (
+            "grouped-type",
+            &["navigate", "src/lib.rs:97:12", "--compact"],
+        ),
+        ("closure", &["navigate", "src/lib.rs:101:16", "--compact"]),
+        (
+            "grouped-alias-call",
+            &["navigate", "src/lib.rs:106:5", "--compact"],
+        ),
+        (
+            "grouped-alias-type",
+            &["navigate", "src/lib.rs:107:12", "--compact"],
+        ),
+        (
+            "import-owner",
+            &["navigate", "src/lib.rs:114:9", "--compact"],
+        ),
+        (
+            "type-alias-declaration",
+            &["navigate", "src/lib.rs:91:28", "--compact"],
+        ),
+        ("unplaced-file", &["navigate", "loose.rs:4:5", "--compact"]),
+    ],
+    mutations: || vec![],
+};
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_local_imports() {
+    golden(&RUST_LOCAL_IMPORTS);
+}

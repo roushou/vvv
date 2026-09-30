@@ -227,7 +227,7 @@ impl RelationshipsQuery {
                 if self.kind != RelationshipKind::Callees {
                     // Resolve import bindings before adding their local spellings.
                     // A renamed re-export is followed by the ordinary resolver.
-                    let mut imports: std::collections::BTreeMap<&str, Span> = facts
+                    let mut imports: std::collections::BTreeSet<(&str, Span)> = facts
                         .named_imports
                         .iter()
                         .filter(|i| i.imported != "*")
@@ -243,13 +243,13 @@ impl RelationshipsQuery {
                                     .max_by_key(|(_, _, span)| span.end)
                                     .map(|(_, _, span)| span),
                             ) {
-                                imports.insert(local.as_str(), span);
+                                imports.insert((local.as_str(), span));
                             }
                         }
                     }
                     for (local, span) in imports {
                         graph.check_read()?;
-                        if local == name
+                        if names.contains(local)
                             || (self.kind == RelationshipKind::Callers
                                 && !facts.calls.iter().any(|c| {
                                     file.text().get(c.callee.start..c.callee.end) == Some(local)

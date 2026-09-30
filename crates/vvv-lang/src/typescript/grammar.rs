@@ -95,6 +95,7 @@ const HIGHLIGHTS: &[HighlightRule] = &[
 ];
 
 pub(crate) const GRAMMAR: Grammar = Grammar {
+    import_scopes: &[],
     binding_markers: &[],
     module_scopes: None,
     macro_scopes: None,

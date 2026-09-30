@@ -14,6 +14,8 @@ use crate::text::Span;
 #[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Facts {
+    #[serde(default)]
+    pub import_scopes: Vec<crate::ImportScope>,
     /// Explicit module ownership for navigation; mutation addresses are unchanged.
     #[serde(default)]
     pub module_scopes: Vec<crate::ModuleScope>,

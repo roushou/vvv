@@ -583,6 +583,14 @@ bindings, closure captures, generic type parameters, locals, and local type/func
 items with modeled scopes. In layout-addressable files, Rust inline modules own
 their declarations and imports; qualified paths, aliases, globs, and re-exports
 respect module and item visibility. Competing definitions retain separate candidates.
+Named block-local imports use block-wide scope, follow aliases and grouped paths,
+and remain visible to nested functions and closures. Import resolution is checked
+in the requested namespace before comparing lexical scope. Same-block local
+variables take precedence after their initializer; immutable imported-constant
+patterns resolve to the constant. Competing imports and peer items preserve
+ambiguity. Local globs, unavailable layout placement, and uncertain constructor
+patterns remain conservative. Navigation-only import ownership does not change
+file-root mutation bindings or imply local-import mutation support.
 TypeScript supports named/default imports, namespace
 qualified types, aliases/re-exports/local export lists, generic type parameters,
 and simple function/method parameters.

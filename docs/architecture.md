@@ -142,7 +142,11 @@ This projection currently reuses full navigation internally.
 Grammar tables declare lexical scopes, visibility start points, noncapturing item
 boundaries, unsupported binding forms, and exact named-import rules. The syntax
 adapter lowers these to plain `Facts`: eligible token spans, `LexicalBinding`s,
-`NamedImport`s, `ModuleScope`s, and export restrictions. Rust module facts record
+`NamedImport`s, `ModuleScope`s, `ImportScope`s, and export restrictions. Block-wide
+named import ownership is navigation-only; grouped prefixes do not introduce
+bindings. Resolution uses the import's own block and enclosing import scopes,
+never an inner block at the use site. Import targets establish namespace and
+constant-pattern evidence before comparison with lexical bindings. Rust module facts record
 direct declarations, scoped imports, and visibility restrictions independently of
 the file-level facts used by mutation planners. `ModuleNavigation` resolves these
 scopes against the language layout, retains competing targets, and captures every

@@ -71,7 +71,8 @@ preserve assertions and snapshots. `#[test]` functions remain exempt.
 
 Extend navigation coverage for struct/match patterns, receiver-dependent methods,
 inferred targets, Rust block-local modules, inline scopes in unplaced files,
-`#[path]` module mappings, qualified type paths, function-local imports, macro argument navigation and expansion-aware
+`#[path]` module mappings, qualified type paths, block-local glob imports,
+constructor namespace/pattern evidence, macro argument navigation and expansion-aware
 binding evidence, TypeScript local
 hoisting, wildcard exports, arbitrary namespace-member expressions, and package/path
 aliases. External/generated source previews need dedicated source-provider support.

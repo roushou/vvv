@@ -179,7 +179,13 @@ Declaration tokens preview themselves; enum variants preview their enclosing enu
 
 Complex patterns (including struct patterns and match arms), receiver-dependent
 methods, inferred targets, block-local modules, and unmodeled lexical scopes remain
-unsupported. Function-local imports remain conservative. Macro arguments are not resolved.
+unsupported. Named function/block-local imports and aliases are visible throughout
+their block, including nested functions and closures. Inner imports shadow outer
+bindings; same-block variables take precedence after their initializer, and
+competing imported/local items remain selectable candidates. Imported constants
+are recognized in immutable identifier patterns. Local globs and cases requiring
+constructor namespace evidence remain conservative. Local import targets require
+a file placed by the language layout. Macro arguments are not resolved.
 A statement-position macro may introduce items throughout its block and locals
 after its invocation, so affected lookups remain unsupported, even before the
 macro when generated items could compete. Navigation can still follow proven

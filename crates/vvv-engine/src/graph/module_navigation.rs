@@ -12,6 +12,7 @@ struct Module {
     source: Arc<SourceFacts>,
     scope: ModuleScope,
     address: Address,
+    locals: Vec<vvv_core::ImportScope>,
 }
 #[derive(Clone)]
 struct Target {
@@ -69,6 +70,7 @@ impl<'a> ModuleNavigation<'a> {
                 for scope in &source.facts()?.module_scopes {
                     if base.extend(scope.path.iter().cloned()) == *address {
                         result.push(Module {
+                            locals: vec![],
                             source: source.clone(),
                             scope: scope.clone(),
                             address: address.clone(),
@@ -110,7 +112,11 @@ impl<'a> ModuleNavigation<'a> {
             self.reason = UnavailableReason::CyclicImports;
             return Ok(vec![]);
         }
-        let result = self.path(module, &import.path, &module.address, vec![]);
+        let mut owner = module.clone();
+        owner
+            .locals
+            .retain(|scope| scope.span.contains(&import.span));
+        let result = self.path(&owner, &import.path, &owner.address, vec![]);
         self.active.remove(&key);
         result
     }
@@ -141,22 +147,29 @@ impl<'a> ModuleNavigation<'a> {
                     return Ok(vec![]);
                 };
                 let facts = module.source.facts()?;
-                let declarations = module
-                    .scope
-                    .declarations
-                    .iter()
-                    .filter_map(|declaration| {
-                        facts
-                            .symbols
-                            .iter()
-                            .find(|symbol| symbol.name_span == declaration.name_span)
+                let local = module.locals.iter().find(|scope| {
+                    scope.imports.iter().any(|binding| {
+                        facts.imports.iter().any(|import| {
+                            import.span == binding.span && import.binding() == Some(head)
+                        })
                     })
-                    .any(|symbol| {
-                        symbol.name == head.as_str() && self.ns.is_addressable(symbol.kind)
-                    });
-                let imports: Vec<_> = module
-                    .scope
-                    .imports
+                });
+                let declarations = local.is_none()
+                    && module
+                        .scope
+                        .declarations
+                        .iter()
+                        .filter_map(|declaration| {
+                            facts
+                                .symbols
+                                .iter()
+                                .find(|symbol| symbol.name_span == declaration.name_span)
+                        })
+                        .any(|symbol| {
+                            symbol.name == head.as_str() && self.ns.is_addressable(symbol.kind)
+                        });
+                let imports: Vec<_> = local
+                    .map_or(&module.scope.imports, |scope| &scope.imports)
                     .iter()
                     .filter_map(|binding| {
                         facts
@@ -509,6 +522,18 @@ impl<'a> ModuleNavigation<'a> {
         };
         let base = self.ns.address(source.path())?;
         let module = Module {
+            locals: {
+                let mut locals: Vec<_> = facts
+                    .import_scopes
+                    .iter()
+                    .filter(|imports| {
+                        imports.span.contains(&span) && scope.span.contains(&imports.span)
+                    })
+                    .cloned()
+                    .collect();
+                locals.sort_by_key(|imports| imports.span.len());
+                locals
+            },
             address: base.extend(scope.path.iter().cloned()),
             source: source.clone(),
             scope,

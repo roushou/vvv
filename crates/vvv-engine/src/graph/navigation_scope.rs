@@ -46,4 +46,20 @@ impl<'a> NavigationScope<'a> {
                     && import.path.head == PathHead::Package
             })
     }
+    pub(super) fn import_scope(&self, name: &str) -> Option<Span> {
+        self.facts
+            .import_scopes
+            .iter()
+            .filter(|scope| scope.span.contains(&self.span))
+            .filter(|scope| {
+                scope.imports.iter().any(|binding| {
+                    self.facts.imports.iter().any(|import| {
+                        import.span == binding.span
+                            && import.binding().is_some_and(|bound| bound.as_str() == name)
+                    })
+                })
+            })
+            .min_by_key(|scope| scope.span.len())
+            .map(|scope| scope.span)
+    }
 }
