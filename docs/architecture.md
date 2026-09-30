@@ -150,7 +150,15 @@ consulted source. Import traversal has cycle guards, a 1,024-step budget, and
 128-level recursion/provenance bounds. Navigation checks the innermost visible
 binding before module lookup, keeps type and value namespaces separate, and uses
 exact named bindings for TypeScript. Navigation-only declarations stay separate
-from ordinary search/mutation symbols. Unsupported patterns and scope forms block
+from ordinary search/mutation symbols. `ScopeUncertainty` records block-owned macro invocations separately from token
+eligibility. The syntax adapter distinguishes grammar-declared required-expression
+positions; unknown positions retain uncertainty. `NavigationScope` checks known
+binding precedence before lexical resolution and blocks unrooted module lookup
+where expansion could introduce competing items. Binding markers distinguish
+explicit mutable bindings from identifier patterns that could name generated
+constants. Unknown generated items remain
+relevant in nested functions; no macro expansion or name whitelist is assumed.
+These facts do not affect mutation planners. Unsupported patterns and scope forms block
 confirmation instead of falling through to a same-named outer declaration.
 
 `NavigationQuery::execute_with` accepts a host-supplied `NavigationProvider` and

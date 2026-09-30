@@ -1090,3 +1090,56 @@ async fn codex_client_navigates_inline_helpers_and_scoped_imports() {
     assert_eq!(imported["result"]["name"], "Root", "{imported}");
     client.close().await;
 }
+
+#[cfg(feature = "rust")]
+#[tokio::test]
+async fn codex_client_preserves_macro_uncertainty_and_recovers_proven_bindings() {
+    let fixture = Fixture::new();
+    std::fs::write(
+        fixture.root.join("Cargo.toml"),
+        "[package]\nname=\"macro-probe\"\nversion=\"0.1.0\"\nedition=\"2024\"\n",
+    )
+    .unwrap();
+    let source = "pub fn helper() -> usize { 1 }\nfn exercise(input: usize) {\n    let before = input;\n    assert_eq!(before, 1);\n    helper();\n    consume(before);\n    let mut after = 2;\n    consume(after);\n    crate::helper();\n}\nfn consume(_: usize) {}\nfn expression_only() { let x = opaque!(); helper(); }\n";
+    std::fs::write(fixture.root.join("src/lib.rs"), source).unwrap();
+    let client = Client::new(&fixture.root).await;
+    for (line, spelling, outcome) in [
+        (2, "input", "unavailable"),
+        (4, "helper", "unavailable"),
+        (5, "before", "unavailable"),
+        (7, "after", "resolved"),
+        (8, "helper", "resolved"),
+        (11, "helper", "resolved"),
+    ] {
+        let column = source.lines().nth(line).unwrap().find(spelling).unwrap();
+        let origin =
+            json!({"kind":"position","path":"src/lib.rs","position":{"line":line,"column":column}});
+        let reply = client.call("vvv_navigate", json!({"origin":origin})).await;
+        assert_eq!(reply["result"]["outcome"], outcome, "{reply}");
+        if outcome == "unavailable" {
+            assert_eq!(reply["result"]["reason"], "unsupported_context", "{reply}");
+        }
+    }
+    let column = source.lines().nth(8).unwrap().find("helper").unwrap();
+    let origin =
+        json!({"kind":"position","path":"src/lib.rs","position":{"line":8,"column":column}});
+    let context = client
+        .call("vvv_context", json!({"origin":origin,"detail":"signature"}))
+        .await;
+    assert_eq!(context["result"]["outcome"], "resolved", "{context}");
+    let sites = client.call("vvv_relationships", json!({"origin":{"kind":"position","path":"src/lib.rs","position":{"line":0,"column":7}},"kind":"callers"})).await;
+    let items = sites["result"]["items"].as_array().unwrap();
+    assert!(
+        items
+            .iter()
+            .any(|item| item["start"]["line"] == 8 && item["outcome"] == "confirmed"),
+        "{sites}"
+    );
+    assert!(
+        items
+            .iter()
+            .any(|item| item["start"]["line"] == 4 && item["outcome"] == "unavailable"),
+        "{sites}"
+    );
+    client.close().await;
+}

@@ -25,6 +25,7 @@ impl<'a> NavigationFacts<'a> {
             .collect();
         let mut unsupported = Vec::new();
         for node in root.dfs() {
+            self.macro_scope(&node, facts);
             for rule in self
                 .grammar
                 .bindings
@@ -98,6 +99,20 @@ impl<'a> NavigationFacts<'a> {
                             scope_span.start
                         },
                         namespace: rule.namespace,
+                        explicit: node.children().any(|child| {
+                            self.grammar
+                                .binding_markers
+                                .contains(&child.kind().as_ref())
+                        }) || name
+                            .ancestors()
+                            .take_while(|ancestor| ancestor.range() != node.range())
+                            .any(|ancestor| {
+                                ancestor.children().any(|child| {
+                                    self.grammar
+                                        .binding_markers
+                                        .contains(&child.kind().as_ref())
+                                })
+                            }),
                     });
                 }
             }
@@ -213,6 +228,36 @@ impl<'a> NavigationFacts<'a> {
                     }
                 }
             }
+        }
+    }
+    fn macro_scope<L: LanguageExt>(&self, node: &Node<'_, StrDoc<L>>, facts: &mut Facts) {
+        let Some(rule) = self.grammar.macro_scopes.filter(|r| r.node == node.kind()) else {
+            return;
+        };
+        let expression = node.parent().is_some_and(|parent| {
+            rule.expression_containers.contains(&parent.kind().as_ref())
+                || rule.expression_fields.iter().any(|(kind, field)| {
+                    parent.kind() == *kind
+                        && parent
+                            .field(field)
+                            .is_some_and(|child| child.range() == node.range())
+                })
+        });
+        if expression {
+            return;
+        }
+        if let Some(scope) = node
+            .ancestors()
+            .take_while(|a| {
+                !self.grammar.lexical_boundaries.contains(&a.kind().as_ref())
+                    && a.kind() != rule.node
+            })
+            .find(|a| rule.scopes.contains(&a.kind().as_ref()))
+        {
+            facts.scope_uncertainties.push(vvv_core::ScopeUncertainty {
+                scope: scope.range().into(),
+                invocation: node.range().into(),
+            });
         }
     }
     pub(crate) fn barrier<L: LanguageExt>(

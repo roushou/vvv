@@ -19,6 +19,10 @@ pub struct LexicalBinding {
     /// A local starts after its initializer; parameters and generics fill their scope.
     pub visible_from: usize,
     pub namespace: BindingNamespace,
+    /// Syntax forces a binding rather than a possible constant pattern.
+    /// Older plugin facts remain conservative around unknown expansions.
+    #[serde(default)]
+    pub explicit: bool,
 }
 impl LexicalBinding {
     pub fn visible(&self, name: &str, span: Span, namespace: BindingNamespace) -> bool {
@@ -105,4 +109,22 @@ pub struct ModuleScopeRule {
     pub node: &'static str,
     pub name: &'static str,
     pub body: &'static str,
+}
+
+/// A macro whose expansion may introduce items throughout a block and locals
+/// after the invocation. This is navigation evidence, never mutation scope.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct ScopeUncertainty {
+    pub scope: Span,
+    pub invocation: Span,
+}
+
+/// Macro positions whose expansion is required to be an expression.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct MacroScopeRule {
+    pub node: &'static str,
+    pub scopes: &'static [&'static str],
+    pub expression_containers: &'static [&'static str],
+    pub expression_fields: &'static [(&'static str, &'static str)],
 }

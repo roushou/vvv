@@ -114,6 +114,104 @@ fn rust_inline_modules_golden() {
     golden(&RUST_INLINE_MODULES);
 }
 
+#[cfg(feature = "rust")]
+const RUST_MACRO_BLOCKS: Corpus = Corpus {
+    name: "rust-macro-blocks",
+    cases: &[
+        (
+            "same-block-before",
+            &["navigate", "src/lib.rs:58:13", "--compact"],
+        ),
+        (
+            "outer-local-before",
+            &["navigate", "src/lib.rs:63:15", "--compact"],
+        ),
+        (
+            "inner-parameter",
+            &["navigate", "src/lib.rs:67:42", "--compact"],
+        ),
+        (
+            "identifier-pattern",
+            &["navigate", "src/lib.rs:53:18", "--compact"],
+        ),
+        (
+            "inner-ambiguity",
+            &["navigate", "src/lib.rs:47:9", "--compact"],
+        ),
+        (
+            "inner-selection",
+            &["navigate", "src/lib.rs:47:9", "--compact", "--select", "2"],
+        ),
+        (
+            "macro-argument",
+            &["navigate", "src/lib.rs:7:13", "--compact"],
+        ),
+        (
+            "expression-ambiguity",
+            &["navigate", "src/lib.rs:27:61", "--compact"],
+        ),
+        (
+            "between-macros",
+            &["navigate", "src/lib.rs:31:13", "--compact"],
+        ),
+        (
+            "after-second-macro",
+            &["navigate", "src/lib.rs:33:13", "--compact"],
+        ),
+        (
+            "custom-assert",
+            &["navigate", "src/lib.rs:38:13", "--compact"],
+        ),
+        (
+            "parameter-before",
+            &["navigate", "src/lib.rs:5:22", "--compact"],
+        ),
+        ("item-before", &["navigate", "src/lib.rs:6:5", "--compact"]),
+        ("item-after", &["navigate", "src/lib.rs:8:5", "--compact"]),
+        (
+            "local-before-macro",
+            &["navigate", "src/lib.rs:9:13", "--compact"],
+        ),
+        (
+            "local-after-macro",
+            &["navigate", "src/lib.rs:11:13", "--compact"],
+        ),
+        ("rooted", &["navigate", "src/lib.rs:12:12", "--compact"]),
+        (
+            "inner-local",
+            &["navigate", "src/lib.rs:13:34", "--compact"],
+        ),
+        (
+            "nested-item",
+            &["navigate", "src/lib.rs:14:19", "--compact"],
+        ),
+        (
+            "expression-call",
+            &["navigate", "src/lib.rs:19:5", "--compact"],
+        ),
+        (
+            "expression-parameter",
+            &["navigate", "src/lib.rs:20:13", "--compact"],
+        ),
+        (
+            "expression-local",
+            &["navigate", "src/lib.rs:21:13", "--compact"],
+        ),
+        (
+            "rooted-context",
+            &["context", "src/lib.rs:12:12", "--detail", "signature"],
+        ),
+        ("callers", &["relationships", "callers", "src/lib.rs:1:8"]),
+    ],
+    mutations: Vec::new,
+};
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_macro_blocks_golden() {
+    golden(&RUST_MACRO_BLOCKS);
+}
+
 /// Import resolution: same-file alias chains, grouped entries, and nested groups.
 #[cfg(feature = "rust")]
 const RUST_RESOLUTION: Corpus = Corpus {

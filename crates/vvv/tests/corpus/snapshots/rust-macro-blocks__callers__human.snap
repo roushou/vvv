@@ -1,0 +1,15 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+helper src/lib.rs:1:1 [f943ae46f307]
+helper [unresolved] src/lib.rs:6:5
+helper [unresolved] src/lib.rs:8:5
+helper [confirmed] src/lib.rs:12:12
+helper [unresolved] src/lib.rs:14:19
+helper [confirmed] src/lib.rs:19:5
+--- stderr ---
+5 sites; 1 file scanned; 5 lookups
+Unresolved sites are possible relationships, not confirmed calls. Receiver types, indirect targets, and macro expansion are not inferred.

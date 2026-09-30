@@ -343,6 +343,7 @@ fn lexical_facts_select_the_innermost_binding_and_preserve_symbol_roundtrips() {
             visible_from: from,
             excluded: vec![],
             namespace: BindingNamespace::Value,
+            explicit: true,
         });
     }
     let engine = Engine::new(

@@ -1,0 +1,9 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+Definition  src/lib.rs:1:1
+pub fn helper() -> usize
+--- stderr ---

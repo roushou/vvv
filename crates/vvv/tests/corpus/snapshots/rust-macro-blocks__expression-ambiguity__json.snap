@@ -1,0 +1,85 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "8096906b3a513d36a524e34e296f39293039d06a28aaffbf05804fe87600fed6",
+    "outcome": "ambiguous",
+    "candidates": [
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+            "span": {
+              "start": 549,
+              "end": 594
+            }
+          },
+          "name_span": {
+            "start": 580,
+            "end": 589
+          },
+          "kind": "function"
+        },
+        "id": "7a030d76629c",
+        "name": "competing",
+        "start": {
+          "line": 23,
+          "column": 0
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "macro_navigation",
+              "path": [
+                "competing"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+            "span": {
+              "start": 595,
+              "end": 640
+            }
+          },
+          "name_span": {
+            "start": 626,
+            "end": 635
+          },
+          "kind": "function"
+        },
+        "id": "d0ad5fb5925f",
+        "name": "competing",
+        "start": {
+          "line": 25,
+          "column": 0
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "macro_navigation",
+              "path": [
+                "competing"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
+--- stderr ---

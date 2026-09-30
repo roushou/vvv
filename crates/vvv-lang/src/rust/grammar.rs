@@ -128,6 +128,21 @@ const HIGHLIGHTS: &[HighlightRule] = &[
 ];
 
 pub(crate) const GRAMMAR: Grammar = Grammar {
+    macro_scopes: Some(vvv_core::MacroScopeRule {
+        node: "macro_invocation",
+        scopes: &["block"],
+        expression_containers: &["arguments", "tuple_expression", "array_expression"],
+        expression_fields: &[
+            ("let_declaration", "value"),
+            ("binary_expression", "left"),
+            ("binary_expression", "right"),
+            ("assignment_expression", "right"),
+            ("call_expression", "function"),
+            ("field_expression", "value"),
+            ("index_expression", "index"),
+        ],
+    }),
+    binding_markers: &["mutable_specifier"],
     module_scopes: Some(vvv_core::ModuleScopeRule {
         node: "mod_item",
         name: "name",
@@ -250,14 +265,6 @@ pub(crate) const GRAMMAR: Grammar = Grammar {
             name: Some("name"),
             scopes: &["block"],
             kind: Function,
-            namespace: vvv_core::BindingNamespace::Value,
-            after: false,
-        },
-        vvv_core::BindingRule {
-            node: "macro_invocation",
-            name: None,
-            scopes: &["block"],
-            kind: Variable,
             namespace: vvv_core::BindingNamespace::Value,
             after: false,
         },

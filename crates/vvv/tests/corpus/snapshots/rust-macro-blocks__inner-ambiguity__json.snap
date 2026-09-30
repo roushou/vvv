@@ -1,0 +1,71 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "15adaa40b8e710c7beef96cde9ad0899778c05140a7076e6462693bc106b1dc1",
+    "outcome": "ambiguous",
+    "candidates": [
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+            "span": {
+              "start": 1071,
+              "end": 1117
+            }
+          },
+          "name_span": {
+            "start": 1106,
+            "end": 1112
+          },
+          "kind": "function"
+        },
+        "id": "722b206dad1d",
+        "name": "choice",
+        "start": {
+          "line": 43,
+          "column": 8
+        },
+        "evidence": {
+          "addresses": []
+        }
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+            "span": {
+              "start": 1126,
+              "end": 1172
+            }
+          },
+          "name_span": {
+            "start": 1161,
+            "end": 1167
+          },
+          "kind": "function"
+        },
+        "id": "458482f72a9d",
+        "name": "choice",
+        "start": {
+          "line": 45,
+          "column": 8
+        },
+        "evidence": {
+          "addresses": []
+        }
+      }
+    ]
+  }
+}
+--- stderr ---

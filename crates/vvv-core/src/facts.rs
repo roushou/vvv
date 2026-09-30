@@ -35,7 +35,10 @@ pub struct Facts {
     pub navigation_types: Vec<Span>,
     #[serde(default)]
     pub lexical: Vec<crate::LexicalBinding>,
-    /// Tokens for which all enclosing lexical binding forms are understood.
+    /// Unknown macro-generated bindings in navigation scopes.
+    #[serde(default)]
+    pub scope_uncertainties: Vec<crate::ScopeUncertainty>,
+    /// Tokens in structurally supported lexical contexts; scope uncertainty is separate.
     #[serde(default)]
     pub lexical_tokens: Vec<Span>,
     #[serde(default)]

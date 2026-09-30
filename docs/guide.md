@@ -179,8 +179,20 @@ Declaration tokens preview themselves; enum variants preview their enclosing enu
 
 Complex patterns (including struct patterns and match arms), receiver-dependent
 methods, inferred targets, block-local modules, and unmodeled lexical scopes remain
-unsupported. Function-local imports and blocks containing macros remain conservative;
-inline module lookup also requires a file placed by the language layout. `#[path]`
+unsupported. Function-local imports remain conservative. Macro arguments are not resolved.
+A statement-position macro may introduce items throughout its block and locals
+after its invocation, so affected lookups remain unsupported, even before the
+macro when generated items could compete. Navigation can still follow proven
+inner items, explicitly mutable bindings in inner scopes, and `let mut` locals in the same block before the macro or introduced
+after it. Immutable identifier patterns remain conservative because they can match
+an unknown generated constant instead of declaring a variable. Parameters and
+outer-block bindings may also be shadowed by generated block items before the
+invocation. Rooted `crate::` paths outside macro arguments remain eligible. Macros
+in recognized required-expression positions
+(such as call arguments and `let` initializers) do not block surrounding navigation.
+No macro name is assumed safe.
+
+Inline module lookup also requires a file placed by the language layout. `#[path]`
 module mappings are not modeled. TypeScript wildcard exports, package/path aliases, arbitrary namespace
 member expressions, and local-variable hoisting are not resolved by this syntax path. A TypeScript default export is not treated as a named export.
 Missing identifiers, unresolved names, external source, cycles, and ambiguous

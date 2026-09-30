@@ -71,6 +71,8 @@ impl fmt::Debug for LanguageId {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Grammar {
     pub module_scopes: Option<crate::ModuleScopeRule>,
+    pub macro_scopes: Option<crate::MacroScopeRule>,
+    pub binding_markers: &'static [&'static str],
     pub navigation_values: &'static [&'static str],
     pub calls: &'static [crate::CallRule],
     pub callees: &'static [crate::CalleeRule],
@@ -102,6 +104,8 @@ pub struct Grammar {
 impl Grammar {
     pub const EMPTY: Self = Self {
         module_scopes: None,
+        macro_scopes: None,
+        binding_markers: &[],
         navigation_values: &[],
         calls: &[],
         callees: &[],

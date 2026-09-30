@@ -1,0 +1,303 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "610de78eb9eab66c1843dbf8bfa1b39adbaf1f2e68e99b14adecc1c499b9cdbc",
+    "subject": {
+      "outcome": "resolved",
+      "target": {
+        "language": "rust",
+        "declaration": {
+          "path": "src/lib.rs",
+          "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+          "span": {
+            "start": 0,
+            "end": 30
+          }
+        },
+        "name_span": {
+          "start": 7,
+          "end": 13
+        },
+        "kind": "function"
+      },
+      "id": "f943ae46f307",
+      "name": "helper",
+      "start": {
+        "line": 0,
+        "column": 0
+      },
+      "evidence": {
+        "addresses": []
+      },
+      "container": {
+        "language": "rust",
+        "declaration": {
+          "path": "src/lib.rs",
+          "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+          "span": {
+            "start": 0,
+            "end": 30
+          }
+        },
+        "name_span": {
+          "start": 7,
+          "end": 13
+        },
+        "kind": "function"
+      }
+    },
+    "kind": "callers",
+    "scope": {
+      "paths": [],
+      "packages": []
+    },
+    "items": [
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+          "span": {
+            "start": 194,
+            "end": 200
+          }
+        },
+        "start": {
+          "line": 5,
+          "column": 4
+        },
+        "spelling": "helper",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+            "span": {
+              "start": 131,
+              "end": 398
+            }
+          },
+          "name_span": {
+            "start": 138,
+            "end": 145
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "unavailable",
+        "reason": "unsupported_context"
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+          "span": {
+            "start": 229,
+            "end": 235
+          }
+        },
+        "start": {
+          "line": 7,
+          "column": 4
+        },
+        "spelling": "helper",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+            "span": {
+              "start": 131,
+              "end": 398
+            }
+          },
+          "name_span": {
+            "start": 138,
+            "end": 145
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "unavailable",
+        "reason": "unsupported_context"
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+          "span": {
+            "start": 314,
+            "end": 320
+          }
+        },
+        "start": {
+          "line": 11,
+          "column": 11
+        },
+        "spelling": "helper",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+            "span": {
+              "start": 131,
+              "end": 398
+            }
+          },
+          "name_span": {
+            "start": 138,
+            "end": 145
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+            "span": {
+              "start": 0,
+              "end": 30
+            }
+          },
+          "name_span": {
+            "start": 7,
+            "end": 13
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "macro_navigation",
+              "path": [
+                "helper"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+          "span": {
+            "start": 385,
+            "end": 391
+          }
+        },
+        "start": {
+          "line": 13,
+          "column": 18
+        },
+        "spelling": "helper",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+            "span": {
+              "start": 371,
+              "end": 396
+            }
+          },
+          "name_span": {
+            "start": 374,
+            "end": 380
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "unavailable",
+        "reason": "unsupported_context"
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+          "span": {
+            "start": 497,
+            "end": 503
+          }
+        },
+        "start": {
+          "line": 18,
+          "column": 4
+        },
+        "spelling": "helper",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+            "span": {
+              "start": 423,
+              "end": 548
+            }
+          },
+          "name_span": {
+            "start": 430,
+            "end": 445
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+            "span": {
+              "start": 0,
+              "end": 30
+            }
+          },
+          "name_span": {
+            "start": 7,
+            "end": 13
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "macro_navigation",
+              "path": [
+                "helper"
+              ]
+            }
+          ]
+        }
+      }
+    ],
+    "coverage": {
+      "limitations": [
+        "receiver_types",
+        "indirect_targets",
+        "macro_expansion",
+        "anonymous_callers",
+        "unsupported_bindings",
+        "unenumerated_aliases"
+      ],
+      "files_scanned": 1,
+      "files_remaining": 0,
+      "lookups": 5,
+      "omitted_items": 0,
+      "stopped_by": null,
+      "unsupported_files": 0,
+      "unresolved_imports": 0,
+      "scan_complete": true
+    }
+  }
+}
+--- stderr ---

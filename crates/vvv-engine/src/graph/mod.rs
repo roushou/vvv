@@ -18,6 +18,7 @@ mod import_bindings;
 mod module_navigation;
 mod namespace;
 mod navigation;
+mod navigation_scope;
 pub(crate) mod query_snapshot;
 mod references;
 mod scope;

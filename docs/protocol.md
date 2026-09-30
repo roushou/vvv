@@ -585,7 +585,19 @@ their declarations and imports; qualified paths, aliases, globs, and re-exports
 respect module and item visibility. Competing definitions retain separate candidates.
 TypeScript supports named/default imports, namespace
 qualified types, aliases/re-exports/local export lists, generic type parameters,
-and simple function/method parameters. Unsupported scopes
+and simple function/method parameters.
+
+Rust macro arguments remain unsupported. Statement-position macro expansions leave
+unknown block items and later local bindings; affected occurrences return
+`unsupported_context`. Known inner items, explicitly mutable inner bindings,
+same-block `let mut` locals before or after the invocation, and rooted `crate::`
+paths remain eligible. Recognized required
+expression positions do not introduce uncertainty into their surrounding block.
+Immutable identifier patterns can name generated constants rather than bindings,
+and parameters can be shadowed by generated block items even before invocation.
+These cases remain unsupported. No macro expansion or macro-name whitelist is used.
+
+Unsupported scopes
 and patterns do not fall back to a same-named outer declaration. Default exports
 are not named exports. See the [guide](guide.md) for remaining coverage limits.
 The unversioned oracle is not consulted by this capability.

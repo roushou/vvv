@@ -330,6 +330,7 @@ impl Navigation<'_, '_> {
         } else {
             vvv_core::BindingNamespace::Value
         };
+        let scope = super::navigation_scope::NavigationScope::new(facts, span);
         if facts.lexical_tokens.contains(&span)
             && let Some(binding) = facts
                 .lexical
@@ -337,7 +338,28 @@ impl Navigation<'_, '_> {
                 .filter(|b| b.visible(name, span, namespace))
                 .min_by_key(|b| (b.scope.len(), std::cmp::Reverse(b.visible_from)))
         {
-            return self.resolved(&candidate, &binding.symbol, vec![]);
+            if !scope.permits_binding(binding) {
+                return Ok(Self::unavailable(UnavailableReason::UnsupportedContext));
+            }
+            let mut candidates = Vec::new();
+            for peer in facts.lexical.iter().filter(|peer| {
+                peer.visible(name, span, namespace)
+                    && peer.scope.len() == binding.scope.len()
+                    && peer.visible_from == binding.visible_from
+            }) {
+                if !scope.permits_binding(peer) {
+                    return Ok(Self::unavailable(UnavailableReason::UnsupportedContext));
+                }
+                candidates.push(DefinitionCandidate {
+                    target: Self::symbol(&candidate, &peer.symbol),
+                    declaration: Self::declaration(&candidate, &peer.symbol)?,
+                    evidence: ResolutionEvidence {
+                        addresses: vec![],
+                        semantic: None,
+                    },
+                });
+            }
+            return self.candidates(candidates, UnavailableReason::Unresolved);
         }
         if facts.lexical.iter().any(|b| {
             b.symbol.name == name
@@ -353,6 +375,9 @@ impl Navigation<'_, '_> {
             .any(|i| i.name_span == span || i.alias_span == span);
         let qualified = facts.qualified_imports.iter().find(|q| q.span == span);
         if !facts.navigation.contains(&span) && !imported_here && qualified.is_none() {
+            return Ok(Self::unavailable(UnavailableReason::UnsupportedContext));
+        }
+        if !scope.permits_module() {
             return Ok(Self::unavailable(UnavailableReason::UnsupportedContext));
         }
         let Some(ns) = self.graph.namespace(&candidate.language()) else {

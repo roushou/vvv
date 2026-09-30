@@ -1,0 +1,63 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "8096906b3a513d36a524e34e296f39293039d06a28aaffbf05804fe87600fed6",
+    "outcome": "resolved",
+    "target": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/lib.rs",
+        "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+        "span": {
+          "start": 0,
+          "end": 30
+        }
+      },
+      "name_span": {
+        "start": 7,
+        "end": 13
+      },
+      "kind": "function"
+    },
+    "id": "f943ae46f307",
+    "name": "helper",
+    "start": {
+      "line": 0,
+      "column": 0
+    },
+    "evidence": {
+      "addresses": [
+        {
+          "package": "macro_navigation",
+          "path": [
+            "helper"
+          ]
+        }
+      ]
+    },
+    "container": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/lib.rs",
+        "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
+        "span": {
+          "start": 0,
+          "end": 30
+        }
+      },
+      "name_span": {
+        "start": 7,
+        "end": 13
+      },
+      "kind": "function"
+    }
+  }
+}
+--- stderr ---
