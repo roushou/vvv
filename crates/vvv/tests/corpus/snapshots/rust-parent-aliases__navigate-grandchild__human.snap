@@ -1,0 +1,8 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+Foo src/a.rs:1:1 [64cfbb15d00c]
+--- stderr ---

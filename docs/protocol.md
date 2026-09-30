@@ -684,9 +684,13 @@ budgets may still change. Source/manifest validation remains workspace-wide.
 
 ## `vvv outline`, `references`, `where`, `deps`, `explain`
 
-Read-only answers built from the same declarations and imports a rename uses. Same-file
-imported alias chains resolve to the same addresses in dependencies, explanations
-and references. Each is a plain structure of the shared types; `Symbol` fields are
+Read-only answers built from the same declarations and imports a rename uses.
+Imported alias chains, including visible Rust module-level bindings across files,
+resolve to the same addresses in dependencies, explanations and references.
+Competing targets remain separate navigation candidates; an ambiguous dependency
+edge has no single address, and its references remain unresolved. Unseeded import
+cycles remain unresolved. Consulted binding-provider files participate in cache
+freshness and navigation source validation. Each is a plain structure of the shared types; `Symbol` fields are
 flattened into an outline item. On `explain`, an exact import path under `position`
 takes precedence over grouped-statement containment, including nested groups.
 Outside entry spans, the containing statement's first grouped entry remains the
@@ -727,10 +731,10 @@ own address, absent when the language has none. `address` is absent when no path
 reaches the declaration in its language (methods, fields, variants); `import` is absent
 without `--from`. `declared` and `line` are where the enclosing declaration's name
 starts and the source line holding it, absent outside any declaration. Imports the
-layout cannot follow have no `address`/`file`; an import's `address` is what it spells,
-so one through a re-export names the re-exporting module, and its `origin` is the
-declaration that re-export chain leads to when that is somewhere else (`file` is the
-origin's). On `explain`, `via` is every other address a re-export offers the
+layout cannot follow have no `address`/`file`. Private module bindings normalize
+an import's `address` to their underlying target. Public re-export bindings retain
+the offered address, with `origin` naming the underlying declaration when it is
+somewhere else (`file` is the origin's). On `explain`, `via` is every other address a re-export offers the
 declaration at (omitted when none) and `import` the import statement at the position,
 as a `deps` entry, present only inside one. An import that re-exports what it brings
 in (`pub use`, `export … from`) carries `"reexport": true`; one bound under another

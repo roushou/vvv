@@ -21,13 +21,32 @@ use crate::{EngineError, Reach};
 #[derive(Clone)]
 pub struct Namespace {
     language: Arc<dyn Language>,
+    cancellation: Option<crate::ReadCancellation>,
     project: Arc<Project>,
+    pub(super) sources:
+        Arc<std::collections::BTreeMap<PathBuf, Arc<super::candidate::SourceFacts>>>,
 }
 
 impl Namespace {
     /// `language` must have a layout; the graph checks before building one.
-    pub(crate) fn new(language: Arc<dyn Language>, project: Arc<Project>) -> Self {
-        Self { language, project }
+    pub(super) fn new(
+        language: Arc<dyn Language>,
+        cancellation: Option<crate::ReadCancellation>,
+        project: Arc<Project>,
+        sources: Arc<std::collections::BTreeMap<PathBuf, Arc<super::candidate::SourceFacts>>>,
+    ) -> Self {
+        Self {
+            language,
+            cancellation,
+            project,
+            sources,
+        }
+    }
+
+    pub(super) fn check_read(&self) -> Result<(), EngineError> {
+        self.cancellation
+            .as_ref()
+            .map_or(Ok(()), crate::ReadCancellation::check)
     }
 
     pub fn id(&self) -> LanguageId {
@@ -58,6 +77,18 @@ impl Namespace {
 
     pub fn project(&self) -> &Arc<Project> {
         &self.project
+    }
+
+    pub(super) fn module_sources(
+        &self,
+        module: &Address,
+    ) -> Vec<Arc<super::candidate::SourceFacts>> {
+        self.layout()
+            .candidates(self.project(), module)
+            .into_iter()
+            .filter_map(|path| self.sources.get(&path).cloned())
+            .filter(|source| self.address(source.path()).as_ref().ok() == Some(module))
+            .collect()
     }
 
     /// The module address of a file.

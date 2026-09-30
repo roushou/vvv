@@ -199,6 +199,19 @@ impl Language for Fake {
             return Ok(facts.clone());
         }
         let mut facts = Facts::new(self.symbols(source)?, self.imports(source)?, Vec::new());
+        facts.import_bindings = facts
+            .imports
+            .iter()
+            .filter(|i| i.declares)
+            .map(|i| vvv_core::ImportBinding {
+                span: i.span,
+                visibility: i.reexport.then(|| Modifier {
+                    span: i.span,
+                    text: "pub".into(),
+                }),
+                restriction: None,
+            })
+            .collect();
         facts.declaration_pieces = facts
             .symbols
             .iter()

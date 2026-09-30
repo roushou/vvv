@@ -1,0 +1,29 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+move src/a.rs → src/renamed.rs
+
+→ 5   3 files
+± 2   2 files
+
+→ src/competing.rs:2    crate::a → crate::renamed
+→ src/parent.rs:1       crate::a → crate::renamed
+→ src/restricted.rs:1   crate::a → crate::renamed
+→ src/restricted.rs:2   crate::a → crate::renamed
+→ src/restricted.rs:3   crate::a → crate::renamed
+
+± src/a.rs → src/renamed.rs
+
+± src/lib.rs
+@@ -1,4 +1,4 @@
+-pub mod a;
++pub mod renamed;
+ pub mod b;
+ pub mod parent;
+ pub mod restricted;
+--- stderr ---
+→ 5  ± 2   5 files
+hint: --apply to write · --diff for the full patch

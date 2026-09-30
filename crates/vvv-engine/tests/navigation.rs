@@ -457,3 +457,234 @@ fn compact_ambiguity_keeps_every_selectable_candidate_and_unavailable_reason() {
         }
     ));
 }
+
+#[test]
+fn parent_module_aliases_share_targets_provenance_and_dependent_cache_invalidation() {
+    let f = Fixture::new(&[
+        ("a.p", "pub def Foo"),
+        ("b.p", "pub def Foo"),
+        ("parent.p", "use a.p as root"),
+        (
+            "parent.p/nested.p",
+            "use parent.p::root as local\nlocal::Foo",
+        ),
+    ]);
+    let first = f.at("parent.p/nested.p", 1, 7);
+    let NavigationOutcome::Resolved {
+        target, evidence, ..
+    } = &first.outcome
+    else {
+        panic!("{first:?}")
+    };
+    assert_eq!(target.declaration.path.as_path(), Path::new("a.p"));
+    assert!(
+        evidence
+            .addresses
+            .contains(&vvv_engine::Address::new("ws", ["parent.p", "root"]))
+    );
+    let deps = vvv_engine::DepsQuery {
+        path: "parent.p/nested.p".into(),
+    }
+    .execute(&f.engine)
+    .unwrap();
+    assert_eq!(
+        deps.imports[0].address,
+        Some(vvv_engine::Address::new("ws", ["a.p"]))
+    );
+    let references = vvv_engine::ReferencesQuery::new("Foo")
+        .declared_in("a.p")
+        .execute(&f.engine)
+        .unwrap();
+    assert_eq!(
+        references
+            .occurrences
+            .iter()
+            .find(|o| o.m.path.as_path() == Path::new("parent.p/nested.p"))
+            .unwrap()
+            .confidence,
+        vvv_engine::Confidence::Resolved
+    );
+    f.vfs
+        .write(Path::new("/ws/parent.p"), "use b.p as root")
+        .unwrap();
+    let second = f.at("parent.p/nested.p", 1, 7);
+    let NavigationOutcome::Resolved { target, .. } = &second.outcome else {
+        panic!("{second:?}")
+    };
+    assert_eq!(target.declaration.path.as_path(), Path::new("b.p"));
+    assert_ne!(first.snapshot, second.snapshot);
+    let deps = vvv_engine::DepsQuery {
+        path: "parent.p/nested.p".into(),
+    }
+    .execute(&f.engine)
+    .unwrap();
+    assert_eq!(
+        deps.imports[0].address,
+        Some(vvv_engine::Address::new("ws", ["b.p"]))
+    );
+}
+
+#[test]
+fn private_parent_aliases_do_not_leak_to_unrelated_modules() {
+    let f = Fixture::new(&[
+        ("a.p", "pub def Foo"),
+        ("parent.p", "use a.p as root"),
+        ("outside.p", "use parent.p::root as local\nlocal::Foo"),
+    ]);
+    assert!(matches!(
+        f.at("outside.p", 1, 7).outcome,
+        NavigationOutcome::Unavailable {
+            reason: UnavailableReason::Unresolved
+        }
+    ));
+    f.vfs
+        .write(Path::new("/ws/parent.p"), "pub use a.p as root")
+        .unwrap();
+    let reply = f.at("outside.p", 1, 7);
+    assert!(
+        matches!(reply.outcome, NavigationOutcome::Resolved { .. }),
+        "{reply:?}"
+    );
+}
+
+#[test]
+fn competing_parent_aliases_preserve_every_navigation_candidate() {
+    let f = Fixture::new(&[
+        ("a.p", "pub def Foo"),
+        ("b.p", "pub def Foo"),
+        ("parent.p", "use a.p as root\nuse b.p as root"),
+        (
+            "parent.p/nested.p",
+            "use parent.p::root as local\nlocal::Foo",
+        ),
+    ]);
+    let reply = f.at("parent.p/nested.p", 1, 7);
+    let NavigationOutcome::Ambiguous { candidates } = reply.outcome else {
+        panic!("{reply:?}")
+    };
+    assert_eq!(candidates.len(), 2);
+    assert_eq!(candidates[0].declaration.path.as_path(), Path::new("a.p"));
+    assert_eq!(candidates[1].declaration.path.as_path(), Path::new("b.p"));
+    let deps = vvv_engine::DepsQuery {
+        path: "parent.p/nested.p".into(),
+    }
+    .execute(&f.engine)
+    .unwrap();
+    assert!(deps.imports[0].address.is_none());
+    let references = vvv_engine::ReferencesQuery::new("Foo")
+        .declared_in("a.p")
+        .execute(&f.engine)
+        .unwrap();
+    assert_eq!(
+        references
+            .occurrences
+            .iter()
+            .find(|o| o.m.path.as_path() == Path::new("parent.p/nested.p"))
+            .unwrap()
+            .confidence,
+        vvv_engine::Confidence::Unresolved
+    );
+}
+
+#[test]
+fn cross_file_alias_cycles_remain_unavailable_without_hanging() {
+    let f = Fixture::new(&[
+        ("left.p", "pub use right.p::alias as alias"),
+        ("right.p", "pub use left.p::alias as alias"),
+        ("use.p", "use left.p::alias as local\nlocal::Foo"),
+    ]);
+    let reply = f.at("use.p", 1, 7);
+    assert!(
+        matches!(
+            reply.outcome,
+            NavigationOutcome::Unavailable {
+                reason: UnavailableReason::CyclicImports
+            }
+        ),
+        "{reply:?}"
+    );
+    let deps = vvv_engine::DepsQuery {
+        path: "use.p".into(),
+    }
+    .execute(&f.engine)
+    .unwrap();
+    assert!(deps.imports[0].address.is_none());
+}
+
+#[test]
+fn navigation_revalidates_an_alias_provider_inside_a_trusted_graph() {
+    let mut f = Fixture::new(&[
+        ("a.p", "pub def Foo"),
+        ("b.p", "pub def Foo"),
+        ("parent.p", "use a.p as root"),
+        (
+            "parent.p/nested.p",
+            "use parent.p::root as local\nlocal::Foo",
+        ),
+    ]);
+    f.engine = f
+        .engine
+        .with_retention(Retention::session().trusting(std::time::Duration::from_secs(3600)));
+    f.at("parent.p/nested.p", 1, 7);
+    f.vfs
+        .write(Path::new("/ws/parent.p"), "use b.p as root")
+        .unwrap();
+    let error = NavigationQuery::at("parent.p/nested.p", Position::new(1, 7))
+        .execute(&f.engine)
+        .unwrap_err();
+    assert_eq!(error.code(), vvv_engine::ErrorCode::Stale);
+    let reply = f.at("parent.p/nested.p", 1, 7);
+    let NavigationOutcome::Resolved { target, .. } = reply.outcome else {
+        panic!("{reply:?}")
+    };
+    assert_eq!(target.declaration.path.as_path(), Path::new("b.p"));
+}
+
+#[test]
+fn adding_an_alias_provider_invalidates_a_previously_missing_module_lookup() {
+    let f = Fixture::new(&[
+        ("a.p", "pub def Foo"),
+        (
+            "parent.p/nested.p",
+            "use parent.p::root as local\nlocal::Foo",
+        ),
+    ]);
+    assert!(matches!(
+        f.at("parent.p/nested.p", 1, 7).outcome,
+        NavigationOutcome::Unavailable { .. }
+    ));
+    f.vfs
+        .write(Path::new("/ws/parent.p"), "use a.p as root")
+        .unwrap();
+    let reply = f.at("parent.p/nested.p", 1, 7);
+    let NavigationOutcome::Resolved { target, .. } = reply.outcome else {
+        panic!("{reply:?}")
+    };
+    assert_eq!(target.declaration.path.as_path(), Path::new("a.p"));
+}
+
+#[test]
+fn ambiguous_imported_symbols_keep_all_candidates_for_bare_uses() {
+    let f = Fixture::new(&[
+        ("a.p", "pub def Foo"),
+        ("b.p", "pub def Foo"),
+        ("parent.p", "use a.p as root\nuse b.p as root"),
+        ("parent.p/nested.p", "use parent.p::root::Foo\nFoo"),
+    ]);
+    let reply = f.at("parent.p/nested.p", 1, 0);
+    let NavigationOutcome::Ambiguous { candidates } = reply.outcome else {
+        panic!("{reply:?}")
+    };
+    assert_eq!(candidates.len(), 2);
+    let references = vvv_engine::ReferencesQuery::new("Foo")
+        .declared_in("a.p")
+        .execute(&f.engine)
+        .unwrap();
+    assert!(
+        references
+            .occurrences
+            .iter()
+            .filter(|occurrence| occurrence.m.path.as_path() == Path::new("parent.p/nested.p"))
+            .all(|occurrence| occurrence.confidence == vvv_engine::Confidence::Unresolved)
+    );
+}

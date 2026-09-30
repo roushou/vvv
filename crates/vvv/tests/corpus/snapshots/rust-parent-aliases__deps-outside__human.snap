@@ -1,0 +1,22 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+src/outside.rs
+
+→ 6
+  parent_alias_probe
+     2  crate::restricted::package_alias   → src/a.rs
+     3  crate::restricted::parent_alias    → src/a.rs
+     5  crate::restricted::local_only      → src/restricted.rs
+     6  crate::restricted::inline_only     → src/restricted.rs
+  ?
+     1  crate::parent::parent
+     4  crate::restricted::limited
+
+← 0   0 files
+  ∅
+--- stderr ---
+→ 6  ← 0

@@ -53,6 +53,50 @@ impl<'g, L: LanguageExt> ImportExtractor<'g, L> {
         Ok(Self::outermost(found))
     }
 
+    /// Only direct module statements expose bindings across source files.
+    pub(crate) fn bindings(
+        &self,
+        root: &Node<'_, StrDoc<L>>,
+        imports: &[ImportRef],
+    ) -> Vec<vvv_core::ImportBinding> {
+        if self
+            .grammar
+            .module_root
+            .is_none_or(|kind| root.kind() != kind)
+        {
+            return vec![];
+        }
+        let statements: Vec<_> = root
+            .children()
+            .filter(|node| self.grammar.statements.contains(&node.kind().as_ref()))
+            .collect();
+        imports
+            .iter()
+            .filter(|import| import.declares)
+            .filter_map(|import| {
+                let statement = statements
+                    .iter()
+                    .find(|node| Span::from(node.range()).contains(&import.span))?;
+                let modifier = match self.grammar.reexports {
+                    ReExportRule::Modifier(kind) => {
+                        statement.children().find(|node| node.kind() == kind)
+                    }
+                    _ => None,
+                };
+                Some(vvv_core::ImportBinding {
+                    span: import.span,
+                    visibility: modifier.as_ref().map(|node| vvv_core::Modifier {
+                        span: node.range().into(),
+                        text: node.text().into_owned(),
+                    }),
+                    restriction: modifier
+                        .and_then(|node| node.children().find(Node::is_named))
+                        .map(|node| self.grammar.syntax.parse(node.text().as_ref())),
+                })
+            })
+            .collect()
+    }
+
     /// Drop candidates nested inside another candidate; `crate::a::b` is one
     /// reference, not three.
     fn outermost(mut candidates: Vec<ImportRef>) -> Vec<ImportRef> {
@@ -88,14 +132,21 @@ impl<'g, L: LanguageExt> ImportExtractor<'g, L> {
         let statement = node
             .ancestors()
             .find(|a| self.grammar.statements.contains(&a.kind().as_ref()));
-        let declares = self.grammar.statements.is_empty() || statement.is_some();
-        let reexport = match self.grammar.reexports {
-            ReExportRule::Never => false,
-            ReExportRule::Modifier(kind) => statement
-                .as_ref()
-                .is_some_and(|s| s.children().any(|c| c.kind() == kind)),
-            ReExportRule::Statement(kind) => node.ancestors().any(|a| a.kind() == kind),
+        let in_modifier = match self.grammar.reexports {
+            ReExportRule::Modifier(kind) => {
+                node.ancestors().any(|ancestor| ancestor.kind() == kind)
+            }
+            _ => false,
         };
+        let declares = !in_modifier && (self.grammar.statements.is_empty() || statement.is_some());
+        let reexport = declares
+            && match self.grammar.reexports {
+                ReExportRule::Never => false,
+                ReExportRule::Modifier(kind) => statement
+                    .as_ref()
+                    .is_some_and(|s| s.children().any(|c| c.kind() == kind)),
+                ReExportRule::Statement(kind) => node.ancestors().any(|a| a.kind() == kind),
+            };
         let alias = self.grammar.alias.and_then(|rule| {
             let under = node.parent().filter(|p| p.kind() == rule.under)?;
             Some(Name::from(under.field(rule.field)?.text().as_ref()))

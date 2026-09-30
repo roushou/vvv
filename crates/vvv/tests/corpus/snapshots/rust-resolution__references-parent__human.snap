@@ -6,16 +6,15 @@ exit 0
 --- stdout ---
 ● struct Foo   src/a.rs:2:1
 
-✓ 8  4 files
+✓ 9  5 files
   1  src/a.rs
   1  src/chained.rs
   4  src/consumer.rs
   2  src/nested.rs
+  1  src/parent_context/nested.rs
 
-? 1  1 file   ∅ unresolved
-src/parent_context/nested.rs
-  9      2:30   pub fn from_parent(_: local::Foo) {}
+? 0
 
 ✗ 0
 --- stderr ---
-✓ 8  ? 1  ✗ 0   5 files
+✓ 9  ? 0  ✗ 0   5 files

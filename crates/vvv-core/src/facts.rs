@@ -46,6 +46,8 @@ pub struct Facts {
     pub non_named_exports: Vec<Span>,
     pub symbols: Vec<Symbol>,
     pub imports: Vec<ImportRef>,
+    #[serde(default)]
+    pub import_bindings: Vec<crate::ImportBinding>,
     pub highlights: Vec<Highlight>,
     /// Interned identifier texts, indexed by [`Token::name`].
     names: Vec<String>,

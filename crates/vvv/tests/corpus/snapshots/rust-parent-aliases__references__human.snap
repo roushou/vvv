@@ -1,0 +1,31 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● struct Foo   src/a.rs:1:1
+
+✓ 6  5 files
+   1  src/a.rs
+   2  src/outside.rs
+   1  src/parent/nested/deeper.rs
+   1  src/parent/nested.rs
+   1  src/restricted/nested.rs
+
+? 6  3 files   ∅ unresolved
+src/competing/nested.rs
+   7      2:28   pub fn competing(_: local::Foo) {}
+src/cycle_a.rs
+   8      2:29   pub fn unresolved(_: alias::Foo) {}
+src/outside.rs
+   9      7:27   pub fn private(_: denied::Foo) {}
+  10     10:33   pub fn restricted(_: forbidden::Foo) {}
+  11     11:39   pub fn function_local(_: false_scope::Foo) {}
+  12     12:38   pub fn inline_local(_: false_inline::Foo) {}
+
+✗ 1  1 file   ● other decl
+src/b.rs
+  13      1:12   pub struct Foo;
+--- stderr ---
+✓ 6  ? 6  ✗ 1   8 files

@@ -1,0 +1,45 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "path": "src/parent/nested/deeper.rs",
+    "module": {
+      "package": "parent_alias_probe",
+      "path": [
+        "parent",
+        "nested",
+        "deeper"
+      ]
+    },
+    "imports": [
+      {
+        "span": {
+          "start": 4,
+          "end": 16
+        },
+        "path": "super::local",
+        "declares": true,
+        "alias": "chain",
+        "start": {
+          "line": 0,
+          "column": 4
+        },
+        "address": {
+          "package": "parent_alias_probe",
+          "path": [
+            "a"
+          ]
+        },
+        "file": "src/a.rs"
+      }
+    ],
+    "importers": []
+  }
+}
+--- stderr ---

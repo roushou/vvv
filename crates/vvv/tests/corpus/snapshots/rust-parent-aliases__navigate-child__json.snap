@@ -1,0 +1,79 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "b08a4391ad5a769fc71459b975132326739d5f27db5c32a732ed940773855c7d",
+    "outcome": "resolved",
+    "target": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/a.rs",
+        "content": "8afc91ecb07af25d02a126189ed5ca40d51f2f32e3767542f154782596fe38d9",
+        "span": {
+          "start": 0,
+          "end": 15
+        }
+      },
+      "name_span": {
+        "start": 11,
+        "end": 14
+      },
+      "kind": "struct"
+    },
+    "id": "64cfbb15d00c",
+    "name": "Foo",
+    "start": {
+      "line": 0,
+      "column": 0
+    },
+    "evidence": {
+      "addresses": [
+        {
+          "package": "parent_alias_probe",
+          "path": [
+            "parent",
+            "nested",
+            "local"
+          ]
+        },
+        {
+          "package": "parent_alias_probe",
+          "path": [
+            "parent",
+            "parent"
+          ]
+        },
+        {
+          "package": "parent_alias_probe",
+          "path": [
+            "a",
+            "Foo"
+          ]
+        }
+      ]
+    },
+    "container": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/a.rs",
+        "content": "8afc91ecb07af25d02a126189ed5ca40d51f2f32e3767542f154782596fe38d9",
+        "span": {
+          "start": 0,
+          "end": 15
+        }
+      },
+      "name_span": {
+        "start": 11,
+        "end": 14
+      },
+      "kind": "struct"
+    }
+  }
+}
+--- stderr ---

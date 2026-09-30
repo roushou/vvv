@@ -1229,3 +1229,44 @@ mod move_pieces_tests {
         }
     }
 }
+
+#[cfg(test)]
+mod import_binding_tests {
+    use super::Rust;
+    use vvv_core::Language;
+
+    #[test]
+    fn module_import_bindings_retain_visibility_and_exclude_inner_scopes() {
+        let source = "use crate::a as private;\npub(crate) use crate::a as package;\npub(super) use crate::a as parent;\npub(in crate::restricted) use crate::a as limited;\nfn f() { use crate::b as local; }\nmod inner { use crate::b as nested; }\n";
+        let facts = Rust::new().facts(source).unwrap();
+        let bindings: Vec<_> = facts
+            .import_bindings
+            .iter()
+            .map(|binding| {
+                let import = facts
+                    .imports
+                    .iter()
+                    .find(|i| i.span == binding.span)
+                    .unwrap();
+                (
+                    import.alias.as_ref().unwrap().as_str(),
+                    binding.visibility.as_ref().map(|v| v.text.as_str()),
+                    binding.restriction.as_ref().map(ToString::to_string),
+                )
+            })
+            .collect();
+        assert_eq!(
+            bindings,
+            vec![
+                ("private", None, None),
+                ("package", Some("pub(crate)"), Some("crate".into())),
+                ("parent", Some("pub(super)"), Some("super".into())),
+                (
+                    "limited",
+                    Some("pub(in crate::restricted)"),
+                    Some("crate::restricted".into())
+                ),
+            ]
+        );
+    }
+}

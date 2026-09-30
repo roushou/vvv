@@ -209,8 +209,11 @@ impl<L: LanguageExt> AstGrepSearcher<L> {
         let symbols = declarations.into_iter().map(|(_, symbol)| symbol).collect();
         let imports =
             ImportExtractor::new(&self.grammar.imports, self.lang.clone()).extract(&node)?;
+        let bindings = ImportExtractor::new(&self.grammar.imports, self.lang.clone())
+            .bindings(&node, &imports);
         let highlights = Highlighter::new(self.grammar.highlights).extract(&node);
         let mut facts = Facts::new(symbols, imports, highlights);
+        facts.import_bindings = bindings;
         facts.signatures = signatures;
         facts.declaration_pieces = pieces;
         super::calls::Calls::new(&self.grammar).extract(&node, &mut facts);

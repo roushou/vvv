@@ -303,27 +303,33 @@ One command uses one graph however many questions it asks — a
 rename's declarations, its other declarations, its occurrences and its project all come
 from the same walk.
 
-A file's **`Fragment`** (`graph/fragment.rs`) is its structural edges held as data:
-its module address, every addressable declaration placed (`Declared`: symbol, address,
-reach) and every import statement and qualified path resolved (`Edge`: the `ImportRef`
-and the address the layout gave it, or the address another import's binding leads to
-when the path's head is a name the file imports). An edge retains whether that
-address came directly from the layout or through a particular imported binding;
-the immediate binding links back to its edge, retaining provenance across an alias
-chain. Same-file bindings propagate to a fixed point, independent of import order;
-unseeded cycles stay unresolved. Scope consumes the fragment's completed
-resolutions. Move planners consume these edges,
-including for import provisioning and destination cleanup. `Rebase` transforms
-resolved addresses and preserves an alias spelling when rebasing its binding
-already supplies the required target; it does not resolve raw source paths again. A candidate builds it once per
-(file stamp, project build) and keeps it, so a session that asks ten whole-tree
-questions resolves each file once. The retained `Arc<Project>` identifies the build:
-equal projects reuse it, even across refreshes that ask no project questions;
-a changed project gets a new identity and invalidates every fragment and scope.
+A file's **`Fragment`** (`graph/fragment.rs`) holds its structural edges as data:
+its module address, every addressable declaration placed (`Declared`: symbol,
+address, reach), and import statements and qualified paths resolved (`Edge`).
+`ImportBindings` follows same-file bindings and visible module-level bindings in
+other files. Language facts identify module bindings and their visibility without
+exposing parser nodes. Lookup retains every distinct target, binding provenance,
+and consulted source versions; unseeded cycles stay unresolved. Recursive lookup
+checks cancellation and limits depth. Each path prefix is resolved separately,
+because an alias can change the shape of its address.
+
+The graph shares `SourceFacts` between candidates and namespace snapshots. These
+hold source contents and lazy parser facts, without fragment or scope caches, so
+cross-file lookup cannot create recursive cache locks or ownership cycles.
+Scope consumes the fragment's completed resolutions. Move planners consume the
+same edges, including for import provisioning and destination cleanup. `Rebase`
+transforms resolved addresses and preserves an alias spelling when rebasing its
+binding already supplies the required target; it does not resolve raw paths again.
+A candidate reuses its fragment while its project identity and every consulted
+source version and consulted module inventory match, including previously missing
+providers. The retained `Arc<Project>` identifies the project build;
+a changed project invalidates every fragment and scope. A scope is reused only
+with the same fragment. Navigation captures binding-provider sources in its
+snapshot and revalidates them before delivering an answer.
 A file's **`Scope`** — what it
 sees: bound names, opened modules, resolved and unresolved paths — is read off the
 fragment and kept beside it, so `references` judges tokens per name through a lookup;
-only a token in the middle of a path costs a resolution of its prefix. `aliases_of`
+tokens in the middle of a path use the fragment's captured prefix resolutions. `aliases_of`
 reads only files spelling one of the names found so far, or — for glob re-exports —
 the language's `glob_marker` (`::*` in Rust) in the alias's own package or naming it.
 

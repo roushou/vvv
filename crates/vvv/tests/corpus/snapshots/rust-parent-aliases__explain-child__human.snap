@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+src/parent/nested.rs:1:12
+→ super::parent
+  src/a.rs
+--- stderr ---

@@ -1,0 +1,117 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "8a73d801383ad28ad3abe2fe748b0d645f7a3ba95a67e0174c421c3360f7707f",
+    "outcome": "ambiguous",
+    "candidates": [
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/a.rs",
+            "content": "8afc91ecb07af25d02a126189ed5ca40d51f2f32e3767542f154782596fe38d9",
+            "span": {
+              "start": 0,
+              "end": 15
+            }
+          },
+          "name_span": {
+            "start": 11,
+            "end": 14
+          },
+          "kind": "struct"
+        },
+        "id": "64cfbb15d00c",
+        "name": "Foo",
+        "start": {
+          "line": 0,
+          "column": 0
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "parent_alias_probe",
+              "path": [
+                "competing",
+                "nested",
+                "local"
+              ]
+            },
+            {
+              "package": "parent_alias_probe",
+              "path": [
+                "competing",
+                "root"
+              ]
+            },
+            {
+              "package": "parent_alias_probe",
+              "path": [
+                "a",
+                "Foo"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/b.rs",
+            "content": "8afc91ecb07af25d02a126189ed5ca40d51f2f32e3767542f154782596fe38d9",
+            "span": {
+              "start": 0,
+              "end": 15
+            }
+          },
+          "name_span": {
+            "start": 11,
+            "end": 14
+          },
+          "kind": "struct"
+        },
+        "id": "3aa98f7704da",
+        "name": "Foo",
+        "start": {
+          "line": 0,
+          "column": 0
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "parent_alias_probe",
+              "path": [
+                "competing",
+                "nested",
+                "local"
+              ]
+            },
+            {
+              "package": "parent_alias_probe",
+              "path": [
+                "competing",
+                "root"
+              ]
+            },
+            {
+              "package": "parent_alias_probe",
+              "path": [
+                "b",
+                "Foo"
+              ]
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
+--- stderr ---

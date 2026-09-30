@@ -125,6 +125,15 @@ impl<'a> Rebase<'a> {
     /// Preserve an alias path when the binding's own rewrite already gives
     /// it the required meaning. Otherwise render the resolved target directly.
     fn binding_keeps_path(&self, site: &Site<'_>, edge: &Edge, target: &Address) -> bool {
+        if let Some(binding) = self.foreign_target(site, edge, target)
+            && self
+                .ns
+                .resolve(site.render_from, &edge.import.path)
+                .as_ref()
+                == Some(&binding)
+        {
+            return true;
+        }
         let Some(binding) = edge
             .binding()
             .and_then(|span| site.edges.iter().find(|e| e.import.span == span))
@@ -136,6 +145,23 @@ impl<'a> Rebase<'a> {
             .rebase(&self.old, &self.new)
             .unwrap_or_else(|| binding.clone());
         after.extend(edge.import.path.segments[1..].iter().cloned()) == *target
+    }
+
+    /// Rebase the offered alias address when its provider continues to supply
+    /// the same canonical target. Rendering that address preserves re-exports
+    /// and their visibility instead of exposing implementation paths.
+    fn foreign_target(&self, site: &Site<'_>, edge: &Edge, target: &Address) -> Option<Address> {
+        let (offered, binding) = edge.foreign_binding(site.path())?;
+        let suffix = edge.address()?.strip_prefix(binding)?;
+        let after = binding
+            .rebase(&self.old, &self.new)
+            .unwrap_or_else(|| binding.clone());
+        (after.extend(suffix.iter().cloned()) == *target).then(|| {
+            offered
+                .rebase(&self.old, &self.new)
+                .unwrap_or_else(|| offered.clone())
+                .extend(suffix.iter().cloned())
+        })
     }
 
     /// A standalone import: replace its span if the rendering changes.
@@ -250,11 +276,13 @@ impl<'a> Rebase<'a> {
             let Some(target) = self.target(site, edge) else {
                 continue;
             };
+            let keeps_path = self.binding_keeps_path(site, edge, &target);
+            let target = self.foreign_target(site, edge, &target).unwrap_or(target);
             if let Some(from) = &from {
                 out.references.push((from.clone(), target.clone()));
             }
             match &import.group {
-                None if self.binding_keeps_path(site, edge, &target) => {}
+                None if keeps_path => {}
                 None => self.standalone(site, import, &target, &mut out)?,
                 Some(group) => {
                     let prefix = self.prefix_after(site.node, group);

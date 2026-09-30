@@ -67,19 +67,6 @@ Other test suites also contain free fixture helpers. Give these helpers
 owners that retain the fixture data, following `Layers` and `FrameFixture`, and
 preserve assertions and snapshots. `#[test]` functions remain exempt.
 
-## Cross-file parent aliases
-
-Same-file imported bindings propagate to a fixed point. Cross-file private
-bindings do not: a parent with `use crate::a as parent` and a child with
-`use super::parent as local` can leave `local::Foo` unresolved. This limitation is
-specified in [the guide](guide.md#rename) and covered by the ignored
-`child_modules_follow_private_module_aliases_imported_from_their_parent` test in
-[corpus.rs](../crates/vvv/tests/corpus.rs), using the
-[Rust fixture](../crates/vvv/tests/corpus/rust-resolution/src/parent_context/nested.rs).
-Resolution must retain provenance, visibility, and cycle handling across files.
-Fragment, references, deps, and explain must agree on the correct Rust target;
-references must not discard valid resolutions to match an unresolved edge.
-
 ## Navigation coverage
 
 Extend navigation coverage for struct/match patterns, receiver-dependent methods,

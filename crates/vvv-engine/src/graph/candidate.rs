@@ -16,18 +16,45 @@ use crate::EngineError;
 /// parsed once however many questions are asked of it.
 #[derive(Clone)]
 pub struct Candidate {
-    file: Arc<SourceFile>,
-    language: Arc<dyn Language>,
-    facts: Arc<OnceLock<Result<Facts, SearchError>>>,
+    pub(super) source: Arc<SourceFacts>,
     /// The file's edges, resolved against a project; replaced when the
-    /// project it was resolved against is gone.
+    /// project or consulted source versions change.
     fragment: Arc<PerBuild<Fragment>>,
     /// What the file sees, read off the fragment; lives as long as it does.
     scope: Arc<PerBuild<Scope>>,
 }
 
+/// A captured source and its shared parse, without derived graph caches.
+/// Namespace snapshots retain these inputs without retaining candidates' scopes.
+pub(super) struct SourceFacts {
+    file: Arc<SourceFile>,
+    language: Arc<dyn Language>,
+    facts: OnceLock<Result<Facts, SearchError>>,
+}
+
+impl SourceFacts {
+    pub(super) fn file(&self) -> &SourceFile {
+        &self.file
+    }
+    pub(super) fn path(&self) -> &Path {
+        self.file.path()
+    }
+    pub(super) fn text(&self) -> &str {
+        self.file.text()
+    }
+    pub(super) fn facts(&self) -> Result<&Facts, EngineError> {
+        self.facts
+            .get_or_init(|| self.language.facts(self.text()))
+            .as_ref()
+            .map_err(|source| EngineError::Search {
+                path: self.path().into(),
+                source: source.clone(),
+            })
+    }
+}
+
 /// Something derived from the file against one build of its language's
-/// project, kept until the project moves on.
+/// project, kept while its captured inputs remain current.
 struct PerBuild<T> {
     slot: RwLock<Option<(Arc<Project>, Arc<T>)>>,
 }
@@ -44,6 +71,7 @@ impl<T> PerBuild<T> {
     fn get_or_build(
         &self,
         project: &Arc<Project>,
+        valid: impl Fn(&T) -> bool,
         build: impl FnOnce() -> Result<T, EngineError>,
     ) -> Result<Arc<T>, EngineError> {
         if let Some((_, value)) = self
@@ -51,7 +79,7 @@ impl<T> PerBuild<T> {
             .read()
             .unwrap_or_else(std::sync::PoisonError::into_inner)
             .as_ref()
-            .filter(|(built, _)| Arc::ptr_eq(built, project))
+            .filter(|(built, value)| Arc::ptr_eq(built, project) && valid(value))
         {
             return Ok(value.clone());
         }
@@ -82,9 +110,11 @@ impl Candidate {
 
     pub fn new(file: SourceFile, language: Arc<dyn Language>) -> Self {
         Self {
-            file: Arc::new(file),
-            language,
-            facts: Arc::new(OnceLock::new()),
+            source: Arc::new(SourceFacts {
+                file: Arc::new(file),
+                language,
+                facts: OnceLock::new(),
+            }),
             fragment: Arc::new(PerBuild::empty()),
             scope: Arc::new(PerBuild::empty()),
         }
@@ -93,48 +123,50 @@ impl Candidate {
     /// The file's edges, resolved through `ns`; computed once per project
     /// build and shared by every clone.
     pub fn fragment(&self, ns: &Namespace) -> Result<Arc<Fragment>, EngineError> {
-        self.fragment
-            .get_or_build(ns.project(), || Fragment::build(self, ns))
+        self.fragment.get_or_build(
+            ns.project(),
+            |fragment| fragment.is_current(ns),
+            || Fragment::build(&self.source, ns),
+        )
     }
 
     /// What the file can see — its imports as names and addresses — read
     /// off the fragment once per project build and shared by every clone.
     pub fn scope(&self, ns: &Namespace) -> Result<Arc<Scope>, EngineError> {
-        self.scope.get_or_build(ns.project(), || {
-            let fragment = self.fragment(ns)?;
-            Ok(Scope::of(ns, self.path(), &fragment))
-        })
+        let fragment = self.fragment(ns)?;
+        self.scope.get_or_build(
+            ns.project(),
+            |scope| scope.is_current(&fragment),
+            || Ok(Scope::of(ns, self.path(), &fragment)),
+        )
     }
 
     /// Everything the language can say about this file, from one parse.
     pub fn facts(&self) -> Result<&Facts, EngineError> {
-        self.facts
-            .get_or_init(|| self.language.facts(self.text()))
-            .as_ref()
-            .map_err(|source| self.failed(source.clone()))
+        self.source.facts()
     }
 
     pub fn file(&self) -> &SourceFile {
-        &self.file
+        &self.source.file
     }
 
     pub fn path(&self) -> &Path {
-        self.file.path()
+        self.source.file.path()
     }
 
     pub fn text(&self) -> &str {
-        self.file.text()
+        self.source.file.text()
     }
 
     pub fn language(&self) -> LanguageId {
-        self.language.id()
+        self.source.language.id()
     }
 
     /// Whether the text spells every word as a whole token — not as part of
     /// a longer identifier. A file that does not cannot match a query built
     /// from them, so this is asked before parsing.
     pub fn contains_all(&self, words: &[&str]) -> bool {
-        let text = self.file.text();
+        let text = self.source.file.text();
         let is_word = |b: u8| b.is_ascii_alphanumeric() || b == b'_' || !b.is_ascii();
         words.iter().all(|word| {
             text.match_indices(word).any(|(start, _)| {
@@ -149,6 +181,7 @@ impl Candidate {
     /// Matches of `query` in this file, located.
     pub fn find(&self, query: &Query) -> Result<Vec<Match>, EngineError> {
         let raw = self
+            .source
             .language
             .find(self.text(), query)
             .map_err(|source| self.failed(source))?;
@@ -188,14 +221,14 @@ impl Candidate {
             .tokens_named(name)
             .map(|(span, kind)| {
                 let raw = vvv_core::RawMatch::plain(span, kind, &self.text()[span.start..span.end]);
-                Match::locate(raw, &self.file, self.language.id())
+                Match::locate(raw, &self.source.file, self.source.language.id())
             })
             .collect())
     }
 
     fn locate(&self, raw: Vec<vvv_core::RawMatch>) -> Vec<Match> {
         raw.into_iter()
-            .map(|r| Match::locate(r, &self.file, self.language.id()))
+            .map(|r| Match::locate(r, &self.source.file, self.source.language.id()))
             .collect()
     }
 

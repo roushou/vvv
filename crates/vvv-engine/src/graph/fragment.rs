@@ -1,11 +1,12 @@
 //! One file's edges: what it declares, at which addresses, and what its
 //! imports and paths point at. Built from the file's facts and its
-//! language's namespace, once per (file stamp, project), and kept with the
+//! language's namespace and captured binding inputs, and kept with the
 //! candidate so a session pays for resolution only when something changed.
 
 use std::sync::Arc;
 
-use vvv_core::{Address, ImportRef, PathHead, Span, Symbol};
+use super::import_bindings::{ImportBindings, ModuleInput, Resolution, Targets};
+use vvv_core::{Address, ImportRef, Span, Symbol};
 
 use super::{Candidate, Graph, Namespace};
 use crate::{EngineError, Reach};
@@ -26,48 +27,58 @@ pub struct Declared {
 #[derive(Debug, Clone)]
 pub struct Edge {
     pub import: ImportRef,
-    resolution: Option<Resolution>,
-}
-
-/// How an edge acquired its meaning; binding identity survives path rendering.
-#[derive(Debug, Clone)]
-enum Resolution {
-    Direct(Address),
-    Bound { address: Address, binding: Span },
+    resolution: Targets,
+    pub(super) prefixes: Vec<Vec<Address>>,
 }
 
 impl Edge {
+    /// A unique target only; callers that can represent ambiguity use addresses.
     pub fn address(&self) -> Option<&Address> {
-        self.resolution.as_ref().map(|r| match r {
-            Resolution::Direct(address) | Resolution::Bound { address, .. } => address,
+        (self.resolution.values.len() == 1).then(|| &self.resolution.values[0].address)
+    }
+    pub(super) fn addresses(&self) -> impl Iterator<Item = &Address> {
+        self.resolution.values.iter().map(|r| &r.address)
+    }
+    pub(super) fn resolutions(&self) -> &[Resolution] {
+        &self.resolution.values
+    }
+    pub(crate) fn foreign_binding(&self, path: &std::path::Path) -> Option<(&Address, &Address)> {
+        self.address()?;
+        self.resolution.values[0]
+            .via
+            .iter()
+            .find(|origin| origin.anchor.path.as_path() != path)
+            .map(|origin| (&origin.address, &origin.target))
+    }
+    /// Public re-export addresses remain visible in dependency reports, with
+    /// their canonical target reported separately as the origin.
+    pub(super) fn dependency_address(&self, file: &std::path::Path) -> Option<Address> {
+        let target = self.address()?;
+        self.resolution.values[0]
+            .via
+            .iter()
+            .find(|origin| origin.reexport && origin.anchor.path.as_path() != file)
+            .and_then(|origin| {
+                target
+                    .strip_prefix(&origin.target)
+                    .map(|suffix| origin.address.extend(suffix.iter().cloned()))
+            })
+            .or_else(|| Some(target.clone()))
+    }
+    pub(super) fn reexported(&self, file: &std::path::Path) -> bool {
+        self.resolution.values.iter().any(|resolution| {
+            resolution
+                .via
+                .iter()
+                .any(|origin| origin.reexport && origin.anchor.path.as_path() != file)
         })
     }
-
+    pub(super) fn cyclic(&self) -> bool {
+        self.resolution.cyclic
+    }
     pub fn binding(&self) -> Option<Span> {
-        match &self.resolution {
-            Some(Resolution::Bound { binding, .. }) => Some(*binding),
-            _ => None,
-        }
-    }
-
-    /// Continue a named path from the imported binding that supplies its head.
-    /// The immediate binding's span links to its own resolution, retaining the
-    /// provenance of every hop rather than flattening an alias into a raw path.
-    fn through_binding(&self, edges: &[Edge]) -> Option<Resolution> {
-        let path = &self.import.path;
-        if path.head != PathHead::Named {
-            return None;
-        }
-        let head = path.first()?;
-        let binding = edges.iter().find(|edge| {
-            edge.import.declares && edge.import.binding() == Some(head) && edge.address().is_some()
-        })?;
-        Some(Resolution::Bound {
-            address: binding
-                .address()?
-                .extend(path.segments[1..].iter().cloned()),
-            binding: binding.import.span,
-        })
+        self.address()
+            .and_then(|_| self.resolution.values[0].binding)
     }
 }
 
@@ -79,10 +90,15 @@ pub struct Fragment {
     pub declarations: Vec<Declared>,
     /// Every import statement and qualified path, in source order.
     pub edges: Vec<Edge>,
+    pub(super) inputs: Vec<crate::SourceVersion>,
+    modules: Vec<ModuleInput>,
 }
 
 impl Fragment {
-    pub(super) fn build(candidate: &super::Candidate, ns: &Namespace) -> Result<Self, EngineError> {
+    pub(super) fn build(
+        candidate: &super::candidate::SourceFacts,
+        ns: &Namespace,
+    ) -> Result<Self, EngineError> {
         let facts = candidate.facts()?;
         let path = candidate.path();
         let module = ns.address(path).ok();
@@ -101,45 +117,44 @@ impl Fragment {
                     .collect()
             })
             .unwrap_or_default();
-        let edges: Vec<Edge> = facts
-            .imports
-            .iter()
-            .map(|import| Edge {
-                resolution: ns.resolve(path, &import.path).map(Resolution::Direct),
+        let mut bindings = ImportBindings::new(ns);
+        let mut edges = Vec::with_capacity(facts.imports.len());
+        for import in &facts.imports {
+            let resolution = bindings.import(candidate, import)?;
+            let mut prefixes = Vec::new();
+            for index in 0..import.path.segments.len().saturating_sub(1) {
+                prefixes.push(
+                    bindings
+                        .path(candidate, &import.path.prefix(index))?
+                        .values
+                        .into_iter()
+                        .map(|r| r.address)
+                        .collect(),
+                );
+            }
+            edges.push(Edge {
+                resolution,
                 import: import.clone(),
-            })
-            .collect();
-        let mut fragment = Self {
+                prefixes,
+            });
+        }
+        let (inputs, modules) = bindings.inputs();
+        Ok(Self {
             module,
             declarations,
             edges,
-        };
-        fragment.propagate_bindings();
-        Ok(fragment)
+            inputs,
+            modules,
+        })
     }
 
-    /// Newly placed imports can supply other bindings, irrespective of source
-    /// order. Only unresolved edges change; a cycle without a placed seed makes
-    /// no progress and stays unresolved.
-    fn propagate_bindings(&mut self) {
-        loop {
-            let resolved: Vec<_> = self
-                .edges
-                .iter()
-                .enumerate()
-                .filter(|(_, edge)| edge.address().is_none())
-                .filter_map(|(index, edge)| {
-                    edge.through_binding(&self.edges)
-                        .map(|resolution| (index, resolution))
-                })
-                .collect();
-            if resolved.is_empty() {
-                break;
-            }
-            for (index, resolution) in resolved {
-                self.edges[index].resolution = Some(resolution);
-            }
-        }
+    pub(super) fn is_current(&self, ns: &Namespace) -> bool {
+        self.modules.iter().all(|input| input.is_current(ns))
+            && self.inputs.iter().all(|input| {
+                ns.sources
+                    .get(input.path.as_path())
+                    .is_some_and(|source| source.file().content_id() == input.content)
+            })
     }
 
     /// The declared imports: statements, not paths in expressions.

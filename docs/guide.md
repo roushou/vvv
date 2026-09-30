@@ -787,15 +787,17 @@ enough for functions, structs, enums, traits, type aliases, constants and module
 isn't enough for methods and fields, which you reach through a type: their occurrences
 are all `? ∅ by name`, and `--select` is how you narrow them down.
 
-Same-file imported aliases are followed through chains, irrespective of import
-order. Dependencies and explanations use the same resolved paths as references.
-
-A known Rust limitation is a private module alias imported from another file.
-If a parent has `use crate::a as parent`, a child that writes
-`use super::parent as local` is not followed through to `crate::a`. Dependencies
-and explanations can retain an address through the alias instead of its underlying
-module, and references such as `local::Foo` remain unresolved. Using the underlying
-module path avoids this limitation.
+Imported aliases are followed through chains, irrespective of import order.
+Rust module-level bindings can be followed across files, including
+`use crate::a as parent` in a parent and `use super::parent as local` in its child.
+Dependencies, explanations, navigation and references share the underlying targets.
+Private bindings are available to their module and descendants; `pub`, `pub(crate)`,
+`pub(super)` and `pub(in path)` constrain cross-file lookup. Function-local and
+inline-module imports are not promoted to bindings of the containing file.
+Competing targets remain separate navigation candidates; dependency paths with
+multiple targets have no single resolved address. Unseeded import cycles stay
+unresolved. Moving an alias's target preserves client spellings when updating the
+binding supplies the required target.
 
 In a Cargo workspace, paths into another crate resolve — `use fff::Config` where
 `fff` is a member, under whatever name the manifest gives it — so a rename crosses

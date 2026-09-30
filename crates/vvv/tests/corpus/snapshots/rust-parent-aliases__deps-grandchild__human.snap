@@ -1,0 +1,16 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+src/parent/nested/deeper.rs
+
+→ 1
+  parent_alias_probe
+     1  super::local   → src/a.rs
+
+← 0   0 files
+  ∅
+--- stderr ---
+→ 1  ← 0

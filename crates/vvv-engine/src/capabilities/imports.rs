@@ -202,7 +202,7 @@ impl ExplainQuery {
         };
         let fragment = candidate.fragment(&ns)?;
         if let Some(edge) = fragment.import_at(offset) {
-            explanation.import = Some(graph.dep(&ns, source, edge)?);
+            explanation.import = Some(graph.dep(&ns, &path, source, edge)?);
         }
         let Ok(module) = ns.address(&path) else {
             return Ok(explanation);

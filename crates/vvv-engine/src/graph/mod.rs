@@ -14,6 +14,7 @@
 
 mod candidate;
 mod fragment;
+mod import_bindings;
 mod namespace;
 mod navigation;
 pub(crate) mod query_snapshot;
@@ -59,6 +60,8 @@ pub struct Graph {
     /// A project equal to the previous build keeps its allocation, so
     /// fragments resolved against it stay valid.
     projects: HashMap<LanguageId, Arc<Project>>,
+    module_sources:
+        HashMap<LanguageId, Arc<std::collections::BTreeMap<PathBuf, Arc<candidate::SourceFacts>>>>,
     /// A second opinion for tokens syntax cannot place, when the host has
     /// one; asked after the scope, never instead of it.
     oracle: Option<Arc<dyn Oracle>>,
@@ -120,6 +123,7 @@ impl Graph {
             oracle: None,
             entries: Vec::new(),
             projects: HashMap::new(),
+            module_sources: HashMap::new(),
             previous: HashMap::new(),
             project_sources: HashMap::new(),
         }
@@ -176,6 +180,7 @@ impl Graph {
             })
             .collect::<Result<_, EngineError>>()?;
         self.entries = now;
+        self.module_sources.clear();
         self.previous.extend(std::mem::take(&mut self.projects));
         self.project_sources.clear();
         self.walked = walked;
@@ -306,7 +311,25 @@ impl Graph {
         let language = self.languages.get(language)?;
         language.layout()?;
         let project = self.project_build(&language.id())?;
-        Some(Namespace::new(language, project))
+        let sources = self
+            .module_sources
+            .entry(language.id())
+            .or_insert_with(|| {
+                Arc::new(
+                    self.entries
+                        .iter()
+                        .filter(|e| e.candidate.language() == language.id())
+                        .map(|e| (e.candidate.path().to_path_buf(), e.candidate.source.clone()))
+                        .collect(),
+                )
+            })
+            .clone();
+        Some(Namespace::new(
+            language,
+            self.cancellation.clone(),
+            project,
+            sources,
+        ))
     }
 
     /// The namespace of the language claiming `path`, or why there is none:
@@ -502,7 +525,7 @@ impl Graph {
         let fragment = candidate.fragment(&ns)?;
         fragment
             .imports()
-            .map(|edge| self.dep(&ns, source, edge))
+            .map(|edge| self.dep(&ns, path, source, edge))
             .collect()
     }
 
@@ -510,21 +533,26 @@ impl Graph {
     pub fn dep(
         &self,
         ns: &Namespace,
+        path: &Path,
         source: &SourceText,
         edge: &Edge,
     ) -> Result<Dep, EngineError> {
-        let origin = match edge.address() {
-            Some(address) => self.origin_of(ns, address)?.filter(|o| o != address),
-            None => None,
+        let address = edge.dependency_address(path);
+        let origin = match (&address, edge.address()) {
+            (Some(offered), Some(target)) if offered != target => Some(target.clone()),
+            (Some(address), _) => self
+                .origin_of(ns, address)?
+                .filter(|origin| origin != address),
+            _ => None,
         };
         let file = origin
             .as_ref()
-            .or(edge.address())
-            .and_then(|a| ns.file_of(a));
+            .or(address.as_ref())
+            .and_then(|address| ns.file_of(address));
         Ok(Dep {
             import: edge.import.clone(),
             start: source.position(edge.import.span.start),
-            address: edge.address().cloned(),
+            address,
             origin,
             file: file.map(Into::into),
         })

@@ -975,3 +975,60 @@ fn symbol_validation_fixture() {
             && destination.contains("untouched")
     );
 }
+
+#[cfg(feature = "rust")]
+#[tokio::test]
+async fn codex_client_follows_parent_aliases_and_reviews_the_confirmed_reference() {
+    let fixture = Fixture::new();
+    std::fs::write(
+        fixture.root.join("Cargo.toml"),
+        "[package]\nname = \"alias-probe\"\nversion = \"0.1.0\"\nedition = \"2024\"\n",
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.root.join("src/lib.rs"),
+        "pub mod a;\npub mod parent;\n",
+    )
+    .unwrap();
+    std::fs::write(fixture.root.join("src/a.rs"), "pub struct Foo;\n").unwrap();
+    std::fs::write(
+        fixture.root.join("src/parent.rs"),
+        "use crate::a as parent;\npub mod nested;\n",
+    )
+    .unwrap();
+    std::fs::create_dir_all(fixture.root.join("src/parent")).unwrap();
+    std::fs::write(
+        fixture.root.join("src/parent/nested.rs"),
+        "use super::parent as local;\npub fn from_parent(_: local::Foo) {}\n",
+    )
+    .unwrap();
+    let client = Client::with_version(&fixture.root, ProtocolVersion::V_2025_06_18).await;
+    let origin = json!({"kind":"position", "path":"src/parent/nested.rs", "position":{"line":1,"column":29}});
+    let navigation = client.call("vvv_navigate", json!({"origin":origin})).await;
+    assert_eq!(navigation["result"]["outcome"], "resolved", "{navigation}");
+    assert_eq!(
+        navigation["result"]["target"]["declaration"]["path"],
+        "src/a.rs"
+    );
+    let context = client
+        .call("vvv_context", json!({"origin":origin,"detail":"signature"}))
+        .await;
+    assert_eq!(context["result"]["outcome"], "resolved", "{context}");
+    assert_eq!(context["result"]["items"][0]["text"], "pub struct Foo;");
+    let review = client.call("vvv_prepare_rename", json!({"intent":{"name":"Foo","to":"Renamed","declared_in":"src/a.rs"},"max_bytes":32768,"max_output_bytes":65536})).await;
+    assert_eq!(review["status"], "ok", "{review}");
+    let occurrence = review["result"]["preview"]["occurrences"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|o| o["path"] == "src/parent/nested.rs")
+        .unwrap();
+    assert_eq!(occurrence["confidence"], "resolved");
+    client
+        .call(
+            "vvv_discard_plan",
+            json!({"plan_id":review["result"]["plan_id"]}),
+        )
+        .await;
+    client.close().await;
+}

@@ -229,6 +229,26 @@ impl Navigation<'_, '_> {
         Ok(candidate)
     }
 
+    fn fragment(
+        &mut self,
+        file: &Candidate,
+        ns: &Namespace,
+    ) -> Result<std::sync::Arc<super::Fragment>, EngineError> {
+        let fragment = file.fragment(ns)?;
+        for input in &fragment.inputs {
+            self.capture(&input.path)?;
+        }
+        for origin in fragment
+            .edges
+            .iter()
+            .flat_map(|edge| edge.resolutions())
+            .flat_map(|resolution| &resolution.via)
+        {
+            self.capture(&origin.anchor.path)?;
+        }
+        Ok(fragment)
+    }
+
     fn resolve(&mut self, query: NavigationQuery) -> Result<NavigationOutcome, EngineError> {
         let (path, expected) = match &query.origin {
             NavigationOrigin::Position {
@@ -339,7 +359,7 @@ impl Navigation<'_, '_> {
             return Ok(Self::unavailable(UnavailableReason::UnsupportedContext));
         };
         self.validate_project(&ns)?;
-        let fragment = candidate.fragment(&ns)?;
+        let fragment = self.fragment(&candidate, &ns)?;
         let bindings = if facts.named_modules {
             let mut direct = Vec::new();
             let mut explicit = false;
@@ -413,10 +433,35 @@ impl Navigation<'_, '_> {
                 });
             }
         }
-        let mut reason = UnavailableReason::Unresolved;
+        let mut reason = if fragment
+            .edges
+            .iter()
+            .any(|edge| edge.cyclic() && edge.import.span.contains(&span))
+        {
+            UnavailableReason::CyclicImports
+        } else {
+            UnavailableReason::Unresolved
+        };
         for addresses in [bindings.direct, bindings.opened] {
             for address in addresses {
-                self.targets(&ns, address, vec![], &mut candidates, &mut reason, false)?;
+                let trail = fragment
+                    .edges
+                    .iter()
+                    .filter(|edge| {
+                        edge.import.span.contains(&span)
+                            || edge.import.binding().is_some_and(|b| b.as_str() == name)
+                    })
+                    .flat_map(|edge| edge.resolutions())
+                    .find(|resolution| resolution.address == address)
+                    .map(|resolution| {
+                        resolution
+                            .via
+                            .iter()
+                            .map(|via| via.address.clone())
+                            .collect()
+                    })
+                    .unwrap_or_default();
+                self.targets(&ns, address, trail, &mut candidates, &mut reason, false)?;
             }
             if facts.navigation_types.contains(&span) {
                 candidates.retain(|c| {
@@ -559,7 +604,7 @@ impl Navigation<'_, '_> {
             return Ok(());
         };
         let file = self.capture(&path)?;
-        let fragment = file.fragment(ns)?;
+        let fragment = self.fragment(&file, ns)?;
         if fragment.module.as_ref() != Some(&module) {
             return Ok(());
         }

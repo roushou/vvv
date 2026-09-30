@@ -1,0 +1,145 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "path": "src/outside.rs",
+    "module": {
+      "package": "parent_alias_probe",
+      "path": [
+        "outside"
+      ]
+    },
+    "imports": [
+      {
+        "span": {
+          "start": 4,
+          "end": 25
+        },
+        "path": "crate::parent::parent",
+        "declares": true,
+        "alias": "denied",
+        "start": {
+          "line": 0,
+          "column": 4
+        }
+      },
+      {
+        "span": {
+          "start": 41,
+          "end": 73
+        },
+        "path": "crate::restricted::package_alias",
+        "declares": true,
+        "alias": "package",
+        "start": {
+          "line": 1,
+          "column": 4
+        },
+        "address": {
+          "package": "parent_alias_probe",
+          "path": [
+            "restricted",
+            "package_alias"
+          ]
+        },
+        "origin": {
+          "package": "parent_alias_probe",
+          "path": [
+            "a"
+          ]
+        },
+        "file": "src/a.rs"
+      },
+      {
+        "span": {
+          "start": 90,
+          "end": 121
+        },
+        "path": "crate::restricted::parent_alias",
+        "declares": true,
+        "alias": "parent",
+        "start": {
+          "line": 2,
+          "column": 4
+        },
+        "address": {
+          "package": "parent_alias_probe",
+          "path": [
+            "restricted",
+            "parent_alias"
+          ]
+        },
+        "origin": {
+          "package": "parent_alias_probe",
+          "path": [
+            "a"
+          ]
+        },
+        "file": "src/a.rs"
+      },
+      {
+        "span": {
+          "start": 137,
+          "end": 163
+        },
+        "path": "crate::restricted::limited",
+        "declares": true,
+        "alias": "forbidden",
+        "start": {
+          "line": 3,
+          "column": 4
+        }
+      },
+      {
+        "span": {
+          "start": 182,
+          "end": 211
+        },
+        "path": "crate::restricted::local_only",
+        "declares": true,
+        "alias": "false_scope",
+        "start": {
+          "line": 4,
+          "column": 4
+        },
+        "address": {
+          "package": "parent_alias_probe",
+          "path": [
+            "restricted",
+            "local_only"
+          ]
+        },
+        "file": "src/restricted.rs"
+      },
+      {
+        "span": {
+          "start": 232,
+          "end": 262
+        },
+        "path": "crate::restricted::inline_only",
+        "declares": true,
+        "alias": "false_inline",
+        "start": {
+          "line": 5,
+          "column": 4
+        },
+        "address": {
+          "package": "parent_alias_probe",
+          "path": [
+            "restricted",
+            "inline_only"
+          ]
+        },
+        "file": "src/restricted.rs"
+      }
+    ],
+    "importers": []
+  }
+}
+--- stderr ---

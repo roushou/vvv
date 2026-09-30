@@ -2,11 +2,9 @@
 //! names its imports bring in and where they point. Used to decide whether a
 //! token spelling the renamed name refers to the target declaration. Read
 //! off the file's [`Fragment`] and retained with it. Construction reuses
-//! resolved edges; classification can resolve a prefix for a token inside
-//! a qualified path.
+//! resolved edges and captured prefixes for tokens inside qualified paths.
 
 use std::collections::HashMap;
-use std::path::PathBuf;
 
 use crate::{Match, Reason};
 
@@ -18,11 +16,11 @@ pub struct Scope {
     /// in; an address in a package that is not one of its members is a
     /// dependency's, which cannot be the target.
     ns: Namespace,
-    file: PathBuf,
+    fragment: std::sync::Arc<Fragment>,
     /// This file's own module address, if it has one.
     module: Option<Address>,
     /// Last path segment → what it resolves to, from plain and grouped imports.
-    names: HashMap<Name, Address>,
+    names: HashMap<Name, Vec<(Address, bool)>>,
     /// Modules whose every name is in scope (`use a::b::*`, or any file
     /// import where the language hides which names were taken).
     opened: Vec<Address>,
@@ -42,10 +40,17 @@ struct Resolved {
     address: Address,
     /// Leading segments the span leaves out: the group prefix's.
     skipped: usize,
+    prefixes: Vec<Vec<Address>>,
+    reexported: bool,
 }
 
 impl Resolved {
-    fn of(import: &ImportRef, address: Address) -> Self {
+    fn of(
+        import: &ImportRef,
+        address: Address,
+        prefixes: Vec<Vec<Address>>,
+        reexported: bool,
+    ) -> Self {
         let skipped = import
             .group
             .as_ref()
@@ -56,6 +61,8 @@ impl Resolved {
             path: import.path.clone(),
             address,
             skipped,
+            prefixes,
+            reexported,
         }
     }
 
@@ -98,37 +105,51 @@ impl Bindings {
 
 impl Scope {
     /// What `file` sees, read off its fragment's edges.
-    pub fn of(ns: &Namespace, file: &std::path::Path, fragment: &Fragment) -> Self {
+    pub fn of(ns: &Namespace, file: &std::path::Path, fragment: &std::sync::Arc<Fragment>) -> Self {
         let semantics = ns.semantics();
-        let mut names = HashMap::new();
+        let mut names: HashMap<Name, Vec<(Address, bool)>> = HashMap::new();
         let mut opened = Vec::new();
         let mut paths = Vec::new();
         let mut unresolved = Vec::new();
         for edge in &fragment.edges {
             let import = &edge.import;
-            let Some(address) = edge.address() else {
+            if edge.resolutions().is_empty() {
                 unresolved.push((import.span, import.path.clone()));
                 continue;
-            };
-            if import.declares {
-                if import.glob || semantics.import_scopes_names {
-                    opened.push(address.clone());
-                }
-                if let Some(bound) = import.binding() {
-                    names.insert(bound.clone(), address.clone());
-                }
             }
-            paths.push(Resolved::of(import, address.clone()));
+            for address in edge.addresses() {
+                if import.declares {
+                    if import.glob || semantics.import_scopes_names {
+                        opened.push(address.clone());
+                    }
+                    if let Some(bound) = import.binding() {
+                        let destinations = names.entry(bound.clone()).or_default();
+                        if !destinations.iter().any(|(held, _)| held == address) {
+                            destinations.push((address.clone(), edge.reexported(file)));
+                        }
+                    }
+                }
+                paths.push(Resolved::of(
+                    import,
+                    address.clone(),
+                    edge.prefixes.clone(),
+                    edge.reexported(file),
+                ));
+            }
         }
         Self {
             ns: ns.clone(),
-            file: file.to_path_buf(),
+            fragment: fragment.clone(),
             module: fragment.module.clone(),
             names,
             opened,
             paths,
             unresolved,
         }
+    }
+
+    pub(super) fn is_current(&self, fragment: &std::sync::Arc<Fragment>) -> bool {
+        std::sync::Arc::ptr_eq(&self.fragment, fragment)
     }
 
     /// Every address supported by this occurrence's module bindings.
@@ -140,25 +161,18 @@ impl Scope {
             .filter(|r| r.span.contains(&span))
             .min_by_key(|r| r.span.end - r.span.start)
         {
-            if let Some(index) = resolved.named_at(span.start) {
-                let prefix = resolved.path.prefix(index);
-                let imported: Vec<_> = fragment
-                    .imports()
-                    .filter(|e| e.import.binding() == prefix.first())
-                    .filter_map(|e| {
-                        e.address()
-                            .map(|a| a.extend(prefix.segments[1..].iter().cloned()))
-                    })
-                    .collect();
-                if !imported.is_empty() {
-                    return Bindings::explicit(imported);
-                }
-                return Bindings::explicit(
-                    self.ns.resolve(&self.file, &prefix).into_iter().collect(),
-                );
-            }
-            return Bindings::explicit(vec![resolved.address.clone()]);
+            let addresses = match resolved.named_at(span.start) {
+                Some(index) => resolved.prefixes.get(index).cloned().unwrap_or_default(),
+                None => self
+                    .paths
+                    .iter()
+                    .filter(|p| p.span == resolved.span)
+                    .map(|p| p.address.clone())
+                    .collect(),
+            };
+            return Bindings::explicit(addresses);
         }
+
         if self.unresolved.iter().any(|(path, _)| path.contains(&span)) {
             return Bindings::explicit(vec![]);
         }
@@ -169,7 +183,7 @@ impl Scope {
         let explicit = !bound.is_empty();
         let mut direct: Vec<_> = bound
             .into_iter()
-            .filter_map(|e| e.address().cloned())
+            .flat_map(|e| e.addresses().cloned())
             .collect();
         if let Some(module) = &self.module {
             direct.push(module.join(name));
@@ -199,23 +213,32 @@ impl Scope {
         // Inside a qualified path the path decides — up to the token: `batch`
         // in `commands::batch::BatchCmd` names the module, not the command.
         if let Some(resolved) = self.paths.iter().find(|r| r.span.contains(&token.span)) {
-            let Some(index) = resolved.named_at(token.span.start) else {
-                return self.compare(&resolved.address, aliases, others, Reason::Path);
+            let index = resolved.named_at(token.span.start);
+            let addresses: Vec<_> = match index {
+                Some(index) => resolved.prefixes.get(index).cloned().unwrap_or_default(),
+                None => self
+                    .paths
+                    .iter()
+                    .filter(|p| p.span == resolved.span)
+                    .map(|p| p.address.clone())
+                    .collect(),
             };
-            let prefix = resolved.path.prefix(index);
-            // The head of a path is a name in scope before it is a path:
-            // `Span` in `Span::new` is the import, `scope` in `scope::Scope`
-            // the child module.
-            let (address, reason) = match self.imported(&prefix) {
-                Some(address) if index == 0 => (address, Reason::Imported),
-                Some(address) => (address, Reason::Path),
-                None => match self.ns.resolve(&self.file, &prefix) {
-                    Some(address) => (address, Reason::Path),
-                    None => (resolved.address.clone(), Reason::Path),
-                },
+            let Some(address) = addresses.first() else {
+                return Reason::Unresolved;
             };
-            return self.compare(&address, aliases, others, reason);
+            if addresses.iter().any(|other| other != address) {
+                return Reason::Unresolved;
+            }
+            let reason = if resolved.reexported {
+                Reason::ReExport
+            } else if index == Some(0) && self.imported(&resolved.path.prefix(0)).is_some() {
+                Reason::Imported
+            } else {
+                Reason::Path
+            };
+            return self.compare(address, aliases, others, reason);
         }
+
         if self.unresolved_path(token) {
             return Reason::Unresolved;
         }
@@ -225,8 +248,21 @@ impl Scope {
         if self.module.as_ref().is_some_and(|m| others.contains(m)) {
             return Reason::OtherDeclaration;
         }
-        if let Some(address) = self.names.get(name) {
-            return self.compare(address, aliases, others, Reason::Imported);
+        if let Some(addresses) = self.names.get(name) {
+            let (address, reexported) = &addresses[0];
+            if addresses.iter().any(|(other, _)| other != address) {
+                return Reason::Unresolved;
+            }
+            return self.compare(
+                address,
+                aliases,
+                others,
+                if *reexported {
+                    Reason::ReExport
+                } else {
+                    Reason::Imported
+                },
+            );
         }
         if self
             .opened
@@ -251,7 +287,7 @@ impl Scope {
     }
 
     /// An unresolved path's tail is never judged as a bare name. Fragment
-    /// already followed every same-file binding that could supply its head.
+    /// already followed visible imported bindings that could supply its head.
     /// `Self::X` is not a path but the enclosing type, so it stays bare.
     fn unresolved_path(&self, token: &Match) -> bool {
         self.unresolved.iter().any(|(span, path)| {
@@ -268,7 +304,11 @@ impl Scope {
         if path.head != PathHead::Named {
             return None;
         }
-        let base = self.names.get(path.first()?)?;
+        let bindings = self.names.get(path.first()?)?;
+        let base = &bindings.first()?.0;
+        if bindings.iter().any(|(other, _)| other != base) {
+            return None;
+        }
         Some(base.extend(path.segments[1..].iter().cloned()))
     }
 

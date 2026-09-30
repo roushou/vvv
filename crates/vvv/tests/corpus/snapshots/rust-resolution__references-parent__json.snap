@@ -277,8 +277,8 @@ exit 0
         "text": "Foo",
         "line": "pub fn from_parent(_: local::Foo) {}",
         "role": "use",
-        "confidence": "unresolved",
-        "reason": "unresolved"
+        "confidence": "resolved",
+        "reason": "path"
       }
     ]
   }

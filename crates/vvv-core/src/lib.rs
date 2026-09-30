@@ -36,7 +36,9 @@ pub use calls::{CallKind, CallRule, CallSite, CalleeRule};
 pub use edit::{ChangeSet, Edit, EditConflict};
 pub use facts::{Facts, Token};
 pub use highlight::{Highlight, HighlightKind, HighlightRule};
-pub use import::{ImportGrammar, ImportGroup, ImportNesting, ImportRef, ImportRule, ReExportRule};
+pub use import::{
+    ImportBinding, ImportGrammar, ImportGroup, ImportNesting, ImportRef, ImportRule, ReExportRule,
+};
 pub use lang::{Grammar, Language, LanguageId, LanguageRegistry};
 pub use navigation::{
     BindingNamespace, BindingRule, LexicalBinding, NamedImport, NamedImportRule, QualifiedImport,

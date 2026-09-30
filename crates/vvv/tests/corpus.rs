@@ -61,6 +61,111 @@ const RUST_RESOLUTION: Corpus = Corpus {
     mutations: Vec::new,
 };
 
+#[cfg(feature = "rust")]
+const RUST_PARENT_ALIASES: Corpus = Corpus {
+    name: "rust-parent-aliases",
+    cases: &[
+        ("references", &["references", "Foo", "--in", "src/a.rs"]),
+        ("deps-child", &["deps", "src/parent/nested.rs"]),
+        ("deps-grandchild", &["deps", "src/parent/nested/deeper.rs"]),
+        ("deps-outside", &["deps", "src/outside.rs"]),
+        ("deps-restricted", &["deps", "src/restricted/nested.rs"]),
+        ("explain-child", &["explain", "src/parent/nested.rs:1:12"]),
+        (
+            "navigate-child",
+            &["navigate", "src/parent/nested.rs:3:30", "--compact"],
+        ),
+        (
+            "navigate-grandchild",
+            &["navigate", "src/parent/nested/deeper.rs:2:35", "--compact"],
+        ),
+        (
+            "navigate-ambiguous",
+            &["navigate", "src/competing/nested.rs:2:28", "--compact"],
+        ),
+        (
+            "navigate-cycle",
+            &["navigate", "src/cycle_a.rs:2:29", "--compact"],
+        ),
+        ("rename", &["rename", "Foo", "Renamed", "--in", "src/a.rs"]),
+        ("move", &["move", "src/a.rs", "src/renamed.rs"]),
+    ],
+    mutations: || {
+        vec![
+            Request::Rename {
+                intent: RenameIntent::new("Foo", "Renamed").declared_in("src/a.rs"),
+                apply: false,
+            },
+            Request::Move {
+                intent: MoveIntent::new("src/a.rs", "src/renamed.rs"),
+                apply: false,
+            },
+        ]
+    },
+};
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_parent_aliases_golden() {
+    golden(&RUST_PARENT_ALIASES);
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn parent_alias_mutations_preserve_preview_undo_and_composition() {
+    apply_is_preview(&RUST_PARENT_ALIASES);
+    undo_is_identity(&RUST_PARENT_ALIASES);
+    batch_is_composition(&RUST_PARENT_ALIASES);
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn parent_alias_visibility_and_lexical_scope_are_respected_by_navigation() {
+    let (vfs, engine) = RUST_PARENT_ALIASES.engine();
+    let source = vfs.read(Path::new("/ws/src/outside.rs")).unwrap();
+    for (line, text) in source
+        .lines()
+        .enumerate()
+        .filter(|(_, text)| text.contains("Foo"))
+    {
+        let reply = vvv_engine::NavigationQuery::at(
+            "src/outside.rs",
+            vvv_engine::Position::new(line as u32, text.find("Foo").unwrap() as u32),
+        )
+        .execute(&engine)
+        .unwrap();
+        if text.contains("package_visible") || text.contains("parent_visible") {
+            let vvv_engine::NavigationOutcome::Resolved { target, .. } = reply.outcome else {
+                panic!("{reply:?}")
+            };
+            assert_eq!(target.declaration.path.as_path(), Path::new("src/a.rs"));
+        } else {
+            assert!(
+                matches!(
+                    reply.outcome,
+                    vvv_engine::NavigationOutcome::Unavailable {
+                        reason: vvv_engine::UnavailableReason::Unresolved
+                    }
+                ),
+                "{reply:?}"
+            );
+        }
+    }
+    let reply = vvv_engine::NavigationQuery::at(
+        "src/restricted/nested.rs",
+        vvv_engine::Position::new(1, 36),
+    )
+    .execute(&engine)
+    .unwrap();
+    assert!(
+        matches!(
+            reply.outcome,
+            vvv_engine::NavigationOutcome::Resolved { .. }
+        ),
+        "{reply:?}"
+    );
+}
+
 const RUST: Corpus = Corpus {
     name: "rust",
     cases: &[
@@ -1233,7 +1338,6 @@ fn same_file_alias_chains_agree_across_references_deps_and_explain() {
 
 #[cfg(feature = "rust")]
 #[test]
-#[ignore = "known limitation: cross-file private parent-module aliases are not followed"]
 fn child_modules_follow_private_module_aliases_imported_from_their_parent() {
     use vvv_engine::{Address, Confidence, DepsQuery, Position, ReferencesQuery};
 

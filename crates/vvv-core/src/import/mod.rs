@@ -92,6 +92,16 @@ impl ImportRef {
     }
 }
 
+/// Evidence that an import statement binds a name in the file's module.
+/// Missing evidence does not authorize cross-file binding lookup.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct ImportBinding {
+    pub span: Span,
+    pub visibility: Option<crate::Modifier>,
+    pub restriction: Option<ModulePath>,
+}
+
 /// Where a grouped entry sits, so a surgery can rewrite it in place or move
 /// it out of the group.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -205,6 +215,8 @@ pub enum ReExportRule {
 pub struct ImportGrammar {
     /// How the language spells a path: what the rules' text is parsed with.
     pub syntax: PathSyntax,
+    /// Root node whose direct import statements bind module-visible names.
+    pub module_root: Option<&'static str>,
     pub rules: &'static [ImportRule],
     /// Which statements re-export what they import.
     pub reexports: ReExportRule,
@@ -225,6 +237,7 @@ pub struct ImportGrammar {
 impl ImportGrammar {
     pub const EMPTY: Self = Self {
         syntax: PathSyntax::Scoped,
+        module_root: None,
         rules: &[],
         reexports: ReExportRule::Never,
         nesting: None,
@@ -237,6 +250,7 @@ impl ImportGrammar {
     pub const fn new(syntax: PathSyntax, rules: &'static [ImportRule]) -> Self {
         Self {
             syntax,
+            module_root: None,
             rules,
             reexports: ReExportRule::Never,
             nesting: None,
@@ -245,6 +259,11 @@ impl ImportGrammar {
             alias: None,
             statements: &[],
         }
+    }
+
+    pub const fn module_bindings(mut self, root: &'static str) -> Self {
+        self.module_root = Some(root);
+        self
     }
 
     pub const fn aliased_by(mut self, parent: &'static str, field: &'static str) -> Self {

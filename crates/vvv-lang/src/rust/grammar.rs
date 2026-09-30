@@ -94,6 +94,7 @@ const IMPORTS: ImportGrammar = ImportGrammar::new(
     prefix_field: "path",
     statement: "use_declaration",
 })
+.module_bindings("source_file")
 .statements(&["use_declaration", "extern_crate_declaration"])
 .aliased_by("use_as_clause", "alias")
 .reexports(ReExportRule::Modifier("visibility_modifier"))

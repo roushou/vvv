@@ -8,7 +8,7 @@ exit 0
   "status": "ok",
   "schema": 1,
   "result": {
-    "snapshot": "72f07a655e8e9a29954536d2f6957e0f8d463fadf3d7f797c113b8536079e18c",
+    "snapshot": "df35b54e65a6d1928835be18e1de9f53a1663bafcfda84b9e09dc8df63a789d3",
     "outcome": "resolved",
     "target": {
       "language": "rust",
