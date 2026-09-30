@@ -165,6 +165,13 @@ relevant in nested functions; no macro expansion or name whitelist is assumed.
 These facts do not affect mutation planners. Unsupported patterns and scope forms block
 confirmation instead of falling through to a same-named outer declaration.
 
+Rust tuple-struct patterns such as `Some(value)` extract their supported inner
+bindings without treating the constructor as a local binding. In `let … else`,
+those bindings become visible after the complete declaration; its initializer and
+`else` body retain the outer bindings. Nested unsupported patterns retain the
+conservative scope barrier. Constructor resolution still requires independent
+navigation evidence; pattern extraction does not infer types or expand macros.
+
 `NavigationQuery::execute_with` accepts a host-supplied `NavigationProvider` and
 shared cancellation token. Syntax resolution runs first; only unresolved or
 unsupported occurrences reach the provider. The provider returns its revision,

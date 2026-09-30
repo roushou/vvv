@@ -8,7 +8,7 @@ exit 0
   "status": "ok",
   "schema": 1,
   "result": {
-    "snapshot": "5eed1c1782abdda81e7f7a0454e8cb305d80507a9a4da8281ac020eaf655508e",
+    "snapshot": "4c9780a3e8506647b22c9bdf2967bd4cbac6779dde85577dfd6a8bf18ad212be",
     "outcome": "resolved",
     "target": {
       "language": "rust",
@@ -16,21 +16,21 @@ exit 0
         "path": "src/lib.rs",
         "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
         "span": {
-          "start": 1479,
-          "end": 1490
+          "start": 2038,
+          "end": 2130
         }
       },
       "name_span": {
-        "start": 1479,
-        "end": 1484
+        "start": 2047,
+        "end": 2052
       },
-      "kind": "parameter"
+      "kind": "variable"
     },
-    "id": "ab01c6aa4ac6",
+    "id": "dba2c0d540c2",
     "name": "value",
     "start": {
-      "line": 89,
-      "column": 14
+      "line": 119,
+      "column": 4
     },
     "evidence": {
       "addresses": []
@@ -41,15 +41,15 @@ exit 0
         "path": "src/lib.rs",
         "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
         "span": {
-          "start": 1479,
-          "end": 1490
+          "start": 2038,
+          "end": 2130
         }
       },
       "name_span": {
-        "start": 1479,
-        "end": 1484
+        "start": 2047,
+        "end": 2052
       },
-      "kind": "parameter"
+      "kind": "variable"
     }
   }
 }

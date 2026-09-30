@@ -8,7 +8,7 @@ exit 0
   "status": "ok",
   "schema": 1,
   "result": {
-    "snapshot": "d713d256ed3ec3cc0bdabf3a2a8f9d711a5367d8907b0fb8ea603da7ca583c93",
+    "snapshot": "f70f0ca0776957570f772e9661e9b009f0a2152bdf5ba27b139870bc0204655d",
     "outcome": "resolved",
     "items": [
       {
@@ -16,7 +16,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 12,
               "end": 27
@@ -32,7 +32,7 @@ exit 0
         "via": null,
         "excerpt": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 12,
             "end": 24
@@ -48,7 +48,7 @@ exit 0
           "outcome": "available",
           "requested": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 12,
               "end": 24
@@ -61,7 +61,7 @@ exit 0
       "language": "rust",
       "declaration": {
         "path": "src/lib.rs",
-        "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+        "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
         "span": {
           "start": 0,
           "end": 50

@@ -1199,3 +1199,30 @@ async fn codex_client_navigates_local_imports_and_discovers_repeated_alias_calle
     assert_eq!(selected["result"]["outcome"], "resolved", "{selected}");
     client.close().await;
 }
+
+#[cfg(feature = "rust")]
+#[tokio::test]
+async fn codex_client_navigates_let_else_bindings_and_unrelated_imports() {
+    let fixture = Fixture::new();
+    std::fs::write(
+        fixture.root.join("Cargo.toml"),
+        "[package]\nname=\"let-else-probe\"\nversion=\"0.1.0\"\nedition=\"2024\"\n",
+    )
+    .unwrap();
+    let source = "fn work() {}\nfn check(value: Option<usize>) {\n    use crate::work;\n    let Some(value) = value else {\n        let _ = value;\n        work();\n        return;\n    };\n    let _ = value;\n    work();\n}\n";
+    std::fs::write(fixture.root.join("src/lib.rs"), source).unwrap();
+    let client = Client::new(&fixture.root).await;
+    for (line, name, target_line) in [
+        (3, "value", 1),
+        (4, "value", 1),
+        (5, "work", 0),
+        (8, "value", 3),
+        (9, "work", 0),
+    ] {
+        let column = source.lines().nth(line).unwrap().rfind(name).unwrap();
+        let reply = client.call("vvv_navigate", json!({"origin":{"kind":"position","path":"src/lib.rs","position":{"line":line,"column":column}}})).await;
+        assert_eq!(reply["result"]["outcome"], "resolved", "{reply}");
+        assert_eq!(reply["result"]["start"]["line"], target_line, "{reply}");
+    }
+    client.close().await;
+}

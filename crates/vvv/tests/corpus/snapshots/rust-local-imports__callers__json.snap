@@ -8,14 +8,14 @@ exit 0
   "status": "ok",
   "schema": 1,
   "result": {
-    "snapshot": "cd0462d0b00fdcc035ef534b6c0fe239037619cab13e0cfa8296d176861cfd27",
+    "snapshot": "9aa040190d69234e4f462f724fb733877547294d005a77144dd9a55cbcdcecd2",
     "subject": {
       "outcome": "resolved",
       "target": {
         "language": "rust",
         "declaration": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 12,
             "end": 27
@@ -40,7 +40,7 @@ exit 0
         "language": "rust",
         "declaration": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 12,
             "end": 27
@@ -62,7 +62,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 96,
             "end": 100
@@ -77,7 +77,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 77,
               "end": 148
@@ -95,7 +95,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 12,
               "end": 27
@@ -128,7 +128,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 139,
             "end": 143
@@ -143,7 +143,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 77,
               "end": 148
@@ -161,7 +161,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 12,
               "end": 27
@@ -194,7 +194,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 223,
             "end": 227
@@ -209,7 +209,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 149,
               "end": 250
@@ -227,7 +227,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 12,
               "end": 27
@@ -266,7 +266,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 242,
             "end": 245
@@ -281,7 +281,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 149,
               "end": 250
@@ -299,7 +299,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 12,
               "end": 27
@@ -332,7 +332,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 300,
             "end": 304
@@ -347,7 +347,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 251,
               "end": 384
@@ -365,7 +365,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 12,
               "end": 27
@@ -398,7 +398,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 375,
             "end": 379
@@ -413,7 +413,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 251,
               "end": 384
@@ -431,7 +431,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 12,
               "end": 27
@@ -464,7 +464,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 447,
             "end": 451
@@ -479,7 +479,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 385,
               "end": 456
@@ -497,7 +497,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 12,
               "end": 27
@@ -530,7 +530,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 527,
             "end": 531
@@ -545,7 +545,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 457,
               "end": 536
@@ -563,7 +563,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 506,
               "end": 522
@@ -579,7 +579,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 608,
             "end": 612
@@ -594,7 +594,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 537,
               "end": 617
@@ -614,7 +614,7 @@ exit 0
               "language": "rust",
               "declaration": {
                 "path": "src/lib.rs",
-                "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+                "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
                 "span": {
                   "start": 12,
                   "end": 27
@@ -655,7 +655,7 @@ exit 0
               "language": "rust",
               "declaration": {
                 "path": "src/lib.rs",
-                "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+                "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
                 "span": {
                   "start": 591,
                   "end": 603
@@ -682,7 +682,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 701,
             "end": 705
@@ -697,7 +697,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 618,
               "end": 710
@@ -717,7 +717,7 @@ exit 0
               "language": "rust",
               "declaration": {
                 "path": "src/lib.rs",
-                "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+                "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
                 "span": {
                   "start": 12,
                   "end": 27
@@ -758,7 +758,7 @@ exit 0
               "language": "rust",
               "declaration": {
                 "path": "src/lib.rs",
-                "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+                "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
                 "span": {
                   "start": 59,
                   "end": 74
@@ -799,7 +799,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 774,
             "end": 778
@@ -814,7 +814,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 761,
               "end": 783
@@ -832,7 +832,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 12,
               "end": 27
@@ -865,7 +865,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 933,
             "end": 937
@@ -880,7 +880,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 863,
               "end": 963
@@ -899,7 +899,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 955,
             "end": 958
@@ -914,7 +914,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 863,
               "end": 963
@@ -932,7 +932,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 12,
               "end": 27
@@ -959,7 +959,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 1001,
             "end": 1004
@@ -974,7 +974,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 964,
               "end": 1009
@@ -993,7 +993,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 1297,
             "end": 1302
@@ -1008,7 +1008,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 1192,
               "end": 1311
@@ -1026,7 +1026,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 12,
               "end": 27
@@ -1060,7 +1060,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 1330,
             "end": 1334
@@ -1075,7 +1075,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 1314,
               "end": 1339
@@ -1094,7 +1094,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 1609,
             "end": 1613
@@ -1109,7 +1109,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 1543,
               "end": 1635
@@ -1127,7 +1127,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 12,
               "end": 27
@@ -1160,7 +1160,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 1697,
             "end": 1701
@@ -1178,7 +1178,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 12,
               "end": 27
@@ -1211,7 +1211,7 @@ exit 0
       {
         "site": {
           "path": "src/lib.rs",
-          "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+          "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
           "span": {
             "start": 1803,
             "end": 1807
@@ -1226,7 +1226,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 1707,
               "end": 1829
@@ -1244,7 +1244,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/lib.rs",
-            "content": "f9636e477e15fd6a401a12c11859f1b9b4756aafe9ad9edc269856c631d7e3d9",
+            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
             "span": {
               "start": 12,
               "end": 27
@@ -1292,8 +1292,8 @@ exit 0
       ],
       "files_scanned": 2,
       "files_remaining": 0,
-      "lookups": 28,
-      "omitted_items": 1,
+      "lookups": 30,
+      "omitted_items": 3,
       "stopped_by": "bytes",
       "unsupported_files": 0,
       "unresolved_imports": 3,

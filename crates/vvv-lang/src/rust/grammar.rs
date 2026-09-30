@@ -184,7 +184,9 @@ pub(crate) const GRAMMAR: Grammar = Grammar {
         },
     ],
     anonymous_callables: &["closure_expression"],
+    pattern_constructors: &[("tuple_struct_pattern", "type")],
     pattern_containers: &[
+        "tuple_struct_pattern",
         "tuple_pattern",
         "slice_pattern",
         "reference_pattern",

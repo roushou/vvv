@@ -2542,6 +2542,26 @@ const RUST_LOCAL_IMPORTS: Corpus = Corpus {
             &["navigate", "src/lib.rs:91:28", "--compact"],
         ),
         ("unplaced-file", &["navigate", "loose.rs:4:5", "--compact"]),
+        (
+            "let-else-initializer",
+            &["navigate", "src/lib.rs:120:23", "--compact"],
+        ),
+        (
+            "let-else-outer",
+            &["navigate", "src/lib.rs:121:17", "--compact"],
+        ),
+        (
+            "let-else-import-in-else",
+            &["navigate", "src/lib.rs:122:9", "--compact"],
+        ),
+        (
+            "let-else-binding",
+            &["navigate", "src/lib.rs:125:13", "--compact"],
+        ),
+        (
+            "let-else-import-after",
+            &["navigate", "src/lib.rs:126:5", "--compact"],
+        ),
     ],
     mutations: || vec![],
 };

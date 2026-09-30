@@ -114,3 +114,14 @@ fn import_owner() {
         work();
     }
 }
+
+fn let_else(value: Option<usize>) {
+    use crate::a::run as work;
+    let Some(value) = value else {
+        let _ = value;
+        work();
+        return;
+    };
+    let _ = value;
+    work();
+}

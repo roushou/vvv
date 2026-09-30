@@ -1548,3 +1548,76 @@ mod local_import_tests {
         let _: () = UNIT;
     }
 }
+
+#[cfg(test)]
+mod let_else_tests {
+    use super::*;
+    use vvv_core::Language;
+
+    #[test]
+    fn tuple_constructors_are_not_bindings_and_let_else_visibility_starts_after_else() {
+        let source = "fn f(value: Option<usize>) { let Some(value) = value else { let _ = value; return; }; let _ = value; }";
+        let facts = Rust::new().facts(source).unwrap();
+        let local = facts
+            .lexical
+            .iter()
+            .find(|binding| {
+                binding.symbol.kind == vvv_core::SymbolKind::Variable
+                    && binding.symbol.name == "value"
+            })
+            .unwrap();
+        assert_eq!(
+            local.visible_from,
+            source.find("; let _ = value;").unwrap() + 1
+        );
+        assert!(
+            !facts
+                .lexical
+                .iter()
+                .any(|binding| binding.symbol.name == "Some")
+        );
+        for (span, _) in facts.tokens_named("value") {
+            assert!(facts.lexical_tokens.contains(&span), "{span:?}");
+        }
+        let nested = "fn f() { let crate::Wrap(Some((left, mut right))) = input else { return; }; left; right; }";
+        let facts = Rust::new().facts(nested).unwrap();
+        let variables: Vec<_> = facts
+            .lexical
+            .iter()
+            .filter(|binding| binding.symbol.kind == vvv_core::SymbolKind::Variable)
+            .collect();
+        assert_eq!(variables.len(), 2);
+        assert_eq!(variables[0].symbol.name, "left");
+        assert!(!variables[0].explicit);
+        assert_eq!(variables[1].symbol.name, "right");
+        assert!(variables[1].explicit);
+    }
+
+    #[test]
+    fn unsupported_nested_patterns_keep_the_scope_conservative() {
+        let source = "fn f() { let Some(Point { x }) = input else { return; }; work(); }";
+        let facts = Rust::new().facts(source).unwrap();
+        let start = source.find("work").unwrap();
+        assert!(
+            !facts
+                .lexical_tokens
+                .contains(&vvv_core::Span::new(start, start + 4))
+        );
+    }
+
+    #[test]
+    fn rust_compiles_let_else_outer_and_inner_binding_visibility() {
+        struct Probe;
+        impl Probe {
+            fn check(value: Option<usize>) -> usize {
+                let Some(value) = value else {
+                    assert!(value.is_none());
+                    return 0;
+                };
+                value
+            }
+        }
+        assert_eq!(Probe::check(None), 0);
+        assert_eq!(Probe::check(Some(7)), 7);
+    }
+}

@@ -78,6 +78,8 @@ pub struct Grammar {
     pub calls: &'static [crate::CallRule],
     pub callees: &'static [crate::CalleeRule],
     pub anonymous_callables: &'static [&'static str],
+    /// Constructor fields excluded from lexical binding extraction.
+    pub pattern_constructors: &'static [(&'static str, &'static str)],
     pub pattern_containers: &'static [&'static str],
     pub qualified_imports: &'static [crate::QualifiedImportRule],
     pub bindings: &'static [crate::BindingRule],
@@ -112,6 +114,7 @@ impl Grammar {
         calls: &[],
         callees: &[],
         anonymous_callables: &[],
+        pattern_constructors: &[],
         pattern_containers: &[],
         qualified_imports: &[],
         bindings: &[],

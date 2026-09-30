@@ -8,7 +8,7 @@ exit 0
   "status": "ok",
   "schema": 1,
   "result": {
-    "snapshot": "548875291811adcdaf4b2d6fe01978c81ee606f843532c4d642185a84096d885",
+    "snapshot": "5eed1c1782abdda81e7f7a0454e8cb305d80507a9a4da8281ac020eaf655508e",
     "outcome": "unavailable",
     "reason": "cyclic_imports"
   }

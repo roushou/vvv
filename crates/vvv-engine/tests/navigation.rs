@@ -689,3 +689,48 @@ fn ambiguous_imported_symbols_keep_all_candidates_for_bare_uses() {
             .all(|occurrence| occurrence.confidence == vvv_engine::Confidence::Unresolved)
     );
 }
+
+#[test]
+fn delayed_pattern_binding_preserves_outer_initializer_and_failure_branch_bindings() {
+    use vvv_core::{BindingNamespace, Facts, LexicalBinding, Symbol, SymbolKind};
+    // The fake language supplies the successful declaration's visibility boundary;
+    // initializer and failure-branch occurrences precede it in the same scope.
+    let source = "x x x x x";
+    let mut facts = Facts::default();
+    for start in [0, 2, 4, 6, 8] {
+        let span = Span::new(start, start + 1);
+        facts.push_token("x", "identifier", span);
+        facts.lexical_tokens.push(span);
+    }
+    for (name, from, kind) in [(0, 0, SymbolKind::Parameter), (2, 8, SymbolKind::Variable)] {
+        facts.lexical.push(LexicalBinding {
+            symbol: Symbol::plain(
+                kind,
+                "x",
+                Span::new(name, name + 1),
+                Span::new(name, name + 1),
+            ),
+            scope: Span::new(0, source.len()),
+            excluded: vec![],
+            visible_from: from,
+            namespace: BindingNamespace::Value,
+            explicit: false,
+        });
+    }
+    let engine = Engine::new(
+        Workspace::new(
+            "/ws",
+            Arc::new(MemoryVfs::new().with_file("/ws/a.p", source)),
+        ),
+        Languages::new().with(Fake::default().with_navigation_facts(facts)),
+    );
+    for (column, expected) in [(4, 0), (6, 0), (8, 2)] {
+        let reply = NavigationQuery::at("a.p", Position::new(0, column))
+            .execute(&engine)
+            .unwrap();
+        let NavigationOutcome::Resolved { target, .. } = reply.outcome else {
+            panic!("{reply:?}")
+        };
+        assert_eq!(target.name_span.start, expected);
+    }
+}

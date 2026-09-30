@@ -127,6 +127,7 @@ pub(crate) const GRAMMAR: Grammar = Grammar {
         "function_expression",
         "generator_function",
     ],
+    pattern_constructors: &[],
     pattern_containers: &[],
     qualified_imports: &[
         vvv_core::QualifiedImportRule {

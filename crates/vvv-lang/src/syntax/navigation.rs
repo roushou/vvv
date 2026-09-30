@@ -321,7 +321,19 @@ impl<'a> NavigationFacts<'a> {
             return None;
         }
         let mut names = Vec::new();
+        let constructor = self
+            .grammar
+            .pattern_constructors
+            .iter()
+            .find(|(kind, _)| *kind == node.kind())
+            .and_then(|(_, field)| node.field(field));
         for child in node.children().filter(Node::is_named) {
+            if constructor
+                .as_ref()
+                .is_some_and(|head| head.range() == child.range())
+            {
+                continue;
+            }
             names.extend(self.pattern_names(&child)?);
         }
         Some(names)

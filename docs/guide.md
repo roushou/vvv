@@ -177,6 +177,13 @@ uses, aliases, named re-exports, local export lists, generic type parameters, an
 simple function or method parameters. Importing one name does not expose other names in that module.
 Declaration tokens preview themselves; enum variants preview their enclosing enum.
 
+Rust tuple-struct patterns such as `Some(value)` extract their supported inner
+bindings without treating the constructor as a local binding. In `let … else`,
+those bindings become visible after the complete declaration; its initializer and
+`else` body retain the outer bindings. Nested unsupported patterns retain the
+conservative scope barrier. Constructor resolution still requires independent
+navigation evidence; pattern extraction does not infer types or expand macros.
+
 Complex patterns (including struct patterns and match arms), receiver-dependent
 methods, inferred targets, block-local modules, and unmodeled lexical scopes remain
 unsupported. Named function/block-local imports and aliases are visible throughout

@@ -8,7 +8,7 @@ exit 0
   "status": "ok",
   "schema": 1,
   "result": {
-    "snapshot": "eec1f0d51605baab6eede9d608c95bbfc21c80b0e4d08aa9413ec23dc8c9f0f0",
+    "snapshot": "4c9780a3e8506647b22c9bdf2967bd4cbac6779dde85577dfd6a8bf18ad212be",
     "outcome": "unavailable",
     "reason": "unsupported_context"
   }
