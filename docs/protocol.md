@@ -1332,8 +1332,11 @@ Commands execute sequentially; a command failure does not skip later checks.
 Changed/unavailable inputs stop the batch. The deadline covers the batch including
 between-command input captures; initial/final capture and cleanup are additional
 latency. Individual filesystem/parser operations are not preempted. Cancellation or
-timeout kills the active Unix process group and reaps its leader; output drain has
-a bounded grace period. This is process cleanup, not containment of programs that
+timeout kills the active Unix process group and reaps its leader. Normal leader exit
+also triggers group cleanup before reaping; cleanup failures produce `error` even
+when the command exited successfully. On macOS, `EPERM` from group signalling is
+accepted only when enumeration confirms the exited leader is the sole member.
+Output drain has a bounded grace period. This is process cleanup, not containment of programs that
 escape their group. No later program launches after cancellation or deadline expiry.
 
 A completed report is retained as optional `PlanReview.validation`, replacing the

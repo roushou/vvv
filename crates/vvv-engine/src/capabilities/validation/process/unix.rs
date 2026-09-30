@@ -52,7 +52,7 @@ impl CheckProcess {
         let pid = Pid::from_raw(self.child.id() as i32).expect("child pid");
         let group_error = kill_process_group(pid, Signal::KILL)
             .err()
-            .filter(|error| *error != rustix::io::Errno::SRCH);
+            .filter(|error| !self.group_is_finished(*error));
         // Also kill the direct child if it escaped its original group.
         if let Err(error) = self.child.kill() {
             if let Some(status) = self
@@ -73,5 +73,61 @@ impl CheckProcess {
         group_error.map_or(Ok(status), |error| {
             Err(CheckFailure::io(CheckOperation::Terminate, error.into()))
         })
+    }
+    fn group_is_finished(&mut self, error: rustix::io::Errno) -> bool {
+        if error == rustix::io::Errno::SRCH {
+            return true;
+        }
+        #[cfg(target_os = "macos")]
+        if error == rustix::io::Errno::PERM && matches!(self.poll(), Ok(Some(()))) {
+            // XNU skips zombies when signalling a group and returns EPERM when
+            // none remain signalable. Prove the unreaped leader is its only
+            // member; never suppress a denial involving another process, or
+            // an enumeration failure. Keep the leader unreaped throughout.
+            return libproc::processes::pids_by_type(
+                libproc::processes::ProcFilter::ByProgramGroup {
+                    pgrpid: self.child.id(),
+                },
+            )
+            .is_ok_and(|members| members == [self.child.id()]);
+        }
+        false
+    }
+}
+
+#[cfg(all(test, target_os = "macos"))]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn permission_failure_is_retained_for_a_live_leader() {
+        let child = Command::new("/bin/sleep")
+            .arg("10")
+            .process_group(0)
+            .spawn()
+            .unwrap();
+        let mut process = CheckProcess { child };
+        let finished = process.group_is_finished(rustix::io::Errno::PERM);
+        process.terminate().unwrap();
+        assert!(!finished);
+    }
+
+    #[test]
+    fn permission_failure_is_retained_for_descendants_of_an_exited_leader() {
+        let child = Command::new("/bin/sh")
+            .args(["-c", "/bin/sleep 10 & exit 0"])
+            .process_group(0)
+            .spawn()
+            .unwrap();
+        let mut process = CheckProcess { child };
+        let deadline = Instant::now() + Duration::from_secs(2);
+        while matches!(process.poll(), Ok(None)) && Instant::now() < deadline {
+            std::thread::sleep(Duration::from_millis(5));
+        }
+        let exited = matches!(process.poll(), Ok(Some(())));
+        let finished = process.group_is_finished(rustix::io::Errno::PERM);
+        process.terminate().unwrap();
+        assert!(exited);
+        assert!(!finished);
     }
 }

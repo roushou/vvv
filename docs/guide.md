@@ -565,7 +565,8 @@ inputs to remain unchanged. Failures do not undo the applied plan. `inspect_plan
 retains the latest validation under `validation`, while the apply receipt stays
 unchanged. Another validation request reruns the commands and increments `run`.
 Cancellation and timeout stop the active process group; after an interrupted
-response, inspect the plan. Checks not started remain `not_run`.
+response, inspect the plan. Cleanup also stops remaining group members after normal
+command exit. Checks not started remain `not_run`.
 
 Validation rejects source or inventory changes since apply before starting. It
 records digests of workspace-visible files, including binary resources, the

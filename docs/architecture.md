@@ -966,8 +966,12 @@ policy. Batches are not admitted to retained handles.
 
 `capabilities/validation.rs` owns explicit check commands, budgets, version evidence,
 execution, and report composition. Its `process.rs` owns shared polling and bounded, cancellable pipe capture;
-platform backends own Unix process groups or Windows Job Objects. The Windows
-backend uses safe synchronous dependency APIs to assign suspended children before
+platform backends own Unix process groups or Windows Job Objects. Unix keeps the
+leader unreaped until group cleanup to prevent group-ID reuse. On macOS, a group
+signal can return `EPERM` when only its zombie leader remains; safe `libproc`
+enumeration must confirm the exited leader is the sole group member before treating
+that result as completed cleanup. Enumeration failures and denials involving other
+members remain errors. The Windows backend uses safe synchronous dependency APIs to assign suspended children before
 resuming them and to capture nonblocking byte pipes. It terminates descendants
 after leader exit, timeout, or cancellation, and closes parent writer handles
 before waiting for EOF. Windows launches native executables only; invoking a
