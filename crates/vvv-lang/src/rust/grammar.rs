@@ -128,6 +128,11 @@ const HIGHLIGHTS: &[HighlightRule] = &[
 ];
 
 pub(crate) const GRAMMAR: Grammar = Grammar {
+    module_scopes: Some(vvv_core::ModuleScopeRule {
+        node: "mod_item",
+        name: "name",
+        body: "body",
+    }),
     signatures: &[
         SignatureRule::header("function_item", "body"),
         SignatureRule::whole("function_signature_item"),

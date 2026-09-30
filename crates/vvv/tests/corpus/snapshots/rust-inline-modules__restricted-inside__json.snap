@@ -1,0 +1,64 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "be9a2d0650d4b2f0fa0e7e4e703538d2b6c555ae0a728746938bffb4ba7cb9a0",
+    "outcome": "resolved",
+    "target": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/lib.rs",
+        "content": "1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a",
+        "span": {
+          "start": 1360,
+          "end": 1401
+        }
+      },
+      "name_span": {
+        "start": 1393,
+        "end": 1400
+      },
+      "kind": "struct"
+    },
+    "id": "c660c5bc9d4b",
+    "name": "Limited",
+    "start": {
+      "line": 47,
+      "column": 4
+    },
+    "evidence": {
+      "addresses": [
+        {
+          "package": "inline_navigation",
+          "path": [
+            "visibility",
+            "Limited"
+          ]
+        }
+      ]
+    },
+    "container": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/lib.rs",
+        "content": "1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a",
+        "span": {
+          "start": 1360,
+          "end": 1401
+        }
+      },
+      "name_span": {
+        "start": 1393,
+        "end": 1400
+      },
+      "kind": "struct"
+    }
+  }
+}
+--- stderr ---

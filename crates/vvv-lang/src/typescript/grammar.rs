@@ -95,6 +95,7 @@ const HIGHLIGHTS: &[HighlightRule] = &[
 ];
 
 pub(crate) const GRAMMAR: Grammar = Grammar {
+    module_scopes: None,
     signatures: &[
         SignatureRule::header("function_declaration", "body"),
         SignatureRule::header("generator_function_declaration", "body"),

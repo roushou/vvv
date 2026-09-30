@@ -12,6 +12,7 @@ pub(crate) mod fixture;
 mod highlights;
 mod imports;
 mod language;
+mod modules;
 mod navigation;
 mod searcher;
 mod signatures;

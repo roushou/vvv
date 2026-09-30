@@ -66,6 +66,14 @@ impl<'g, L: LanguageExt> ImportExtractor<'g, L> {
         {
             return vec![];
         }
+        self.bindings_in(root, imports)
+    }
+
+    pub(crate) fn bindings_in(
+        &self,
+        root: &Node<'_, StrDoc<L>>,
+        imports: &[ImportRef],
+    ) -> Vec<vvv_core::ImportBinding> {
         let statements: Vec<_> = root
             .children()
             .filter(|node| self.grammar.statements.contains(&node.kind().as_ref()))

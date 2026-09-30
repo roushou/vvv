@@ -160,7 +160,7 @@ impl<'a> NavigationFacts<'a> {
             let supported = !unsupported.iter().any(|s: &Span| s.contains(&span))
                 && !node
                     .ancestors()
-                    .any(|a| self.grammar.lexical_barriers.contains(&a.kind().as_ref()));
+                    .any(|a| self.barrier(&a, facts, self.grammar.lexical_barriers));
             if supported && !qualified {
                 facts.lexical_tokens.push(span);
                 if self
@@ -214,6 +214,25 @@ impl<'a> NavigationFacts<'a> {
                 }
             }
         }
+    }
+    pub(crate) fn barrier<L: LanguageExt>(
+        &self,
+        node: &Node<'_, StrDoc<L>>,
+        facts: &Facts,
+        barriers: &[&str],
+    ) -> bool {
+        if !barriers.contains(&node.kind().as_ref()) {
+            return false;
+        }
+        !self.grammar.module_scopes.is_some_and(|rule| {
+            node.kind() == rule.node
+                && node.field(rule.name).is_some_and(|name| {
+                    facts
+                        .module_scopes
+                        .iter()
+                        .any(|scope| scope.declaration == Some(name.range().into()))
+                })
+        })
     }
     fn pattern_names<'t, L: LanguageExt>(
         &self,

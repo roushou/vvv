@@ -66,7 +66,7 @@ parent) or `within(kind)` (an ancestor).
 | `oracle`     | `Oracle` trait (`refers(file, span) -> Option<Referent>`): a second opinion on a token from something that knows more than syntax; `Referent` (a declaration's file and name span)                                                                                |
 | `symbol`     | `SymbolKind`, `Symbol` (name, node, extent, modifier), `SymbolRule` (the declarative plugin contract, with `leading` kinds and where the modifier is)                                                                                                             |
 | `facts`      | `Facts`: everything about one file from one parse — symbols, imports, highlights, every identifier token interned                                                                                                                                                 |
-| `navigation` | `LexicalBinding`, `BindingRule`, `BindingNamespace`, `NamedImport`, `NamedImportRule`: navigation facts and declarative extraction rules                                                                                                                          |
+| `navigation` | `LexicalBinding`, `BindingRule`, `BindingNamespace`, `NamedImport`, `NamedImportRule`, `ModuleScope`, `ModuleDeclaration`, `ModuleScopeRule`: navigation facts and declarative extraction rules                                                                   |
 | `semantics`  | `Semantics`: what syntax means — path separator, import scoping, addressable kinds, visibility modifier → `ReachKind`                                                                                                                                             |
 | `highlight`  | `HighlightKind`, `Highlight`, `HighlightRule`: syntax colouring as data                                                                                                                                                                                           |
 | `import`     | `ImportRef` (a `ModulePath` at a span, grouped or not, declaring or a reference), `ImportRule`/`ImportGrammar` (where a grammar keeps import paths, which `PathSyntax` parses them, what re-exports and aliases look like, the text every glob spells)            |
@@ -142,7 +142,12 @@ This projection currently reuses full navigation internally.
 Grammar tables declare lexical scopes, visibility start points, noncapturing item
 boundaries, unsupported binding forms, and exact named-import rules. The syntax
 adapter lowers these to plain `Facts`: eligible token spans, `LexicalBinding`s,
-`NamedImport`s, and export restrictions. Navigation checks the innermost visible
+`NamedImport`s, `ModuleScope`s, and export restrictions. Rust module facts record
+direct declarations, scoped imports, and visibility restrictions independently of
+the file-level facts used by mutation planners. `ModuleNavigation` resolves these
+scopes against the language layout, retains competing targets, and captures every
+consulted source. Import traversal has cycle guards, a 1,024-step budget, and
+128-level recursion/provenance bounds. Navigation checks the innermost visible
 binding before module lookup, keeps type and value namespaces separate, and uses
 exact named bindings for TypeScript. Navigation-only declarations stay separate
 from ordinary search/mutation symbols. Unsupported patterns and scope forms block

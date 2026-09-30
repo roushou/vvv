@@ -15,6 +15,7 @@
 mod candidate;
 mod fragment;
 mod import_bindings;
+mod module_navigation;
 mod namespace;
 mod navigation;
 pub(crate) mod query_snapshot;

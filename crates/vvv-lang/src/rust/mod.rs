@@ -1270,3 +1270,72 @@ mod import_binding_tests {
         );
     }
 }
+
+#[cfg(test)]
+mod module_scope_tests {
+    use super::Rust;
+    use vvv_core::{Language, SymbolKind};
+
+    #[test]
+    fn module_scopes_own_only_direct_items_and_imports() {
+        let source = "use crate::Root; mod tests { use super::Root as Local; struct Owned; mod nested { pub(super) use super::Local as Alias; fn call(_: Alias) {} } fn outer() { struct Hidden; mod invalid { struct Unowned; } } }";
+        let facts = Rust::new().facts(source).unwrap();
+        let paths: Vec<Vec<&str>> = facts
+            .module_scopes
+            .iter()
+            .map(|scope| scope.path.iter().map(|name| name.as_str()).collect())
+            .collect();
+        assert_eq!(paths, [vec![], vec!["tests"], vec!["tests", "nested"]]);
+        let tests = &facts.module_scopes[1];
+        let names: Vec<_> = tests
+            .declarations
+            .iter()
+            .map(|decl| {
+                facts
+                    .symbols
+                    .iter()
+                    .find(|symbol| symbol.name_span == decl.name_span)
+                    .unwrap()
+                    .name
+                    .as_str()
+            })
+            .collect();
+        assert_eq!(names, ["Owned", "nested", "outer"]);
+        assert_eq!(tests.imports.len(), 1);
+        assert_eq!(
+            facts.module_scopes[2].imports[0]
+                .visibility
+                .as_ref()
+                .unwrap()
+                .text,
+            "pub(super)"
+        );
+        assert_eq!(
+            facts.import_bindings.len(),
+            1,
+            "mutation binding facts stay file-root only"
+        );
+        assert!(
+            facts
+                .symbols
+                .iter()
+                .any(|symbol| symbol.kind == SymbolKind::Struct && symbol.name == "Hidden")
+        );
+    }
+
+    #[test]
+    fn supported_inline_modules_allow_navigation_without_capturing_outer_locals() {
+        let source = "mod tests { fn outer(x: u8) { let y = x; fn inner() { y; } x; } fn local() { use crate::Root as Alias; let _: Alias; } }";
+        let facts = Rust::new().facts(source).unwrap();
+        let x_use = source.rfind("x;").unwrap();
+        assert!(facts.lexical_tokens.iter().any(|span| span.start == x_use));
+        let y_use = source.find("y;").unwrap();
+        assert!(!facts.lexical.iter().any(|binding| binding.visible(
+            "y",
+            vvv_core::Span::new(y_use, y_use + 1),
+            vvv_core::BindingNamespace::Value
+        )));
+        let alias_use = source.rfind("Alias").unwrap();
+        assert!(!facts.navigation.iter().any(|span| span.start == alias_use));
+    }
+}

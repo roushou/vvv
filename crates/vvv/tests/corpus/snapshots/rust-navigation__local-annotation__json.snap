@@ -31,6 +31,13 @@ exit 0
         {
           "package": "navigation",
           "path": [
+            "bindings",
+            "Engine"
+          ]
+        },
+        {
+          "package": "navigation",
+          "path": [
             "origin",
             "Engine"
           ]

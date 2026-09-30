@@ -164,7 +164,11 @@ candidates. Request source separately with `context`. MCP's `vvv_navigate` uses
 this compact contract; full navigation previews remain available to the CLI and TUI.
 
 Rust navigation follows module-level imports, aliases, re-exports, and type uses
-in fields, function parameters, and return types. It also follows simple function
+in fields, function parameters, and return types. Inline modules in files with a
+known module address have their own declarations and imports, including nested
+`self`, `super`, and `crate` paths, aliases, globs, and visible re-exports. Private
+items stay within their visibility boundary; competing declarations remain
+selectable candidates. It also follows simple function
 parameters, generic type parameters, `let` locals, tuple/slice bindings, closure
 parameters and captures, and supported local type/function items. Explicit type
 annotations inside supported function bodies can follow module imports. Inner bindings shadow outer ones; a `let` initializer still sees the previous
@@ -174,8 +178,10 @@ simple function or method parameters. Importing one name does not expose other n
 Declaration tokens preview themselves; enum variants preview their enclosing enum.
 
 Complex patterns (including struct patterns and match arms), receiver-dependent
-methods, inferred targets, inline modules, and unmodeled lexical scopes remain
-unsupported. TypeScript wildcard exports, package/path aliases, arbitrary namespace
+methods, inferred targets, block-local modules, and unmodeled lexical scopes remain
+unsupported. Function-local imports and blocks containing macros remain conservative;
+inline module lookup also requires a file placed by the language layout. `#[path]`
+module mappings are not modeled. TypeScript wildcard exports, package/path aliases, arbitrary namespace
 member expressions, and local-variable hoisting are not resolved by this syntax path. A TypeScript default export is not treated as a named export.
 Missing identifiers, unresolved names, external source, cycles, and ambiguous
 definitions have distinct outcomes. A source changed since a search produces a

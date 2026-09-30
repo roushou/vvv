@@ -1,0 +1,88 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "57de7b9f8d0ad9fc0c59bf30e52e771981fae2352012e08cc173b6594d8996f2",
+    "outcome": "resolved",
+    "items": [
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a",
+            "span": {
+              "start": 923,
+              "end": 949
+            }
+          },
+          "name_span": {
+            "start": 926,
+            "end": 932
+          },
+          "kind": "function"
+        },
+        "relation": "definition",
+        "via": null,
+        "excerpt": {
+          "path": "src/lib.rs",
+          "content": "1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a",
+          "span": {
+            "start": 923,
+            "end": 943
+          }
+        },
+        "start": {
+          "line": 29,
+          "column": 4
+        },
+        "text": "fn helper() -> usize",
+        "complete": true,
+        "signature": {
+          "outcome": "available",
+          "requested": {
+            "path": "src/lib.rs",
+            "content": "1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a",
+            "span": {
+              "start": 923,
+              "end": 943
+            }
+          }
+        }
+      }
+    ],
+    "enclosing": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/lib.rs",
+        "content": "1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a",
+        "span": {
+          "start": 859,
+          "end": 1273
+        }
+      },
+      "name_span": {
+        "start": 876,
+        "end": 881
+      },
+      "kind": "module"
+    },
+    "omissions": {
+      "item_limit": 0,
+      "byte_limit": 0,
+      "lookup_limit": 0,
+      "file_limit": 0,
+      "ambiguous": 0,
+      "unavailable": 0,
+      "no_container": 0
+    },
+    "references_by_name": false
+  }
+}
+--- stderr ---

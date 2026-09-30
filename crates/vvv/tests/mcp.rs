@@ -90,7 +90,7 @@ impl Client {
             ),
         )
         .await
-        .unwrap()
+        .unwrap_or_else(|_| panic!("{tool} {arguments}: timed out"))
         .unwrap_or_else(|error| panic!("{tool} {arguments}: {error}"));
         let value = result.structured_content.unwrap();
         assert_eq!(result.is_error, Some(value["status"] == "error"));
@@ -1030,5 +1030,63 @@ async fn codex_client_follows_parent_aliases_and_reviews_the_confirmed_reference
             json!({"plan_id":review["result"]["plan_id"]}),
         )
         .await;
+    client.close().await;
+}
+
+#[cfg(feature = "rust")]
+#[tokio::test]
+async fn codex_client_navigates_inline_helpers_and_scoped_imports() {
+    let fixture = Fixture::new();
+    std::fs::write(
+        fixture.root.join("Cargo.toml"),
+        "[package]\nname=\"inline-probe\"\nversion=\"0.1.0\"\nedition=\"2024\"\n",
+    )
+    .unwrap();
+    let source = "pub mod inner { pub struct Root; }\npub use inner::{Root as First};\npub use inner::{Root as Second};\npub fn production(_: First) -> u32 { 42 }\n#[cfg(test)]\nmod tests {\n    use super::production as answer;\n    use super::Second as Input;\n    fn helper(value: Input) -> u32 { answer(value) }\n    fn exercise(value: Input) -> u32 { helper(value) }\n}\n";
+    std::fs::write(fixture.root.join("src/lib.rs"), source).unwrap();
+    let client = Client::with_version(&fixture.root, ProtocolVersion::V_2025_06_18).await;
+    let helper_column = source
+        .lines()
+        .nth(9)
+        .unwrap()
+        .find("helper(value)")
+        .unwrap();
+    let origin =
+        json!({"kind":"position","path":"src/lib.rs","position":{"line":9,"column":helper_column}});
+    let reply = client.call("vvv_navigate", json!({"origin":origin})).await;
+    assert_eq!(reply["result"]["name"], "helper", "{reply}");
+    assert_eq!(reply["result"]["start"]["line"], 8);
+    let context = client
+        .call("vvv_context", json!({"origin":origin,"detail":"signature"}))
+        .await;
+    assert_eq!(context["result"]["outcome"], "resolved", "{context}");
+    assert!(
+        context["result"]["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|item| item["text"]
+                .as_str()
+                .unwrap()
+                .contains("fn helper(value: Input) -> u32"))
+    );
+    let callers = client
+        .call(
+            "vvv_relationships",
+            json!({"origin":{"kind":"symbol","symbol":reply["result"]["target"]},"kind":"callers"}),
+        )
+        .await;
+    assert_eq!(callers["status"], "ok", "{callers}");
+    assert!(
+        callers["result"]["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|item| item["spelling"] == "helper" && item["outcome"] == "confirmed"),
+        "{callers}"
+    );
+    let type_column = source.lines().nth(8).unwrap().find("Input").unwrap();
+    let imported = client.call("vvv_navigate", json!({"origin":{"kind":"position","path":"src/lib.rs","position":{"line":8,"column":type_column}}})).await;
+    assert_eq!(imported["result"]["name"], "Root", "{imported}");
     client.close().await;
 }

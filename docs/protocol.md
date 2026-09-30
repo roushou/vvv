@@ -580,7 +580,10 @@ Unavailable reasons are `no_identifier`, `unresolved`, `unsupported_context`,
 `external_source_unavailable`, and `cyclic_imports`. Syntax-only navigation is
 conservative: Rust supports module/type bindings plus parameters, tuple/slice
 bindings, closure captures, generic type parameters, locals, and local type/function
-items with modeled scopes. TypeScript supports named/default imports, namespace
+items with modeled scopes. In layout-addressable files, Rust inline modules own
+their declarations and imports; qualified paths, aliases, globs, and re-exports
+respect module and item visibility. Competing definitions retain separate candidates.
+TypeScript supports named/default imports, namespace
 qualified types, aliases/re-exports/local export lists, generic type parameters,
 and simple function/method parameters. Unsupported scopes
 and patterns do not fall back to a same-named outer declaration. Default exports

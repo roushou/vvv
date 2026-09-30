@@ -112,6 +112,13 @@ exit 0
             {
               "package": "relationships",
               "path": [
+                "consumer",
+                "execute"
+              ]
+            },
+            {
+              "package": "relationships",
+              "path": [
                 "bridge",
                 "task"
               ]
@@ -285,6 +292,13 @@ exit 0
         },
         "evidence": {
           "addresses": [
+            {
+              "package": "relationships",
+              "path": [
+                "consumer",
+                "other"
+              ]
+            },
             {
               "package": "relationships",
               "path": [

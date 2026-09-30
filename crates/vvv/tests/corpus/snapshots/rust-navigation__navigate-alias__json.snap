@@ -31,6 +31,13 @@ exit 0
         {
           "package": "navigation",
           "path": [
+            "consumer",
+            "Runtime"
+          ]
+        },
+        {
+          "package": "navigation",
+          "path": [
             "bridge",
             "Runtime"
           ]

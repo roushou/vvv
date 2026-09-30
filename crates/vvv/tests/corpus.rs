@@ -25,6 +25,95 @@ struct Corpus {
     mutations: fn() -> Vec<Request>,
 }
 
+#[cfg(feature = "rust")]
+const RUST_INLINE_MODULES: Corpus = Corpus {
+    name: "rust-inline-modules",
+    cases: &[
+        (
+            "noncapturing",
+            &["navigate", "src/lib.rs:38:31", "--compact"],
+        ),
+        (
+            "local-import",
+            &["navigate", "src/lib.rs:42:21", "--compact"],
+        ),
+        (
+            "restricted-inside",
+            &["navigate", "src/lib.rs:49:47", "--compact"],
+        ),
+        (
+            "package-visible",
+            &["navigate", "src/lib.rs:51:31", "--compact"],
+        ),
+        (
+            "parent-visible",
+            &["navigate", "src/lib.rs:51:55", "--compact"],
+        ),
+        (
+            "restricted-outside",
+            &["navigate", "src/lib.rs:52:42", "--compact"],
+        ),
+        (
+            "module-prefix",
+            &["navigate", "src/lib.rs:24:19", "--compact"],
+        ),
+        ("inline-type", &["navigate", "src/lib.rs:6:20", "--compact"]),
+        ("inline-call", &["navigate", "src/lib.rs:6:45", "--compact"]),
+        (
+            "nested-alias",
+            &["navigate", "src/lib.rs:9:24", "--compact"],
+        ),
+        ("nested-call", &["navigate", "src/lib.rs:9:42", "--compact"]),
+        (
+            "qualified-inline",
+            &["navigate", "src/lib.rs:24:27", "--compact"],
+        ),
+        ("reexport", &["navigate", "src/lib.rs:24:37", "--compact"]),
+        (
+            "private-module",
+            &["navigate", "src/lib.rs:25:30", "--compact"],
+        ),
+        ("competing", &["navigate", "src/lib.rs:16:26", "--compact"]),
+        ("cyclic", &["navigate", "src/lib.rs:20:31", "--compact"]),
+        (
+            "test-shadow",
+            &["navigate", "src/lib.rs:31:20", "--compact"],
+        ),
+        (
+            "test-helper",
+            &["navigate", "src/lib.rs:31:28", "--compact"],
+        ),
+        (
+            "test-nested",
+            &["navigate", "src/lib.rs:34:24", "--compact"],
+        ),
+        (
+            "disk-client",
+            &["navigate", "src/disk.rs:2:18", "--compact"],
+        ),
+        ("disk-call", &["navigate", "src/disk.rs:2:34", "--compact"]),
+        (
+            "disk-qualified-alias",
+            &["navigate", "src/disk.rs:3:44", "--compact"],
+        ),
+        (
+            "inline-context",
+            &["context", "src/lib.rs:31:28", "--detail", "signature"],
+        ),
+        (
+            "inline-callers",
+            &["relationships", "callers", "src/lib.rs:30:8"],
+        ),
+    ],
+    mutations: Vec::new,
+};
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_inline_modules_golden() {
+    golden(&RUST_INLINE_MODULES);
+}
+
 /// Import resolution: same-file alias chains, grouped entries, and nested groups.
 #[cfg(feature = "rust")]
 const RUST_RESOLUTION: Corpus = Corpus {

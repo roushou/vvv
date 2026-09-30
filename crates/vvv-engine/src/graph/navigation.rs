@@ -359,6 +359,38 @@ impl Navigation<'_, '_> {
             return Ok(Self::unavailable(UnavailableReason::UnsupportedContext));
         };
         self.validate_project(&ns)?;
+        if !facts.module_scopes.is_empty() && ns.address(candidate.path()).is_ok() {
+            let lookup = super::module_navigation::ModuleNavigation::new(&ns).resolve(
+                candidate.source.clone(),
+                span,
+                name,
+                namespace,
+            )?;
+            for path in lookup.inputs {
+                self.capture(&path)?;
+            }
+            let mut candidates = Vec::new();
+            for target in lookup.targets {
+                let file = self.capture(&target.path)?;
+                let symbol = file
+                    .facts()?
+                    .symbols
+                    .iter()
+                    .find(|symbol| symbol.name_span == target.name_span)
+                    .ok_or_else(|| EngineError::InvalidAnchor {
+                        path: target.path.clone(),
+                    })?;
+                candidates.push(DefinitionCandidate {
+                    target: Self::symbol(&file, symbol),
+                    declaration: Self::declaration(&file, symbol)?,
+                    evidence: ResolutionEvidence {
+                        addresses: target.trail,
+                        semantic: None,
+                    },
+                });
+            }
+            return self.candidates(candidates, lookup.reason);
+        }
         let fragment = self.fragment(&candidate, &ns)?;
         let bindings = if facts.named_modules {
             let mut direct = Vec::new();
@@ -480,6 +512,14 @@ impl Navigation<'_, '_> {
                 break;
             }
         }
+        self.candidates(candidates, reason)
+    }
+
+    fn candidates(
+        &mut self,
+        mut candidates: Vec<DefinitionCandidate>,
+        reason: UnavailableReason,
+    ) -> Result<NavigationOutcome, EngineError> {
         candidates.sort_by(|a, b| {
             a.declaration
                 .path

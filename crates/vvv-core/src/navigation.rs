@@ -1,5 +1,5 @@
 //! Lexical and imported bindings used by navigation, independent of mutation scope.
-use crate::{ModulePath, Span, Symbol, SymbolKind};
+use crate::{ImportBinding, ModulePath, Name, Span, Symbol, SymbolKind};
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -78,4 +78,31 @@ pub struct QualifiedImportRule {
     pub node: &'static str,
     pub object: &'static str,
     pub member: &'static str,
+}
+
+/// A declaration directly owned by a navigation module, with visibility evidence.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct ModuleDeclaration {
+    pub name_span: Span,
+    pub restriction: Option<ModulePath>,
+}
+
+/// File-relative module ownership used only by navigation.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct ModuleScope {
+    pub path: Vec<Name>,
+    pub span: Span,
+    /// The inline module's name; absent for the file root.
+    pub declaration: Option<Span>,
+    pub declarations: Vec<ModuleDeclaration>,
+    pub imports: Vec<ImportBinding>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ModuleScopeRule {
+    pub node: &'static str,
+    pub name: &'static str,
+    pub body: &'static str,
 }

@@ -217,7 +217,9 @@ impl<L: LanguageExt> AstGrepSearcher<L> {
         facts.signatures = signatures;
         facts.declaration_pieces = pieces;
         super::calls::Calls::new(&self.grammar).extract(&node, &mut facts);
-        super::navigation::NavigationFacts::new(&self.grammar).extract(&node, &mut facts);
+        super::modules::Modules::new(&self.grammar, self.lang.clone()).extract(&node, &mut facts);
+        let navigation = super::navigation::NavigationFacts::new(&self.grammar);
+        navigation.extract(&node, &mut facts);
         let kinds: Vec<u16> = self
             .grammar
             .identifiers
@@ -227,10 +229,7 @@ impl<L: LanguageExt> AstGrepSearcher<L> {
         for n in node.dfs().filter(|n| kinds.contains(&n.kind_id())) {
             let span = n.range().into();
             let safe = n.ancestors().all(|ancestor| {
-                !self
-                    .grammar
-                    .navigation_barriers
-                    .contains(&ancestor.kind().as_ref())
+                !navigation.barrier(&ancestor, &facts, self.grammar.navigation_barriers)
                     && self
                         .grammar
                         .navigation_bindings

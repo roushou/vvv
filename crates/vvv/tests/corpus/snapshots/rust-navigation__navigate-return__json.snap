@@ -8,7 +8,7 @@ exit 0
   "status": "ok",
   "schema": 1,
   "result": {
-    "snapshot": "df35b54e65a6d1928835be18e1de9f53a1663bafcfda84b9e09dc8df63a789d3",
+    "snapshot": "a1f32c4ccce121194779a3e2275d4f272c86bda8a55a79c3a3113503e4213568",
     "outcome": "resolved",
     "target": {
       "language": "rust",
@@ -28,6 +28,13 @@ exit 0
     },
     "evidence": {
       "addresses": [
+        {
+          "package": "navigation",
+          "path": [
+            "consumer",
+            "Engine"
+          ]
+        },
         {
           "package": "navigation",
           "path": [
