@@ -1086,7 +1086,7 @@ For clients that use an `mcpServers` configuration, add:
 }
 ```
 
-The client must support MCP `2025-11-25`. Navigation tools are read-only:
+The client must support MCP `2025-06-18` or `2025-11-25`. Navigation tools are read-only:
 `vvv_discover`, `vvv_search`, `vvv_navigate`, `vvv_relationships`, `vvv_context`,
 `vvv_continue`, `vvv_expand`, and `vvv_symbol_move_candidates`. Reviewed changes use `vvv_prepare_rename`, `vvv_prepare_rewrite`, `vvv_prepare_move`, `vvv_prepare_move_symbol`, `vvv_review_plan`,
 `vvv_inspect_plan`, `vvv_discard_plan`, and the writing tool `vvv_apply_plan`.

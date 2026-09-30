@@ -38,7 +38,7 @@ impl McpIssue {
             Self::Closed => (ErrorCode(-32000), "Session closed"),
             Self::ProtocolVersion => (
                 ErrorCode::INVALID_PARAMS,
-                "This server supports MCP 2025-11-25",
+                "This server supports MCP 2025-06-18 and 2025-11-25",
             ),
             Self::RequestId => (
                 ErrorCode::INVALID_REQUEST,

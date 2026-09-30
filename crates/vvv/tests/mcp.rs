@@ -19,6 +19,9 @@ struct Client {
 }
 impl Client {
     async fn new(root: &Path) -> Self {
+        Self::with_version(root, ProtocolVersion::V_2025_11_25).await
+    }
+    async fn with_version(root: &Path, version: ProtocolVersion) -> Self {
         let mut child = tokio::process::Command::new(env!("CARGO_BIN_EXE_vvv"))
             .arg("-C")
             .arg(root)
@@ -31,15 +34,12 @@ impl Client {
             .unwrap();
         let transport = (child.stdout.take().unwrap(), child.stdin.take().unwrap());
         let mut info = ClientInfo::default();
-        info.protocol_version = ProtocolVersion::V_2025_11_25;
+        info.protocol_version = version.clone();
         let service = tokio::time::timeout(Duration::from_secs(15), info.serve(transport))
             .await
             .unwrap()
             .unwrap();
-        assert_eq!(
-            service.peer_info().unwrap().protocol_version,
-            ProtocolVersion::V_2025_11_25
-        );
+        assert_eq!(service.peer_info().unwrap().protocol_version, version);
         let tools = service.list_all_tools().await.unwrap();
         assert_eq!(tools.len(), 17);
         assert!(
@@ -354,6 +354,15 @@ async fn ambiguous_and_unavailable_navigation_are_successful_schema_valid_data()
         assert_eq!(reply["status"], "ok", "{reply}");
         assert_eq!(reply["result"]["outcome"], expected, "{reply}");
     }
+    client.close().await;
+}
+
+#[tokio::test]
+async fn codex_protocol_initializes_lists_tools_and_calls_discovery() {
+    let fixture = Fixture::new();
+    let client = Client::with_version(&fixture.root, ProtocolVersion::V_2025_06_18).await;
+    let reply = client.call("vvv_discover", json!({})).await;
+    assert_eq!(reply["status"], "ok", "{reply}");
     client.close().await;
 }
 

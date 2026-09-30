@@ -62,11 +62,16 @@ impl ServerHandler for McpSession {
         request: InitializeRequestParams,
         context: RequestContext<RoleServer>,
     ) -> Result<InitializeResult, rmcp::ErrorData> {
-        if request.protocol_version != ProtocolVersion::V_2025_11_25 {
+        let mut info = self.get_info();
+        if request.protocol_version == ProtocolVersion::V_2025_06_18
+            || request.protocol_version == ProtocolVersion::V_2025_11_25
+        {
+            info.protocol_version = request.protocol_version.clone();
+        } else {
             return Err(McpIssue::ProtocolVersion.error());
         }
         context.peer.set_peer_info(request);
-        Ok(self.get_info())
+        Ok(info)
     }
     async fn list_tools(
         &self,

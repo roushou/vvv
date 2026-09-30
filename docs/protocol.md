@@ -1330,8 +1330,9 @@ historical evidence and does not recheck current sources.
 
 `vvv -C <root> mcp` is an optional CLI adapter over the same in-process engine.
 The `mcp` feature enables `schemas` and the pinned official Rust SDK (`rmcp 1.7.0`).
-The supported and tested protocol baseline is `2025-11-25`; other versions are
-rejected during initialization. `serve` retains its existing JSON-lines contract.
+The supported and tested protocol versions are `2025-06-18` and `2025-11-25`.
+Initialization echoes either supported client version. Other versions are rejected
+rather than allowing the SDK to negotiate an untested older version. `serve` retains its existing JSON-lines contract.
 Only MCP messages go to stdout, including when `--json` is supplied; startup
 errors go to stderr. The workspace is fixed at launch.
 
