@@ -1,0 +1,70 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "be4e04474fec158f1085f089b7767e4610a8076d1eec93fa65f179446a1a81f8",
+    "outcome": "resolved",
+    "target": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/lib.rs",
+        "content": "cc6411456df3e72af40fdbe3a55b4920b55b95450a6470a0eb00cac134d5feeb",
+        "span": {
+          "start": 47,
+          "end": 72
+        }
+      },
+      "name_span": {
+        "start": 57,
+        "end": 60
+      },
+      "kind": "const"
+    },
+    "id": "179bd841c547",
+    "name": "MAX",
+    "start": {
+      "line": 2,
+      "column": 4
+    },
+    "evidence": {
+      "addresses": [
+        {
+          "package": "rust_pattern_references",
+          "path": [
+            "MAX"
+          ]
+        },
+        {
+          "package": "rust_pattern_references",
+          "path": [
+            "values",
+            "MAX"
+          ]
+        }
+      ]
+    },
+    "container": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/lib.rs",
+        "content": "cc6411456df3e72af40fdbe3a55b4920b55b95450a6470a0eb00cac134d5feeb",
+        "span": {
+          "start": 47,
+          "end": 72
+        }
+      },
+      "name_span": {
+        "start": 57,
+        "end": 60
+      },
+      "kind": "const"
+    }
+  }
+}
+--- stderr ---

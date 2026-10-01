@@ -84,8 +84,8 @@ One crate, two kinds of module:
   `SymbolRule` table and `ImportGrammar`, and lowers everything to
   `RawMatch`/`Symbol`/`ImportRef` before returning.
 - `syntax::AstGrepLanguage<L>` — the `Language` impl every grammar-backed language
-  shares: an id, extensions, a `Grammar` and its `Semantics`, and optionally a `Layout`
-  and a `Surgery`.
+  shares: an id, extensions, a `Grammar` and its `Semantics`, an explicit
+  `NavigationSyntax` selection, and optionally a `Layout` and a `Surgery`.
 - `rust/`, `typescript/` — one per language, each behind a Cargo feature that enables
   exactly one grammar of `ast-grep-language`, mirrored file for file: `grammar.rs`
   (`GRAMMAR` and `SEMANTICS`, all data), `layout.rs` (`Layout`: how the project is
@@ -98,6 +98,30 @@ One crate, two kinds of module:
 
 Language modules must not import `ast_grep_core`; that is a review rule, not a compiler
 one. With no features the crate is just the searcher and has no tests.
+
+The [typed syntax view design](typed-syntax-design.md) describes borrowed structural
+views, declarative field accessors, and the separation from fact interpretation.
+Rust syntax views own conditionals, ordered conditions, match arms, loops, let declarations,
+closures, macro placement and uncertainty, constructor shapes, local import
+coverage, inline-module owners, and call classification. `Impl`, `Trait`, `Struct`,
+`Enum`, and `Type` inspect their declaration headers and share lexical binding
+lowering through `HeaderBindings`; `Type` currently owns type aliases and their generic
+scope, without type inference. TypeScript/TSX share structural callable questions
+and a typed binding adapter that preserves grammar-owned scope and coverage rules.
+Generic and TypeScript pattern views share the `PatternNames` rule policy; Rust
+retains its richer pattern-role and alternative-binding interpretation. Rust imports and modules share typed grouped-import, alias, body, and
+visibility accessors; TypeScript/TSX source statements and specifiers retain their
+distinct forms. Grammar rules still own capture coverage and mutation scope;
+generic table extraction remains available to other grammar-backed
+users. A shared declaration component bridges symbol and signature rules to
+language-specific header views and supplies companion target/shadowing inspection. Parser views are temporary and never cross the plugin boundary.
+
+Small language test groups live beside the code they exercise. Larger Rust suites
+live in `vvv-lang/src/rust/tests/`, grouped by capability and included as test-only
+modules by `rust/mod.rs`. Language tests check extracted facts, source spans, scope
+boundaries, layout, and edit spelling independently of command output. The command
+corpus in `vvv/tests/corpus/` checks the composed behavior with real language plugins
+and exact human and JSON output.
 
 ### `vvv-engine` — the façade
 
@@ -140,8 +164,16 @@ contract; CLI `navigate --compact` and wire `resolve` expose it to other clients
 This projection currently reuses full navigation internally.
 
 Grammar tables declare lexical scopes, visibility start points, noncapturing item
-boundaries, unsupported binding forms, and exact named-import rules. The syntax
-adapter lowers these to plain `Facts`: eligible token spans, `LexicalBinding`s,
+boundaries, unsupported binding forms, and exact named-import rules.
+`NavigationSyntax::Tables` retains the generic table path; Rust selects
+construct-owned extraction in `syntax/rust/`; TypeScript/TSX select structural
+callable views in `syntax/typescript.rs` and retain table binding extraction. `Block`, `Function`, `Pattern`,
+`LetDeclaration`, `Conditional`, `Match`/`MatchArm`, `Loop`, and `Closure` retain
+parser views only during extraction.
+Their types and behavior remain together; parser nodes never enter shared facts.
+Parse-local `NavigationCoverage` holds modeled and blocked spans plus cached owner
+exclusions, and both identifier passes consult it. The syntax adapter lowers
+these to plain `Facts`: eligible token spans, `LexicalBinding`s,
 `NamedImport`s, `ModuleScope`s, `ImportScope`s, and export restrictions. Block-wide
 named import ownership is navigation-only; grouped prefixes do not introduce
 bindings. Resolution uses the import's own block and enclosing import scopes,
@@ -165,12 +197,26 @@ relevant in nested functions; no macro expansion or name whitelist is assumed.
 These facts do not affect mutation planners. Unsupported patterns and scope forms block
 confirmation instead of falling through to a same-named outer declaration.
 
-Rust tuple-struct patterns such as `Some(value)` extract their supported inner
+Rust struct patterns separate constructor/field labels from shorthand and renamed
+bindings, support rest fields and per-name ref/mut evidence, and reject unsupported
+nested fields without publishing a prefix. Explicit labels are excluded from lexical
+navigation. Rust tuple-struct patterns such as `Some(value)` extract their supported inner
 bindings without treating the constructor as a local binding. In `let … else`,
 those bindings become visible after the complete declaration; its initializer and
 `else` body retain the outer bindings. Nested unsupported patterns retain the
 conservative scope barrier. Constructor resolution still requires independent
 navigation evidence; pattern extraction does not infer types or expand macros.
+
+Rust condition bindings use a synthetic owner from the start of the conditional
+through its consequence, excluding the alternative. Each binding starts after its
+own condition operand, so later operands and the consequence can use it; the
+initializer, alternative, and following statements retain outer bindings. Smaller
+consequence block scopes preserve local/import precedence. Unsupported condition
+patterns block the conditional without poisoning surrounding statements. Module
+constant/import evidence is consulted before confirming an immutable pattern as a
+new variable; unavailable constructor evidence remains conservative. See
+[syntax-navigation-design.md](syntax-navigation-design.md) for construct ownership
+and extraction invariants.
 
 `NavigationQuery::execute_with` accepts a host-supplied `NavigationProvider` and
 shared cancellation token. Syntax resolution runs first; only unresolved or
@@ -1016,3 +1062,9 @@ or input capture. Cancellation can stop validation without cancelling an apply
 transaction. Recording the report and final source observation ignore cancellation
 so evidence survives an interrupted response; the client can inspect it. Checks
 invalidate graph trust because external programs can create or change files.
+
+Pattern navigation evidence crosses the plugin boundary as plain data: reference
+roles, alternative binding sites/modes, constructor shapes, and enum ownership.
+The parser retains tentative bindings; the engine classifies names and validates
+alternative binding sets through the scoped module resolver. These facts remain
+navigation-only and do not expand mutation addresses or import rewriting.

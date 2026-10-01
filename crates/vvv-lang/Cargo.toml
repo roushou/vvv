@@ -29,3 +29,7 @@ vvv-core = { workspace = true }
 
 [lints]
 workspace = true
+
+[[example]]
+name = "facts_bench"
+required-features = ["rust", "typescript"]

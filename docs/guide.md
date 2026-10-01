@@ -184,7 +184,57 @@ those bindings become visible after the complete declaration; its initializer an
 conservative scope barrier. Constructor resolution still requires independent
 navigation evidence; pattern extraction does not infer types or expand macros.
 
-Complex patterns (including struct patterns and match arms), receiver-dependent
+Rust struct patterns extract shorthand fields, renamed fields, nested supported
+patterns, `ref`/`mut` bindings, and `..`. Constructors and explicit field labels are
+not local bindings; field labels do not navigate as same-named outer variables.
+The rules apply to function/closure parameters, let declarations, conditional and
+loop bindings, and match arms. Unsupported or malformed nested fields reject the
+whole pattern without publishing a supported prefix. Reference-binding evidence
+belongs to each name, without proving its type or expanding macros. These facts
+remain navigation-only and do not add field rename or struct-pattern mutation.
+Bindings that share one pattern owner have distinct declaration IDs derived from
+their exact name tokens, so ordinal and ID selection identify the chosen binding.
+Their symbol spans and display containers still retain the complete owner.
+
+Rust follows ordinary `if`/`else` branches and supported `if let`/`&&` let chains.
+Condition bindings are visible to later operands and the successful branch, but
+not their own initializer, an `else`/`else if` alternative, or following statements.
+Inner branch locals and imports retain their precedence; closures can capture
+condition bindings and nested function items cannot. Unsupported condition patterns
+keep that conditional conservative while unrelated surrounding code remains
+eligible. Known module and imported constants in immutable patterns resolve to the
+constant rather than a new variable. This does not add conditional-pattern mutation
+support.
+
+Rust patterns also support alternatives (`Some(value) | Other(value)`), captures
+(`whole @ Some(inner)`), literals, ranges, and tuple/slice rest (`..`, including
+`tail @ ..` in slices). Alternatives require identical binding names and explicit `ref`/`mut` modes
+after names are classified as bindings, constants, or unit constructors. Each
+written binding site remains selectable.
+Malformed patterns, incompatible alternatives, misplaced/repeated rest, and pattern
+macros publish no partial bindings. Literals and ranges introduce no bindings.
+Named range endpoints resolve only to constants; a same-named local never
+provides a fallback. Constructor heads resolve through scoped imports, aliases,
+globs, and re-exports, with unit/tuple/record shape evidence. Enum variants inherit
+their owning enum’s visibility. Competing eligible declarations remain selectable.
+Unavailable imports, unknown expansions, missing constructor evidence, and
+incompatible alternatives remain conservative. Type compatibility and implicit match ergonomics are not
+inferred. Alternative nesting is bounded at 128 levels; engine classification and
+alternative validation share the navigation work budget.
+
+Rust match arms extract supported identifier, tuple, slice, reference, and
+tuple-struct and struct patterns. Arm bindings reach their guard and body, including capturing
+closures, but do not escape into sibling arms or nested function items. Unsupported
+patterns block their own arm without blocking the scrutinee or supported peers.
+`for` bindings begin after the iterator expression; `while let` and ordered `while`
+let chains follow the same operand visibility rules as `if`. Ordinary `while` and
+`loop` bodies retain supported outer bindings. Unsupported loop patterns block that
+loop. Typed and untyped closure parameters have separate bindings scoped to their
+closure; nested function items cannot capture them. Macro uncertainty still applies
+to these scopes, and macro arguments are not interpreted. Receiver-head navigation and
+unsupported nested patterns remain outside this coverage.
+
+Unmodeled patterns, receiver-dependent
 methods, inferred targets, block-local modules, and unmodeled lexical scopes remain
 unsupported. Named function/block-local imports and aliases are visible throughout
 their block, including nested functions and closures. Inner imports shadow outer

@@ -6,7 +6,8 @@
 //! a `grammar.rs` (its [`vvv_core::Grammar`] and [`vvv_core::Semantics`]), a
 //! `layout.rs` ([`vvv_core::Layout`]: pure path algebra over a project) and a
 //! `surgery.rs` ([`vvv_core::Surgery`]: text in, edits out), assembled into a
-//! [`syntax::AstGrepLanguage`]. Language modules must not import
+//! [`syntax::AstGrepLanguage`], with an explicit parser-side navigation selection.
+//! Language modules must not import
 //! `ast_grep_core`, and nothing in this crate touches a file system.
 //!
 //! Languages are compiled in behind Cargo features (`rust`, `typescript`),

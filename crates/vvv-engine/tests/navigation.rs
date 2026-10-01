@@ -12,6 +12,7 @@ struct Fixture {
     engine: Engine,
     vfs: Arc<MemoryVfs>,
 }
+
 impl Fixture {
     fn new(files: &[(&str, &str)]) -> Self {
         let vfs = Arc::new(MemoryVfs::new());
@@ -26,6 +27,7 @@ impl Fixture {
             vfs,
         }
     }
+
     fn at(&self, path: &str, line: u32, column: u32) -> vvv_engine::NavigationReply {
         NavigationQuery::at(path, Position::new(line, column))
             .execute(&self.engine)
@@ -732,5 +734,179 @@ fn delayed_pattern_binding_preserves_outer_initializer_and_failure_branch_bindin
             panic!("{reply:?}")
         };
         assert_eq!(target.name_span.start, expected);
+    }
+}
+
+#[test]
+fn conditional_owner_spans_select_ordered_bindings_without_leaking_into_else() {
+    use vvv_core::{BindingNamespace, Facts, LexicalBinding, Symbol, SymbolKind};
+    let source = "x x x x x x x x x x x x";
+    let mut facts = Facts::default();
+    for start in (0..source.len()).step_by(2) {
+        let span = Span::new(start, start + 1);
+        facts.push_token("x", "identifier", span);
+        facts.lexical_tokens.push(span);
+        facts.navigation.push(span);
+    }
+    for (name, scope, from, kind) in [
+        (0, Span::new(0, source.len()), 0, SymbolKind::Parameter),
+        (2, Span::new(2, 19), 6, SymbolKind::Variable),
+        (8, Span::new(2, 19), 12, SymbolKind::Variable),
+        (14, Span::new(14, 19), 16, SymbolKind::Variable),
+    ] {
+        facts.lexical.push(LexicalBinding {
+            symbol: Symbol::plain(
+                kind,
+                "x",
+                Span::new(name, name + 1),
+                Span::new(name, name + 1),
+            ),
+            scope,
+            excluded: vec![Span::new(18, 19)],
+            visible_from: from,
+            namespace: BindingNamespace::Value,
+            explicit: false,
+        });
+    }
+    let engine = Engine::new(
+        Workspace::new(
+            "/ws",
+            Arc::new(MemoryVfs::new().with_file("/ws/a.p", source)),
+        ),
+        Languages::new().with(Fake::default().with_navigation_facts(facts)),
+    );
+    for (column, expected) in [(4, 0), (6, 2), (10, 2), (12, 8), (16, 14), (20, 0), (22, 0)] {
+        let reply = NavigationQuery::at("a.p", Position::new(0, column))
+            .execute(&engine)
+            .unwrap();
+        let NavigationOutcome::Resolved { target, .. } = reply.outcome else {
+            panic!("{reply:?}")
+        };
+        assert_eq!(target.name_span.start, expected);
+    }
+    let reply = NavigationQuery::at("a.p", Position::new(0, 18))
+        .execute(&engine)
+        .unwrap();
+    assert!(matches!(
+        reply.outcome,
+        NavigationOutcome::Unavailable {
+            reason: UnavailableReason::UnsupportedContext
+        }
+    ));
+}
+
+#[test]
+fn synthetic_conditional_owners_do_not_exempt_patterns_from_macro_uncertainty() {
+    use vvv_core::{BindingNamespace, Facts, LexicalBinding, ScopeUncertainty, Symbol, SymbolKind};
+    let source = "x x x x x";
+    let mut facts = Facts::default();
+    for start in [0, 2, 4, 6, 8] {
+        let span = Span::new(start, start + 1);
+        facts.push_token("x", "identifier", span);
+        facts.lexical_tokens.push(span);
+    }
+    facts.lexical.push(LexicalBinding {
+        symbol: Symbol::plain(SymbolKind::Variable, "x", Span::new(2, 3), Span::new(2, 3)),
+        scope: Span::new(2, 9),
+        excluded: vec![],
+        visible_from: 4,
+        namespace: BindingNamespace::Value,
+        explicit: false,
+    });
+    facts.scope_uncertainties.push(ScopeUncertainty {
+        scope: Span::new(0, 9),
+        invocation: Span::new(0, 1),
+    });
+    for (explicit, expected) in [(false, false), (true, true)] {
+        facts.lexical[0].explicit = explicit;
+        let engine = Engine::new(
+            Workspace::new(
+                "/ws",
+                Arc::new(MemoryVfs::new().with_file("/ws/a.p", source)),
+            ),
+            Languages::new().with(Fake::default().with_navigation_facts(facts.clone())),
+        );
+        let reply = NavigationQuery::at("a.p", Position::new(0, 6))
+            .execute(&engine)
+            .unwrap();
+        assert_eq!(
+            matches!(reply.outcome, NavigationOutcome::Resolved { .. }),
+            expected
+        );
+    }
+    facts.scope_uncertainties = vec![ScopeUncertainty {
+        scope: Span::new(4, 9),
+        invocation: Span::new(4, 5),
+    }];
+    let engine = Engine::new(
+        Workspace::new(
+            "/ws",
+            Arc::new(MemoryVfs::new().with_file("/ws/a.p", source)),
+        ),
+        Languages::new().with(Fake::default().with_navigation_facts(facts)),
+    );
+    let reply = NavigationQuery::at("a.p", Position::new(0, 6))
+        .execute(&engine)
+        .unwrap();
+    assert!(matches!(
+        reply.outcome,
+        NavigationOutcome::Unavailable {
+            reason: UnavailableReason::UnsupportedContext
+        }
+    ));
+}
+
+#[test]
+fn shared_pattern_owners_keep_distinct_ids_and_select_the_exact_name_token() {
+    use vvv_core::{BindingNamespace, Facts, LexicalBinding, Symbol, SymbolKind};
+    let source = "x x x";
+    let mut facts = Facts::default();
+    for start in [0, 2, 4] {
+        let span = Span::new(start, start + 1);
+        facts.push_token("x", "identifier", span);
+        facts.lexical_tokens.push(span);
+        facts.navigation.push(span);
+    }
+    for start in [0, 2] {
+        facts.lexical.push(LexicalBinding {
+            symbol: Symbol::plain(
+                SymbolKind::Variable,
+                "x",
+                Span::new(start, start + 1),
+                Span::new(0, 3),
+            ),
+            scope: Span::new(0, 5),
+            excluded: vec![],
+            visible_from: 3,
+            namespace: BindingNamespace::Value,
+            explicit: false,
+        });
+    }
+    let engine = Engine::new(
+        Workspace::new(
+            "/ws",
+            Arc::new(MemoryVfs::new().with_file("/ws/a.p", source)),
+        ),
+        Languages::new().with(Fake::default().with_navigation_facts(facts)),
+    );
+    let reply = NavigationQuery::at("a.p", Position::new(0, 4))
+        .execute(&engine)
+        .unwrap();
+    let NavigationOutcome::Ambiguous { candidates } = reply.outcome else {
+        panic!("{reply:?}")
+    };
+    assert_ne!(candidates[0].declaration.id, candidates[1].declaration.id);
+    for selection in [
+        vvv_engine::Selection::ordinals([2]),
+        vvv_engine::Selection::ids([candidates[1].declaration.id.clone()]),
+    ] {
+        let selected = NavigationQuery::at("a.p", Position::new(0, 4))
+            .select(selection)
+            .execute(&engine)
+            .unwrap();
+        let NavigationOutcome::Resolved { target, .. } = selected.outcome else {
+            panic!("{selected:?}")
+        };
+        assert_eq!(target.name_span, Span::new(2, 3));
     }
 }

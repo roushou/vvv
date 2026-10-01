@@ -1,4 +1,5 @@
 //! Lexical and imported bindings used by navigation, independent of mutation scope.
+
 use crate::{ImportBinding, ModulePath, Name, Span, Symbol, SymbolKind};
 use serde::{Deserialize, Serialize};
 
@@ -14,9 +15,11 @@ pub enum BindingNamespace {
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct LexicalBinding {
     pub symbol: Symbol,
+    /// Lexical owner, including synthetic successful-condition scopes.
     pub scope: Span,
     pub excluded: Vec<Span>,
-    /// A local starts after its initializer; parameters and generics fill their scope.
+    /// Locals start after their declaration, condition bindings after their operand;
+    /// parameters and generics fill their scope.
     pub visible_from: usize,
     pub namespace: BindingNamespace,
     /// Syntax forces a binding rather than a possible constant pattern.
@@ -24,6 +27,7 @@ pub struct LexicalBinding {
     #[serde(default)]
     pub explicit: bool,
 }
+
 impl LexicalBinding {
     pub fn visible(&self, name: &str, span: Span, namespace: BindingNamespace) -> bool {
         self.symbol.name == name
@@ -137,4 +141,82 @@ pub struct MacroScopeRule {
     pub scopes: &'static [&'static str],
     pub expression_containers: &'static [&'static str],
     pub expression_fields: &'static [(&'static str, &'static str)],
+}
+
+/// How a pattern occurrence can use a name, independent of any parser.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum PatternRole {
+    Identifier,
+    Constant,
+    Constructor,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+#[serde(rename_all = "snake_case")]
+pub enum ConstructorShape {
+    Unit,
+    Tuple,
+    Record,
+}
+
+/// Constructor syntax on a declaration; an enum variant names its owning enum.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct PatternConstructor {
+    pub name_span: Span,
+    pub owner: Option<Span>,
+    pub shape: ConstructorShape,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct PatternReference {
+    pub span: Span,
+    pub path: ModulePath,
+    pub role: PatternRole,
+    pub shape: Option<ConstructorShape>,
+}
+
+/// One possible binding site and its explicit syntactic mode.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct PatternBinding {
+    pub name: String,
+    pub span: Span,
+    pub by_ref: bool,
+    pub mutable: bool,
+}
+
+/// Direct alternatives; nested alternatives have their own constraint.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct PatternAlternatives {
+    pub branches: Vec<Vec<PatternBinding>>,
+}
+
+/// A supported pattern and the region reached by its possible bindings.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct PatternScope {
+    pub span: Span,
+    pub scope: Span,
+    pub excluded: Vec<Span>,
+    pub visible_from: usize,
+    pub references: Vec<PatternReference>,
+    pub alternatives: Vec<PatternAlternatives>,
+}
+
+impl PatternScope {
+    pub fn contains(&self, span: Span) -> bool {
+        self.span.contains(&span)
+            || (self.scope.contains(&span)
+                && self.visible_from <= span.start
+                && !self
+                    .excluded
+                    .iter()
+                    .any(|excluded| excluded.contains(&span)))
+    }
 }

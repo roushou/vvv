@@ -48,23 +48,23 @@ exit 0
       },
       "declaration": {
         "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
-        "id": "5024e2ff4699",
+        "id": "313a7e4e4975",
         "path": "src/bindings.rs",
         "language": "rust",
         "span": {
-          "start": 9,
-          "end": 32
+          "start": 10,
+          "end": 14
         },
         "start": {
           "line": 0,
-          "column": 9
+          "column": 10
         },
         "end": {
           "line": 0,
-          "column": 32
+          "column": 14
         },
         "kind": "declaration",
-        "text": "(left, right): (u8, u8)",
+        "text": "left",
         "line": "fn pairs((left, right): (u8, u8)) { consume(left); consume(right); }",
         "symbol": {
           "kind": "parameter",

@@ -14,6 +14,7 @@ struct Fixture {
     source: String,
     facts: Facts,
 }
+
 impl Fixture {
     fn new(source: &str) -> Self {
         let mut facts = Facts::default();
@@ -30,6 +31,7 @@ impl Fixture {
             facts,
         }
     }
+
     fn span(&self, line: usize) -> Span {
         let start: usize = self
             .source
@@ -39,6 +41,7 @@ impl Fixture {
             .sum();
         Span::new(start, start + self.source.lines().nth(line).unwrap().len())
     }
+
     fn scope(&mut self, path: &[&str], start: usize, end: usize) -> usize {
         let span = Span::new(self.span(start).start, self.span(end).end);
         self.facts.module_scopes.push(ModuleScope {
@@ -50,6 +53,7 @@ impl Fixture {
         });
         self.facts.module_scopes.len() - 1
     }
+
     fn declaration(&mut self, scope: usize, line: usize) {
         let span = self.span(line);
         self.facts.symbols.push(Symbol::plain(
@@ -65,6 +69,7 @@ impl Fixture {
                 restriction: None,
             });
     }
+
     fn import(&mut self, scope: usize, line: usize, path: &str, alias: &str) {
         let span = self.span(line);
         self.facts.imports.push(ImportRef {
@@ -82,6 +87,7 @@ impl Fixture {
             restriction: None,
         });
     }
+
     fn engine(&self) -> Engine {
         const SEMANTICS: vvv_core::Semantics = vvv_core::Semantics {
             import_scopes_names: false,
@@ -89,6 +95,8 @@ impl Fixture {
                 SymbolKind::Function,
                 SymbolKind::Const,
                 SymbolKind::TypeAlias,
+                SymbolKind::Struct,
+                SymbolKind::Enum,
             ],
             visibility: &[],
             default_visibility: vvv_core::ReachKind::Declaring,
@@ -106,6 +114,7 @@ impl Fixture {
         )
         .with_retention(Retention::session())
     }
+
     fn target(&self, line: u32) -> Span {
         let reply = NavigationQuery::at("a.p", Position::new(line, 0))
             .execute(&self.engine())
@@ -222,6 +231,7 @@ impl Fixture {
             });
         }
     }
+
     fn local(&mut self, start: usize, end: usize, line: usize, kind: SymbolKind, after: bool) {
         let span = self.span(line);
         self.facts.lexical.push(vvv_core::LexicalBinding {
@@ -364,4 +374,341 @@ fn long_local_import_chains_are_bounded_but_proven_locals_need_no_traversal() {
     ));
     f.local(0, 140, 0, SymbolKind::Variable, true);
     assert_eq!(f.target(140), f.span(0));
+}
+
+#[test]
+fn synthetic_branch_owners_preserve_import_precedence_and_constant_pattern_evidence() {
+    let mut f = Fixture::new("Foo\nalias\nalias\nalias\nalias\nalias\nalias\n");
+    let root = f.scope(&[], 0, 6);
+    f.declaration(root, 0);
+    f.local_import(1, 6, 1, "self::Foo", "alias");
+    f.local(2, 4, 2, SymbolKind::Variable, true);
+    f.facts.lexical[0].explicit = false;
+    assert_eq!(f.target(3), f.span(2));
+    assert_eq!(f.target(6), f.span(0));
+    f.local_import(3, 4, 3, "self::Foo", "alias");
+    assert_eq!(f.target(4), f.span(0));
+
+    let mut constant = Fixture::new("UNIT\nUNIT\nUNIT\nUNIT\nUNIT\nUNIT\n");
+    let root = constant.scope(&[], 0, 5);
+    constant.declaration(root, 0);
+    constant.facts.symbols[0].kind = SymbolKind::Const;
+    constant.local_import(1, 5, 1, "self::UNIT", "UNIT");
+    constant.local(2, 4, 2, SymbolKind::Variable, true);
+    constant.facts.lexical[0].explicit = false;
+    assert_eq!(constant.target(2), constant.span(0));
+    assert_eq!(constant.target(3), constant.span(0));
+}
+
+#[test]
+fn module_constants_and_uncertain_constructors_do_not_become_condition_bindings() {
+    for kind in [SymbolKind::Const, SymbolKind::Struct, SymbolKind::Static] {
+        let mut f = Fixture::new("VALUE\nVALUE\nVALUE\nVALUE\nVALUE\n");
+        let root = f.scope(&[], 0, 4);
+        f.declaration(root, 0);
+        f.facts.symbols[0].kind = kind;
+        f.local(1, 3, 1, SymbolKind::Variable, true);
+        f.facts.lexical[0].explicit = false;
+        for line in [1, 2] {
+            let reply = NavigationQuery::at("a.p", Position::new(line, 0))
+                .execute(&f.engine())
+                .unwrap();
+            if kind == SymbolKind::Const {
+                let NavigationOutcome::Resolved { target, .. } = reply.outcome else {
+                    panic!("{reply:?}")
+                };
+                assert_eq!(target.name_span, f.span(0));
+            } else {
+                assert!(
+                    matches!(
+                        reply.outcome,
+                        NavigationOutcome::Unavailable {
+                            reason: vvv_engine::UnavailableReason::UnsupportedContext
+                        }
+                    ),
+                    "{reply:?}"
+                );
+            }
+        }
+    }
+}
+
+impl Fixture {
+    fn pattern_reference(
+        &mut self,
+        line: usize,
+        path: &str,
+        role: vvv_core::PatternRole,
+        shape: Option<vvv_core::ConstructorShape>,
+    ) {
+        let span = self.span(line);
+        self.facts.patterns.push(vvv_core::PatternScope {
+            span,
+            scope: span,
+            excluded: vec![],
+            visible_from: span.end,
+            references: vec![vvv_core::PatternReference {
+                span,
+                path: PathSyntax::Scoped.parse(path),
+                role,
+                shape,
+            }],
+            alternatives: vec![],
+        });
+    }
+}
+
+#[test]
+fn constant_only_patterns_ignore_locals_and_keep_competing_constants_selectable() {
+    let mut f = Fixture::new("MIN\nMIN\nMIN\nMIN\n");
+    let root = f.scope(&[], 0, 3);
+    for line in [0, 1] {
+        f.declaration(root, line);
+        f.facts.symbols.last_mut().unwrap().kind = SymbolKind::Const;
+    }
+    let span = f.span(3);
+    f.facts.lexical.push(vvv_core::LexicalBinding {
+        symbol: Symbol::plain(SymbolKind::Parameter, "MIN", span, span),
+        scope: Span::new(0, f.source.len()),
+        excluded: vec![],
+        visible_from: 0,
+        namespace: vvv_core::BindingNamespace::Value,
+        explicit: false,
+    });
+    f.facts.lexical_tokens.push(f.span(2));
+    f.pattern_reference(2, "MIN", vvv_core::PatternRole::Constant, None);
+    let engine = f.engine();
+    let reply = NavigationQuery::at("a.p", Position::new(2, 0))
+        .execute(&engine)
+        .unwrap();
+    let NavigationOutcome::Ambiguous { candidates } = reply.outcome else {
+        panic!("{reply:?}");
+    };
+    assert_eq!(candidates.len(), 2);
+    assert_ne!(candidates[0].declaration.id, candidates[1].declaration.id);
+    let mut query = NavigationQuery::at("a.p", Position::new(2, 0));
+    query.selection = vvv_engine::Selection::ids([candidates[1].declaration.id.clone()]);
+    let selected = query.execute(&engine).unwrap();
+    let NavigationOutcome::Resolved { target, .. } = selected.outcome else {
+        panic!("{selected:?}");
+    };
+    assert_eq!(target.name_span, f.span(1));
+}
+
+#[test]
+fn pattern_constructor_shapes_and_enum_ownership_are_navigation_evidence() {
+    use vvv_core::{ConstructorShape, PatternConstructor, PatternRole};
+    let mut f = Fixture::new("Pair\nMessage\nQuit\nPair\nPair\nQuit\n");
+    let root = f.scope(&[], 0, 5);
+    f.declaration(root, 0);
+    f.facts.symbols.last_mut().unwrap().kind = SymbolKind::Struct;
+    f.declaration(root, 1);
+    f.facts.symbols.last_mut().unwrap().kind = SymbolKind::Enum;
+    f.facts.symbols.push(Symbol::plain(
+        SymbolKind::Variant,
+        "Quit",
+        f.span(2),
+        f.span(2),
+    ));
+    f.facts.pattern_constructors = vec![
+        PatternConstructor {
+            name_span: f.span(0),
+            owner: None,
+            shape: ConstructorShape::Tuple,
+        },
+        PatternConstructor {
+            name_span: f.span(2),
+            owner: Some(f.span(1)),
+            shape: ConstructorShape::Unit,
+        },
+    ];
+    f.pattern_reference(
+        3,
+        "Pair",
+        PatternRole::Constructor,
+        Some(ConstructorShape::Tuple),
+    );
+    f.pattern_reference(
+        4,
+        "Pair",
+        PatternRole::Constructor,
+        Some(ConstructorShape::Record),
+    );
+    f.pattern_reference(5, "Message::Quit", PatternRole::Identifier, None);
+    assert_eq!(f.target(3), f.span(0));
+    let reply = NavigationQuery::at("a.p", Position::new(4, 0))
+        .execute(&f.engine())
+        .unwrap();
+    assert!(matches!(
+        reply.outcome,
+        NavigationOutcome::Unavailable {
+            reason: vvv_engine::UnavailableReason::UnsupportedContext
+        }
+    ));
+    assert_eq!(f.target(5), f.span(2));
+}
+
+#[test]
+fn alternative_binding_sets_are_compared_after_constant_resolution() {
+    use vvv_core::{
+        PatternAlternatives, PatternBinding, PatternReference, PatternRole, PatternScope,
+    };
+    let mut f = Fixture::new("MIN\nMAX\nMIN\nMAX\nouter\n");
+    let root = f.scope(&[], 0, 4);
+    for line in [0, 1] {
+        f.declaration(root, line);
+        f.facts.symbols.last_mut().unwrap().kind = SymbolKind::Const;
+    }
+    f.facts.lexical_tokens.push(f.span(4));
+    let outer = Symbol::plain(SymbolKind::Parameter, "outer", f.span(4), f.span(4));
+    f.facts.lexical.push(vvv_core::LexicalBinding {
+        symbol: outer,
+        scope: Span::new(0, f.source.len()),
+        excluded: vec![],
+        visible_from: 0,
+        namespace: vvv_core::BindingNamespace::Value,
+        explicit: true,
+    });
+    f.facts.patterns.push(PatternScope {
+        span: Span::new(f.span(2).start, f.span(3).end),
+        scope: Span::new(f.span(2).start, f.span(4).end),
+        excluded: vec![],
+        visible_from: f.span(3).end,
+        references: [2, 3]
+            .into_iter()
+            .map(|line| PatternReference {
+                span: f.span(line),
+                path: PathSyntax::Scoped.parse(f.source.lines().nth(line).unwrap()),
+                role: PatternRole::Identifier,
+                shape: None,
+            })
+            .collect(),
+        alternatives: vec![PatternAlternatives {
+            branches: [2, 3]
+                .into_iter()
+                .map(|line| {
+                    vec![PatternBinding {
+                        name: f.source.lines().nth(line).unwrap().into(),
+                        span: f.span(line),
+                        by_ref: false,
+                        mutable: false,
+                    }]
+                })
+                .collect(),
+        }],
+    });
+    assert_eq!(f.target(4), f.span(4));
+    f.facts.symbols[1].kind = SymbolKind::Function;
+    let reply = NavigationQuery::at("a.p", Position::new(4, 0))
+        .execute(&f.engine())
+        .unwrap();
+    assert!(matches!(
+        reply.outcome,
+        NavigationOutcome::Unavailable {
+            reason: vvv_engine::UnavailableReason::UnsupportedContext
+        }
+    ));
+}
+
+#[test]
+fn enum_variant_paths_obey_the_owning_enums_visibility() {
+    let mut f = Fixture::new("hidden\nMessage\nQuit\nQuit\nQuit\n");
+    let root = f.scope(&[], 0, 4);
+    let hidden = f.scope(&["hidden"], 1, 3);
+    f.declaration(root, 0);
+    f.facts.symbols.last_mut().unwrap().kind = SymbolKind::Module;
+    f.declaration(hidden, 1);
+    f.facts.symbols.last_mut().unwrap().kind = SymbolKind::Enum;
+    f.facts.symbols.push(Symbol::plain(
+        SymbolKind::Variant,
+        "Quit",
+        f.span(2),
+        f.span(2),
+    ));
+    f.facts
+        .pattern_constructors
+        .push(vvv_core::PatternConstructor {
+            name_span: f.span(2),
+            owner: Some(f.span(1)),
+            shape: vvv_core::ConstructorShape::Unit,
+        });
+    f.pattern_reference(
+        3,
+        "self::Message::Quit",
+        vvv_core::PatternRole::Identifier,
+        None,
+    );
+    f.pattern_reference(
+        4,
+        "hidden::Message::Quit",
+        vvv_core::PatternRole::Identifier,
+        None,
+    );
+    assert_eq!(f.target(3), f.span(2));
+    let reply = NavigationQuery::at("a.p", Position::new(4, 0))
+        .execute(&f.engine())
+        .unwrap();
+    assert!(matches!(
+        reply.outcome,
+        NavigationOutcome::Unavailable { .. }
+    ));
+}
+
+#[test]
+fn alternative_validation_has_a_shared_work_budget_even_without_bindings() {
+    let mut f = Fixture::new("outer\n");
+    f.scope(&[], 0, 0);
+    f.facts.patterns.push(vvv_core::PatternScope {
+        span: f.span(0),
+        scope: f.span(0),
+        excluded: vec![],
+        visible_from: 0,
+        references: vec![],
+        alternatives: vec![vvv_core::PatternAlternatives {
+            branches: vec![vec![]; 1025],
+        }],
+    });
+    let error = NavigationQuery::at("a.p", Position::new(0, 0))
+        .execute(&f.engine())
+        .unwrap_err();
+    assert!(matches!(error, vvv_engine::EngineError::NavigationLimit));
+}
+
+#[test]
+fn alternative_classification_accounts_for_each_module_lookup_in_the_shared_budget() {
+    let source = "MIN\n".to_owned() + &"MIN\n".repeat(200) + "outer\n";
+    let mut f = Fixture::new(&source);
+    let root = f.scope(&[], 0, 201);
+    f.declaration(root, 0);
+    f.facts.symbols.last_mut().unwrap().kind = SymbolKind::Const;
+    f.facts.patterns.push(vvv_core::PatternScope {
+        span: Span::new(f.span(1).start, f.span(200).end),
+        scope: Span::new(f.span(1).start, f.span(201).end),
+        excluded: vec![],
+        visible_from: f.span(200).end,
+        references: (1..=200)
+            .map(|line| vvv_core::PatternReference {
+                span: f.span(line),
+                path: PathSyntax::Scoped.parse("MIN"),
+                role: vvv_core::PatternRole::Identifier,
+                shape: None,
+            })
+            .collect(),
+        alternatives: vec![vvv_core::PatternAlternatives {
+            branches: (1..=200)
+                .map(|line| {
+                    vec![vvv_core::PatternBinding {
+                        name: "MIN".into(),
+                        span: f.span(line),
+                        by_ref: false,
+                        mutable: false,
+                    }]
+                })
+                .collect(),
+        }],
+    });
+    let error = NavigationQuery::at("a.p", Position::new(201, 0))
+        .execute(&f.engine())
+        .unwrap_err();
+    assert!(matches!(error, vvv_engine::EngineError::NavigationLimit));
 }

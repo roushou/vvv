@@ -1,4 +1,5 @@
 //! Occurrence resolution over captured candidates; no whole-tree reference scan.
+
 use super::{Candidate, Graph, Namespace};
 use crate::{
     ContentId, DefinitionCandidate, DefinitionPreview, EngineError, File, Match, NavigationOrigin,
@@ -19,10 +20,17 @@ struct Navigation<'a, 'p> {
     steps: usize,
 }
 
+enum PatternResolution {
+    Binding,
+    Candidates(Vec<DefinitionCandidate>),
+    Unavailable(UnavailableReason),
+}
+
 impl Graph {
     pub fn navigate(&mut self, query: NavigationQuery) -> Result<NavigationReply, EngineError> {
         self.navigate_with(query, None)
     }
+
     pub(crate) fn navigate_with(
         &mut self,
         query: NavigationQuery,
@@ -30,6 +38,7 @@ impl Graph {
     ) -> Result<NavigationReply, EngineError> {
         self.navigate_recorded(query, semantic, &mut Vec::new())
     }
+
     pub(crate) fn navigate_observed(
         &mut self,
         query: NavigationQuery,
@@ -37,6 +46,7 @@ impl Graph {
     ) -> Result<NavigationReply, EngineError> {
         self.navigate_recorded(query, None, observed)
     }
+
     fn navigate_recorded(
         &mut self,
         query: NavigationQuery,
@@ -67,6 +77,7 @@ impl Graph {
         }
         result
     }
+
     pub(crate) fn validate_versions(
         &mut self,
         versions: &[crate::SourceVersion],
@@ -304,6 +315,16 @@ impl Navigation<'_, '_> {
                             && s.kind == symbol.kind
                     })
                     .ok_or_else(invalid)?;
+                if candidate
+                    .facts()?
+                    .patterns
+                    .iter()
+                    .flat_map(|pattern| &pattern.references)
+                    .any(|reference| reference.span == declared.name_span)
+                    && let Some(outcome) = self.pattern(&candidate, declared.name_span)?
+                {
+                    return Ok(outcome);
+                }
                 return self.resolved(&candidate, declared, vec![]);
             }
         };
@@ -316,6 +337,9 @@ impl Navigation<'_, '_> {
             span,
         });
         let facts = candidate.facts()?;
+        if let Some(outcome) = self.pattern(&candidate, span)? {
+            return Ok(outcome);
+        }
         let mut pattern_declaration = None;
         if let Some(symbol) = facts
             .navigation_symbols()
@@ -326,9 +350,10 @@ impl Navigation<'_, '_> {
                     .lexical
                     .iter()
                     .any(|binding| binding.symbol.name_span == span && !binding.explicit)
-                && super::navigation_scope::NavigationScope::new(facts, span)
-                    .import_scope(&symbol.name)
-                    .is_some()
+                && {
+                    let scope = super::navigation_scope::NavigationScope::new(facts, span);
+                    scope.import_scope(&symbol.name).is_some() || scope.pattern_module(&symbol.name)
+                }
             {
                 pattern_declaration = Some(symbol);
             } else {
@@ -353,10 +378,11 @@ impl Navigation<'_, '_> {
                 .iter()
                 .any(|imports| imports.aliases.contains(&span));
         let mut local_import = scope.import_scope(name);
+        let module_pattern = scope.pattern_module(name);
         let mut local_lookup = None;
         let mut constant_pattern = false;
-        let mut unknown_pattern = local_import.is_some();
-        if local_import.is_some()
+        let mut unknown_pattern = local_import.is_some() || module_pattern;
+        if (local_import.is_some() || module_pattern)
             && facts.lexical_tokens.contains(&span)
             && scope.permits_module()
             && !facts.lexical.iter().any(|binding| {
@@ -458,10 +484,7 @@ impl Navigation<'_, '_> {
                 .filter(|b| b.visible(name, span, namespace))
                 .filter(|b| local_import.is_none_or(|imports| b.scope.len() <= imports.len()))
                 .filter(|b| {
-                    !(local_import.is_some()
-                        && b.symbol.kind == SymbolKind::Variable
-                        && !b.explicit
-                        && constant_pattern)
+                    !(b.symbol.kind == SymbolKind::Variable && !b.explicit && constant_pattern)
                 })
                 .min_by_key(|b| (b.scope.len(), std::cmp::Reverse(b.visible_from)))
         {
@@ -518,7 +541,7 @@ impl Navigation<'_, '_> {
         if !facts.navigation.contains(&span) && !imported_here && qualified.is_none() {
             return Ok(Self::unavailable(UnavailableReason::UnsupportedContext));
         }
-        if local_import.is_some() && local_lookup.is_none() {
+        if (local_import.is_some() || module_pattern) && local_lookup.is_none() {
             return Ok(Self::unavailable(UnavailableReason::UnsupportedContext));
         }
         if !scope.permits_module() {
@@ -696,6 +719,335 @@ impl Navigation<'_, '_> {
             }
         }
         self.candidates(candidates, reason)
+    }
+
+    fn tick(&mut self) -> Result<(), EngineError> {
+        self.graph.check_read()?;
+        self.steps += 1;
+        if self.steps > 1024 {
+            return Err(EngineError::NavigationLimit);
+        }
+        Ok(())
+    }
+
+    fn pattern_reference(
+        &mut self,
+        candidate: &Candidate,
+        reference: &vvv_core::PatternReference,
+    ) -> Result<PatternResolution, EngineError> {
+        use vvv_core::{BindingNamespace, PathHead, PatternRole};
+        self.tick()?;
+        let facts = candidate.facts()?;
+        let bare = reference.path.head == PathHead::Named && reference.path.segments.len() == 1;
+        let name = reference.path.last().map_or("", |name| name.as_str());
+        let forced = reference.role == PatternRole::Identifier
+            && bare
+            && facts
+                .lexical
+                .iter()
+                .any(|binding| binding.symbol.name_span == reference.span && binding.explicit);
+        if forced {
+            return Ok(PatternResolution::Binding);
+        }
+        let scope = super::navigation_scope::NavigationScope::new(facts, reference.span);
+        if reference.path.head != PathHead::Package && !scope.permits_module() {
+            return Ok(PatternResolution::Unavailable(
+                UnavailableReason::UnsupportedContext,
+            ));
+        }
+        let uncertain_import = scope.import_scope(name).is_some()
+            || facts
+                .module_scopes
+                .iter()
+                .filter(|scope| scope.span.contains(&reference.span))
+                .min_by_key(|scope| scope.span.len())
+                .is_some_and(|scope| {
+                    scope.imports.iter().any(|binding| {
+                        facts.imports.iter().any(|import| {
+                            import.span == binding.span
+                                && (import.glob
+                                    || import.binding().is_some_and(|bound| bound.as_str() == name))
+                        })
+                    })
+                });
+        let mut candidates = Vec::new();
+        let mut known = false;
+        let mut invalid = false;
+        // Block-local constants/constructors precede module and import lookup.
+        let local = if bare {
+            facts
+                .lexical
+                .iter()
+                .filter(|binding| {
+                    matches!(
+                        binding.symbol.kind,
+                        SymbolKind::Const
+                            | SymbolKind::Static
+                            | SymbolKind::Struct
+                            | SymbolKind::Variant
+                    ) && binding.visible(name, reference.span, binding.namespace)
+                        && scope
+                            .import_scope(name)
+                            .is_none_or(|imports| binding.scope.len() < imports.len())
+                })
+                .min_by_key(|binding| binding.scope.len())
+        } else {
+            None
+        };
+        if reference.role == PatternRole::Identifier
+            && bare
+            && local.is_none()
+            && !uncertain_import
+            && !scope.pattern_evidence(name)
+        {
+            return Ok(PatternResolution::Binding);
+        }
+        if let Some(local) = local {
+            for peer in facts.lexical.iter().filter(|peer| {
+                peer.symbol.name == name
+                    && peer.scope == local.scope
+                    && matches!(
+                        peer.symbol.kind,
+                        SymbolKind::Const
+                            | SymbolKind::Static
+                            | SymbolKind::Struct
+                            | SymbolKind::Variant
+                    )
+            }) {
+                known = true;
+                if Self::pattern_target(facts, &peer.symbol, reference) {
+                    candidates.push(DefinitionCandidate {
+                        target: Self::symbol(candidate, &peer.symbol),
+                        declaration: Self::declaration(candidate, &peer.symbol)?,
+                        evidence: ResolutionEvidence {
+                            addresses: vec![],
+                            semantic: None,
+                        },
+                    });
+                } else {
+                    invalid = true;
+                }
+            }
+        }
+        let mut reason = UnavailableReason::Unresolved;
+        if local.is_none() {
+            let Some(ns) = self.graph.namespace(&candidate.language()) else {
+                return Ok(PatternResolution::Unavailable(
+                    UnavailableReason::UnsupportedContext,
+                ));
+            };
+            if ns.address(candidate.path()).is_err() {
+                return Ok(
+                    if reference.role == PatternRole::Identifier && bare && !uncertain_import {
+                        PatternResolution::Binding
+                    } else {
+                        PatternResolution::Unavailable(UnavailableReason::UnsupportedContext)
+                    },
+                );
+            }
+            self.validate_project(&ns)?;
+            let lookup = super::module_navigation::ModuleNavigation::new(&ns).resolve_path(
+                candidate.source.clone(),
+                reference.span,
+                name,
+                BindingNamespace::Value,
+                Some(&reference.path),
+            )?;
+            self.steps += lookup.steps;
+            if self.steps > 1024 {
+                return Err(EngineError::NavigationLimit);
+            }
+            reason = lookup.reason;
+            for input in lookup.inputs {
+                self.capture(&input)?;
+            }
+            for target in lookup.targets {
+                let file = self.capture(&target.path)?;
+                let symbol = file
+                    .facts()?
+                    .symbols
+                    .iter()
+                    .find(|symbol| symbol.name_span == target.name_span)
+                    .ok_or_else(|| EngineError::InvalidAnchor {
+                        path: target.path.clone(),
+                    })?;
+                known = true;
+                if Self::pattern_target(file.facts()?, symbol, reference) {
+                    candidates.push(DefinitionCandidate {
+                        target: Self::symbol(&file, symbol),
+                        declaration: Self::declaration(&file, symbol)?,
+                        evidence: ResolutionEvidence {
+                            addresses: target.trail,
+                            semantic: None,
+                        },
+                    });
+                } else if matches!(
+                    symbol.kind,
+                    SymbolKind::Static
+                        | SymbolKind::Struct
+                        | SymbolKind::Variant
+                        | SymbolKind::TypeAlias
+                ) {
+                    invalid = true;
+                }
+            }
+        }
+        if !candidates.is_empty() {
+            if invalid {
+                return Ok(PatternResolution::Unavailable(
+                    UnavailableReason::UnsupportedContext,
+                ));
+            }
+            return Ok(PatternResolution::Candidates(candidates));
+        }
+        if invalid || reference.role != PatternRole::Identifier || !bare {
+            return Ok(PatternResolution::Unavailable(if invalid {
+                UnavailableReason::UnsupportedContext
+            } else {
+                reason
+            }));
+        }
+        if !known && (uncertain_import || reason != UnavailableReason::Unresolved) {
+            return Ok(PatternResolution::Unavailable(
+                UnavailableReason::UnsupportedContext,
+            ));
+        }
+        Ok(PatternResolution::Binding)
+    }
+
+    fn pattern_target(
+        facts: &vvv_core::Facts,
+        symbol: &Symbol,
+        reference: &vvv_core::PatternReference,
+    ) -> bool {
+        use vvv_core::{ConstructorShape, PatternRole};
+        if symbol.kind == SymbolKind::Const {
+            return reference.role != PatternRole::Constructor;
+        }
+        if !matches!(symbol.kind, SymbolKind::Struct | SymbolKind::Variant) {
+            return false;
+        }
+        let shape = facts
+            .pattern_constructors
+            .iter()
+            .find(|constructor| constructor.name_span == symbol.name_span)
+            .map(|constructor| constructor.shape);
+        match reference.role {
+            PatternRole::Identifier => shape == Some(ConstructorShape::Unit),
+            PatternRole::Constant => false,
+            PatternRole::Constructor => shape.is_some() && shape == reference.shape,
+        }
+    }
+
+    fn pattern(
+        &mut self,
+        candidate: &Candidate,
+        span: vvv_core::Span,
+    ) -> Result<Option<NavigationOutcome>, EngineError> {
+        use std::collections::{BTreeMap, HashMap};
+        let facts = candidate.facts()?;
+        if !facts.navigation.contains(&span) && !facts.lexical_tokens.contains(&span) {
+            return Ok(None);
+        }
+        let mut classifications = HashMap::new();
+        for pattern in facts
+            .patterns
+            .iter()
+            .filter(|pattern| pattern.contains(span))
+        {
+            for alternatives in &pattern.alternatives {
+                self.tick()?;
+                let mut expected = None;
+                for branch in &alternatives.branches {
+                    self.tick()?;
+                    let mut signature = BTreeMap::new();
+                    for binding in branch {
+                        let Some(reference) = pattern
+                            .references
+                            .iter()
+                            .find(|reference| reference.span == binding.span)
+                        else {
+                            return Ok(Some(Self::unavailable(
+                                UnavailableReason::UnsupportedContext,
+                            )));
+                        };
+                        if let std::collections::hash_map::Entry::Vacant(entry) =
+                            classifications.entry(binding.span)
+                        {
+                            entry.insert(self.pattern_reference(candidate, reference)?);
+                        }
+                        match classifications.get(&binding.span).expect("classified site") {
+                            PatternResolution::Binding => {
+                                signature.insert(&binding.name, (binding.by_ref, binding.mutable));
+                            }
+                            PatternResolution::Candidates(_) => {}
+                            PatternResolution::Unavailable(_) => {
+                                return Ok(Some(Self::unavailable(
+                                    UnavailableReason::UnsupportedContext,
+                                )));
+                            }
+                        }
+                    }
+                    if expected
+                        .as_ref()
+                        .is_some_and(|previous| previous != &signature)
+                    {
+                        return Ok(Some(Self::unavailable(
+                            UnavailableReason::UnsupportedContext,
+                        )));
+                    }
+                    expected = Some(signature);
+                }
+            }
+        }
+        let reference = facts
+            .patterns
+            .iter()
+            .flat_map(|pattern| &pattern.references)
+            .find(|reference| reference.span == span)
+            .or_else(|| {
+                let (name, _, _) = facts.tokens().find(|(_, _, token)| *token == span)?;
+                let binding = facts
+                    .lexical
+                    .iter()
+                    .filter(|binding| {
+                        binding.visible(name, span, vvv_core::BindingNamespace::Value)
+                    })
+                    .min_by_key(|binding| {
+                        (binding.scope.len(), std::cmp::Reverse(binding.visible_from))
+                    })?;
+                facts
+                    .patterns
+                    .iter()
+                    .flat_map(|pattern| &pattern.references)
+                    .find(|reference| reference.span == binding.symbol.name_span)
+            });
+        let Some(reference) = reference else {
+            return Ok(None);
+        };
+        if let std::collections::hash_map::Entry::Vacant(entry) =
+            classifications.entry(reference.span)
+        {
+            entry.insert(self.pattern_reference(candidate, reference)?);
+        }
+        match classifications
+            .remove(&reference.span)
+            .expect("classified reference")
+        {
+            PatternResolution::Binding => Ok(None),
+            PatternResolution::Candidates(candidates) => {
+                if span != reference.span
+                    && !super::navigation_scope::NavigationScope::new(facts, span).permits_module()
+                {
+                    return Ok(Some(Self::unavailable(
+                        UnavailableReason::UnsupportedContext,
+                    )));
+                }
+                self.candidates(candidates, UnavailableReason::Unresolved)
+                    .map(Some)
+            }
+            PatternResolution::Unavailable(reason) => Ok(Some(Self::unavailable(reason))),
+        }
     }
 
     fn candidates(
@@ -954,11 +1306,22 @@ impl Navigation<'_, '_> {
     }
 
     fn declaration(file: &Candidate, symbol: &Symbol) -> Result<Match, EngineError> {
+        // Pattern bindings can share an owner span. Their exact name tokens must
+        // distinguish selectable declarations, while the symbol retains its owner.
+        let shared_owner = file
+            .facts()?
+            .navigation_symbols()
+            .any(|other| other.span == symbol.span && other.name_span != symbol.name_span);
+        let span = if shared_owner {
+            symbol.name_span
+        } else {
+            symbol.span
+        };
         let mut raw = RawMatch::plain(
-            symbol.span,
+            span,
             "declaration",
             file.text()
-                .get(symbol.span.start..symbol.span.end)
+                .get(span.start..span.end)
                 .ok_or_else(|| EngineError::InvalidAnchor {
                     path: file.path().into(),
                 })?,

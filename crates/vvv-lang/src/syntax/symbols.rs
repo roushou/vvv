@@ -8,6 +8,7 @@ use vvv_core::{
 /// Walks a tree and applies a plugin's [`SymbolRule`] table.
 pub(crate) struct SymbolExtractor<'r> {
     rules: &'r [SymbolRule],
+    syntax: super::navigation::NavigationSyntax,
 }
 
 /// The rule table's node kinds as this grammar's ids.
@@ -28,8 +29,11 @@ struct Frame {
 }
 
 impl<'r> SymbolExtractor<'r> {
-    pub(crate) fn new(rules: &'r [SymbolRule]) -> Self {
-        Self { rules }
+    pub(crate) fn new(
+        rules: &'r [SymbolRule],
+        syntax: super::navigation::NavigationSyntax,
+    ) -> Self {
+        Self { rules, syntax }
     }
 
     /// Declarations under `root`, in source order, paired with their node.
@@ -120,9 +124,9 @@ impl<'r> SymbolExtractor<'r> {
 
     /// Relationships follow exact unqualified targets in one syntax scope.
     /// Qualified targets retain conservative evidence instead of guessing ownership.
-    pub(crate) fn pieces<D: Doc>(
+    pub(crate) fn pieces<L: LanguageExt>(
         &self,
-        declarations: &[(Node<'_, D>, Symbol)],
+        declarations: &[(Node<'_, StrDoc<L>>, Symbol)],
     ) -> Vec<DeclarationPieces> {
         let companion_nodes: Vec<_> = declarations
             .iter()
@@ -150,25 +154,15 @@ impl<'r> SymbolExtractor<'r> {
                     else {
                         continue;
                     };
-                    let Some(mut target) =
-                        rule.name_field.and_then(|field| piece_node.field(field))
-                    else {
+                    if rule.name_field.is_none() {
+                        continue;
+                    }
+                    let declaration =
+                        super::declarations::Declaration::new(piece_node.clone(), self.syntax);
+                    let Some(target) = declaration.name(rule) else {
                         continue;
                     };
-                    if let Some(inner) = rule.name_inner {
-                        while let Some(child) = target.field(inner) {
-                            target = child;
-                        }
-                    }
-                    let shadowed = piece_node
-                        .field("type_parameters")
-                        .is_some_and(|parameters| {
-                            parameters.dfs().any(|parameter| {
-                                parameter
-                                    .field("name")
-                                    .is_some_and(|name| name.text() == symbol.name)
-                            })
-                        });
+                    let shadowed = declaration.shadows(&symbol.name);
                     let exact = target.text() == symbol.name && !shadowed;
                     let potential = exact || target.dfs().any(|child| child.text() == symbol.name);
                     if !potential {
@@ -238,23 +232,15 @@ impl<'r> SymbolExtractor<'r> {
 
     /// `rule` matched `node`; `lead_start` is where its own leading run
     /// begins, `ancestors` where its parent's and grandparent's do.
-    fn symbol<D: Doc>(
+    fn symbol<L: LanguageExt>(
         &self,
-        node: &Node<'_, D>,
+        node: &Node<'_, StrDoc<L>>,
         rule: &SymbolRule,
         lead_start: usize,
         ancestors: [usize; 2],
     ) -> Symbol {
-        let name = match rule.name_field {
-            Some(field) => node.field(field),
-            None => Some(node.clone()),
-        };
-        let mut name = name.unwrap_or_else(|| node.clone());
-        if let Some(inner) = rule.name_inner {
-            while let Some(child) = name.field(inner) {
-                name = child;
-            }
-        }
+        let declaration = super::declarations::Declaration::new(node.clone(), self.syntax);
+        let name = declaration.name(rule).unwrap_or_else(|| node.clone());
         // The statement that carries the modifier, if the language wraps
         // declarations (`export class X {}`), else the node.
         let wrapper = match rule.visibility {
@@ -266,10 +252,7 @@ impl<'r> SymbolExtractor<'r> {
             _ => None,
         };
         let visibility = match rule.visibility {
-            Some(ModifierAt::Child(kind)) => node
-                .children()
-                .find(|c| c.kind() == kind)
-                .map(|c| Self::modifier(&c)),
+            Some(at @ ModifierAt::Child(_)) => declaration.modifier(at).map(|c| Self::modifier(&c)),
             Some(ModifierAt::Parent(_)) => wrapper.as_ref().map(|(_, w)| Self::leading_keywords(w)),
             None => None,
         };
@@ -344,5 +327,80 @@ impl<'r> SymbolExtractor<'r> {
             }
         }
         false
+    }
+}
+
+#[cfg(all(test, feature = "rust"))]
+mod move_pieces_tests {
+    use crate::rust::Rust;
+    use vvv_core::{CompanionOwnership, Language, SymbolKind};
+
+    #[test]
+    fn generic_and_trait_impls_belong_to_the_exact_type_in_their_scope() {
+        let source = "/// docs\n#[derive(Clone)]\npub struct Selected<T>(T);\nimpl<T> Selected<T> {}\nimpl<T: Default> Default for Selected<T> {}\nmod child { struct Selected; impl Selected {} }";
+        let facts = Rust::new().facts(source).unwrap();
+        let declarations: Vec<_> = facts
+            .symbols
+            .iter()
+            .filter(|symbol| symbol.name == "Selected" && symbol.kind == SymbolKind::Struct)
+            .collect();
+        let root = facts
+            .declaration_pieces
+            .iter()
+            .find(|pieces| pieces.declaration == declarations[0].span)
+            .unwrap();
+        assert!(root.top_level);
+        assert_eq!(root.companions.len(), 2);
+        assert!(
+            root.companions
+                .iter()
+                .all(|piece| piece.ownership == CompanionOwnership::SameScopeTarget)
+        );
+        assert!(
+            source[declarations[0].extent.start..declarations[0].extent.end]
+                .starts_with("/// docs")
+        );
+        let child = facts
+            .declaration_pieces
+            .iter()
+            .find(|pieces| pieces.declaration == declarations[1].span)
+            .unwrap();
+        assert!(!child.top_level);
+        assert_eq!(child.companions.len(), 1);
+    }
+    #[test]
+    fn conditional_qualified_and_shadowed_targets_do_not_guess_ownership() {
+        for (source, expected) in [
+            (
+                "#[cfg(unix)] struct S; #[cfg(windows)] struct S; impl S {}",
+                CompanionOwnership::AmbiguousTarget,
+            ),
+            (
+                "struct S; impl crate::S {}",
+                CompanionOwnership::UnsupportedTarget,
+            ),
+            (
+                "struct S; mod child { use super::S; impl S {} }",
+                CompanionOwnership::UnsupportedTarget,
+            ),
+            (
+                "struct S; impl<S> Trait for S {}",
+                CompanionOwnership::UnsupportedTarget,
+            ),
+        ] {
+            let facts = Rust::new().facts(source).unwrap();
+            let declaration = facts
+                .symbols
+                .iter()
+                .find(|symbol| symbol.kind == SymbolKind::Struct)
+                .unwrap();
+            let pieces = facts
+                .declaration_pieces
+                .iter()
+                .find(|pieces| pieces.declaration == declaration.span)
+                .unwrap();
+            assert_eq!(pieces.companions.len(), 1, "{source}");
+            assert_eq!(pieces.companions[0].ownership, expected, "{source}");
+        }
     }
 }

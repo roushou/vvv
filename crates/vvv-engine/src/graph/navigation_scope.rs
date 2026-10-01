@@ -1,14 +1,17 @@
 //! Navigation precedence in scopes with unknown macro expansions.
+
 use vvv_core::{BindingNamespace, Facts, LexicalBinding, PathHead, Span, SymbolKind};
 
 pub(super) struct NavigationScope<'a> {
     facts: &'a Facts,
     span: Span,
 }
+
 impl<'a> NavigationScope<'a> {
     pub(super) fn new(facts: &'a Facts, span: Span) -> Self {
         Self { facts, span }
     }
+
     pub(super) fn permits_binding(&self, binding: &LexicalBinding) -> bool {
         self.facts
             .scope_uncertainties
@@ -34,6 +37,7 @@ impl<'a> NavigationScope<'a> {
                             || binding.visible_from >= unknown.invocation.end))
             })
     }
+
     pub(super) fn permits_module(&self) -> bool {
         !self
             .facts
@@ -46,6 +50,48 @@ impl<'a> NavigationScope<'a> {
                     && import.path.head == PathHead::Package
             })
     }
+    /// An immutable pattern may refer to a module constant or constructor.
+    /// Consult those bindings before treating its spelling as a new local.
+    pub(super) fn pattern_module(&self, name: &str) -> bool {
+        self.facts.lexical.iter().any(|binding| {
+            binding.symbol.name == name
+                && binding.symbol.kind == SymbolKind::Variable
+                && !binding.explicit
+                && (binding.symbol.name_span == self.span
+                    || binding.visible(name, self.span, BindingNamespace::Value))
+        }) && self.pattern_evidence(name)
+    }
+
+    pub(super) fn pattern_evidence(&self, name: &str) -> bool {
+        self.facts
+            .module_scopes
+            .iter()
+            .filter(|scope| scope.span.contains(&self.span))
+            .min_by_key(|scope| scope.span.len())
+            .is_some_and(|scope| {
+                self.facts.symbols.iter().any(|symbol| {
+                    symbol.name == name
+                        && matches!(
+                            symbol.kind,
+                            SymbolKind::Const
+                                | SymbolKind::Static
+                                | SymbolKind::Struct
+                                | SymbolKind::Variant
+                        )
+                        && scope
+                            .declarations
+                            .iter()
+                            .any(|declaration| declaration.name_span == symbol.name_span)
+                }) || self.facts.imports.iter().any(|import| {
+                    (import.glob || import.binding().is_some_and(|bound| bound.as_str() == name))
+                        && scope
+                            .imports
+                            .iter()
+                            .any(|binding| binding.span == import.span)
+                })
+            })
+    }
+
     pub(super) fn import_scope(&self, name: &str) -> Option<Span> {
         self.facts
             .import_scopes

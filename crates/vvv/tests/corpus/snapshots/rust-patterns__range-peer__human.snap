@@ -1,0 +1,8 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+LIMIT src/lib.rs:15:11 [3d86f42f4963]
+--- stderr ---

@@ -31,11 +31,24 @@ enum Hits {
 pub struct AstGrepSearcher<L> {
     lang: L,
     grammar: Grammar,
+    navigation_syntax: super::navigation::NavigationSyntax,
 }
 
 impl<L: LanguageExt> AstGrepSearcher<L> {
     pub fn new(lang: L, grammar: Grammar) -> Self {
-        Self { lang, grammar }
+        Self {
+            lang,
+            grammar,
+            navigation_syntax: super::navigation::NavigationSyntax::Tables,
+        }
+    }
+
+    pub(crate) fn with_navigation_syntax(
+        mut self,
+        syntax: super::navigation::NavigationSyntax,
+    ) -> Self {
+        self.navigation_syntax = syntax;
+        self
     }
 
     /// How this grammar spells paths.
@@ -54,7 +67,12 @@ impl<L: LanguageExt> AstGrepSearcher<L> {
 
     pub fn imports(&self, source: &str) -> Result<Vec<ImportRef>, SearchError> {
         let root = self.lang.ast_grep(source);
-        ImportExtractor::new(&self.grammar.imports, self.lang.clone()).extract(&root.root())
+        ImportExtractor::new(
+            &self.grammar.imports,
+            self.lang.clone(),
+            self.navigation_syntax,
+        )
+        .extract(&root.root())
     }
 
     /// What `find` would compile for `query`, without a file: a bare name
@@ -95,14 +113,16 @@ impl<L: LanguageExt> AstGrepSearcher<L> {
         // Symbols only pay off once something matched; most files miss.
         let mut matches = match hits {
             Hits::Names(m) | Hits::Nodes(m) if m.is_empty() => return Ok(m),
-            Hits::Declarations => SymbolExtractor::new(self.grammar.symbols)
-                .extract(&node, source)
-                .into_iter()
-                .map(|(node, symbol)| RawMatch {
-                    symbol: Some(symbol),
-                    ..RawMatch::plain(node.range().into(), node.kind(), node.text())
-                })
-                .collect(),
+            Hits::Declarations => {
+                SymbolExtractor::new(self.grammar.symbols, self.navigation_syntax)
+                    .extract(&node, source)
+                    .into_iter()
+                    .map(|(node, symbol)| RawMatch {
+                        symbol: Some(symbol),
+                        ..RawMatch::plain(node.range().into(), node.kind(), node.text())
+                    })
+                    .collect()
+            }
             // A structural hit is a whole declaration; a name hit is its identifier.
             Hits::Names(m) => self.attach_symbols(&node, source, m, |s| s.name_span),
             Hits::Nodes(m) => self.attach_symbols(&node, source, m, |s| s.span),
@@ -171,7 +191,8 @@ impl<L: LanguageExt> AstGrepSearcher<L> {
         matches: Vec<RawMatch>,
         key: fn(&Symbol) -> Span,
     ) -> Vec<RawMatch> {
-        let symbols = SymbolExtractor::new(self.grammar.symbols).extract(node, source);
+        let symbols = SymbolExtractor::new(self.grammar.symbols, self.navigation_syntax)
+            .extract(node, source);
         let by_key: BTreeMap<Span, &Symbol> = symbols.iter().map(|(_, s)| (key(s), s)).collect();
         matches
             .into_iter()
@@ -191,7 +212,7 @@ impl<L: LanguageExt> AstGrepSearcher<L> {
 
     pub fn symbols(&self, source: &str) -> Vec<Symbol> {
         let root = self.lang.ast_grep(source);
-        SymbolExtractor::new(self.grammar.symbols)
+        SymbolExtractor::new(self.grammar.symbols, self.navigation_syntax)
             .extract(&root.root(), source)
             .into_iter()
             .map(|(_, symbol)| symbol)
@@ -202,24 +223,38 @@ impl<L: LanguageExt> AstGrepSearcher<L> {
     pub fn facts(&self, source: &str) -> Result<Facts, SearchError> {
         let root = self.lang.ast_grep(source);
         let node = root.root();
-        let declarations = SymbolExtractor::new(self.grammar.symbols).extract(&node, source);
-        let signatures = super::signatures::Signatures::new(self.grammar.signatures)
-            .extract(&declarations, source);
-        let pieces = SymbolExtractor::new(self.grammar.symbols).pieces(&declarations);
+        let declarations = SymbolExtractor::new(self.grammar.symbols, self.navigation_syntax)
+            .extract(&node, source);
+        let signatures = super::signatures::Signatures::new(self.grammar.signatures).extract(
+            &declarations,
+            source,
+            self.navigation_syntax,
+        );
+        let pieces = SymbolExtractor::new(self.grammar.symbols, self.navigation_syntax)
+            .pieces(&declarations);
         let symbols = declarations.into_iter().map(|(_, symbol)| symbol).collect();
-        let imports =
-            ImportExtractor::new(&self.grammar.imports, self.lang.clone()).extract(&node)?;
-        let bindings = ImportExtractor::new(&self.grammar.imports, self.lang.clone())
-            .bindings(&node, &imports);
+        let imports = ImportExtractor::new(
+            &self.grammar.imports,
+            self.lang.clone(),
+            self.navigation_syntax,
+        )
+        .extract(&node)?;
+        let bindings = ImportExtractor::new(
+            &self.grammar.imports,
+            self.lang.clone(),
+            self.navigation_syntax,
+        )
+        .bindings(&node, &imports);
         let highlights = Highlighter::new(self.grammar.highlights).extract(&node);
         let mut facts = Facts::new(symbols, imports, highlights);
         facts.import_bindings = bindings;
         facts.signatures = signatures;
         facts.declaration_pieces = pieces;
-        super::calls::Calls::new(&self.grammar).extract(&node, &mut facts);
-        super::modules::Modules::new(&self.grammar, self.lang.clone()).extract(&node, &mut facts);
+        super::calls::Calls::new(&self.grammar).extract(&node, &mut facts, self.navigation_syntax);
+        super::modules::Modules::new(&self.grammar, self.lang.clone(), self.navigation_syntax)
+            .extract(&node, &mut facts);
         let navigation = super::navigation::NavigationFacts::new(&self.grammar);
-        navigation.extract(&node, &mut facts);
+        let coverage = navigation.extract(&node, &mut facts, self.navigation_syntax);
         let kinds: Vec<u16> = self
             .grammar
             .identifiers
@@ -228,14 +263,19 @@ impl<L: LanguageExt> AstGrepSearcher<L> {
             .collect();
         for n in node.dfs().filter(|n| kinds.contains(&n.kind_id())) {
             let span = n.range().into();
-            let safe = n.ancestors().all(|ancestor| {
-                !navigation.barrier(&ancestor, &facts, self.grammar.navigation_barriers)
-                    && self
+            let safe = coverage.supports(span)
+                && n.ancestors().all(|ancestor| {
+                    !navigation.barrier(
+                        &ancestor,
+                        &facts,
+                        self.grammar.navigation_barriers,
+                        &coverage,
+                    ) && self
                         .grammar
                         .navigation_bindings
                         .iter()
                         .all(|field| ancestor.field(field).is_none())
-            });
+                });
             let imported = facts
                 .imports
                 .iter()

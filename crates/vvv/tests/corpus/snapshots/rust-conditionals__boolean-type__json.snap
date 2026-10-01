@@ -1,0 +1,64 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "a5d6caab8bd4ca8e2ba06d1dd3c6a2feda29fc484e39aef67e48193fb36d4a3f",
+    "outcome": "resolved",
+    "target": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/lib.rs",
+        "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+        "span": {
+          "start": 35,
+          "end": 51
+        }
+      },
+      "name_span": {
+        "start": 46,
+        "end": 50
+      },
+      "kind": "struct"
+    },
+    "id": "a2a5a80cc012",
+    "name": "Data",
+    "start": {
+      "line": 2,
+      "column": 4
+    },
+    "evidence": {
+      "addresses": [
+        {
+          "package": "rust_conditionals",
+          "path": [
+            "api",
+            "Data"
+          ]
+        }
+      ]
+    },
+    "container": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/lib.rs",
+        "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+        "span": {
+          "start": 35,
+          "end": 51
+        }
+      },
+      "name_span": {
+        "start": 46,
+        "end": 50
+      },
+      "kind": "struct"
+    }
+  }
+}
+--- stderr ---

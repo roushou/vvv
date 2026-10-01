@@ -41,9 +41,10 @@ pub use import::{
 };
 pub use lang::{Grammar, Language, LanguageId, LanguageRegistry};
 pub use navigation::{
-    BindingNamespace, BindingRule, ImportScope, LexicalBinding, MacroScopeRule, ModuleDeclaration,
-    ModuleScope, ModuleScopeRule, NamedImport, NamedImportRule, QualifiedImport,
-    QualifiedImportRule, ScopeUncertainty,
+    BindingNamespace, BindingRule, ConstructorShape, ImportScope, LexicalBinding, MacroScopeRule,
+    ModuleDeclaration, ModuleScope, ModuleScopeRule, NamedImport, NamedImportRule,
+    PatternAlternatives, PatternBinding, PatternConstructor, PatternReference, PatternRole,
+    PatternScope, QualifiedImport, QualifiedImportRule, ScopeUncertainty,
 };
 pub use oracle::{Oracle, Referent};
 pub use paths::{ModulePath, Name, PathHead, PathSyntax, RelPath};

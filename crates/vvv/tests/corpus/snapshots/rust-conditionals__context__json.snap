@@ -1,0 +1,118 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "c822049f9bff03779e22b07cd30948787d47aea316f6479a1c74ba0c937eb96d",
+    "outcome": "resolved",
+    "items": [
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+            "span": {
+              "start": 348,
+              "end": 381
+            }
+          },
+          "name_span": {
+            "start": 357,
+            "end": 362
+          },
+          "kind": "variable"
+        },
+        "relation": "definition",
+        "via": null,
+        "excerpt": {
+          "path": "src/lib.rs",
+          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+          "span": {
+            "start": 348,
+            "end": 381
+          }
+        },
+        "start": {
+          "line": 16,
+          "column": 11
+        },
+        "text": "let Some(value) = Some(value + 1)",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+            "span": {
+              "start": 292,
+              "end": 315
+            }
+          },
+          "name_span": {
+            "start": 301,
+            "end": 306
+          },
+          "kind": "variable"
+        },
+        "relation": "referenced_definition",
+        "via": {
+          "path": "src/lib.rs",
+          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+          "span": {
+            "start": 371,
+            "end": 376
+          }
+        },
+        "excerpt": {
+          "path": "src/lib.rs",
+          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+          "span": {
+            "start": 292,
+            "end": 315
+          }
+        },
+        "start": {
+          "line": 14,
+          "column": 7
+        },
+        "text": "let Some(value) = input",
+        "complete": true
+      }
+    ],
+    "enclosing": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/lib.rs",
+        "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+        "span": {
+          "start": 238,
+          "end": 494
+        }
+      },
+      "name_span": {
+        "start": 241,
+        "end": 246
+      },
+      "kind": "function"
+    },
+    "omissions": {
+      "item_limit": 0,
+      "byte_limit": 0,
+      "lookup_limit": 0,
+      "file_limit": 0,
+      "ambiguous": 0,
+      "unavailable": 2,
+      "no_container": 0
+    },
+    "references_by_name": false
+  }
+}
+--- stderr ---

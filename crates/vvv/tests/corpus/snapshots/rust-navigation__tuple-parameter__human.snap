@@ -4,7 +4,7 @@ expression: "corpus.run(args, false)"
 ---
 exit 0
 --- stdout ---
-● parameter left   src/bindings.rs:1:10
+● parameter left   src/bindings.rs:1:11
 
 (left, right): (u8, u8)
 --- stderr ---

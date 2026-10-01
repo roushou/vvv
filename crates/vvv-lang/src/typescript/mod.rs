@@ -26,6 +26,7 @@ impl TypeScript {
             grammar::GRAMMAR,
             &grammar::SEMANTICS,
         )
+        .with_navigation_syntax(crate::syntax::NavigationSyntax::TypeScript)
         .with_layout(TsLayout)
         .with_surgery(TsSurgery)
     }
@@ -48,6 +49,7 @@ impl Tsx {
             grammar::GRAMMAR,
             &grammar::SEMANTICS,
         )
+        .with_navigation_syntax(crate::syntax::NavigationSyntax::TypeScript)
         .with_layout(TsLayout)
         .with_surgery(TsSurgery)
     }

@@ -1,4 +1,5 @@
 //! Navigation-only module ownership and scoped imports over captured language facts.
+
 use super::{Namespace, candidate::SourceFacts};
 use crate::{EngineError, Reach, RelPath, UnavailableReason};
 use std::{
@@ -20,16 +21,20 @@ struct Target {
     authority: Address,
     trail: Vec<Address>,
 }
+
 pub(super) struct ModuleTarget {
     pub path: RelPath,
     pub name_span: Span,
     pub trail: Vec<Address>,
 }
+
 pub(super) struct ModuleLookup {
+    pub steps: usize,
     pub targets: Vec<ModuleTarget>,
     pub inputs: BTreeSet<RelPath>,
     pub reason: UnavailableReason,
 }
+
 pub(super) struct ModuleNavigation<'a> {
     ns: &'a Namespace,
     inputs: BTreeSet<RelPath>,
@@ -38,6 +43,7 @@ pub(super) struct ModuleNavigation<'a> {
     resolving: HashSet<Address>,
     reason: UnavailableReason,
 }
+
 impl<'a> ModuleNavigation<'a> {
     pub(super) fn new(ns: &'a Namespace) -> Self {
         Self {
@@ -49,6 +55,7 @@ impl<'a> ModuleNavigation<'a> {
             reason: UnavailableReason::Unresolved,
         }
     }
+
     fn tick(&mut self) -> Result<(), EngineError> {
         self.ns.check_read()?;
         self.steps += 1;
@@ -57,9 +64,11 @@ impl<'a> ModuleNavigation<'a> {
         }
         Ok(())
     }
+
     fn observe(&mut self, source: &SourceFacts) {
         self.inputs.insert(source.path().into());
     }
+
     fn owners(&mut self, address: &Address) -> Result<Vec<Module>, EngineError> {
         self.tick()?;
         let mut result = Vec::new();
@@ -82,6 +91,7 @@ impl<'a> ModuleNavigation<'a> {
         }
         Ok(result)
     }
+
     fn restriction(&self, module: &Module, path: &ModulePath) -> Option<Address> {
         match path.head {
             PathHead::Here => Some(module.address.extend(path.segments.iter().cloned())),
@@ -91,6 +101,7 @@ impl<'a> ModuleNavigation<'a> {
             _ => self.ns.resolve(module.source.path(), path),
         }
     }
+
     fn visible(
         &self,
         module: &Module,
@@ -105,6 +116,7 @@ impl<'a> ModuleNavigation<'a> {
         )
         .admits(consumer)
     }
+
     fn binding(&mut self, module: &Module, import: &ImportRef) -> Result<Vec<Target>, EngineError> {
         self.tick()?;
         let key = (RelPath::from(module.source.path()), import.span);
@@ -120,6 +132,7 @@ impl<'a> ModuleNavigation<'a> {
         self.active.remove(&key);
         result
     }
+
     fn path(
         &mut self,
         module: &Module,
@@ -255,6 +268,7 @@ impl<'a> ModuleNavigation<'a> {
             None => Ok(vec![]),
         }
     }
+
     fn normalize(&mut self, target: Target) -> Result<Vec<Target>, EngineError> {
         self.tick()?;
         if target.trail.len() >= 128 {
@@ -378,6 +392,7 @@ impl<'a> ModuleNavigation<'a> {
         }
         Ok(vec![target])
     }
+
     fn declarations(
         &mut self,
         target: Target,
@@ -393,6 +408,7 @@ impl<'a> ModuleNavigation<'a> {
         self.resolving.remove(&address);
         result
     }
+
     fn declaration_targets(
         &mut self,
         target: Target,
@@ -403,6 +419,55 @@ impl<'a> ModuleNavigation<'a> {
         let Some(owner) = target.address.parent() else {
             return Ok(());
         };
+        if namespace == BindingNamespace::Value
+            && let (Some(module_address), Some(enum_name), Some(variant_name)) = (
+                owner.parent(),
+                owner.path().last(),
+                target.address.path().last(),
+            )
+        {
+            for module in self.owners(&module_address)? {
+                let facts = module.source.facts()?;
+                for declaration in &module.scope.declarations {
+                    let Some(enumeration) = facts.symbols.iter().find(|symbol| {
+                        symbol.name_span == declaration.name_span
+                            && symbol.kind == vvv_core::SymbolKind::Enum
+                            && symbol.name == enum_name.as_str()
+                    }) else {
+                        continue;
+                    };
+                    if !self.visible(
+                        &module,
+                        enumeration.modifier(),
+                        declaration.restriction.as_ref(),
+                        &target.authority,
+                    ) {
+                        continue;
+                    }
+                    for constructor in facts
+                        .pattern_constructors
+                        .iter()
+                        .filter(|constructor| constructor.owner == Some(enumeration.name_span))
+                    {
+                        if let Some(variant) = facts.symbols.iter().find(|symbol| {
+                            symbol.name_span == constructor.name_span
+                                && symbol.kind == vvv_core::SymbolKind::Variant
+                                && symbol.name == variant_name.as_str()
+                        }) {
+                            let mut trail = target.trail.clone();
+                            if trail.last() != Some(&target.address) {
+                                trail.push(target.address.clone());
+                            }
+                            output.push(ModuleTarget {
+                                path: module.source.path().into(),
+                                name_span: variant.name_span,
+                                trail,
+                            });
+                        }
+                    }
+                }
+            }
+        }
         let owners = self.owners(&owner)?;
         if owners.is_empty()
             && target.address.package() != target.authority.package()
@@ -498,12 +563,24 @@ impl<'a> ModuleNavigation<'a> {
         }
         Ok(())
     }
+
     pub(super) fn resolve(
+        self,
+        source: Arc<SourceFacts>,
+        span: Span,
+        name: &str,
+        namespace: BindingNamespace,
+    ) -> Result<ModuleLookup, EngineError> {
+        self.resolve_path(source, span, name, namespace, None)
+    }
+
+    pub(super) fn resolve_path(
         mut self,
         source: Arc<SourceFacts>,
         span: Span,
         name: &str,
         namespace: BindingNamespace,
+        supplied: Option<&ModulePath>,
     ) -> Result<ModuleLookup, EngineError> {
         self.observe(&source);
         let facts = source.facts()?;
@@ -515,6 +592,7 @@ impl<'a> ModuleNavigation<'a> {
             .cloned()
         else {
             return Ok(ModuleLookup {
+                steps: self.steps,
                 targets: vec![],
                 inputs: self.inputs,
                 reason: UnavailableReason::UnsupportedContext,
@@ -543,7 +621,9 @@ impl<'a> ModuleNavigation<'a> {
             .iter()
             .filter(|import| import.span.contains(&span))
             .min_by_key(|import| import.span.len());
-        let path = if let Some(import) = import {
+        let path = if let Some(path) = supplied {
+            path.clone()
+        } else if let Some(import) = import {
             let skipped = import
                 .group
                 .as_ref()
@@ -577,7 +657,12 @@ impl<'a> ModuleNavigation<'a> {
         for address in addresses.drain(..) {
             self.declarations(address, namespace, &mut targets)?;
         }
-        if targets.is_empty() && import.is_none() && !explicit {
+        if targets.is_empty()
+            && import.is_none()
+            && !explicit
+            && path.head == PathHead::Named
+            && path.segments.len() == 1
+        {
             for binding in &module.scope.imports {
                 if let Some(import) = facts
                     .imports
@@ -598,6 +683,7 @@ impl<'a> ModuleNavigation<'a> {
             }
         }
         Ok(ModuleLookup {
+            steps: self.steps,
             targets,
             inputs: self.inputs,
             reason: self.reason,

@@ -10,7 +10,8 @@ use ast_grep_core::tree_sitter::LanguageExt;
 
 /// A [`Language`] entirely described by data and pure parts: an id, the
 /// extensions it claims, a [`Grammar`] and its [`Semantics`], and optionally
-/// a [`Layout`] and a [`Surgery`]. Every grammar-backed language is one of
+/// a [`Layout`] and a [`Surgery`], plus a parser-side navigation selection.
+/// Every grammar-backed language is one of
 /// these; a language module is the constructor plus its tables.
 #[derive(Clone)]
 pub struct AstGrepLanguage<L> {
@@ -50,6 +51,12 @@ impl<L: LanguageExt> AstGrepLanguage<L> {
             layout: None,
             surgery: None,
         }
+    }
+
+    /// Choose construct-aware navigation while keeping parser nodes inside syntax.
+    pub fn with_navigation_syntax(mut self, syntax: super::NavigationSyntax) -> Self {
+        self.searcher = self.searcher.with_navigation_syntax(syntax);
+        self
     }
 
     pub fn with_layout(mut self, layout: impl Layout + 'static) -> Self {

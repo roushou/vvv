@@ -15,6 +15,10 @@ use crate::text::Span;
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 pub struct Facts {
     #[serde(default)]
+    pub patterns: Vec<crate::PatternScope>,
+    #[serde(default)]
+    pub pattern_constructors: Vec<crate::PatternConstructor>,
+    #[serde(default)]
     pub import_scopes: Vec<crate::ImportScope>,
     /// Explicit module ownership for navigation; mutation addresses are unchanged.
     #[serde(default)]
@@ -160,6 +164,19 @@ impl Facts {
 mod tests {
     use super::*;
     use crate::symbol::SymbolKind;
+
+    #[test]
+    fn older_facts_keep_pattern_evidence_empty() {
+        let mut encoded = serde_json::to_value(Facts::default()).unwrap();
+        encoded.as_object_mut().unwrap().remove("patterns");
+        encoded
+            .as_object_mut()
+            .unwrap()
+            .remove("pattern_constructors");
+        let facts: Facts = serde_json::from_value(encoded).unwrap();
+        assert!(facts.patterns.is_empty());
+        assert!(facts.pattern_constructors.is_empty());
+    }
 
     #[test]
     fn tokens_are_interned_and_found_by_name() {

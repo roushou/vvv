@@ -48,23 +48,23 @@ exit 0
       },
       "declaration": {
         "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
-        "id": "8c4cdbccdcfa",
+        "id": "bc3b76abedd3",
         "path": "src/bindings.rs",
         "language": "rust",
         "span": {
-          "start": 167,
-          "end": 192
+          "start": 178,
+          "end": 183
         },
         "start": {
           "line": 2,
-          "column": 33
+          "column": 44
         },
         "end": {
           "line": 2,
-          "column": 58
+          "column": 49
         },
         "kind": "declaration",
-        "text": "let (left, right) = pair;",
+        "text": "right",
         "line": "fn destructure(pair: (u8, u8)) { let (left, right) = pair; consume(right); }",
         "symbol": {
           "kind": "variable",

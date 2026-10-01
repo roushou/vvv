@@ -1,0 +1,559 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "8d519f23e3ef2d37470ac2bb5a73d65b6869c182112d7c246ff22101f7a3dc5a",
+    "subject": {
+      "outcome": "resolved",
+      "target": {
+        "language": "rust",
+        "declaration": {
+          "path": "src/lib.rs",
+          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+          "span": {
+            "start": 14,
+            "end": 30
+          }
+        },
+        "name_span": {
+          "start": 21,
+          "end": 25
+        },
+        "kind": "function"
+      },
+      "id": "dfb8c5d735e7",
+      "name": "work",
+      "start": {
+        "line": 1,
+        "column": 4
+      },
+      "evidence": {
+        "addresses": []
+      },
+      "container": {
+        "language": "rust",
+        "declaration": {
+          "path": "src/lib.rs",
+          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+          "span": {
+            "start": 14,
+            "end": 30
+          }
+        },
+        "name_span": {
+          "start": 21,
+          "end": 25
+        },
+        "kind": "function"
+      }
+    },
+    "kind": "callers",
+    "scope": {
+      "paths": [],
+      "packages": []
+    },
+    "items": [
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+          "span": {
+            "start": 592,
+            "end": 596
+          }
+        },
+        "start": {
+          "line": 28,
+          "column": 8
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+            "span": {
+              "start": 495,
+              "end": 812
+            }
+          },
+          "name_span": {
+            "start": 498,
+            "end": 505
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+            "span": {
+              "start": 14,
+              "end": 30
+            }
+          },
+          "name_span": {
+            "start": 21,
+            "end": 25
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "rust_conditionals",
+              "path": [
+                "work"
+              ]
+            },
+            {
+              "package": "rust_conditionals",
+              "path": [
+                "api",
+                "work"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+          "span": {
+            "start": 654,
+            "end": 658
+          }
+        },
+        "start": {
+          "line": 31,
+          "column": 8
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+            "span": {
+              "start": 495,
+              "end": 812
+            }
+          },
+          "name_span": {
+            "start": 498,
+            "end": 505
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+            "span": {
+              "start": 14,
+              "end": 30
+            }
+          },
+          "name_span": {
+            "start": 21,
+            "end": 25
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "rust_conditionals",
+              "path": [
+                "work"
+              ]
+            },
+            {
+              "package": "rust_conditionals",
+              "path": [
+                "api",
+                "work"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+          "span": {
+            "start": 709,
+            "end": 713
+          }
+        },
+        "start": {
+          "line": 34,
+          "column": 8
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+            "span": {
+              "start": 495,
+              "end": 812
+            }
+          },
+          "name_span": {
+            "start": 498,
+            "end": 505
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+            "span": {
+              "start": 14,
+              "end": 30
+            }
+          },
+          "name_span": {
+            "start": 21,
+            "end": 25
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "rust_conditionals",
+              "path": [
+                "work"
+              ]
+            },
+            {
+              "package": "rust_conditionals",
+              "path": [
+                "api",
+                "work"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+          "span": {
+            "start": 892,
+            "end": 896
+          }
+        },
+        "start": {
+          "line": 42,
+          "column": 8
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+            "span": {
+              "start": 813,
+              "end": 981
+            }
+          },
+          "name_span": {
+            "start": 816,
+            "end": 828
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "indirect",
+        "binding": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+            "span": {
+              "start": 859,
+              "end": 881
+            }
+          },
+          "name_span": {
+            "start": 868,
+            "end": 872
+          },
+          "kind": "variable"
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+          "span": {
+            "start": 956,
+            "end": 960
+          }
+        },
+        "start": {
+          "line": 45,
+          "column": 12
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+            "span": {
+              "start": 813,
+              "end": 981
+            }
+          },
+          "name_span": {
+            "start": 816,
+            "end": 828
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+            "span": {
+              "start": 14,
+              "end": 30
+            }
+          },
+          "name_span": {
+            "start": 21,
+            "end": 25
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "rust_conditionals",
+              "path": [
+                "work"
+              ]
+            },
+            {
+              "package": "rust_conditionals",
+              "path": [
+                "api",
+                "work"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+          "span": {
+            "start": 1625,
+            "end": 1629
+          }
+        },
+        "start": {
+          "line": 73,
+          "column": 20
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+            "span": {
+              "start": 1435,
+              "end": 1640
+            }
+          },
+          "name_span": {
+            "start": 1438,
+            "end": 1450
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+            "span": {
+              "start": 14,
+              "end": 30
+            }
+          },
+          "name_span": {
+            "start": 21,
+            "end": 25
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "rust_conditionals",
+              "path": [
+                "api",
+                "work"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/lib.rs",
+          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+          "span": {
+            "start": 2271,
+            "end": 2275
+          }
+        },
+        "start": {
+          "line": 104,
+          "column": 8
+        },
+        "spelling": "work",
+        "caller": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/lib.rs",
+            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+            "span": {
+              "start": 2169,
+              "end": 2286
+            }
+          },
+          "name_span": {
+            "start": 2172,
+            "end": 2181
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "ambiguous",
+        "candidates": [
+          {
+            "target": {
+              "language": "rust",
+              "declaration": {
+                "path": "src/lib.rs",
+                "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+                "span": {
+                  "start": 14,
+                  "end": 30
+                }
+              },
+              "name_span": {
+                "start": 21,
+                "end": 25
+              },
+              "kind": "function"
+            },
+            "id": "dfb8c5d735e7",
+            "name": "work",
+            "start": {
+              "line": 1,
+              "column": 4
+            },
+            "evidence": {
+              "addresses": [
+                {
+                  "package": "rust_conditionals",
+                  "path": [
+                    "work"
+                  ]
+                },
+                {
+                  "package": "rust_conditionals",
+                  "path": [
+                    "api",
+                    "work"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "target": {
+              "language": "rust",
+              "declaration": {
+                "path": "src/lib.rs",
+                "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
+                "span": {
+                  "start": 2250,
+                  "end": 2262
+                }
+              },
+              "name_span": {
+                "start": 2253,
+                "end": 2257
+              },
+              "kind": "function"
+            },
+            "id": "11dc99c4a585",
+            "name": "work",
+            "start": {
+              "line": 103,
+              "column": 8
+            },
+            "evidence": {
+              "addresses": []
+            }
+          }
+        ]
+      }
+    ],
+    "coverage": {
+      "limitations": [
+        "receiver_types",
+        "indirect_targets",
+        "macro_expansion",
+        "anonymous_callers",
+        "unsupported_bindings",
+        "unenumerated_aliases"
+      ],
+      "files_scanned": 1,
+      "files_remaining": 0,
+      "lookups": 7,
+      "omitted_items": 0,
+      "stopped_by": null,
+      "unsupported_files": 0,
+      "unresolved_imports": 0,
+      "scan_complete": true
+    }
+  }
+}
+--- stderr ---

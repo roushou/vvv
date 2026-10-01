@@ -1,0 +1,12 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+Definition  src/lib.rs:17:12
+let Some(value) = Some(value + 1)
+Referenced definition  src/lib.rs:15:8
+let Some(value) = input
+--- stderr ---
+Omitted: 0 item limit, 0 byte limit, 0 lookup limit, 0 file limit, 0 ambiguous, 2 unavailable, 0 without a declaration

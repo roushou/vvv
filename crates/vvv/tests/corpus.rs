@@ -1756,6 +1756,7 @@ impl PageTranscript {
             _ => {}
         }
     }
+
     fn call(&mut self, engine: &Engine, request: serde_json::Value) -> serde_json::Value {
         #[cfg(feature = "schemas")]
         let command = request["command"].as_str().unwrap().to_owned();
@@ -1823,6 +1824,7 @@ impl PageTranscript {
             )
         });
     }
+
     fn plans(corpus: Corpus, path: &str, symbol: &str) {
         let (vfs, engine) = corpus.engine();
         let before = snapshot(&vfs);
@@ -1891,6 +1893,7 @@ impl PageTranscript {
             )
         });
     }
+
     fn moves(corpus: Corpus, from: &str, to: &str) {
         let (vfs, engine) = corpus.engine();
         let before = snapshot(&vfs);
@@ -1959,6 +1962,7 @@ impl PageTranscript {
             )
         });
     }
+
     fn rewrites(corpus: Corpus) {
         let (vfs, engine) = corpus.engine();
         let before = snapshot(&vfs);
@@ -2025,6 +2029,7 @@ impl PageTranscript {
             )
         });
     }
+
     fn corpus(corpus: Corpus, path: &str, line: u32, column: u32) {
         let (_, engine) = corpus.engine();
         let mut transcript = Self {
@@ -2570,4 +2575,478 @@ const RUST_LOCAL_IMPORTS: Corpus = Corpus {
 #[test]
 fn rust_local_imports() {
     golden(&RUST_LOCAL_IMPORTS);
+}
+
+#[cfg(feature = "rust")]
+const RUST_CONDITIONALS: Corpus = Corpus {
+    name: "rust-conditionals",
+    cases: &[
+        ("scrutinee", &["navigate", "src/lib.rs:7:26", "--compact"]),
+        ("success", &["navigate", "src/lib.rs:8:17", "--compact"]),
+        ("failure", &["navigate", "src/lib.rs:10:17", "--compact"]),
+        ("after", &["navigate", "src/lib.rs:12:13", "--compact"]),
+        (
+            "chain-first",
+            &["navigate", "src/lib.rs:16:12", "--compact"],
+        ),
+        (
+            "chain-next-initializer",
+            &["navigate", "src/lib.rs:17:35", "--compact"],
+        ),
+        (
+            "chain-second",
+            &["navigate", "src/lib.rs:18:12", "--compact"],
+        ),
+        (
+            "chain-success",
+            &["navigate", "src/lib.rs:20:17", "--compact"],
+        ),
+        (
+            "chain-failure",
+            &["navigate", "src/lib.rs:22:17", "--compact"],
+        ),
+        (
+            "chain-after",
+            &["navigate", "src/lib.rs:24:13", "--compact"],
+        ),
+        (
+            "boolean-import",
+            &["navigate", "src/lib.rs:29:9", "--compact"],
+        ),
+        (
+            "boolean-type",
+            &["navigate", "src/lib.rs:30:28", "--compact"],
+        ),
+        (
+            "boolean-else-import",
+            &["navigate", "src/lib.rs:32:9", "--compact"],
+        ),
+        (
+            "pattern-import",
+            &["navigate", "src/lib.rs:35:9", "--compact"],
+        ),
+        (
+            "pattern-local",
+            &["navigate", "src/lib.rs:36:17", "--compact"],
+        ),
+        ("capture", &["navigate", "src/lib.rs:37:20", "--compact"]),
+        ("noncapture", &["navigate", "src/lib.rs:38:31", "--compact"]),
+        (
+            "callable-binding",
+            &["navigate", "src/lib.rs:43:9", "--compact"],
+        ),
+        (
+            "inner-import",
+            &["navigate", "src/lib.rs:46:13", "--compact"],
+        ),
+        (
+            "first-alternative",
+            &["navigate", "src/lib.rs:52:17", "--compact"],
+        ),
+        (
+            "second-alternative",
+            &["navigate", "src/lib.rs:54:17", "--compact"],
+        ),
+        (
+            "final-alternative",
+            &["navigate", "src/lib.rs:56:17", "--compact"],
+        ),
+        (
+            "struct-success",
+            &["navigate", "src/lib.rs:61:17", "--compact"],
+        ),
+        (
+            "struct-else",
+            &["navigate", "src/lib.rs:63:17", "--compact"],
+        ),
+        (
+            "struct-after",
+            &["navigate", "src/lib.rs:65:13", "--compact"],
+        ),
+        (
+            "macro-outer",
+            &["navigate", "src/lib.rs:71:17", "--compact"],
+        ),
+        (
+            "macro-inner",
+            &["navigate", "src/lib.rs:73:17", "--compact"],
+        ),
+        (
+            "macro-rooted",
+            &["navigate", "src/lib.rs:74:21", "--compact"],
+        ),
+        (
+            "constant-pattern",
+            &["navigate", "src/lib.rs:79:17", "--compact"],
+        ),
+        (
+            "constant-use",
+            &["navigate", "src/lib.rs:80:17", "--compact"],
+        ),
+        (
+            "loop-barrier",
+            &["navigate", "src/lib.rs:85:30", "--compact"],
+        ),
+        ("context", &["context", "src/lib.rs:20:17"]),
+        ("callers", &["relationships", "callers", "src/lib.rs:2:12"]),
+        (
+            "module-constant-pattern",
+            &["navigate", "src/lib.rs:91:17", "--compact"],
+        ),
+        (
+            "module-constant-use",
+            &["navigate", "src/lib.rs:92:17", "--compact"],
+        ),
+        (
+            "module-imported-pattern",
+            &["navigate", "src/lib.rs:97:17", "--compact"],
+        ),
+        (
+            "module-imported-use",
+            &["navigate", "src/lib.rs:98:17", "--compact"],
+        ),
+        (
+            "import-item-ambiguity",
+            &["navigate", "src/lib.rs:105:9", "--compact"],
+        ),
+        (
+            "import-item-ambiguity-selected",
+            &["navigate", "src/lib.rs:105:9", "--compact", "--select", "2"],
+        ),
+        (
+            "pattern-ambiguity",
+            &["navigate", "src/lib.rs:110:17", "--compact"],
+        ),
+        (
+            "pattern-ambiguity-selected",
+            &[
+                "navigate",
+                "src/lib.rs:110:17",
+                "--compact",
+                "--select",
+                "2",
+            ],
+        ),
+    ],
+    mutations: || vec![],
+};
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_conditionals() {
+    golden(&RUST_CONDITIONALS);
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_constructs() {
+    golden(&Corpus {
+        name: "rust-constructs",
+        cases: &[
+            ("arm-body", &["navigate", "src/lib.rs:5:18", "--compact"]),
+            ("arm-capture", &["navigate", "src/lib.rs:6:35", "--compact"]),
+            (
+                "arm-nested-item",
+                &["navigate", "src/lib.rs:7:32", "--compact"],
+            ),
+            ("other-arm", &["navigate", "src/lib.rs:9:19", "--compact"]),
+            (
+                "after-match",
+                &["navigate", "src/lib.rs:11:10", "--compact"],
+            ),
+            ("for-body", &["navigate", "src/lib.rs:13:14", "--compact"]),
+            ("after-for", &["navigate", "src/lib.rs:15:10", "--compact"]),
+            (
+                "while-let-body",
+                &["navigate", "src/lib.rs:17:14", "--compact"],
+            ),
+            (
+                "after-while-let",
+                &["navigate", "src/lib.rs:19:10", "--compact"],
+            ),
+            (
+                "while-condition",
+                &["navigate", "src/lib.rs:20:28", "--compact"],
+            ),
+            ("loop-body", &["navigate", "src/lib.rs:21:17", "--compact"]),
+            (
+                "closure-body",
+                &["navigate", "src/lib.rs:22:40", "--compact"],
+            ),
+            (
+                "after-closure",
+                &["navigate", "src/lib.rs:23:10", "--compact"],
+            ),
+            ("struct-arm", &["navigate", "src/lib.rs:25:39", "--compact"]),
+            (
+                "supported-peer-arm",
+                &["navigate", "src/lib.rs:26:19", "--compact"],
+            ),
+            (
+                "after-struct-match",
+                &["navigate", "src/lib.rs:28:10", "--compact"],
+            ),
+            (
+                "for-iterator",
+                &["navigate", "src/lib.rs:31:25", "--compact"],
+            ),
+            (
+                "while-chain-initializer",
+                &["navigate", "src/lib.rs:32:74", "--compact"],
+            ),
+            (
+                "while-chain-body",
+                &["navigate", "src/lib.rs:33:14", "--compact"],
+            ),
+            (
+                "match-guard",
+                &["navigate", "src/lib.rs:36:24", "--compact"],
+            ),
+            ("guard-peer", &["navigate", "src/lib.rs:37:19", "--compact"]),
+            (
+                "after-guard",
+                &["navigate", "src/lib.rs:39:10", "--compact"],
+            ),
+            ("struct-for", &["navigate", "src/lib.rs:40:51", "--compact"]),
+            (
+                "after-struct-for",
+                &["navigate", "src/lib.rs:41:10", "--compact"],
+            ),
+            (
+                "arm-macro-explicit",
+                &["navigate", "src/lib.rs:43:47", "--compact"],
+            ),
+            ("macro-peer", &["navigate", "src/lib.rs:44:19", "--compact"]),
+        ],
+        mutations: Vec::new,
+    });
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_struct_patterns() {
+    golden(&Corpus {
+        name: "rust-struct-patterns",
+        cases: &[
+            ("shorthand", &["navigate", "src/lib.rs:4:17", "--compact"]),
+            ("field-label", &["navigate", "src/lib.rs:4:20", "--compact"]),
+            (
+                "renamed-declaration",
+                &["navigate", "src/lib.rs:4:23", "--compact"],
+            ),
+            (
+                "local-shorthand",
+                &["navigate", "src/lib.rs:5:10", "--compact"],
+            ),
+            (
+                "local-renamed",
+                &["navigate", "src/lib.rs:6:10", "--compact"],
+            ),
+            (
+                "condition-shorthand",
+                &["navigate", "src/lib.rs:8:14", "--compact"],
+            ),
+            (
+                "condition-ref",
+                &["navigate", "src/lib.rs:9:17", "--compact"],
+            ),
+            ("else-outer", &["navigate", "src/lib.rs:10:19", "--compact"]),
+            ("after-if", &["navigate", "src/lib.rs:11:10", "--compact"]),
+            (
+                "arm-renamed",
+                &["navigate", "src/lib.rs:13:56", "--compact"],
+            ),
+            ("arm-ref", &["navigate", "src/lib.rs:13:70", "--compact"]),
+            ("peer-arm", &["navigate", "src/lib.rs:14:19", "--compact"]),
+            (
+                "for-binding",
+                &["navigate", "src/lib.rs:16:47", "--compact"],
+            ),
+            (
+                "while-binding",
+                &["navigate", "src/lib.rs:17:58", "--compact"],
+            ),
+            (
+                "closure-binding",
+                &["navigate", "src/lib.rs:18:59", "--compact"],
+            ),
+            (
+                "let-else-failure",
+                &["navigate", "src/lib.rs:19:58", "--compact"],
+            ),
+            (
+                "let-else-success",
+                &["navigate", "src/lib.rs:20:10", "--compact"],
+            ),
+            ("parameter", &["navigate", "src/lib.rs:22:52", "--compact"]),
+            (
+                "nested-capture",
+                &["navigate", "src/lib.rs:24:67", "--compact"],
+            ),
+            (
+                "after-capture",
+                &["navigate", "src/lib.rs:25:10", "--compact"],
+            ),
+            ("duplicate", &["navigate", "src/lib.rs:29:10", "--compact"]),
+            (
+                "duplicate-selected",
+                &["navigate", "src/lib.rs:29:10", "--compact", "--select", "2"],
+            ),
+        ],
+        mutations: Vec::new,
+    });
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_patterns() {
+    golden(&Corpus {
+        name: "rust-patterns",
+        cases: &[
+            (
+                "alternatives",
+                &["navigate", "src/lib.rs:4:44", "--compact"],
+            ),
+            ("capture", &["navigate", "src/lib.rs:5:39", "--compact"]),
+            (
+                "capture-whole",
+                &["navigate", "src/lib.rs:5:55", "--compact"],
+            ),
+            (
+                "literal-range",
+                &["navigate", "src/lib.rs:6:33", "--compact"],
+            ),
+            (
+                "invalid-peer",
+                &["navigate", "src/lib.rs:7:43", "--compact"],
+            ),
+            ("rest-first", &["navigate", "src/lib.rs:11:10", "--compact"]),
+            ("rest-tail", &["navigate", "src/lib.rs:11:26", "--compact"]),
+            ("rest-last", &["navigate", "src/lib.rs:11:37", "--compact"]),
+            (
+                "conditional",
+                &["navigate", "src/lib.rs:12:47", "--compact"],
+            ),
+            ("after", &["navigate", "src/lib.rs:13:10", "--compact"]),
+            (
+                "alternative-selected",
+                &["navigate", "src/lib.rs:4:44", "--compact", "--select", "2"],
+            ),
+            (
+                "range-endpoint",
+                &["navigate", "src/lib.rs:16:31", "--compact"],
+            ),
+            (
+                "range-capture",
+                &["navigate", "src/lib.rs:16:45", "--compact"],
+            ),
+            ("range-peer", &["navigate", "src/lib.rs:16:63", "--compact"]),
+        ],
+        mutations: Vec::new,
+    });
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_pattern_references() {
+    golden(&Corpus {
+        name: "rust-pattern-references",
+        cases: &[
+            ("range-min", &["navigate", "src/lib.rs:13:9", "--compact"]),
+            ("range-max", &["navigate", "src/lib.rs:13:15", "--compact"]),
+            ("range-body", &["navigate", "src/lib.rs:13:27", "--compact"]),
+            (
+                "constant-first",
+                &["navigate", "src/lib.rs:14:9", "--compact"],
+            ),
+            (
+                "constant-second",
+                &["navigate", "src/lib.rs:14:15", "--compact"],
+            ),
+            (
+                "constant-body",
+                &["navigate", "src/lib.rs:14:27", "--compact"],
+            ),
+            ("unit-import", &["navigate", "src/lib.rs:15:9", "--compact"]),
+            (
+                "unit-qualified",
+                &["navigate", "src/lib.rs:15:25", "--compact"],
+            ),
+            ("unit-body", &["navigate", "src/lib.rs:15:38", "--compact"]),
+            ("tuple-alias", &["navigate", "src/lib.rs:16:9", "--compact"]),
+            (
+                "tuple-binding",
+                &["navigate", "src/lib.rs:16:14", "--compact"],
+            ),
+            (
+                "record-constructor",
+                &["navigate", "src/lib.rs:17:9", "--compact"],
+            ),
+            (
+                "record-binding",
+                &["navigate", "src/lib.rs:17:36", "--compact"],
+            ),
+            (
+                "variant-alias",
+                &["navigate", "src/lib.rs:18:9", "--compact"],
+            ),
+            (
+                "variant-qualified",
+                &["navigate", "src/lib.rs:18:35", "--compact"],
+            ),
+            (
+                "variant-binding",
+                &["navigate", "src/lib.rs:18:55", "--compact"],
+            ),
+            (
+                "record-variant",
+                &["navigate", "src/lib.rs:19:18", "--compact"],
+            ),
+            (
+                "record-variant-binding",
+                &["navigate", "src/lib.rs:19:46", "--compact"],
+            ),
+            (
+                "incompatible-body",
+                &["navigate", "src/lib.rs:20:29", "--compact"],
+            ),
+            (
+                "outer-local",
+                &["navigate", "src/lib.rs:21:19", "--compact"],
+            ),
+            (
+                "local-endpoint",
+                &["navigate", "src/lib.rs:26:23", "--compact"],
+            ),
+            (
+                "macro-constant",
+                &["navigate", "src/lib.rs:30:19", "--compact"],
+            ),
+            (
+                "rooted-endpoint",
+                &["navigate", "src/lib.rs:30:60", "--compact"],
+            ),
+            (
+                "reexport-bound",
+                &["navigate", "src/lib.rs:36:19", "--compact"],
+            ),
+            (
+                "reexport-constructor",
+                &["navigate", "src/lib.rs:36:46", "--compact"],
+            ),
+            (
+                "reexport-binding",
+                &["navigate", "src/lib.rs:36:68", "--compact"],
+            ),
+            (
+                "commented-bound",
+                &["navigate", "src/lib.rs:39:51", "--compact"],
+            ),
+            (
+                "spaced-bound",
+                &["navigate", "src/lib.rs:39:67", "--compact"],
+            ),
+        ],
+        mutations: Vec::new,
+    });
 }

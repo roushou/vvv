@@ -4,7 +4,7 @@ expression: "corpus.run(args, false)"
 ---
 exit 0
 --- stdout ---
-● variable right   src/bindings.rs:3:34
+● variable right   src/bindings.rs:3:45
 
 let (left, right) = pair;
 --- stderr ---

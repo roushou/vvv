@@ -1,0 +1,56 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "b9fbdc6cda24bfaa958746082a4fc95a41cfd7fa304f9724d872ef286c7ee946",
+    "outcome": "resolved",
+    "target": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/lib.rs",
+        "content": "cc6411456df3e72af40fdbe3a55b4920b55b95450a6470a0eb00cac134d5feeb",
+        "span": {
+          "start": 365,
+          "end": 377
+        }
+      },
+      "name_span": {
+        "start": 365,
+        "end": 370
+      },
+      "kind": "parameter"
+    },
+    "id": "cae1e8fd6adb",
+    "name": "outer",
+    "start": {
+      "line": 10,
+      "column": 35
+    },
+    "evidence": {
+      "addresses": []
+    },
+    "container": {
+      "language": "rust",
+      "declaration": {
+        "path": "src/lib.rs",
+        "content": "cc6411456df3e72af40fdbe3a55b4920b55b95450a6470a0eb00cac134d5feeb",
+        "span": {
+          "start": 365,
+          "end": 377
+        }
+      },
+      "name_span": {
+        "start": 365,
+        "end": 370
+      },
+      "kind": "parameter"
+    }
+  }
+}
+--- stderr ---

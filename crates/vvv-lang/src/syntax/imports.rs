@@ -10,11 +10,20 @@ use vvv_core::{
 pub(crate) struct ImportExtractor<'g, L> {
     grammar: &'g ImportGrammar,
     lang: L,
+    syntax: super::navigation::NavigationSyntax,
 }
 
 impl<'g, L: LanguageExt> ImportExtractor<'g, L> {
-    pub(crate) fn new(grammar: &'g ImportGrammar, lang: L) -> Self {
-        Self { grammar, lang }
+    pub(crate) fn new(
+        grammar: &'g ImportGrammar,
+        lang: L,
+        syntax: super::navigation::NavigationSyntax,
+    ) -> Self {
+        Self {
+            grammar,
+            lang,
+            syntax,
+        }
     }
 
     pub(crate) fn extract(
@@ -32,7 +41,8 @@ impl<'g, L: LanguageExt> ImportExtractor<'g, L> {
                         if under.is_some_and(|p| node.parent().is_none_or(|n| n.kind() != p)) {
                             continue;
                         }
-                        let Some(path_node) = field.map_or(Some(node.clone()), |f| node.field(f))
+                        let Some(path_node) =
+                            field.map_or(Some(node.clone()), |field| self.path_field(node, field))
                         else {
                             continue;
                         };
@@ -85,12 +95,7 @@ impl<'g, L: LanguageExt> ImportExtractor<'g, L> {
                 let statement = statements
                     .iter()
                     .find(|node| Span::from(node.range()).contains(&import.span))?;
-                let modifier = match self.grammar.reexports {
-                    ReExportRule::Modifier(kind) => {
-                        statement.children().find(|node| node.kind() == kind)
-                    }
-                    _ => None,
-                };
+                let modifier = self.modifier(statement);
                 Some(vvv_core::ImportBinding {
                     span: import.span,
                     visibility: modifier.as_ref().map(|node| vvv_core::Modifier {
@@ -98,11 +103,140 @@ impl<'g, L: LanguageExt> ImportExtractor<'g, L> {
                         text: node.text().into_owned(),
                     }),
                     restriction: modifier
-                        .and_then(|node| node.children().find(Node::is_named))
+                        .and_then(|node| self.restriction(&node))
                         .map(|node| self.grammar.syntax.parse(node.text().as_ref())),
                 })
             })
             .collect()
+    }
+
+    fn path_field<'tree>(
+        &self,
+        node: &Node<'tree, StrDoc<L>>,
+        field: &str,
+    ) -> Option<Node<'tree, StrDoc<L>>> {
+        #[cfg(feature = "rust")]
+        if matches!(self.syntax, super::navigation::NavigationSyntax::Rust)
+            && field == "path"
+            && let Some(alias) = super::rust::UseAlias::cast(node.clone())
+            && let Ok(path) = alias.path()
+        {
+            return Some(path);
+        }
+        #[cfg(feature = "typescript")]
+        if matches!(self.syntax, super::navigation::NavigationSyntax::TypeScript)
+            && field == "source"
+            && let Some(statement) = super::typescript::SourceStatement::cast(node.clone())
+            && let Ok(source) = statement.source()
+        {
+            return source;
+        }
+        let _ = self.syntax;
+        node.field(field)
+    }
+
+    pub(super) fn alias<'tree>(
+        &self,
+        node: &Node<'tree, StrDoc<L>>,
+    ) -> Option<Node<'tree, StrDoc<L>>> {
+        let rule = self.grammar.alias?;
+        if node.kind() != rule.under {
+            return None;
+        }
+        #[cfg(feature = "rust")]
+        if matches!(self.syntax, super::navigation::NavigationSyntax::Rust)
+            && rule.field == "alias"
+            && let Some(alias) = super::rust::UseAlias::cast(node.clone())
+            && let Ok(name) = alias.alias()
+        {
+            return Some(name);
+        }
+        node.field(rule.field)
+    }
+
+    pub(super) fn modifier<'tree>(
+        &self,
+        node: &Node<'tree, StrDoc<L>>,
+    ) -> Option<Node<'tree, StrDoc<L>>> {
+        let ReExportRule::Modifier(kind) = self.grammar.reexports else {
+            return None;
+        };
+        #[cfg(feature = "rust")]
+        if matches!(self.syntax, super::navigation::NavigationSyntax::Rust)
+            && kind == "visibility_modifier"
+        {
+            return super::rust::Visibility::of(node).map(|visibility| visibility.syntax().clone());
+        }
+        node.children().find(|child| child.kind() == kind)
+    }
+
+    pub(super) fn restriction<'tree>(
+        &self,
+        node: &Node<'tree, StrDoc<L>>,
+    ) -> Option<Node<'tree, StrDoc<L>>> {
+        #[cfg(feature = "rust")]
+        if matches!(self.syntax, super::navigation::NavigationSyntax::Rust)
+            && let Some(visibility) = super::rust::Visibility::cast(node.clone())
+        {
+            return visibility.restriction();
+        }
+        node.children().find(Node::is_named)
+    }
+
+    fn glob(&self, node: &Node<'_, StrDoc<L>>) -> bool {
+        let Some(kind) = self.grammar.glob_under else {
+            return false;
+        };
+        let Some(parent) = node.parent().filter(|parent| parent.kind() == kind) else {
+            return false;
+        };
+        #[cfg(feature = "rust")]
+        if matches!(self.syntax, super::navigation::NavigationSyntax::Rust)
+            && let Some(glob) = super::rust::UseGlob::cast(parent.clone())
+        {
+            return glob
+                .prefix()
+                .is_some_and(|prefix| prefix.range() == node.range());
+        }
+        let _ = parent;
+        true
+    }
+    #[cfg(feature = "rust")]
+    fn rust_group(&self, node: &Node<'_, StrDoc<L>>) -> Option<(String, ImportGroup)> {
+        let list = node.ancestors().find_map(super::rust::UseList::cast)?;
+        if let Some(group) = list.syntax().parent().and_then(super::rust::UseGroup::cast)
+            && let Ok(declared_list) = group.list()
+            && declared_list.range() != list.syntax().range()
+        {
+            return None;
+        }
+        let item = list.entry_for(node)?;
+        let statement = node.ancestors().find_map(super::rust::Import::cast)?;
+        let own = node.range();
+        let mut prefixes: Vec<_> = node
+            .ancestors()
+            .filter_map(super::rust::UseGroup::cast)
+            .filter_map(|group| {
+                group
+                    .prefix()
+                    .ok()
+                    .flatten()
+                    .or_else(|| group.syntax().field("path"))
+            })
+            .filter(|prefix| !(prefix.range().start <= own.start && own.end <= prefix.range().end))
+            .map(|prefix| prefix.text().into_owned())
+            .collect();
+        prefixes.reverse();
+        let prefix = prefixes.join(self.grammar.syntax.separator());
+        let group = ImportGroup {
+            prefix: self.grammar.syntax.parse(&prefix),
+            item: item.range().into(),
+            list: list.syntax().range().into(),
+            items: list.entries().count(),
+            statement: statement.syntax().range().into(),
+            top_level: list.scoped_argument_of(statement.syntax()),
+        };
+        Some((prefix, group))
     }
 
     /// Drop candidates nested inside another candidate; `crate::a::b` is one
@@ -133,10 +267,7 @@ impl<'g, L: LanguageExt> ImportExtractor<'g, L> {
             ),
             None => (syntax.parse(&text), None),
         };
-        let glob = self
-            .grammar
-            .glob_under
-            .is_some_and(|kind| node.parent().is_some_and(|p| p.kind() == kind));
+        let glob = self.glob(&node);
         let statement = node
             .ancestors()
             .find(|a| self.grammar.statements.contains(&a.kind().as_ref()));
@@ -157,7 +288,7 @@ impl<'g, L: LanguageExt> ImportExtractor<'g, L> {
             };
         let alias = self.grammar.alias.and_then(|rule| {
             let under = node.parent().filter(|p| p.kind() == rule.under)?;
-            Some(Name::from(under.field(rule.field)?.text().as_ref()))
+            Some(Name::from(self.alias(&under)?.text().as_ref()))
         });
         found.push(ImportRef {
             span,
@@ -185,6 +316,15 @@ impl<'g, L: LanguageExt> ImportExtractor<'g, L> {
     fn group_of(&self, node: &Node<'_, StrDoc<L>>) -> Option<(String, ImportGroup)> {
         let syntax = self.grammar.syntax;
         let nesting = self.grammar.nesting?;
+        #[cfg(feature = "rust")]
+        if matches!(self.syntax, super::navigation::NavigationSyntax::Rust)
+            && nesting.list == "use_list"
+            && nesting.scope == "scoped_use_list"
+            && nesting.prefix_field == "path"
+            && nesting.statement == "use_declaration"
+        {
+            return self.rust_group(node);
+        }
         let list = node.ancestors().find(|a| a.kind() == nesting.list)?;
         let item = Self::child_containing(&list, node)?;
         let statement = node.ancestors().find(|a| a.kind() == nesting.statement)?;

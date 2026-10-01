@@ -17,6 +17,7 @@ struct Client {
     service: RunningService<RoleClient, ClientInfo>,
     schemas: BTreeMap<String, jsonschema::Validator>,
 }
+
 impl Client {
     async fn new(root: &Path) -> Self {
         Self::with_version(root, ProtocolVersion::V_2025_11_25).await
@@ -146,9 +147,11 @@ impl Client {
         value
     }
 }
+
 struct Fixture {
     root: PathBuf,
 }
+
 impl Fixture {
     fn new() -> Self {
         static NEXT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
@@ -196,6 +199,7 @@ impl Fixture {
         serde_json::from_slice(&output.stdout).unwrap()
     }
 }
+
 impl Drop for Fixture {
     fn drop(&mut self) {
         let _ = std::fs::remove_dir_all(&self.root);
@@ -1224,5 +1228,318 @@ async fn codex_client_navigates_let_else_bindings_and_unrelated_imports() {
         assert_eq!(reply["result"]["outcome"], "resolved", "{reply}");
         assert_eq!(reply["result"]["start"]["line"], target_line, "{reply}");
     }
+    client.close().await;
+}
+
+#[cfg(feature = "rust")]
+#[tokio::test]
+async fn codex_client_navigates_conditional_scopes_and_preserves_selection() {
+    let fixture = Fixture::new();
+    std::fs::write(
+        fixture.root.join("Cargo.toml"),
+        "[package]\nname=\"conditional-probe\"\nversion=\"0.1.0\"\nedition=\"2024\"\n",
+    )
+    .unwrap();
+    let source = "fn work() {}\nfn check(value: Option<usize>) {\n    use crate::work;\n    if let Some(value) = value {\n        let _ = value;\n        work();\n    } else {\n        let _ = value;\n        work();\n    }\n}\nfn ambiguous(input: (usize, usize)) {\n    if let (value, value) = input {\n        let _ = value;\n    }\n}\n";
+    std::fs::write(fixture.root.join("src/lib.rs"), source).unwrap();
+    let client = Client::new(&fixture.root).await;
+    let origin = |line: usize, name: &str| json!({"kind":"position","path":"src/lib.rs","position":{"line":line,"column":source.lines().nth(line).unwrap().rfind(name).unwrap()}});
+    for (line, name, target_line) in [
+        (3, "value", 1),
+        (4, "value", 3),
+        (5, "work", 0),
+        (7, "value", 1),
+        (8, "work", 0),
+    ] {
+        let reply = client
+            .call("vvv_navigate", json!({"origin":origin(line, name)}))
+            .await;
+        assert_eq!(reply["result"]["outcome"], "resolved", "{reply}");
+        assert_eq!(reply["result"]["start"]["line"], target_line, "{reply}");
+    }
+    let context = client
+        .call(
+            "vvv_context",
+            json!({"origin":origin(4,"value"),"page":{"max_items":2,"max_bytes":4000}}),
+        )
+        .await;
+    assert_eq!(context["result"]["outcome"], "resolved", "{context}");
+    assert!(
+        context["result"]["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|item| item["text"]
+                .as_str()
+                .is_some_and(|text| text.contains("let Some(value)"))),
+        "{context}"
+    );
+    let callers = client
+        .call(
+            "vvv_relationships",
+            json!({"origin":origin(0,"work"),"kind":"callers"}),
+        )
+        .await;
+    for line in [5, 8] {
+        assert!(
+            callers["result"]["items"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|item| item["start"]["line"] == line && item["outcome"] == "confirmed"),
+            "{callers}"
+        );
+    }
+    let ambiguous = client
+        .call("vvv_navigate", json!({"origin":origin(13,"value")}))
+        .await;
+    assert_eq!(ambiguous["result"]["outcome"], "ambiguous", "{ambiguous}");
+    assert_eq!(
+        ambiguous["result"]["candidates"].as_array().unwrap().len(),
+        2
+    );
+    let selected = client
+        .call(
+            "vvv_navigate",
+            json!({"origin":origin(13,"value"),"selection":{"ordinals":[2]}}),
+        )
+        .await;
+    assert_eq!(selected["result"]["outcome"], "resolved", "{selected}");
+    assert_eq!(
+        selected["result"]["target"]["name_span"],
+        ambiguous["result"]["candidates"][1]["target"]["name_span"],
+        "{selected}"
+    );
+    client.close().await;
+}
+
+#[cfg(feature = "rust")]
+#[tokio::test]
+async fn codex_client_navigates_match_loop_and_closure_scopes() {
+    let fixture = Fixture::new();
+    std::fs::write(
+        fixture.root.join("Cargo.toml"),
+        "[package]\nname=\"construct-probe\"\nversion=\"0.1.0\"\nedition=\"2024\"\n",
+    )
+    .unwrap();
+    let source = "fn work() {}\nfn check(value: usize, input: Option<usize>, items: Vec<usize>) {\n    match input {\n        Some(value) if value > 0 => { let _ = value; work(); }\n        _ => { let _ = value; work(); }\n    }\n    for value in items { let _ = value; work(); }\n    while let Some(value) = input { let _ = value; work(); }\n    let callback = |value: usize| { let _ = value; work(); };\n    let _ = value;\n}\nfn ambiguous(input: (usize, usize)) {\n    match input { (value, value) => { let _ = value; } }\n}\n";
+    std::fs::write(fixture.root.join("src/lib.rs"), source).unwrap();
+    let client = Client::new(&fixture.root).await;
+    let origin = |line: usize, name: &str| json!({"kind":"position","path":"src/lib.rs","position":{"line":line,"column":source.lines().nth(line).unwrap().rfind(name).unwrap()}});
+    for (line, target_line) in [(3, 3), (4, 1), (6, 6), (7, 7), (8, 8), (9, 1)] {
+        let reply = client
+            .call("vvv_navigate", json!({"origin":origin(line,"value")}))
+            .await;
+        assert_eq!(reply["result"]["outcome"], "resolved", "{reply}");
+        assert_eq!(reply["result"]["start"]["line"], target_line, "{reply}");
+        assert!(
+            reply["result"]["start"]["column"].as_u64().unwrap()
+                < source.lines().nth(line).unwrap().rfind("value").unwrap() as u64,
+            "{reply}"
+        );
+    }
+    let callers = client
+        .call(
+            "vvv_relationships",
+            json!({"origin":origin(0,"work"),"kind":"callers"}),
+        )
+        .await;
+    for line in [3, 4, 6, 7] {
+        assert!(
+            callers["result"]["items"]
+                .as_array()
+                .unwrap()
+                .iter()
+                .any(|item| item["start"]["line"] == line && item["outcome"] == "confirmed"),
+            "{callers}"
+        );
+    }
+    let ambiguous = client
+        .call("vvv_navigate", json!({"origin":origin(12,"value")}))
+        .await;
+    assert_eq!(ambiguous["result"]["outcome"], "ambiguous", "{ambiguous}");
+    assert_eq!(
+        ambiguous["result"]["candidates"].as_array().unwrap().len(),
+        2
+    );
+    let selected = client
+        .call(
+            "vvv_navigate",
+            json!({"origin":origin(12,"value"),"selection":{"ordinals":[2]}}),
+        )
+        .await;
+    assert_eq!(selected["result"]["outcome"], "resolved", "{selected}");
+    assert_eq!(
+        selected["result"]["target"]["name_span"],
+        ambiguous["result"]["candidates"][1]["target"]["name_span"],
+        "{selected}"
+    );
+    client.close().await;
+}
+
+#[cfg(feature = "rust")]
+#[tokio::test]
+async fn codex_client_navigates_struct_bindings_and_excludes_field_labels() {
+    let fixture = Fixture::new();
+    std::fs::write(
+        fixture.root.join("Cargo.toml"),
+        "[package]\nname=\"struct-probe\"\nversion=\"0.1.0\"\nedition=\"2024\"\n",
+    )
+    .unwrap();
+    let source = "struct Point { x: usize, y: usize }\nfn work() {}\nfn check(x: usize, point: Point, input: Option<Point>) {\n    let Point { x, y: renamed } = point;\n    let _ = x;\n    let _ = renamed;\n    if let Some(Point { x: inner, ref y }) = input {\n        let _ = inner;\n        let _ = y;\n    }\n    match input { Some(Point { x: arm, .. }) => { let _ = arm; work(); }, _ => {} }\n}\n";
+    std::fs::write(fixture.root.join("src/lib.rs"), source).unwrap();
+    let client = Client::new(&fixture.root).await;
+    let origin = |line: usize, needle: &str| json!({"kind":"position","path":"src/lib.rs","position":{"line":line,"column":source.lines().nth(line).unwrap().rfind(needle).unwrap()}});
+    for (line, name, target_line) in [
+        (4, "x", 3),
+        (5, "renamed", 3),
+        (7, "inner", 6),
+        (8, "y", 6),
+        (10, "arm;", 10),
+    ] {
+        let reply = client
+            .call("vvv_navigate", json!({"origin":origin(line,name)}))
+            .await;
+        assert_eq!(reply["result"]["outcome"], "resolved", "{reply}");
+        assert_eq!(reply["result"]["start"]["line"], target_line, "{reply}");
+    }
+    let label = client
+        .call("vvv_navigate", json!({"origin":origin(10,"x:")}))
+        .await;
+    assert_eq!(label["result"]["outcome"], "unavailable", "{label}");
+    assert_eq!(label["result"]["reason"], "unsupported_context", "{label}");
+    let context = client.call("vvv_context", json!({"origin":origin(5,"renamed"),"detail":"body","page":{"max_items":2,"max_bytes":4000}})).await;
+    assert_eq!(context["result"]["outcome"], "resolved", "{context}");
+    client.close().await;
+}
+
+#[cfg(feature = "rust")]
+#[tokio::test]
+async fn codex_client_navigates_complete_patterns_with_explicit_alternative_selection() {
+    let fixture = Fixture::new();
+    std::fs::write(
+        fixture.root.join("Cargo.toml"),
+        "[package]\nname=\"pattern-probe\"\nversion=\"0.1.0\"\nedition=\"2024\"\n",
+    )
+    .unwrap();
+    let source = "fn f(input: Option<usize>, items: &[usize]) {\n    match input {\n        Some(value) | Other(value) => value,\n        whole @ Some(inner) => inner,\n        Some(left) | Other(right) => left,\n        _ => 0,\n    }\n    let [first, tail @ .., last] = items else { return; };\n    let _ = tail;\n}\n";
+    std::fs::write(fixture.root.join("src/lib.rs"), source).unwrap();
+    let client = Client::new(&fixture.root).await;
+    let origin = |line: usize, name: &str| json!({"kind":"position","path":"src/lib.rs","position":{"line":line,"column":source.lines().nth(line).unwrap().rfind(name).unwrap()}});
+    let ambiguous = client
+        .call("vvv_navigate", json!({"origin":origin(2,"value")}))
+        .await;
+    assert_eq!(ambiguous["result"]["outcome"], "ambiguous", "{ambiguous}");
+    let candidates = ambiguous["result"]["candidates"].as_array().unwrap();
+    assert_eq!(candidates.len(), 2);
+    assert_ne!(candidates[0]["id"], candidates[1]["id"]);
+    let selected = client
+        .call(
+            "vvv_navigate",
+            json!({"origin":origin(2,"value"),"selection":{"ids":[candidates[1]["id"]]}}),
+        )
+        .await;
+    assert_eq!(selected["result"]["outcome"], "resolved", "{selected}");
+    assert_eq!(
+        selected["result"]["target"]["name_span"],
+        candidates[1]["target"]["name_span"]
+    );
+    for (line, name) in [(3, "inner"), (8, "tail")] {
+        let result = client
+            .call("vvv_navigate", json!({"origin":origin(line,name)}))
+            .await;
+        assert_eq!(result["result"]["outcome"], "resolved", "{result}");
+        let context = client.call("vvv_context", json!({"origin":origin(line,name),"detail":"body","page":{"max_items":2,"max_bytes":4000}})).await;
+        assert_eq!(context["result"]["outcome"], "resolved", "{context}");
+    }
+    let invalid = client
+        .call("vvv_navigate", json!({"origin":origin(4,"left")}))
+        .await;
+    assert_eq!(
+        invalid["result"]["reason"], "unsupported_context",
+        "{invalid}"
+    );
+    client.close().await;
+}
+
+#[cfg(feature = "rust")]
+#[tokio::test]
+async fn codex_client_resolves_pattern_constants_constructors_and_reexports() {
+    let fixture = Fixture::new();
+    std::fs::write(
+        fixture.root.join("Cargo.toml"),
+        "[package]\nname=\"pattern-references\"\nversion=\"0.1.0\"\nedition=\"2024\"\n",
+    )
+    .unwrap();
+    std::fs::write(fixture.root.join("src/limits.rs"), "pub const START: usize = 1;\npub const END: usize = 9;\npub struct Blob(pub usize);\npub enum Message { Quit, Data(usize) }\n").unwrap();
+    std::fs::write(
+        fixture.root.join("src/bridge.rs"),
+        "pub use crate::limits::{START as LOW, END as HIGH, Blob as Packet};\n",
+    )
+    .unwrap();
+    let source = "mod limits;\nmod bridge;\nuse bridge::{LOW, HIGH, Packet};\nuse limits::Message::{Quit, Data as Payload};\nfn check(input: usize) {\n    match input {\n        LOW..=HIGH => input,\n        LOW | HIGH => input,\n        Quit | limits::Message::Quit => input,\n        Packet(value) => value,\n        Payload(value) | limits::Message::Data(value) => value,\n        LOW | value => input,\n        _ => input,\n    }\n}\n";
+    std::fs::write(fixture.root.join("src/lib.rs"), source).unwrap();
+    let client = Client::new(&fixture.root).await;
+    let origin = |line: usize, needle: &str| json!({"kind":"position","path":"src/lib.rs","position":{"line":line,"column":source.lines().nth(line).unwrap().rfind(needle).unwrap()}});
+    for (line, needle, name) in [
+        (6, "LOW", "START"),
+        (6, "HIGH", "END"),
+        (9, "Packet", "Blob"),
+        (8, "Quit", "Quit"),
+        (10, "Data", "Data"),
+    ] {
+        let reply = client
+            .call("vvv_navigate", json!({"origin":origin(line,needle)}))
+            .await;
+        assert_eq!(reply["result"]["outcome"], "resolved", "{reply}");
+        assert_eq!(reply["result"]["name"], name, "{reply}");
+        assert_eq!(
+            reply["result"]["target"]["declaration"]["path"], "src/limits.rs",
+            "{reply}"
+        );
+    }
+    for line in [7, 8] {
+        let reply = client
+            .call("vvv_navigate", json!({"origin":origin(line,"input")}))
+            .await;
+        assert_eq!(reply["result"]["outcome"], "resolved", "{reply}");
+    }
+    let ambiguous = client
+        .call("vvv_navigate", json!({"origin":origin(10,"value")}))
+        .await;
+    let candidates = ambiguous["result"]["candidates"].as_array().unwrap();
+    assert_eq!(candidates.len(), 2);
+    let selected = client
+        .call(
+            "vvv_navigate",
+            json!({"origin":origin(10,"value"),"selection":{"ids":[candidates[1]["id"]]}}),
+        )
+        .await;
+    assert_eq!(
+        selected["result"]["target"]["name_span"],
+        candidates[1]["target"]["name_span"]
+    );
+    let invalid = client
+        .call("vvv_navigate", json!({"origin":origin(11,"input")}))
+        .await;
+    assert_eq!(
+        invalid["result"]["reason"], "unsupported_context",
+        "{invalid}"
+    );
+    let context = client.call("vvv_context", json!({"origin":origin(6,"HIGH"),"detail":"signature","page":{"max_items":2,"max_bytes":4000}})).await;
+    assert_eq!(context["result"]["outcome"], "resolved", "{context}");
+    let references = client.call("vvv_relationships", json!({"origin":origin(6,"HIGH"),"kind":"references","scope":{"paths":["src/lib.rs"]},"budget":{"max_files":2,"max_lookups":50,"max_items":10,"max_bytes":8000}})).await;
+    assert_eq!(
+        references["result"]["coverage"]["scan_complete"], true,
+        "{references}"
+    );
+    assert!(
+        references["result"]["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|item| item["outcome"] == "confirmed" && item["start"]["line"] == 6),
+        "{references}"
+    );
     client.close().await;
 }

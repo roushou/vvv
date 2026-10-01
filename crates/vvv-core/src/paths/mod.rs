@@ -330,6 +330,10 @@ impl PathSyntax {
         let mut segments: Vec<&str> = text.split(self.separator()).collect();
         let head = match self {
             Self::Scoped => match segments.first().copied() {
+                Some("") if segments.len() > 1 => {
+                    segments.remove(0);
+                    PathHead::Root
+                }
                 Some("crate") => {
                     segments.remove(0);
                     PathHead::Package
@@ -407,7 +411,8 @@ impl PathSyntax {
                 let ups = vec!["super"; *n as usize].join(sep);
                 Self::joined(&ups, sep, &segments)
             }
-            (Self::Scoped, PathHead::Named | PathHead::Root) => segments,
+            (Self::Scoped, PathHead::Named) => segments,
+            (Self::Scoped, PathHead::Root) => format!("::{segments}"),
             (Self::Posix, PathHead::Here) => Self::joined(".", sep, &segments),
             (Self::Posix, PathHead::Up(n)) => {
                 let ups = vec![".."; *n as usize].join(sep);
@@ -565,6 +570,16 @@ mod tests {
         let path = syntax.parse(text);
         assert_eq!(syntax.spell(&path), text, "{path:?}");
         path
+    }
+
+    #[test]
+    fn scoped_absolute_paths_preserve_their_root_through_the_wire() {
+        let path = PathSyntax::Scoped.parse("::dependency::LIMIT");
+        assert_eq!(path.head, PathHead::Root);
+        assert_eq!(PathSyntax::Scoped.spell(&path), "::dependency::LIMIT");
+        let encoded = serde_json::to_string(&path).unwrap();
+        let decoded: ModulePath = serde_json::from_str(&encoded).unwrap();
+        assert_eq!(decoded, path);
     }
 
     #[test]

@@ -69,14 +69,18 @@ preserve assertions and snapshots. `#[test]` functions remain exempt.
 
 ## Navigation coverage
 
-Extend navigation coverage for struct/match patterns, receiver-dependent methods,
+Extend navigation coverage for generic/const-block patterns, constructor type aliases,
+receiver-head uses,
+receiver-dependent methods,
 inferred targets, Rust block-local modules, inline scopes in unplaced files,
 `#[path]` module mappings, qualified type paths, block-local glob imports,
-constructor namespace/pattern evidence, macro argument navigation, required-expression
+inferred constructor namespace/pattern evidence, macro argument navigation, required-expression
 evidence through wrappers such as unary expressions, and expansion-aware binding
 evidence, TypeScript local
 hoisting, wildcard exports, arbitrary namespace-member expressions, and package/path
-aliases. External/generated source previews need dedicated source-provider support.
+aliases. Declarations and accessors generated inside macro invocations remain
+unindexed; the typed-view accessor macro exposes this gap when dogfooding the
+syntax adapter. External/generated source previews need dedicated source-provider support.
 
 Definition previews retain complete files for interactive browsing; the context
 capability provides bounded excerpts. Measure before introducing dependency-specific
