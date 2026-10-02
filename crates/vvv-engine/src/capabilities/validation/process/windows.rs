@@ -70,8 +70,13 @@ impl CheckProcess {
             .create_recv_only::<pipe_mode::Bytes>()?;
         // Synchronous write handle for the child's standard streams.
         let writer = std::fs::OpenOptions::new().write(true).open(&name)?;
+        // The instance already carries PIPE_NOWAIT from `nonblocking(true)` above, so
+        // the accepted stream is nonblocking without further calls. Do not add a
+        // `set_nonblocking` here: it reaches SetNamedPipeHandleState, which needs
+        // GENERIC_WRITE, or GENERIC_READ together with FILE_WRITE_ATTRIBUTES, on the
+        // handle. An inbound server end has neither, so it only fails with
+        // ERROR_ACCESS_DENIED.
         let reader = listener.accept()?;
-        reader.set_nonblocking(true)?;
         let handle =
             OwnedHandle::try_from(reader).map_err(|_| io::Error::other("split pipe reader"))?;
         let reader = Reader(std::fs::File::from(handle));
