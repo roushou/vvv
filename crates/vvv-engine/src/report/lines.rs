@@ -86,7 +86,7 @@ impl<'a> SiteLine<'a> {
         )];
         if let Some(import) = &s.import {
             lines.push(Row::new(
-                Line::of(Role::Plain, "  ")
+                Line::single(Role::Plain, "  ")
                     .and_line(Line::mark(Mark::Import))
                     .and(Role::Plain, " ")
                     .and(Role::Strong, import.clone()),
@@ -108,7 +108,7 @@ impl<'a> ImportSiteLine<'a> {
 
     pub fn line(&self) -> Line {
         let s = self.site;
-        Line::of(Role::Plain, "  ")
+        Line::single(Role::Plain, "  ")
             .and(Role::Path, s.path.display().to_string())
             .and(Role::Plain, ":")
             .and(Role::LineNumber, s.start.display().to_string())
@@ -139,7 +139,7 @@ impl<'a> HistoryLine<'a> {
     }
 
     pub fn line(&self) -> Line {
-        let mut line = Line::of(Role::Strong, format!("#{:<3}", self.item.id))
+        let mut line = Line::single(Role::Strong, format!("#{:<3}", self.item.id))
             .and(Role::Plain, "  ")
             .and(
                 Role::Dim,
@@ -167,7 +167,7 @@ impl<'a> SkippedLine<'a> {
     }
 
     pub fn line(&self) -> Line {
-        Line::of(
+        Line::single(
             Role::Plain,
             format!("{} skipped: {}", self.skipped.language, self.skipped.reason),
         )
@@ -234,7 +234,7 @@ impl MatchRow<'_> {
     /// source line follows, with the hit marked.
     pub fn line(&self) -> Line {
         let m = self.m;
-        let mut line = Line::of(Role::Plain, "  ")
+        let mut line = Line::single(Role::Plain, "  ")
             .and(
                 Role::Ordinal,
                 format!("{:>w$}", self.ordinal, w = self.width),
@@ -316,7 +316,7 @@ impl<'a> Sections<'a> {
     fn header(mark: Option<Mark>, matches: &[Match]) -> Line {
         let line = match mark {
             Some(mark) => Line::mark(mark),
-            None => Line::of(Role::Dim, "○".to_string()),
+            None => Line::single(Role::Dim, "○".to_string()),
         };
         line.and(Role::Plain, " ")
             .and(Role::Strong, matches.len().to_string())
@@ -334,7 +334,10 @@ impl<'a> Sections<'a> {
                 if current.is_some() {
                     out.push(Row::new(Line::new()));
                 }
-                out.push(Row::new(Line::of(Role::Path, m.path.display().to_string())));
+                out.push(Row::new(Line::single(
+                    Role::Path,
+                    m.path.display().to_string(),
+                )));
                 current = Some(&m.path);
             }
             out.push(Row::at(
@@ -376,8 +379,9 @@ impl<'a> OutlineTree<'a> {
             .iter()
             .zip(&labels)
             .map(|(item, label)| {
-                let mut line = Line::of(Role::LineNumber, format!("{:>4}", item.start.line + 1))
-                    .and(Role::Plain, "  ");
+                let mut line =
+                    Line::single(Role::LineNumber, format!("{:>4}", item.start.line + 1))
+                        .and(Role::Plain, "  ");
                 if item.symbol.kind == SymbolKind::Impl {
                     line = line.and(Role::Declaration, label.clone());
                 } else {
@@ -492,7 +496,7 @@ impl<'a> DepGroups<'a> {
             let head = key.as_deref().unwrap_or("?");
             if !head.is_empty() {
                 lines.push(Row::new(
-                    Line::of(Role::Plain, "  ").and(Role::Strong, head.to_owned()),
+                    Line::single(Role::Plain, "  ").and(Role::Strong, head.to_owned()),
                 ));
             }
             for (_, entries) in statements.iter().filter(|(_, e)| package(e) == *key) {
@@ -505,7 +509,7 @@ impl<'a> DepGroups<'a> {
                     .collect();
                 files.sort();
                 files.dedup();
-                let mut line = Line::of(Role::Plain, "  ")
+                let mut line = Line::single(Role::Plain, "  ")
                     .and(
                         Role::LineNumber,
                         format!("{:>4}", entries[0].start.line + 1),
@@ -642,7 +646,7 @@ impl<'a> ImporterRows<'a> {
         rows.into_iter()
             .map(|(path, line, names)| {
                 Row::at(
-                    Line::of(Role::Plain, "  ")
+                    Line::single(Role::Plain, "  ")
                         .and(
                             Role::Path,
                             format!("{:<width$}", Respellings::site(path, line)),
@@ -712,7 +716,7 @@ impl<'a> Respellings<'a> {
         let head: String = to[..prefix].iter().collect();
         let mid: String = to[prefix..to.len() - suffix].iter().collect();
         let tail: String = to[to.len() - suffix..].iter().collect();
-        Line::of(Role::Plain, head)
+        Line::single(Role::Plain, head)
             .and(Role::Strong, mid)
             .and(Role::Plain, tail)
     }
@@ -792,13 +796,13 @@ impl Caret {
         let indent = self.text.len() - self.text.trim_start().len();
         let column = self.column.saturating_sub(indent);
         vec![
-            Line::of(Role::Plain, "  ")
+            Line::single(Role::Plain, "  ")
                 .and(Role::LineNumber, format!("{:>4}", self.line + 1))
                 .and(Role::Plain, " ")
                 .and(Role::Dim, "│".to_string())
                 .and(Role::Plain, " ")
                 .and(Role::Plain, self.text.trim_start().to_string()),
-            Line::of(Role::Plain, format!("  {:>4} ", ""))
+            Line::single(Role::Plain, format!("  {:>4} ", ""))
                 .and(Role::Dim, "│".to_string())
                 .and(Role::Plain, " ")
                 .and(Role::Plain, " ".repeat(column))
@@ -855,7 +859,7 @@ impl<'a> Diff<'a> {
         };
         let mut rows = vec![Row::new(self.header())];
         for hunk in file.diff.hunks() {
-            rows.push(Row::new(Line::of(Role::Hunk, hunk.header())));
+            rows.push(Row::new(Line::single(Role::Hunk, hunk.header())));
             let (mut old, mut new) = (
                 hunk.old.start.saturating_sub(1),
                 hunk.new.start.saturating_sub(1),
@@ -866,7 +870,7 @@ impl<'a> Diff<'a> {
                     crate::protocol::DiffKind::Added => Role::Added,
                     crate::protocol::DiffKind::Removed => Role::Removed,
                 };
-                let line = Line::of(role, format!("{}{}", changed.kind.marker(), changed.text));
+                let line = Line::single(role, format!("{}{}", changed.kind.marker(), changed.text));
                 let at = match (state.is_applied(), changed.kind) {
                     (_, crate::protocol::DiffKind::Context) => {
                         Some(if state.is_applied() { new } else { old })

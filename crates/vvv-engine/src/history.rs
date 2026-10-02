@@ -328,7 +328,7 @@ impl Document {
         let last = result.entries.len() - 1;
         report.block_body(Block::History(result.entries.clone()));
         report.block_note(Block::Summary(
-            Line::of(
+            Line::single(
                 Role::Plain,
                 Plural(result.entries.len(), "entry").to_string(),
             )

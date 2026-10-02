@@ -12,7 +12,7 @@ fn addr(s: &str) -> Address {
     Address::new("fixture", rest.split("::").filter(|seg| !seg.is_empty()))
 }
 
-static RUST: std::sync::LazyLock<Rust> = std::sync::LazyLock::new(Rust::new);
+static RUST: std::sync::LazyLock<Rust> = std::sync::LazyLock::new(Rust::default);
 
 fn resolver() -> Fixture<'static> {
     Fixture::new(
@@ -236,7 +236,7 @@ fn render_keeps_relative_style_when_still_valid() {
 #[test]
 fn imports_are_outermost_paths_with_nested_entries_flagged() {
     let src = "use crate::a::b::C;\nuse super::x::{Y, z::W, q::*, r::{self, S}};\nfn f() { crate::a::g::<u8>(); let t: crate::a::T<u8> = crate::a::m!(); }";
-    let got: Vec<(String, bool, bool)> = Rust::new()
+    let got: Vec<(String, bool, bool)> = Rust::default()
         .imports(src)
         .unwrap()
         .into_iter()
@@ -263,7 +263,7 @@ fn imports_are_outermost_paths_with_nested_entries_flagged() {
 #[test]
 fn group_context_describes_each_entry() {
     let src = "pub use crate::u::{a::B as C, d::*, e::{self, F}, g};";
-    let imports = Rust::new().imports(src).unwrap();
+    let imports = Rust::default().imports(src).unwrap();
     let entry = |path: &str| {
         imports
             .iter()
@@ -300,7 +300,7 @@ fn group_context_describes_each_entry() {
     assert!(entry("crate::u::d").glob && !entry("crate::u::g").glob);
     assert_eq!(item(&entry("crate::u::g")), "g");
 
-    let top = Rust::new()
+    let top = Rust::default()
         .imports("use crate::a::b::*;\nuse crate::a::c;")
         .unwrap();
     assert!(top[0].glob && !top[1].glob);
@@ -310,7 +310,7 @@ fn group_context_describes_each_entry() {
 /// path stands alone or is an entry of a group.
 #[test]
 fn aliases_are_the_binding() {
-    let imports = Rust::new()
+    let imports = Rust::default()
             .imports("use crate::a::B as C;\nuse crate::u::{d::E as F, g, H as I};\nuse crate::h::*;\nuse J as K;")
             .unwrap();
     let bound: Vec<(String, Option<&str>)> = imports
@@ -376,7 +376,7 @@ fn relocate_widens_the_mod_line_only_as_told() {
 #[test]
 fn widen_replaces_or_inserts_the_modifier() {
     use vvv_core::{Language, ReachKind, SourceText};
-    let lang = Rust::new();
+    let lang = Rust::default();
     let src = "pub(super) fn a() {}\nfn b() {}\npub fn c() {}\n";
     let symbols = lang.symbols(src).unwrap();
     let surgery = lang.surgery().unwrap();

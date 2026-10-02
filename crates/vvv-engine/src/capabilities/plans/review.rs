@@ -553,15 +553,15 @@ impl crate::report::Document {
     pub(crate) fn plan_page(page: &PlanReviewPage) -> Self {
         use crate::protocol::display::{Line, Role};
         let mut doc = Self::new();
-        doc.body([Line::of(Role::Plain, "Plan: ").and(Role::Plain, &page.plan_id.0)]);
+        doc.body([Line::single(Role::Plain, "Plan: ").and(Role::Plain, &page.plan_id.0)]);
         for item in &page.items {
-            doc.body([Line::of(
+            doc.body([Line::single(
                 Role::Plain,
                 serde_json::to_string(item).expect("review item serializes"),
             )]);
         }
         if let Some(cursor) = &page.next_cursor {
-            doc.notes([Line::of(Role::Plain, "Review cursor: ").and(Role::Plain, &cursor.0)]);
+            doc.notes([Line::single(Role::Plain, "Review cursor: ").and(Role::Plain, &cursor.0)]);
         }
         doc
     }

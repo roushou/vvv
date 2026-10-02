@@ -236,7 +236,7 @@ mod navigation_tests {
     #[test]
     fn type_sites_and_generic_bindings_have_separate_navigation_facts() {
         let source = "use crate::Engine;\nstruct App { engine: Engine }\nfn f(value: Engine) -> Engine { value }\nfn generic<Engine>(value: Engine) {}\nfn local() { type Engine = u8; let x: Engine = 0; }\nimpl App { fn g(value: Engine) {} }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let engine_tokens: Vec<_> = facts.tokens_named("Engine").collect();
         assert_eq!(engine_tokens.len(), 9);
         for (index, (span, _)) in engine_tokens.iter().enumerate() {
@@ -252,7 +252,7 @@ mod lexical_navigation_tests {
     #[test]
     fn locals_shadow_after_initializers_and_generics_do_not_escape_into_nested_items() {
         let source = "fn outer<T>(x: T) { let x = x; { let x = 1; use_it(x); } use_it(x); fn nested() { use_it(x); let y: T; } }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let generic = facts.lexical.iter().find(|b| b.symbol.name == "T").unwrap();
         let nested_t = source.rfind('T').unwrap();
         assert!(!generic.visible(
@@ -282,10 +282,10 @@ mod lexical_navigation_tests {
     #[test]
     fn complex_patterns_and_receiver_members_do_not_inherit_an_outer_binding() {
         let source = "fn f(x: u8, Point { a: pattern!(), b }: Point) { use_it(x); }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let span = facts.tokens_named("x").last().unwrap().0;
         assert!(!facts.lexical_tokens.contains(&span));
-        let facts = Rust::new().facts("fn f(x: u8) { obj.x; }").unwrap();
+        let facts = Rust::default().facts("fn f(x: u8) { obj.x; }").unwrap();
         assert!(
             !facts
                 .lexical_tokens
@@ -295,7 +295,7 @@ mod lexical_navigation_tests {
     #[test]
     fn nested_type_items_cannot_capture_outer_generics_and_macros_record_uncertainty() {
         let source = "fn f<T>(value: T) { type Alias = T; }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let usage = facts.tokens_named("T").last().unwrap().0;
         assert!(!facts.lexical.iter().any(|b| b.visible(
             "T",
@@ -303,7 +303,7 @@ mod lexical_navigation_tests {
             vvv_core::BindingNamespace::Type
         )));
         let source = "fn f(value: u8) { introduce_binding!(); consume(value); }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         assert!(
             facts
                 .lexical_tokens
@@ -314,7 +314,7 @@ mod lexical_navigation_tests {
     #[test]
     fn tuple_bindings_and_closures_preserve_shadowing_and_outer_captures() {
         let source = "fn f((a, b): (u8,u8), value: u8) { let (x,y) = (a,b); let f = |value| value; consume(value); }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         for name in ["a", "b", "x", "y"] {
             assert!(facts.lexical.iter().any(|b| b.symbol.name == name));
         }

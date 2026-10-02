@@ -105,7 +105,11 @@ impl Bindings {
 
 impl Scope {
     /// What `file` sees, read off its fragment's edges.
-    pub fn of(ns: &Namespace, file: &std::path::Path, fragment: &std::sync::Arc<Fragment>) -> Self {
+    pub fn new(
+        ns: &Namespace,
+        file: &std::path::Path,
+        fragment: &std::sync::Arc<Fragment>,
+    ) -> Self {
         let semantics = ns.semantics();
         let mut names: HashMap<Name, Vec<(Address, bool)>> = HashMap::new();
         let mut opened = Vec::new();

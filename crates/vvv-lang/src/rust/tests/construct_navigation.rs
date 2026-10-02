@@ -12,11 +12,11 @@ fn construct_views_preserve_complete_table_facts_for_existing_binding_forms() {
         "struct S<T>(T); enum E<T> { Value(T) } trait Tr<T> { fn run<U>(value: U); } impl<T> Tr<T> for S<T> { fn run<U>(value: U) { value; } } type Alias<T> = S<T>;",
         "fn f() { use crate::work as local; receiver.work(); module::work::<usize>(); (factory())(); } mod inner { pub(super) use crate::work as local; fn run() { local(); } }",
     ] {
-        let mut tables = Rust::new()
+        let mut tables = Rust::default()
             .with_navigation_syntax(NavigationSyntax::Tables)
             .facts(source)
             .unwrap();
-        let mut constructs = Rust::new().facts(source).unwrap();
+        let mut constructs = Rust::default().facts(source).unwrap();
         // Pattern-role evidence is an extension of the former table contract.
         let references: Vec<_> = constructs
             .patterns
@@ -41,7 +41,7 @@ fn construct_views_preserve_complete_table_facts_for_existing_binding_forms() {
 #[test]
 fn condition_chain_bindings_start_after_each_operand_and_exclude_alternatives() {
     let source = "fn f(value: usize, input: Option<usize>) { if let Some(value) = input && value > 0 && let Some(value) = Some(value) && value > 1 { value; fn inner() { value; } } else { value; } value; }";
-    let facts = Rust::new().facts(source).unwrap();
+    let facts = Rust::default().facts(source).unwrap();
     let bindings: Vec<_> = facts
         .lexical
         .iter()
@@ -96,7 +96,7 @@ fn unsupported_conditional_patterns_publish_no_prefix_and_do_not_escape() {
         let source = format!(
             "fn f(value: usize) {{ if let {pattern} = input {{ value; }} else {{ value; }} value; }}"
         );
-        let facts = Rust::new().facts(&source).unwrap();
+        let facts = Rust::default().facts(&source).unwrap();
         assert!(
             !facts
                 .lexical
@@ -124,7 +124,7 @@ fn unsupported_conditional_patterns_publish_no_prefix_and_do_not_escape() {
 #[test]
 fn nested_loop_coverage_and_mutable_marker_ownership_remain_independent() {
     let source = "fn f() { if let Some((plain, mut explicit)) = input { while ready { plain; } let _ = explicit; } }";
-    let facts = Rust::new().facts(source).unwrap();
+    let facts = Rust::default().facts(source).unwrap();
     let plain = facts
         .lexical
         .iter()

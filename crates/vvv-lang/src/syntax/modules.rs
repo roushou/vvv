@@ -177,7 +177,7 @@ mod import_binding_tests {
     #[test]
     fn module_import_bindings_retain_visibility_and_exclude_inner_scopes() {
         let source = "use crate::a as private;\npub(crate) use crate::a as package;\npub(super) use crate::a as parent;\npub(in crate::restricted) use crate::a as limited;\nfn f() { use crate::b as local; }\nmod inner { use crate::b as nested; }\n";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let bindings: Vec<_> = facts
             .import_bindings
             .iter()
@@ -218,7 +218,7 @@ mod module_scope_tests {
     #[test]
     fn module_scopes_own_only_direct_items_and_imports() {
         let source = "use crate::Root; mod tests { use super::Root as Local; struct Owned; mod nested { pub(super) use super::Local as Alias; fn call(_: Alias) {} } fn outer() { struct Hidden; mod invalid { struct Unowned; } } }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let paths: Vec<Vec<&str>> = facts
             .module_scopes
             .iter()
@@ -265,7 +265,7 @@ mod module_scope_tests {
     #[test]
     fn supported_inline_modules_allow_navigation_without_capturing_outer_locals() {
         let source = "mod tests { fn outer(x: u8) { let y = x; fn inner() { y; } x; } fn local() { use crate::Root as Alias; let _: Alias; } }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let x_use = source.rfind("x;").unwrap();
         assert!(facts.lexical_tokens.iter().any(|span| span.start == x_use));
         let y_use = source.find("y;").unwrap();

@@ -30,7 +30,7 @@ pub(crate) struct Site<'a> {
 }
 
 impl<'a> Site<'a> {
-    pub fn of(node: &'a Node, render_from: &'a Path) -> Self {
+    pub fn new(node: &'a Node, render_from: &'a Path) -> Self {
         Self {
             node,
             edges: node.fragment.edges.iter().collect(),

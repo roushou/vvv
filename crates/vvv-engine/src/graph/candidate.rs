@@ -137,7 +137,7 @@ impl Candidate {
         self.scope.get_or_build(
             ns.project(),
             |scope| scope.is_current(&fragment),
-            || Ok(Scope::of(ns, self.path(), &fragment)),
+            || Ok(Scope::new(ns, self.path(), &fragment)),
         )
     }
 

@@ -10,7 +10,7 @@ fn expression_positions_do_not_introduce_outer_uncertainty() {
         "fn f(x: u8) { let v = [opaque!(), x]; }",
         "fn f(x: u8) { let v = opaque!() + x; }",
     ] {
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         assert!(facts.scope_uncertainties.is_empty(), "{source}");
         assert!(
             facts
@@ -26,7 +26,7 @@ fn expression_positions_do_not_introduce_outer_uncertainty() {
 #[test]
 fn binding_markers_are_per_identifier_not_per_pattern() {
     let source = "fn f(mut input: u8, plain: u8) { let mut value = 0; let (mut left, right) = (0, 0); let c = |mut a, b| a; }";
-    let facts = Rust::new().facts(source).unwrap();
+    let facts = Rust::default().facts(source).unwrap();
     for name in ["input", "value", "left", "a"] {
         assert!(
             facts
@@ -60,13 +60,15 @@ fn unknown_positions_and_nested_macros_retain_their_own_block() {
         "fn f() { { opaque!(); } consume(); }",
         "fn f() { let v = { opaque!(); 1 }; }",
     ] {
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         assert_eq!(facts.scope_uncertainties.len(), 1, "{source}");
         let unknown = &facts.scope_uncertainties[0];
         assert!(unknown.scope.contains(&unknown.invocation));
         assert!(source[unknown.scope.start..unknown.scope.end].starts_with('{'));
     }
-    let facts = Rust::new().facts("fn f() { outer!(inner!()); }").unwrap();
+    let facts = Rust::default()
+        .facts("fn f() { outer!(inner!()); }")
+        .unwrap();
     assert_eq!(facts.scope_uncertainties.len(), 1);
 }
 

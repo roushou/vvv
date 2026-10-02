@@ -411,7 +411,7 @@ impl<'a> SymbolMove<'a> {
                 }
                 staying
             } else {
-                Site::of(node, node.path())
+                Site::new(node, node.path())
             };
             let (contribution, _) = rebase.rewrite(&site)?.into_change()?;
             self.change.merge(contribution)?;

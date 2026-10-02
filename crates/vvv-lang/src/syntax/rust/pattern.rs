@@ -829,7 +829,7 @@ mod tests {
     #[test]
     fn struct_fields_publish_only_bindings_and_keep_markers_per_name() {
         let source = "fn f(point: Point) { let crate::Point { plain, ref borrowed, mut changed, x: renamed, y: ref other, z: ref mut writable, nested: Some((left, right)), .. } = point; }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let bindings: Vec<_> = facts
             .lexical
             .iter()
@@ -875,7 +875,7 @@ mod tests {
             "fn f() { for Point { x } in input { x; } }",
             "fn f() { while let Some(Point { x }) = input { x; } }",
         ] {
-            let facts = Rust::new().facts(source).unwrap();
+            let facts = Rust::default().facts(source).unwrap();
             let binding = facts
                 .lexical
                 .iter()
@@ -903,7 +903,7 @@ mod tests {
             "Point { x: prefix, y: }",
         ] {
             let source = format!("fn f() {{ let {pattern} = input; prefix; }}");
-            let facts = Rust::new().facts(&source).unwrap();
+            let facts = Rust::default().facts(&source).unwrap();
             assert!(
                 !facts
                     .lexical
@@ -938,7 +938,7 @@ mod tests {
             ("0..=LIMIT", vec![]),
         ] {
             let source = format!("fn f() {{ match input {{ {pattern} => 0, _ => 1 }} }}");
-            let facts = Rust::new().facts(&source).unwrap();
+            let facts = Rust::default().facts(&source).unwrap();
             let names: Vec<_> = facts
                 .lexical
                 .iter()
@@ -959,7 +959,7 @@ mod tests {
             "(prefix, pattern!())",
         ] {
             let source = format!("fn f() {{ match input {{ {pattern} => 0, _ => 1 }} }}");
-            let facts = Rust::new().facts(&source).unwrap();
+            let facts = Rust::default().facts(&source).unwrap();
             assert!(
                 !facts
                     .lexical
@@ -982,7 +982,7 @@ mod tests {
             "fn f() { for whole @ (inner,) in input { inner; } }",
             "fn f() { while let whole @ Some(inner) = input { inner; } }",
         ] {
-            let facts = Rust::new().facts(source).unwrap();
+            let facts = Rust::default().facts(source).unwrap();
             assert!(
                 facts
                     .lexical
@@ -999,7 +999,7 @@ mod tests {
             );
         }
         let source = "fn f() { if let whole @ Some(inner) = input { inner; fn nested() { inner; } } else { inner; } inner; }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let binding = facts
             .lexical
             .iter()
@@ -1022,7 +1022,7 @@ mod tests {
             .collect::<Vec<_>>()
             .join(" | ");
         let source = format!("fn f() {{ match input {{ {pattern} => value, _ => 0 }} }}");
-        let facts = Rust::new().facts(&source).unwrap();
+        let facts = Rust::default().facts(&source).unwrap();
         assert!(
             !facts
                 .lexical
@@ -1035,7 +1035,7 @@ mod tests {
     fn alternative_constraints_are_deferred_without_losing_exact_sites() {
         let source =
             "fn f() { match input { MIN | MAX => 0, Some(left) | Other(right) => 0, _ => 1 } }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let alternatives: Vec<_> = facts
             .patterns
             .iter()
@@ -1052,7 +1052,7 @@ mod tests {
     fn range_names_never_resolve_as_lexical_variables() {
         let source =
             "fn f(LIMIT: usize) { match input { value @ 0..=LIMIT => value, _ => LIMIT } }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let start = source.find("LIMIT =>").unwrap();
         assert!(!facts.lexical_tokens.contains(&Span::new(start, start + 5)));
         assert!(facts.navigation.contains(&Span::new(start, start + 5)));

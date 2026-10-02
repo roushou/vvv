@@ -978,8 +978,8 @@ fn report() -> vvv_engine::report::Document {
     use vvv_engine::report::{Block, Document};
     let mut doc = Document::default();
     doc.block_body(Block::Title("rename Config → Settings".into()));
-    doc.block_body(Block::Line(Line::of(Role::Path, "src/a.rs")));
-    doc.block_note(Block::Summary(Line::of(Role::Plain, "✓ #3  2 files")));
+    doc.block_body(Block::Line(Line::single(Role::Path, "src/a.rs")));
+    doc.block_note(Block::Summary(Line::single(Role::Plain, "✓ #3  2 files")));
     doc
 }
 

@@ -125,7 +125,7 @@ mod rust_tests {
 
     #[test]
     fn rust_declaration_contract_matches_tables_for_wrappers_and_unfinished_trees() {
-        let language = crate::rust::Rust::new();
+        let language = crate::rust::Rust::default();
         let typed = language.searcher();
         let tables = typed
             .clone()
@@ -188,7 +188,7 @@ mod typescript_tests {
                 "export function unfinished(",
             ],
         };
-        cases.verify(crate::typescript::TypeScript::new().searcher());
-        cases.verify(crate::typescript::Tsx::new().searcher());
+        cases.verify(crate::typescript::TypeScript::default().searcher());
+        cases.verify(crate::typescript::Tsx::default().searcher());
     }
 }

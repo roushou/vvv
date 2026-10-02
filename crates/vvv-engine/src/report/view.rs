@@ -91,10 +91,10 @@ impl View for Detailed {
     fn rows(&self, block: &Block, options: Options, _width: usize) -> Vec<Row> {
         match block {
             Block::Title(text) => vec![
-                Row::new(Line::of(Role::Title, text.clone())),
+                Row::new(Line::single(Role::Title, text.clone())),
                 Row::new(Line::new()),
             ],
-            Block::Heading(text) => vec![Row::new(Line::of(Role::Strong, text.clone()))],
+            Block::Heading(text) => vec![Row::new(Line::single(Role::Strong, text.clone()))],
             Block::Declarations(declarations) => declarations
                 .iter()
                 .map(|m| {
@@ -141,7 +141,7 @@ impl View for Detailed {
                         crate::RelationshipResolution::Indirect { .. } => "indirect",
                     };
                     Row::at(
-                        Line::of(Role::Plain, &item.spelling)
+                        Line::single(Role::Plain, &item.spelling)
                             .and(Role::Dim, format!(" [{status}] "))
                             .and(
                                 Role::Path,
@@ -161,7 +161,7 @@ impl View for Detailed {
                 .iter()
                 .map(|d| {
                     Row::at(
-                        Line::of(Role::Plain, &d.name)
+                        Line::single(Role::Plain, &d.name)
                             .and(Role::Plain, " ")
                             .and(Role::Path, d.target.declaration.path.to_string())
                             .and(
@@ -178,7 +178,7 @@ impl View for Detailed {
                 .enumerate()
                 .map(|(index, candidate)| {
                     let declaration = &candidate.declaration;
-                    let mut line = Line::of(Role::Ordinal, (index + 1).to_string())
+                    let mut line = Line::single(Role::Ordinal, (index + 1).to_string())
                         .and(Role::Plain, format!("  {}  ", declaration.id))
                         .and(Role::Path, declaration.path.to_string())
                         .and(
@@ -229,7 +229,7 @@ impl View for Detailed {
                     )];
                     rows.extend(item.via.iter().map(|alias| {
                         Row::new(
-                            Line::of(Role::Plain, "  ")
+                            Line::single(Role::Plain, "  ")
                                 .and_line(Line::mark(Mark::ReExport))
                                 .and(Role::Plain, " ")
                                 .and(Role::Address, alias.to_string()),
@@ -254,7 +254,7 @@ impl View for Detailed {
                                 .and(Role::Dim, format!("depth {depth}")),
                         ));
                     }
-                    let mut line = Line::of(Role::Plain, "  ")
+                    let mut line = Line::single(Role::Plain, "  ")
                         .and(Role::Path, consumer.path.display().to_string());
                     if consumer.depth > 1 {
                         line = line.and(Role::Dim, format!("   via {}", consumer.through));
@@ -281,7 +281,7 @@ impl View for Detailed {
                     .iter()
                     .enumerate()
                     .map(|(i, intent)| {
-                        Line::of(Role::Plain, "  ")
+                        Line::single(Role::Plain, "  ")
                             .and(Role::Ordinal, (i + 1).to_string())
                             .and(Role::Plain, "  ")
                             .and(Role::Plain, IntentLine(intent).to_string())
@@ -293,7 +293,7 @@ impl View for Detailed {
                     moves
                         .iter()
                         .map(|(from, to)| {
-                            Line::of(Role::Plain, "  ")
+                            Line::single(Role::Plain, "  ")
                                 .and(Role::Dim, to.display().to_string())
                                 .and(Role::Plain, " ")
                                 .and_line(Line::mark(Mark::Import))
@@ -304,7 +304,7 @@ impl View for Detailed {
                 );
                 rows.extend(restored.iter().map(|path| {
                     Row::new(
-                        Line::of(Role::Plain, "  ").and(Role::Path, path.display().to_string()),
+                        Line::single(Role::Plain, "  ").and(Role::Path, path.display().to_string()),
                     )
                 }));
                 rows
@@ -315,7 +315,7 @@ impl View for Detailed {
             Block::Importers(importers) => lines::ImporterRows::new(importers).rows(),
             Block::Explanation(result) => {
                 let mut rows = vec![Row::at(
-                    Line::of(
+                    Line::single(
                         Role::Strong,
                         format!("{}:{}", result.path.display(), result.position.display()),
                     ),
@@ -334,10 +334,10 @@ impl View for Detailed {
                     let file = dep
                         .file
                         .as_ref()
-                        .map(|f| Line::of(Role::Path, f.display().to_string()));
+                        .map(|f| Line::single(Role::Path, f.display().to_string()));
                     match (&dep.origin, file) {
                         (Some(origin), file) => {
-                            let mut line = Line::of(Role::Plain, "  ")
+                            let mut line = Line::single(Role::Plain, "  ")
                                 .and_line(Line::mark(Mark::ReExport))
                                 .and(Role::Plain, " ")
                                 .and(Role::Address, origin.to_string())
@@ -348,7 +348,7 @@ impl View for Detailed {
                             rows.push(Row::new(line));
                         }
                         (None, Some(file)) => {
-                            rows.push(Row::new(Line::of(Role::Plain, "  ").and_line(file)));
+                            rows.push(Row::new(Line::single(Role::Plain, "  ").and_line(file)));
                         }
                         (None, None) => {}
                     }
@@ -394,7 +394,7 @@ impl View for Detailed {
                 rows.push(Row::new(line));
                 if let Some(reach) = &result.reach {
                     rows.push(Row::new(
-                        Line::of(Role::Plain, "  ")
+                        Line::single(Role::Plain, "  ")
                             .and(Role::Dim, "reaches")
                             .and(Role::Plain, "  ")
                             .and(Role::Plain, reach.to_string()),
@@ -402,7 +402,7 @@ impl View for Detailed {
                 }
                 for alias in &result.via {
                     rows.push(Row::new(
-                        Line::of(Role::Plain, "  ")
+                        Line::single(Role::Plain, "  ")
                             .and_line(Line::mark(Mark::ReExport))
                             .and(Role::Plain, " ")
                             .and(Role::Address, alias.to_string()),
@@ -415,7 +415,7 @@ impl View for Detailed {
                 ));
                 rows.extend(result.importers.iter().map(|path| {
                     Row::new(
-                        Line::of(Role::Plain, "  ").and(Role::Path, path.display().to_string()),
+                        Line::single(Role::Plain, "  ").and(Role::Path, path.display().to_string()),
                     )
                 }));
                 rows
@@ -459,10 +459,10 @@ impl View for Detailed {
             }
             Block::Line(line) | Block::Summary(line) => vec![Row::new(line.clone())],
             Block::Note(Note::Hint(text)) => vec![Row::new(
-                Line::of(Role::Hint, "hint: ").and(Role::Plain, text.clone()),
+                Line::single(Role::Hint, "hint: ").and(Role::Plain, text.clone()),
             )],
             Block::Note(Note::Warning(line)) => vec![Row::new(
-                Line::of(Role::Warning, "warning: ").and_line(line.clone()),
+                Line::single(Role::Warning, "warning: ").and_line(line.clone()),
             )],
             Block::Changes { state, files } => self.changes(files, *state),
             Block::Moved {
@@ -680,7 +680,7 @@ impl<'a> VerdictRows<'a> {
             }
             for (path, count) in per_file {
                 lines.push(Row::new(
-                    Line::of(Role::Plain, "  ")
+                    Line::single(Role::Plain, "  ")
                         .and(Role::Ordinal, format!("{count:>width$}"))
                         .and(Role::Plain, "  ")
                         .and(Role::Path, path.display().to_string()),
@@ -706,7 +706,7 @@ impl<'a> VerdictRows<'a> {
                 current = None;
             }
             if current != Some(o.m.path.as_path()) {
-                lines.push(Row::new(Line::of(
+                lines.push(Row::new(Line::single(
                     Role::Path,
                     o.m.path.display().to_string(),
                 )));

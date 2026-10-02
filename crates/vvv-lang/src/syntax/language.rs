@@ -35,8 +35,8 @@ impl<L> std::fmt::Debug for AstGrepLanguage<L> {
 }
 
 impl<L: LanguageExt> AstGrepLanguage<L> {
-    /// Describe a language; each language module wraps this in its own `new`.
-    pub fn describe(
+    /// Construct a language from its required parser and configuration.
+    pub fn new(
         id: LanguageId,
         extensions: &'static [&'static str],
         lang: L,

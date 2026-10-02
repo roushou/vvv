@@ -17,9 +17,11 @@ pub type Tsx = AstGrepLanguage<ast_grep_language::Tsx>;
 
 impl TypeScript {
     pub const ID: LanguageId = LanguageId::new("typescript");
+}
 
-    pub fn new() -> Self {
-        AstGrepLanguage::describe(
+impl Default for TypeScript {
+    fn default() -> Self {
+        AstGrepLanguage::new(
             Self::ID,
             &["ts", "mts", "cts"],
             ast_grep_language::TypeScript,
@@ -32,17 +34,13 @@ impl TypeScript {
     }
 }
 
-impl Default for TypeScript {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
 impl Tsx {
     pub const ID: LanguageId = LanguageId::new("tsx");
+}
 
-    pub fn new() -> Self {
-        AstGrepLanguage::describe(
+impl Default for Tsx {
+    fn default() -> Self {
+        AstGrepLanguage::new(
             Self::ID,
             &["tsx"],
             ast_grep_language::Tsx,
@@ -52,12 +50,6 @@ impl Tsx {
         .with_navigation_syntax(crate::syntax::NavigationSyntax::TypeScript)
         .with_layout(TsLayout)
         .with_surgery(TsSurgery)
-    }
-}
-
-impl Default for Tsx {
-    fn default() -> Self {
-        Self::new()
     }
 }
 
@@ -78,7 +70,7 @@ const arrow = () => {};
     #[test]
     fn finds_interfaces() {
         let src = "interface A { x: number }\nfunction f() {}\ninterface B {}\n";
-        let found = TypeScript::new()
+        let found = TypeScript::default()
             .find(src, &Query::pattern("interface $N { $$$ }"))
             .unwrap();
         assert_eq!(found.len(), 2);
@@ -87,7 +79,7 @@ const arrow = () => {};
     #[test]
     fn imports_are_import_statements_and_re_exports_not_exported_declarations() {
         let src = "import { Engine } from './b';\nexport { Engine as E } from './b';\nexport const Engine = 1;\nnew Engine();\n";
-        let found = TypeScript::new()
+        let found = TypeScript::default()
             .find(src, &Query::pattern("Engine"))
             .unwrap();
         let roles: Vec<Role> = found.iter().map(|m| m.role).collect();
@@ -100,7 +92,7 @@ const arrow = () => {};
     #[test]
     fn export_is_the_modifier_and_joins_the_extent() {
         let src = "/** Doc */\nexport class A {}\nexport default function f() {}\nexport const k = 1, j = 2;\nclass B {}\n";
-        let symbols = TypeScript::new().symbols(src).unwrap();
+        let symbols = TypeScript::default().symbols(src).unwrap();
         let view: Vec<(String, Option<String>, String)> = symbols
             .iter()
             .map(|s| {
@@ -138,7 +130,7 @@ const arrow = () => {};
             ]
         );
         assert_eq!(
-            TypeScript::new().semantics().reach_kind(Some("export")),
+            TypeScript::default().semantics().reach_kind(Some("export")),
             vvv_core::ReachKind::Everyone
         );
     }
@@ -146,7 +138,7 @@ const arrow = () => {};
     #[test]
     fn extracts_declarations() {
         use SymbolKind::*;
-        let got: Vec<(SymbolKind, String)> = TypeScript::new()
+        let got: Vec<(SymbolKind, String)> = TypeScript::default()
             .symbols(DECLS)
             .unwrap()
             .into_iter()
@@ -173,9 +165,9 @@ const arrow = () => {};
     #[test]
     fn tsx_shares_the_rules() {
         let src = "function App() { return <div>{f()}</div>; }";
-        let syms = Tsx::new().symbols(src).unwrap();
+        let syms = Tsx::default().symbols(src).unwrap();
         assert_eq!(syms[0].name, "App");
-        assert_eq!(Tsx::new().references(src, "f").unwrap().len(), 1);
+        assert_eq!(Tsx::default().references(src, "f").unwrap().len(), 1);
     }
 }
 
@@ -192,7 +184,7 @@ mod resolver_tests {
         Address::new("", s.split('/'))
     }
 
-    static TS: std::sync::LazyLock<TypeScript> = std::sync::LazyLock::new(TypeScript::new);
+    static TS: std::sync::LazyLock<TypeScript> = std::sync::LazyLock::new(TypeScript::default);
 
     fn resolver() -> Fixture<'static> {
         Fixture::new(
@@ -258,7 +250,7 @@ mod resolver_tests {
     #[test]
     fn imports_cover_static_dynamic_and_reexports() {
         let src = "import { a } from './a/b';\nimport type T from '../t';\nexport * from './e';\nconst m = import('./dyn');\nconst r = require('./req');\nimport 'side';";
-        let got: Vec<String> = TypeScript::new()
+        let got: Vec<String> = TypeScript::default()
             .imports(src)
             .unwrap()
             .into_iter()
@@ -276,7 +268,7 @@ mod navigation_tests {
     #[test]
     fn named_imports_record_exact_bound_names() {
         let source = "import { Other } from './origin'; type Alias = Engine;";
-        let facts = TypeScript::new().facts(source).unwrap();
+        let facts = TypeScript::default().facts(source).unwrap();
         assert_eq!(facts.named_imports.len(), 1);
         assert_eq!(facts.named_imports[0].local, "Other");
         assert_eq!(facts.named_imports[0].imported, "Other");
@@ -291,7 +283,7 @@ mod lexical_navigation_tests {
     #[test]
     fn aliases_generics_and_parameters_are_lowered_without_changing_declarations() {
         let source = "import type { Engine as Runtime } from './origin'; function f<Runtime>(value: Runtime): Runtime { return value; }";
-        let facts = TypeScript::new().facts(source).unwrap();
+        let facts = TypeScript::default().facts(source).unwrap();
         let binding = &facts.named_imports[0];
         assert_eq!((&*binding.local, &*binding.imported), ("Runtime", "Engine"));
         assert!(binding.type_only);
@@ -307,7 +299,7 @@ mod lexical_navigation_tests {
     #[test]
     fn unmodeled_local_hoisting_and_patterns_block_outer_parameter_confirmation() {
         let source = "function f(value: number) { if (true) { var value = 2; } return value; }";
-        let facts = TypeScript::new().facts(source).unwrap();
+        let facts = TypeScript::default().facts(source).unwrap();
         assert!(
             !facts
                 .lexical_tokens
@@ -318,14 +310,14 @@ mod lexical_navigation_tests {
     fn nested_signature_bindings_do_not_leak_and_local_items_block_outer_bindings() {
         let source =
             "function f<T>(value: T) { type Local = <U>(x: U) => U; let other: U; return value; }";
-        let facts = TypeScript::new().facts(source).unwrap();
+        let facts = TypeScript::default().facts(source).unwrap();
         assert!(!facts.lexical.iter().any(|b| b.symbol.name == "U"));
         assert!(
             !facts
                 .lexical_tokens
                 .contains(&facts.tokens_named("value").last().unwrap().0)
         );
-        let facts = TypeScript::new()
+        let facts = TypeScript::default()
             .facts("export default class Engine {} export class Named {}")
             .unwrap();
         assert_eq!(
@@ -342,7 +334,7 @@ mod call_tests {
     #[test]
     fn call_facts_distinguish_dispatch_and_anonymous_ownership() {
         let source = "function outer() { work<number>(); api.work(); obj[method](); factory()(); const cb = () => work(); function nested() { work(); } }";
-        let facts = TypeScript::new().facts(source).unwrap();
+        let facts = TypeScript::default().facts(source).unwrap();
         assert!(facts.calls_supported);
         let outer = facts.symbols.iter().find(|s| s.name == "outer").unwrap();
         let nested = facts.symbols.iter().find(|s| s.name == "nested").unwrap();
@@ -392,8 +384,8 @@ mod signature_tests {
         for (header, body, name) in cases {
             let source = format!("{header}{body}");
             for facts in [
-                TypeScript::new().facts(&source).unwrap(),
-                Tsx::new().facts(&source).unwrap(),
+                TypeScript::default().facts(&source).unwrap(),
+                Tsx::default().facts(&source).unwrap(),
             ] {
                 let symbol = facts.symbols.iter().find(|s| s.name == name).unwrap();
                 let signature = facts
@@ -409,7 +401,7 @@ mod signature_tests {
             }
         }
         let source = "class Worker { /** doc */ work(x: number): { value: number } { return { value: x }; } }\nexport const factory = () => 1;";
-        let facts = TypeScript::new().facts(source).unwrap();
+        let facts = TypeScript::default().facts(source).unwrap();
         let method = facts.symbols.iter().find(|s| s.name == "work").unwrap();
         let signature = facts
             .signatures
@@ -437,7 +429,7 @@ mod move_pieces_tests {
     #[test]
     fn exported_wrapper_and_docs_belong_to_one_declaration() {
         let source = "/** owned docs */\nexport class Widget { method() {} }\nfunction outer() { class Widget {} }";
-        let facts = TypeScript::new().facts(source).unwrap();
+        let facts = TypeScript::default().facts(source).unwrap();
         let declarations: Vec<_> = facts
             .symbols
             .iter()
@@ -473,7 +465,7 @@ mod move_overload_tests {
     #[test]
     fn overload_signatures_remain_distinct_root_declarations() {
         let source = "export function f(x: string): string;\nexport function f(x: number): number;\nexport function f(x: string | number) { return x; }";
-        let facts = TypeScript::new().facts(source).unwrap();
+        let facts = TypeScript::default().facts(source).unwrap();
         let declarations: Vec<_> = facts
             .symbols
             .iter()
@@ -486,7 +478,7 @@ mod move_overload_tests {
                 .iter()
                 .any(|pieces| pieces.declaration == symbol.span && pieces.top_level)
         }));
-        let ambient = TypeScript::new()
+        let ambient = TypeScript::default()
             .facts("export declare function f(): void;")
             .unwrap();
         assert_eq!(ambient.symbols.len(), 1);

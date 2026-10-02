@@ -182,7 +182,7 @@ mod tests {
     #[test]
     fn for_binding_starts_after_iterator_and_stays_in_its_loop() {
         let source = "fn f(value: usize) { for value in values(value) { value; fn nested() { value; } } value; }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let binding = facts
             .lexical
             .iter()
@@ -212,7 +212,7 @@ mod tests {
     fn while_chain_preserves_order_and_unsupported_patterns_publish_nothing() {
         let source =
             "fn f() { while let Some(value) = input && let Some(value) = next(value) { value; } }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let bindings: Vec<_> = facts
             .lexical
             .iter()
@@ -231,7 +231,7 @@ mod tests {
             BindingNamespace::Value
         ));
         let source = "fn f(value: usize) { for (prefix, Point { field: pattern!() }) in input { value; } value; }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         assert!(
             !facts
                 .lexical

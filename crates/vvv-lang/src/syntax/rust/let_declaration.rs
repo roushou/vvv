@@ -84,7 +84,7 @@ mod let_else_tests {
     #[test]
     fn tuple_constructors_are_not_bindings_and_let_else_visibility_starts_after_else() {
         let source = "fn f(value: Option<usize>) { let Some(value) = value else { let _ = value; return; }; let _ = value; }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let local = facts
             .lexical
             .iter()
@@ -107,7 +107,7 @@ mod let_else_tests {
             assert!(facts.lexical_tokens.contains(&span), "{span:?}");
         }
         let nested = "fn f() { let crate::Wrap(Some((left, mut right))) = input else { return; }; left; right; }";
-        let facts = Rust::new().facts(nested).unwrap();
+        let facts = Rust::default().facts(nested).unwrap();
         let variables: Vec<_> = facts
             .lexical
             .iter()
@@ -124,7 +124,7 @@ mod let_else_tests {
     fn unsupported_nested_patterns_keep_the_scope_conservative() {
         let source =
             "fn f() { let Some(Point { x: pattern!() }) = input else { return; }; work(); }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let start = source.find("work").unwrap();
         assert!(
             !facts

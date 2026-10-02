@@ -348,7 +348,7 @@ impl crate::report::Document {
         use crate::protocol::display::{Line, Role};
         let mut document = Self::new();
         let json = serde_json::to_string_pretty(&schema.document).expect("schema serializes");
-        document.body(json.lines().map(|line| Line::of(Role::Plain, line)));
+        document.body(json.lines().map(|line| Line::single(Role::Plain, line)));
         document
     }
 }

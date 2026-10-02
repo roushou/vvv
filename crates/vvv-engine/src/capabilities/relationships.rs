@@ -466,7 +466,7 @@ impl crate::report::Document {
             return report;
         }
         report.block_body(crate::report::Block::Relationships(result.items.clone()));
-        report.notes([Line::of(
+        report.notes([Line::single(
             Role::Dim,
             format!(
                 "{}; {} scanned; {}",
@@ -476,12 +476,12 @@ impl crate::report::Document {
             ),
         )]);
         if !result.coverage.scan_complete {
-            report.notes([Line::of(
+            report.notes([Line::single(
                 Role::Dim,
                 "Candidate scan incomplete; narrow the scope or increase the budget",
             )]);
         }
-        report.notes([Line::of(Role::Dim, "Unresolved sites are possible relationships, not confirmed calls. Receiver types, indirect targets, and macro expansion are not inferred.")]);
+        report.notes([Line::single(Role::Dim, "Unresolved sites are possible relationships, not confirmed calls. Receiver types, indirect targets, and macro expansion are not inferred.")]);
         report
     }
 }

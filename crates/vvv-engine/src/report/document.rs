@@ -94,7 +94,7 @@ impl Document {
     /// Compose a failure as `✗ message`; interfaces present its hints.
     pub fn error(failure: &Failure) -> Self {
         let mut report = Self::new();
-        report.notes([Line::of(Role::Error, "✗ ").and(Role::Plain, failure.message.clone())]);
+        report.notes([Line::single(Role::Error, "✗ ").and(Role::Plain, failure.message.clone())]);
         report
     }
 
@@ -112,7 +112,7 @@ impl Document {
 
     /// `path`: the file the command opened.
     pub(crate) fn file_header(&mut self, path: &std::path::Path) {
-        self.body([Line::of(Role::Path, path.display().to_string())]);
+        self.body([Line::single(Role::Path, path.display().to_string())]);
     }
 
     /// The body of a move preview: counts, the `→` rows, the `!` rows, and a

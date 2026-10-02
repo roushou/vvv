@@ -198,7 +198,7 @@ impl Document {
         let counts: Vec<Line> = counts
             .iter()
             .map(|(k, n)| {
-                Line::of(Role::Dim, k.clone())
+                Line::single(Role::Dim, k.clone())
                     .and(Role::Plain, " ")
                     .and(Role::Plain, n.to_string())
             })

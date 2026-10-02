@@ -231,7 +231,7 @@ impl DeadQuery {
 impl Document {
     pub(crate) fn impact(result: &Impact) -> Self {
         let mut report = Self::new();
-        report.body([Line::of(Role::Title, format!("impact {}", result.name))]);
+        report.body([Line::single(Role::Title, format!("impact {}", result.name))]);
         if result.consumers.is_empty() {
             report.block_note(Block::Summary(
                 Line::mark(Mark::Nothing).and(Role::Plain, " no module imports it"),

@@ -485,15 +485,15 @@ impl crate::report::Document {
         let mut doc = Self::new();
         match &reply.outcome {
             ContextOutcome::Unavailable { reason } => {
-                doc.notes([Line::of(Role::Dim, reason.message())])
+                doc.notes([Line::single(Role::Dim, reason.message())])
             }
             ContextOutcome::Ambiguous { candidates } => {
-                doc.notes([Line::of(
+                doc.notes([Line::single(
                     Role::Dim,
                     "Several definitions match; use --select with a match id",
                 )]);
                 for candidate in candidates {
-                    doc.body([Line::of(Role::Plain, candidate.id.to_string())
+                    doc.body([Line::single(Role::Plain, candidate.id.to_string())
                         .and(Role::Plain, " ")
                         .and(Role::Path, candidate.target.declaration.path.to_string())]);
                 }
@@ -508,18 +508,18 @@ impl crate::report::Document {
                 ContextRelation::Reference => "Confirmed reference",
                 ContextRelation::ReferenceInTestPath => "Confirmed reference in a test path",
             };
-            doc.body([Line::of(Role::Strong, label)
+            doc.body([Line::single(Role::Strong, label)
                 .and(Role::Plain, "  ")
                 .and(Role::Path, item.excerpt.path.to_string())
                 .and(
                     Role::LineNumber,
                     format!(":{}:{}", item.start.line + 1, item.start.column + 1),
                 )]);
-            doc.body(item.text.lines().map(|s| Line::of(Role::Plain, s)));
+            doc.body(item.text.lines().map(|s| Line::single(Role::Plain, s)));
             if matches!(item.signature, Some(ContextSignature::Unsupported)) {
-                doc.notes([Line::of(Role::Dim, "Signature extraction is not supported for this declaration; request body detail")]);
+                doc.notes([Line::single(Role::Dim, "Signature extraction is not supported for this declaration; request body detail")]);
             } else if !item.complete {
-                doc.notes([Line::of(
+                doc.notes([Line::single(
                     Role::Dim,
                     "Excerpt shortened by the output budget",
                 )]);
@@ -527,7 +527,7 @@ impl crate::report::Document {
         }
         let omissions = &reply.omissions;
         if *omissions != ContextOmissions::default() {
-            doc.notes([Line::of(Role::Dim, format!("Omitted: {} item limit, {} byte limit, {} lookup limit, {} file limit, {} ambiguous, {} unavailable, {} without a declaration", omissions.item_limit, omissions.byte_limit, omissions.lookup_limit, omissions.file_limit, omissions.ambiguous, omissions.unavailable, omissions.no_container))]);
+            doc.notes([Line::single(Role::Dim, format!("Omitted: {} item limit, {} byte limit, {} lookup limit, {} file limit, {} ambiguous, {} unavailable, {} without a declaration", omissions.item_limit, omissions.byte_limit, omissions.lookup_limit, omissions.file_limit, omissions.ambiguous, omissions.unavailable, omissions.no_container))]);
         }
         doc
     }

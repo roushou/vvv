@@ -141,7 +141,7 @@ mod tests {
     #[test]
     fn arm_bindings_reach_guard_and_body_but_not_siblings_or_nested_items() {
         let source = "fn f(value: usize) { match input { Some(value) if value > 0 => { let capture = || value; fn inner() { value; } }, _ => value } value; }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let binding = facts
             .lexical
             .iter()
@@ -173,7 +173,7 @@ mod tests {
     #[test]
     fn unsupported_arm_does_not_block_scrutinee_sibling_or_surrounding_scope() {
         let source = "fn f(value: usize) { match value { Some(Point { field: pattern!() }) => value, _ => value } value; }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let spans: Vec<_> = facts.tokens_named("value").map(|(span, _)| span).collect();
         assert!(facts.lexical_tokens.contains(&spans[1]));
         assert!(!facts.lexical_tokens.contains(&spans[2]));
@@ -204,7 +204,7 @@ mod tests {
     #[test]
     fn guard_chain_binding_starts_after_its_initializer() {
         let source = "fn f() { match input { Some(value) if let Some(next) = derive(value) && next > 0 => next, _ => next } }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let value = facts
             .lexical
             .iter()

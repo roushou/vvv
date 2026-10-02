@@ -70,7 +70,7 @@ mod signature_tests {
         ];
         for (header, body, name) in cases {
             let source = format!("{header}{body}");
-            let facts = Rust::new().facts(&source).unwrap();
+            let facts = Rust::default().facts(&source).unwrap();
             let symbol = facts
                 .symbols
                 .iter()
@@ -88,7 +88,7 @@ mod signature_tests {
             );
         }
         let source = "trait Work { /// Required.\nfn work(&self) -> u8; }\nconst VALUE: u8 = 1;";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let work = facts.symbols.iter().find(|s| s.name == "work").unwrap();
         let signature = facts
             .signatures

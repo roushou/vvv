@@ -901,7 +901,7 @@ mod binding_tests {
                 "function f(value: number) { class Local {} interface I {} type Alias = number; enum E { A } value; }",
             ],
         };
-        cases.verify(crate::typescript::TypeScript::new().searcher());
-        cases.verify(crate::typescript::Tsx::new().searcher());
+        cases.verify(crate::typescript::TypeScript::default().searcher());
+        cases.verify(crate::typescript::Tsx::default().searcher());
     }
 }

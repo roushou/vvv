@@ -344,7 +344,7 @@ impl Document {
             .and(Role::Plain, " ")
             .and(Role::Strong, outgoing.to_string())]);
         if result.imports.is_empty() {
-            report.body([Line::of(Role::Plain, "  ").and_line(Line::mark(Mark::Nothing))]);
+            report.body([Line::single(Role::Plain, "  ").and_line(Line::mark(Mark::Nothing))]);
         }
         let own = result
             .module
@@ -366,7 +366,7 @@ impl Document {
                 Files::among(result.importers.iter().map(|i| i.path.as_path())).to_string(),
             )]);
         if result.importers.is_empty() {
-            report.body([Line::of(Role::Plain, "  ").and_line(Line::mark(Mark::Nothing))]);
+            report.body([Line::single(Role::Plain, "  ").and_line(Line::mark(Mark::Nothing))]);
         }
         report.block_body(Block::Importers(result.importers.clone()));
         report.block_note(Block::Summary(Self::deps_summary(outgoing, incoming)));

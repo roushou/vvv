@@ -123,8 +123,13 @@ impl crate::report::Document {
     pub(crate) fn expansion(reply: &Expansion) -> Self {
         use crate::protocol::display::{Line, Role};
         let mut doc = Self::new();
-        doc.body([Line::of(Role::Path, reply.excerpt.path.to_string())]);
-        doc.body(reply.text.lines().map(|line| Line::of(Role::Plain, line)));
+        doc.body([Line::single(Role::Path, reply.excerpt.path.to_string())]);
+        doc.body(
+            reply
+                .text
+                .lines()
+                .map(|line| Line::single(Role::Plain, line)),
+        );
         doc
     }
 }

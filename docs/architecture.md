@@ -918,7 +918,7 @@ and position) so the numbers a preview prints are the numbers `--select` reads.
    and `IMPORTS` tables. Use a probe program (`lang.ast_grep(src).root().dfs()`) to
    discover node kinds and field names.
 3. `src/<x>/mod.rs`: a type alias `pub type X = AstGrepLanguage<ast_grep_language::X>;`
-   and an `impl X { const ID; fn new() }` calling `AstGrepLanguage::describe(ID,
+   an `impl X { const ID; }`, and an `impl Default for X` calling `AstGrepLanguage::new(ID,
    extensions, grammar, GRAMMAR, &SEMANTICS)`, plus `.with_layout(…)` and
    `.with_surgery(…)` when the language's paths can be followed. No `Language` impl to
    write. Declare the module in `lib.rs` under

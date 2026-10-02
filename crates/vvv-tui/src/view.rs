@@ -48,7 +48,7 @@ impl View for Compact {
             .unwrap_or(&respelling.to)
             .to_owned();
         let budget = width.saturating_sub(site_width + 3);
-        line = line.and_line(Line::of(Role::Plain, name).fit(budget));
+        line = line.and_line(Line::single(Role::Plain, name).fit(budget));
         Row::at(line, respelling.path.clone(), respelling.start.line)
     }
 
@@ -70,7 +70,8 @@ impl View for Compact {
         line = line
             .and(Role::Path, format!("{site:<site_width$}"))
             .and(Role::Plain, " ");
-        line = line.and_line(Line::of(Role::Plain, what).fit(width.saturating_sub(site_width + 3)));
+        line = line
+            .and_line(Line::single(Role::Plain, what).fit(width.saturating_sub(site_width + 3)));
         Row::at(line, notice.path.clone(), notice.start.line)
     }
 
@@ -120,7 +121,7 @@ impl Compact {
         let mut line = match m.role {
             MatchRole::Declaration => Line::mark(Mark::Declaration).and(Role::Plain, " "),
             MatchRole::Import => Line::mark(Mark::Import).and(Role::Plain, " "),
-            MatchRole::Use => Line::of(Role::Plain, "  "),
+            MatchRole::Use => Line::single(Role::Plain, "  "),
         };
         let site = format!("{}:{}", m.path.short(), m.start.line + 1);
         line = line

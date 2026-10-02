@@ -557,7 +557,7 @@ mod local_import_tests {
     #[test]
     fn named_block_imports_keep_navigation_ownership_separate_from_mutation() {
         let source = "use crate::Root; fn f() { use crate::a::{run as work, Data}; work(); { use crate::b::run as work; work(); } }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         assert_eq!(facts.import_bindings.len(), 1);
         assert_eq!(facts.module_scopes[0].imports.len(), 1);
         assert_eq!(facts.import_scopes.len(), 2);
@@ -584,7 +584,7 @@ mod local_import_tests {
             "fn f() { use crate::a::*; work(); }",
             "fn f() { use crate::a::work; let Point { x: pattern!() } = point; work(); }",
         ] {
-            let facts = Rust::new().facts(source).unwrap();
+            let facts = Rust::default().facts(source).unwrap();
             let call = source.rfind("work").unwrap();
             let span = vvv_core::Span::new(call, call + 4);
             assert!(!facts.lexical_tokens.contains(&span));

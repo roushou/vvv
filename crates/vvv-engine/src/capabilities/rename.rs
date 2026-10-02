@@ -309,7 +309,7 @@ impl Document {
         });
         let strip = Self::verdict_counts(&result.occurrences);
         let edits = Self::edits_in(&result.files);
-        let plan = Line::of(
+        let plan = Line::single(
             Role::Dim,
             format!(
                 "→ {} in {}",

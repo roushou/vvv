@@ -143,7 +143,7 @@ impl MoveIntent {
         let mut change = Change::new();
         let mut references: Vec<(Address, Address)> = Vec::new();
         for node in &nodes {
-            let site = Site::of(node, moves.destination(node.path()).unwrap_or(node.path()));
+            let site = Site::new(node, moves.destination(node.path()).unwrap_or(node.path()));
             let (contribution, affected) = rebase.rewrite(&site)?.into_change()?;
             change.merge(contribution)?;
             references.extend(affected);

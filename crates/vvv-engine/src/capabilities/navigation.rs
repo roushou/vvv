@@ -182,7 +182,7 @@ impl Document {
                 report.declarations(std::slice::from_ref(&preview.declaration));
                 let span = preview.container.declaration.span;
                 if let Some(text) = preview.source.text.get(span.start..span.end) {
-                    report.body(text.lines().map(|line| Line::of(Role::Plain, line)));
+                    report.body(text.lines().map(|line| Line::single(Role::Plain, line)));
                 }
             }
             NavigationOutcome::Ambiguous { candidates } => {
@@ -192,13 +192,13 @@ impl Document {
                         .map(|c| c.declaration.clone())
                         .collect::<Vec<_>>(),
                 ));
-                report.notes([Line::of(
+                report.notes([Line::single(
                     Role::Dim,
                     "Several definitions match; use --select with a row number or match id",
                 )]);
             }
             NavigationOutcome::Unavailable { reason } => {
-                report.notes([Line::of(Role::Dim, reason.message())])
+                report.notes([Line::single(Role::Dim, reason.message())])
             }
         }
         report
@@ -301,7 +301,7 @@ impl Document {
             }
             ResolutionOutcome::Ambiguous { candidates } => candidates,
             ResolutionOutcome::Unavailable { reason } => {
-                doc.notes([Line::of(Role::Dim, reason.message())]);
+                doc.notes([Line::single(Role::Dim, reason.message())]);
                 return doc;
             }
         };

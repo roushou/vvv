@@ -112,8 +112,8 @@ pub struct Diff {
 }
 
 impl Diff {
-    /// A diff whose headers name different paths, as `git diff` shows a rename.
-    pub fn of(path: &Path, before: &str, after: &str) -> Self {
+    /// A diff whose before and after headers name the same path.
+    pub fn new(path: &Path, before: &str, after: &str) -> Self {
         Self::between(path, path, before, after)
     }
 
@@ -190,14 +190,14 @@ impl Diff {
     /// The display lines from the hunk opening at or before 1-based `line`.
     pub fn lines_from(&self, line: u32) -> impl Iterator<Item = Line> + '_ {
         self.hunks[self.opening(line)..].iter().flat_map(|hunk| {
-            std::iter::once(Line::of(Role::Hunk, hunk.header())).chain(hunk.lines.iter().map(
+            std::iter::once(Line::single(Role::Hunk, hunk.header())).chain(hunk.lines.iter().map(
                 |line| {
                     let role = match line.kind {
                         DiffKind::Context => Role::Plain,
                         DiffKind::Added => Role::Added,
                         DiffKind::Removed => Role::Removed,
                     };
-                    Line::of(role, format!("{}{}", line.kind.marker(), line.text))
+                    Line::single(role, format!("{}{}", line.kind.marker(), line.text))
                 },
             ))
         })
@@ -275,7 +275,7 @@ mod tests {
 
     #[test]
     fn a_single_line_hunk_has_no_count_in_its_header() {
-        let diff = Diff::of(Path::new("a.rs"), "a\n", "b\n");
+        let diff = Diff::new(Path::new("a.rs"), "a\n", "b\n");
         let hunk = &diff.hunks()[0];
         assert_eq!(hunk.header(), "@@ -1 +1 @@");
         assert_eq!((hunk.old.start, hunk.old.len), (1, 1));

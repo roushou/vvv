@@ -172,7 +172,7 @@ mod call_tests {
     #[test]
     fn call_facts_distinguish_dispatch_and_anonymous_ownership() {
         let source = "fn outer() { work::<u8>(); module::work(); receiver.work(); (factory())(); let cb = || work(); fn nested() { work(); } }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         assert!(facts.calls_supported);
         let outer = facts.symbols.iter().find(|s| s.name == "outer").unwrap();
         let nested = facts.symbols.iter().find(|s| s.name == "nested").unwrap();

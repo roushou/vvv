@@ -42,7 +42,7 @@ impl<'a> RegroupCase<'a> {
     /// whose resolved address is under OLD, rebased onto NEW.
     fn render(&self) -> String {
         let (file, src) = (self.file, self.src);
-        let lang = Rust::new();
+        let lang = Rust::default();
         let fx = self.fixture(&lang);
         let file = Path::new(file);
         let old = Address::new("fixture", OLD.trim_start_matches("crate::").split("::"));

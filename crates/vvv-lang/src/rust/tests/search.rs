@@ -20,7 +20,7 @@ macro_rules! m { () => {} }
 "#;
 
 fn symbols(src: &str) -> Vec<(SymbolKind, String)> {
-    Rust::new()
+    Rust::default()
         .symbols(src)
         .unwrap()
         .into_iter()
@@ -31,7 +31,7 @@ fn symbols(src: &str) -> Vec<(SymbolKind, String)> {
 #[test]
 fn extents_take_attributes_and_docs_up_to_a_blank_line() {
     let src = "// section\n\n/// Docs.\n#[derive(Debug)]\n#[cfg(test)]\npub(crate) struct S;\n\nfn f() {}\n";
-    let symbols = Rust::new().symbols(src).unwrap();
+    let symbols = Rust::default().symbols(src).unwrap();
     let s = &symbols[0];
     assert_eq!(
         &src[s.extent.start..s.extent.end],
@@ -47,7 +47,7 @@ fn extents_take_attributes_and_docs_up_to_a_blank_line() {
 #[test]
 fn every_visibility_form_is_read_and_variants_take_none() {
     let src = "pub fn a() {}\npub(super) fn b() {}\npub(in crate::x) fn c() {}\nfn d() {}\npub enum E { /// doc\n V }\n";
-    let mods: Vec<(String, Option<String>)> = Rust::new()
+    let mods: Vec<(String, Option<String>)> = Rust::default()
         .symbols(src)
         .unwrap()
         .into_iter()
@@ -64,7 +64,7 @@ fn every_visibility_form_is_read_and_variants_take_none() {
             ("V".to_owned(), None),
         ]
     );
-    let sem = Rust::new().semantics();
+    let sem = Rust::default().semantics();
     assert_eq!(
         sem.reach_kind(Some("pub(in crate::x)")),
         vvv_core::ReachKind::Path
@@ -74,7 +74,7 @@ fn every_visibility_form_is_read_and_variants_take_none() {
 
 #[test]
 fn facts_are_the_union_of_the_single_questions() {
-    let lang = Rust::new();
+    let lang = Rust::default();
     let src = format!("{DECLS}\nuse crate::a::b;\nfn g() {{ let p = Point::new(); }}\n");
     let facts = lang.facts(&src).unwrap();
     assert_eq!(facts.symbols, lang.symbols(&src).unwrap());
@@ -94,7 +94,7 @@ fn facts_are_the_union_of_the_single_questions() {
 
 #[test]
 fn pattern_with_captures() {
-    let found = Rust::new()
+    let found = Rust::default()
         .find(SRC, &Query::pattern("fn $NAME($$$ARGS) {}"))
         .unwrap();
     let names: Vec<&str> = found
@@ -114,7 +114,9 @@ fn pattern_with_captures() {
 #[test]
 fn bare_name_finds_every_identifier_position_and_labels_declarations() {
     let src = "use a::Language;\npub trait Language {}\nimpl Language for S {}\nfn f(l: &dyn Language) {}\nlet Languages = 1;";
-    let found = Rust::new().find(src, &Query::pattern("Language")).unwrap();
+    let found = Rust::default()
+        .find(src, &Query::pattern("Language"))
+        .unwrap();
     let kinds: Vec<&str> = found.iter().map(|m| m.kind.as_str()).collect();
     assert_eq!(
         kinds,
@@ -141,10 +143,12 @@ fn roles_see_through_grouped_and_extern_imports() {
 extern crate Language;
 mod m { pub use x::Language; }
 fn f() { Language::new(); }";
-    let found = Rust::new().find(src, &Query::pattern("Language")).unwrap();
+    let found = Rust::default()
+        .find(src, &Query::pattern("Language"))
+        .unwrap();
     let roles: Vec<Role> = found.iter().map(|m| m.role).collect();
     assert_eq!(roles, [Role::Import, Role::Import, Role::Import, Role::Use]);
-    let structural = Rust::new()
+    let structural = Rust::default()
         .find(
             src,
             &Query::builder()
@@ -160,7 +164,7 @@ fn f() { Language::new(); }";
 fn highlights_cover_keywords_strings_types_and_calls() {
     use vvv_core::HighlightKind::*;
     let src = "/// doc\npub fn f(x: u8) -> String { let s = \"hi\"; g(1); s.len(); m!() }";
-    let got: Vec<(vvv_core::HighlightKind, &str)> = Rust::new()
+    let got: Vec<(vvv_core::HighlightKind, &str)> = Rust::default()
         .highlights(src)
         .unwrap()
         .into_iter()
@@ -185,7 +189,7 @@ fn highlights_cover_keywords_strings_types_and_calls() {
 
 #[test]
 fn kind_only() {
-    let found = Rust::new()
+    let found = Rust::default()
         .find(SRC, &Query::of_kind("struct_item"))
         .unwrap();
     assert_eq!(found.len(), 1);
@@ -194,7 +198,9 @@ fn kind_only() {
 
 #[test]
 fn bad_kind_is_an_error() {
-    let err = Rust::new().find(SRC, &Query::of_kind("nope")).unwrap_err();
+    let err = Rust::default()
+        .find(SRC, &Query::of_kind("nope"))
+        .unwrap_err();
     assert!(matches!(err, SearchError::Kind(_)));
 }
 
@@ -227,12 +233,12 @@ fn extracts_every_declaration_kind() {
 
 #[test]
 fn structural_matches_are_annotated_and_symbolic_queries_filter() {
-    let found = Rust::new()
+    let found = Rust::default()
         .find(DECLS, &Query::of_kind("function_item"))
         .unwrap();
     assert_eq!(found[0].symbol.as_ref().unwrap().name, "free");
 
-    let methods = Rust::new()
+    let methods = Rust::default()
         .find(DECLS, &Query::of_symbol(SymbolKind::Method))
         .unwrap();
     let names: Vec<&str> = methods
@@ -241,7 +247,7 @@ fn structural_matches_are_annotated_and_symbolic_queries_filter() {
         .collect();
     assert_eq!(names, ["new", "area", "name"]);
 
-    let both = Rust::new()
+    let both = Rust::default()
         .find(
             DECLS,
             &Query::of_kind("function_item").with_symbol(SymbolKind::Method),
@@ -257,7 +263,7 @@ fn structural_matches_are_annotated_and_symbolic_queries_filter() {
         "bodiless `area` is a function_signature_item"
     );
 
-    let named = Rust::new().find(DECLS, &Query::named("Point")).unwrap();
+    let named = Rust::default().find(DECLS, &Query::named("Point")).unwrap();
     assert_eq!(named.len(), 1);
     assert_eq!(named[0].symbol.as_ref().unwrap().kind, SymbolKind::Struct);
 }
@@ -265,7 +271,7 @@ fn structural_matches_are_annotated_and_symbolic_queries_filter() {
 #[test]
 fn references_are_identifier_tokens_only() {
     let src = "fn foo() {}\nfn bar() { foo(); let foo = 1; \"foo\"; /* foo */ x.foo }";
-    let refs = Rust::new().references(src, "foo").unwrap();
+    let refs = Rust::default().references(src, "foo").unwrap();
     let kinds: Vec<&str> = refs.iter().map(|r| r.kind.as_str()).collect();
     assert_eq!(
         kinds,

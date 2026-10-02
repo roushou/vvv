@@ -77,7 +77,7 @@ impl Line {
         Self::default()
     }
 
-    pub fn of(role: Role, text: impl Into<String>) -> Self {
+    pub fn single(role: Role, text: impl Into<String>) -> Self {
         Self {
             pieces: vec![Piece::new(role, text)],
         }
@@ -109,7 +109,7 @@ impl Line {
 
     /// A mark's glyph as a line.
     pub fn mark(mark: Mark) -> Self {
-        Self::of(Role::Mark(mark), mark.glyph().to_string())
+        Self::single(Role::Mark(mark), mark.glyph().to_string())
     }
 
     /// `✓ 3  ? 1  ✗ 0`: each mark's glyph and count, pairs two spaces apart.

@@ -137,7 +137,7 @@ impl Document {
         }
         if !uses.is_empty() {
             counts.push(
-                Line::of(Role::Dim, "○")
+                Line::single(Role::Dim, "○")
                     .and(Role::Plain, " ")
                     .and(Role::Plain, uses.len().to_string()),
             );
@@ -282,7 +282,7 @@ impl Document {
     pub(crate) fn search_page(page: &SearchPage) -> Self {
         let mut doc = Self::new();
         for item in &page.items {
-            doc.body([Line::of(Role::Plain, item.ordinal.to_string())
+            doc.body([Line::single(Role::Plain, item.ordinal.to_string())
                 .and(Role::Plain, " ")
                 .and(Role::Path, item.item.path.to_string())
                 .and(Role::Plain, " ")

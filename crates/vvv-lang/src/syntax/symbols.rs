@@ -338,7 +338,7 @@ mod move_pieces_tests {
     #[test]
     fn generic_and_trait_impls_belong_to_the_exact_type_in_their_scope() {
         let source = "/// docs\n#[derive(Clone)]\npub struct Selected<T>(T);\nimpl<T> Selected<T> {}\nimpl<T: Default> Default for Selected<T> {}\nmod child { struct Selected; impl Selected {} }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         let declarations: Vec<_> = facts
             .symbols
             .iter()
@@ -388,7 +388,7 @@ mod move_pieces_tests {
                 CompanionOwnership::UnsupportedTarget,
             ),
         ] {
-            let facts = Rust::new().facts(source).unwrap();
+            let facts = Rust::default().facts(source).unwrap();
             let declaration = facts
                 .symbols
                 .iter()

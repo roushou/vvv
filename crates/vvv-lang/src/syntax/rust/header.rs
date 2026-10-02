@@ -180,7 +180,7 @@ mod tests {
     #[test]
     fn typed_and_untyped_parameters_have_one_binding_each() {
         let source = "fn f(outer: usize) { let closure = |left, right: usize| { outer; left; right; fn inner() { outer; left; } }; }";
-        let facts = Rust::new().facts(source).unwrap();
+        let facts = Rust::default().facts(source).unwrap();
         for name in ["left", "right"] {
             let bindings: Vec<_> = facts
                 .lexical

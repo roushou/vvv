@@ -488,16 +488,16 @@ impl crate::report::Document {
                 doc.block_note(block.clone());
             }
         }
-        doc.notes([Line::of(Role::Plain, "Plan: ").and(Role::Plain, &review.plan_id.0)]);
+        doc.notes([Line::single(Role::Plain, "Plan: ").and(Role::Plain, &review.plan_id.0)]);
         doc
     }
     pub(crate) fn plan_receipt(receipt: &PlanReceipt) -> Self {
         use crate::protocol::display::{Line, Role};
         let mut doc = Self::new();
-        doc.body([Line::of(Role::Strong, "Applied reviewed plan")
+        doc.body([Line::single(Role::Strong, "Applied reviewed plan")
             .and(Role::Plain, format!(" (history {})", receipt.history_id))]);
         for file in &receipt.files {
-            doc.body([Line::of(Role::Path, file.path.to_string())]);
+            doc.body([Line::single(Role::Path, file.path.to_string())]);
         }
         doc
     }

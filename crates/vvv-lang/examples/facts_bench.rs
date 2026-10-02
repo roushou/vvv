@@ -45,11 +45,13 @@ impl Corpus {
         for path in &self.files {
             match path.extension().and_then(|extension| extension.to_str()) {
                 #[cfg(feature = "rust")]
-                Some("rs") => self.inspect(&vvv_lang::rust::Rust::new(), path, output),
+                Some("rs") => self.inspect(&vvv_lang::rust::Rust::default(), path, output),
                 #[cfg(feature = "typescript")]
-                Some("ts") => self.inspect(&vvv_lang::typescript::TypeScript::new(), path, output),
+                Some("ts") => {
+                    self.inspect(&vvv_lang::typescript::TypeScript::default(), path, output)
+                }
                 #[cfg(feature = "typescript")]
-                Some("tsx") => self.inspect(&vvv_lang::typescript::Tsx::new(), path, output),
+                Some("tsx") => self.inspect(&vvv_lang::typescript::Tsx::default(), path, output),
                 _ => {}
             }
         }
@@ -94,7 +96,7 @@ fn main() {
     }
     #[cfg(feature = "rust")]
     corpus.measure(
-        &vvv_lang::rust::Rust::new(),
+        &vvv_lang::rust::Rust::default(),
         &[
             "crates/vvv-engine/src/graph/navigation.rs",
             "crates/vvv-engine/src/graph/module_navigation.rs",
@@ -103,7 +105,7 @@ fn main() {
     );
     #[cfg(feature = "typescript")]
     corpus.measure(
-        &vvv_lang::typescript::TypeScript::new(),
+        &vvv_lang::typescript::TypeScript::default(),
         &[
             "crates/vvv/tests/corpus/ts-navigation/src/local.ts",
             "crates/vvv/tests/corpus/ts/src/app.ts",

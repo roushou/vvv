@@ -18,9 +18,11 @@ pub type Rust = AstGrepLanguage<ast_grep_language::Rust>;
 
 impl Rust {
     pub const ID: LanguageId = LanguageId::new("rust");
+}
 
-    pub fn new() -> Self {
-        AstGrepLanguage::describe(
+impl Default for Rust {
+    fn default() -> Self {
+        AstGrepLanguage::new(
             Self::ID,
             &["rs"],
             ast_grep_language::Rust,
@@ -30,12 +32,6 @@ impl Rust {
         .with_navigation_syntax(NavigationSyntax::Rust)
         .with_layout(RustLayout)
         .with_surgery(RustSurgery)
-    }
-}
-
-impl Default for Rust {
-    fn default() -> Self {
-        Self::new()
     }
 }
 

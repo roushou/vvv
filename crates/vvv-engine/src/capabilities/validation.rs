@@ -414,7 +414,7 @@ impl crate::report::Document {
     pub(crate) fn validation(report: &ValidationReport) -> Self {
         use crate::protocol::display::{Line, Role};
         let mut doc = Self::new();
-        doc.body([Line::of(
+        doc.body([Line::single(
             Role::Strong,
             if report.passed {
                 "Validation passed"
@@ -431,20 +431,19 @@ impl crate::report::Document {
                 CheckOutcome::Cancelled => "cancelled",
                 CheckOutcome::Error => "could not complete",
             };
-            doc.body([
-                Line::of(Role::Plain, &check.command.name).and(Role::Plain, format!(": {status}"))
-            ]);
+            doc.body([Line::single(Role::Plain, &check.command.name)
+                .and(Role::Plain, format!(": {status}"))]);
             doc.body(
                 check
                     .stdout
                     .text
                     .lines()
                     .chain(check.stderr.text.lines())
-                    .map(|line| Line::of(Role::Plain, line)),
+                    .map(|line| Line::single(Role::Plain, line)),
             );
         }
         if report.source_state != ValidationSourceState::Unchanged {
-            doc.notes([Line::of(Role::Dim, "Source inputs changed or could not be verified; these results do not validate the current workspace")]);
+            doc.notes([Line::single(Role::Dim, "Source inputs changed or could not be verified; these results do not validate the current workspace")]);
         }
         doc
     }

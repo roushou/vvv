@@ -169,7 +169,7 @@ mod tests {
 
     #[test]
     fn typed_import_lowering_preserves_table_facts_and_unfinished_spans() {
-        let language = crate::rust::Rust::new();
+        let language = crate::rust::Rust::default();
         let typed = language.searcher();
         let tables = typed
             .clone()

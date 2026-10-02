@@ -71,9 +71,9 @@ impl crate::report::Document {
     pub(crate) fn discovery(reply: &Discovery) -> Self {
         use crate::protocol::display::{Line, Role};
         let mut doc = Self::new();
-        doc.body([Line::of(Role::Strong, "Available commands")]);
+        doc.body([Line::single(Role::Strong, "Available commands")]);
         for capability in &reply.commands {
-            doc.body([Line::of(Role::Plain, &capability.command).and(
+            doc.body([Line::single(Role::Plain, &capability.command).and(
                 Role::Dim,
                 if capability.read_only {
                     " (read-only)"

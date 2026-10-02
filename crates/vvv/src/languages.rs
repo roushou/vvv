@@ -14,11 +14,11 @@ impl Builtins {
     pub fn registry() -> Languages {
         let languages = Languages::new();
         #[cfg(feature = "rust")]
-        let languages = languages.with(vvv_lang::rust::Rust::new());
+        let languages = languages.with(vvv_lang::rust::Rust::default());
         #[cfg(feature = "typescript")]
         let languages = languages
-            .with(vvv_lang::typescript::TypeScript::new())
-            .with(vvv_lang::typescript::Tsx::new());
+            .with(vvv_lang::typescript::TypeScript::default())
+            .with(vvv_lang::typescript::Tsx::default());
         languages
     }
 }
