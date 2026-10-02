@@ -41,7 +41,8 @@ vvv-lang/src/syntax/
   calls.rs            # Shared call-site and callable-owner interpretation
   bindings.rs         # PatternView, TablePattern, shared PatternNames policy
   declarations.rs     # Rule-aware names, fields, modifiers, generic shadowing
-  typescript.rs       # TypeScript/TSX callables, declarations, bindings, imports/exports
+  typescript.rs       # TypeScript/TSX views and their interpretation owners;
+                      # DeclarationScope, PatternBindings, VarBindings, CallableScope
   rust/
     header.rs         # Function, Closure, Impl, Trait, Struct, Enum, Type;
                       # Union, Declaration, Parameter, TypeParameter, HeaderBindings
@@ -186,12 +187,110 @@ extraction. Shared scope, exclusion, marker, and visibility-site interpretation 
 the grammar's existing contracts. Custom fields and unfinished captures retain raw
 field fallback.
 
-Structural recognition does not establish lexical support. Simple identifier and
-type-parameter bindings retain their existing scope rules. Destructuring, local
-variable declarations, anonymous/signature callable boundaries, and hoisting/TDZ
-coverage retain their current conservative outcomes. Grammar pattern-container and
-constructor rules remain authoritative; a pattern's recognized shape alone cannot
-publish binding names or bypass an unsupported owner.
+`PatternBindings` interprets complete callable/catch headers and direct block lexical
+declarations atomically. It walks typed patterns in initialization order and records evaluation spans for
+parameter defaults, nested defaults, and computed keys. Each binding retains
+evaluations preceding its initialization as uninitialized ownership regions. The
+engine selects the innermost binding before checking initialization, preventing
+outer fallback while preserving known inner bindings in nested defaults. Whole-parameter defaults are
+recorded before traversing their patterns, despite appearing later in source order.
+Static labels are excluded, rest placement and targets are checked, and traversal
+has a 1,024-node budget and a 128-level bound. Duplicate bindings retain separate
+source spans. Publication preserves source declaration ordering.
+
+The owner consumes a single applicable value-parameter rule with its standard pattern
+capture; custom fields and competing rules retain generic table interpretation.
+`PatternNames` remains the policy for type parameters and generic/custom rule paths.
+For block-owned `let`/`const`, the interpreter records initializer evaluation before
+pattern traversal and publishes lexical ownership from the block start. Generic
+`LexicalBinding::uninitialized` regions separate ownership from initialization; the
+engine chooses the innermost owner before checking its initialization. This prevents
+outer fallback in a temporal dead zone while allowing initialized deeper bindings.
+The optional serialized field defaults to empty for existing plugin facts. Static
+labels, malformed declarations, and traversal bounds use the same pattern policy as
+headers. The block publishes direct locals only after every direct lexical declaration
+is supported. Custom or competing lexical rules retain table interpretation.
+
+`Program`, `StaticBlock`, and `Namespace` retain their own structural forms.
+`DeclarationScope` owns a file, statement block, or switch body; its lazy statement
+iterator unwraps export/ambient/namespace wrappers and flattens switch case statement
+lists without flattening nested lexical scopes. Strictness uses explicit module,
+class, and directive evidence rather than project configuration or runtime guesses.
+Local class/enum declarations retain type and value namespaces, while interfaces and
+type aliases retain type ownership. Classes supply an initialized inner self-name.
+`EnumBody` retains direct members; enum interpretation validates the complete member
+group before publishing value bindings with per-member initialization boundaries.
+Enum self-names remain available inside the body without inferring member values.
+Switch bindings retain additional uninitialized regions for other cases, because
+source order does not establish execution of a declaration in another branch.
+Signature-only callable boundaries, legacy block/conditional function semantics,
+merged/ambient/qualified namespaces, and runtime assignment evidence remain
+conservative. Structural recognition alone never bypasses an unsupported owner.
+
+`Function` retains arrow single parameters and expression bodies, ordinary expression
+names, and generator forms. Navigation models supported owners only after complete
+header validation. Named expression bindings enclose a narrower parameter environment,
+so parameters can shadow the expression name. `Catch` separates the optional received
+pattern from its body and reuses the same ordered pattern interpretation. Shared
+coverage recognizes modeled owners; unmodeled callable and type-signature forms
+retain their barriers. Hoisted `var` collection stays inside its exact variable owner; unsupported owners
+retain body coverage barriers without invalidating unrelated enclosing callables.
+
+`Loop` retains classic `ForLoop` and `Iteration` header shapes. The former owns its
+initializer and body; the latter distinguishes declaration kind, pattern, operator,
+iterable, optional legacy initializer, and body. Navigation reuses `PatternBindings`
+with the complete loop as lexical owner. Iterables are recorded before pattern
+evaluation, independently of source order. An unsupported header blocks its loop.
+Supported callable owners collect `var` iteration headers through `VarBindings`.
+Headers outside that contract delegate to table policy before lexical-loop validation,
+so initialized or malformed declarations retain their enclosing coverage barrier.
+Custom or competing iteration rules retain table scope and capture interpretation.
+
+`DeclarationScope` collects direct ordinary/generator/async function names and
+body-less overload/ambient signatures, preserving every written declaration site.
+Direct groups have a 1,024-declaration bound and validate headers before publication.
+File/callable/static/namespace owners use their full environment; strict nested and
+switch blocks use their own lexical scope. Non-strict ordinary block declarations
+and bare conditional functions retain enclosing-owner barriers. Parameter defaults
+remain outside body scopes. Custom or competing binding rules retain table interpretation.
+
+`VarBindings` retains one variable owner and a `PatternBindings` owner whose names
+are available throughout that environment without temporal dead-zone regions. It collects
+ordinary and iteration declarations with separate bounds on owner traversal and
+pattern interpretation, pruning nested callable, class, type, and namespace owners.
+`TypeScriptNavigation` retains the visited body set for one extraction so the complete
+`var` group is interpreted once. Parameter defaults stay outside its scope.
+`CallableScope` validates declaration compatibility and parameter environment evidence
+before publication. It projects parameter declaration sites into the shared
+body environment without changing the original header ownership, preserving all
+written sites as candidates. Parameter defaults and computed keys establish a separate
+parameter environment; erased type annotations do not. Direct lexical conflicts keep
+the body conservative. Repeated `var` sites remain explicit
+candidates. Custom or competing scope/capture rules retain generic table behavior.
+Final compatibility validation groups bindings by spelling and checks imports,
+functions, nested lexical scopes, and catch owners after extraction. Incompatible
+`var` groups lose their navigation bindings and block their owner. Simple catch
+parameters retain the legacy-compatible separate catch binding; destructured catches
+and direct catch-body lexical conflicts stay conservative.
+
+Assignment iteration patterns use the same checked structural forms with a separate
+owner policy: names become explicit reference roles in `NavigationCoverage`, static
+labels stay excluded, and no declaration or initialization fact is published.
+Member/subscript targets retain their written receiver/index questions without
+inferring a member target or bypassing unsupported member navigation.
+
+`SignatureRule::callable` names an initializer and its body field. Shared `Declaration`
+views validate TypeScript callable forms before signature extraction. `CallableValue`
+borrows an initializer and unwraps supported parentheses/assertions with a 128-level
+bound and 1,024-node validation budget, without materializing a child vector or
+inferring a type. Missing, unknown-wrapped, non-callable, and unfinished values publish
+no signature. Written prefixes end at the callable body; postfix wrappers are not
+reconstructed into the excerpt. `Signatures`
+retains indexed extents for declaration prefixes and selects a declarator's own start
+for later bindings in grouped statements. Navigation-only expression names use the
+same rule interpretation and anchored spans without entering the symbol index.
+Class-field and JSX expression bodies share this contract. Existing whole/header
+rules and generic table-driven consumers retain their field interpretation.
 
 ## Import and module structure
 
@@ -235,8 +334,9 @@ Symbol rule ordering, scope wrappers, leading sibling runs, and export extent
 composition remain explicit interpretation algorithms. Impl target names still
 follow the rule's inner type fields, and generic shadowing retains syntactic
 name evidence. Same-scope ownership, competing declarations, qualified targets,
-and cross-scope targets keep their existing conservative verdicts. Neither the
-new views nor their shared consumer expand symbol movement or signature coverage.
+and cross-scope targets keep their conservative verdicts. Structural recognition
+does not authorize symbol movement. Signature coverage is established separately by
+explicit signature rules and declaration validation.
 
 ## Shared binding policy and consumer boundaries
 
@@ -257,6 +357,22 @@ fields; it does not maintain another body-selection layer.
 Raw tree access remains at concrete structural accessors, generic rule/table fallback,
 source-order leading-trivia traversal, and language-owned interpretation algorithms.
 These boundaries preserve extensible grammar fields and unfinished-tree spans.
+Consumer ownership follows the question being answered:
+
+| Consumer                               | Structural owner                                         | Interpretation retained by the consumer                       |
+| -------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------------- |
+| Symbols, signatures, companion targets | Shared `Declaration` over language declaration views     | Rule ordering, extents, signature policy, ownership evidence  |
+| Calls                                  | Language `Call`/`MemberAccess` and narrow `CallableView` | Call classification and indexed caller ownership              |
+| Lexical bindings                       | Language header/control-flow views and pattern owners    | Initialization, exclusions, compatible declarations, coverage |
+| Imports and module scopes              | Language import/module views                             | Rule-selected captures, aliases, visibility, scope ownership  |
+| Generic grammar fallback               | Raw nodes selected by grammar tables                     | Custom fields and unmodeled constructs                        |
+
+A new view is justified by a concrete structural question used by a consumer.
+Shared traits require real implementations with the same question; similar node names
+alone do not establish a shared semantic contract. Coverage additions belong to the
+language interpretation owner and the engine's fact consumer, rather than to the
+shape macro. Remaining coverage contracts are tracked in [backlog.md](backlog.md).
+
 Workspace resolution, ambiguity, source availability, mutation planning, and protocol
 data remain independent of the parser views. Structural descriptors do not establish
 new binding coverage, macro expansion, hoisting rules, or type inference.
@@ -277,8 +393,9 @@ Context-sensitive logic remains reviewable Rust alongside its construct.
 
 `facts_bench` can capture complete debug representations of facts for every Rust,
 TypeScript, and TSX corpus source. Before/after captures check the plugin contract
-in addition to the command corpus. Existing corpus outputs must remain unchanged
-for this structural refactor; feature-specific tests exercise malformed fields,
+in addition to the command corpus. Changes to structural access must preserve facts
+and command outputs for the same supported syntax. Intentional coverage additions
+require explicit corpus cases and reviewed output changes. Focused tests exercise malformed fields,
 direct child boundaries, anonymous callables, and language-specific function forms.
 
 ```console

@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● variable helper   src/scopes.ts:6:11
+
+helper = () => 2
+--- stderr ---

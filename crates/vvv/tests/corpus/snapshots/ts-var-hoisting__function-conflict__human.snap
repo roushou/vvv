@@ -1,0 +1,11 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+src/scopes.ts
+  1 ●   36:7    var helper;
+  2 ●   37:3    function helper() {}
+--- stderr ---
+Several definitions match; use --select with a row number or match id

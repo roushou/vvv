@@ -1,0 +1,64 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "803678e614d0ac846b84a8ed346fd09d7c378c375bd942fae937f38a92e8ab93",
+    "outcome": "resolved",
+    "items": [
+      {
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/values.ts",
+            "content": "57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8",
+            "span": {
+              "start": 433,
+              "end": 459
+            }
+          },
+          "name_span": {
+            "start": 446,
+            "end": 453
+          },
+          "kind": "variable"
+        },
+        "relation": "definition",
+        "via": null,
+        "excerpt": {
+          "path": "src/values.ts",
+          "content": "57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8",
+          "span": {
+            "start": 433,
+            "end": 433
+          }
+        },
+        "start": {
+          "line": 10,
+          "column": 0
+        },
+        "text": "",
+        "complete": false,
+        "signature": {
+          "outcome": "unsupported"
+        }
+      }
+    ],
+    "omissions": {
+      "item_limit": 0,
+      "byte_limit": 0,
+      "lookup_limit": 0,
+      "file_limit": 0,
+      "ambiguous": 0,
+      "unavailable": 0,
+      "no_container": 0
+    },
+    "references_by_name": false
+  }
+}
+--- stderr ---

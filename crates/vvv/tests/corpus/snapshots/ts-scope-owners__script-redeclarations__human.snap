@@ -1,0 +1,11 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+src/script.ts
+  1 ●   11:5    var repeated;
+  2 ●   12:5    var repeated;
+--- stderr ---
+Several definitions match; use --select with a row number or match id

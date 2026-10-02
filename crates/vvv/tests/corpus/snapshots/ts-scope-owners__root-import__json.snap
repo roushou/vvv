@@ -1,0 +1,182 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "8a45d97fe20fe86ebc73e46d84f3a6320eaef1714cea40a616b9a406e01857f2",
+    "outcome": "resolved",
+    "target": {
+      "language": "typescript",
+      "declaration": {
+        "path": "src/peer.ts",
+        "content": "4e617271b23f128b4d59de236d1c6847c97620aa92370f6ad8ffc12619701c09",
+        "span": {
+          "start": 0,
+          "end": 29
+        }
+      },
+      "name_span": {
+        "start": 16,
+        "end": 24
+      },
+      "kind": "function"
+    },
+    "evidence": {
+      "addresses": [
+        {
+          "package": "",
+          "path": [
+            "src",
+            "peer.ts",
+            "imported"
+          ]
+        }
+      ]
+    },
+    "preview": {
+      "container": {
+        "language": "typescript",
+        "declaration": {
+          "path": "src/peer.ts",
+          "content": "4e617271b23f128b4d59de236d1c6847c97620aa92370f6ad8ffc12619701c09",
+          "span": {
+            "start": 0,
+            "end": 29
+          }
+        },
+        "name_span": {
+          "start": 16,
+          "end": 24
+        },
+        "kind": "function"
+      },
+      "declaration": {
+        "content": "4e617271b23f128b4d59de236d1c6847c97620aa92370f6ad8ffc12619701c09",
+        "id": "699473bed57f",
+        "path": "src/peer.ts",
+        "language": "typescript",
+        "span": {
+          "start": 7,
+          "end": 29
+        },
+        "start": {
+          "line": 0,
+          "column": 7
+        },
+        "end": {
+          "line": 0,
+          "column": 29
+        },
+        "kind": "declaration",
+        "text": "function imported() {}",
+        "line": "export function imported() {}",
+        "symbol": {
+          "kind": "function",
+          "name": "imported",
+          "name_span": {
+            "start": 16,
+            "end": 24
+          },
+          "span": {
+            "start": 7,
+            "end": 29
+          },
+          "extent": {
+            "start": 0,
+            "end": 29
+          },
+          "visibility": {
+            "span": {
+              "start": 0,
+              "end": 6
+            },
+            "text": "export"
+          }
+        },
+        "role": "declaration"
+      },
+      "source": {
+        "path": "src/peer.ts",
+        "text": "export function imported() {}\n",
+        "highlights": [
+          {
+            "span": {
+              "start": 0,
+              "end": 6
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 7,
+              "end": 15
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 16,
+              "end": 24
+            },
+            "kind": "function"
+          }
+        ],
+        "symbols": [
+          {
+            "kind": "function",
+            "name": "imported",
+            "name_span": {
+              "start": 16,
+              "end": 24
+            },
+            "span": {
+              "start": 7,
+              "end": 29
+            },
+            "extent": {
+              "start": 0,
+              "end": 29
+            },
+            "visibility": {
+              "span": {
+                "start": 0,
+                "end": 6
+              },
+              "text": "export"
+            }
+          }
+        ],
+        "identifiers": [
+          {
+            "path": "src/peer.ts",
+            "content": "4e617271b23f128b4d59de236d1c6847c97620aa92370f6ad8ffc12619701c09",
+            "span": {
+              "start": 16,
+              "end": 24
+            }
+          }
+        ]
+      },
+      "selection": {
+        "start": 16,
+        "end": 24
+      },
+      "identifiers": [
+        {
+          "path": "src/peer.ts",
+          "content": "4e617271b23f128b4d59de236d1c6847c97620aa92370f6ad8ffc12619701c09",
+          "span": {
+            "start": 16,
+            "end": 24
+          }
+        }
+      ]
+    }
+  }
+}
+--- stderr ---

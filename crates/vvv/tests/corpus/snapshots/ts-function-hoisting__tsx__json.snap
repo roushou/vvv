@@ -1,0 +1,273 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "31c1ec5656a83bc6e705f9fd798b34439d9d435512bc4428b607a23af18b4bd1",
+    "outcome": "resolved",
+    "target": {
+      "language": "tsx",
+      "declaration": {
+        "path": "src/view.tsx",
+        "content": "7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043",
+        "span": {
+          "start": 43,
+          "end": 79
+        }
+      },
+      "name_span": {
+        "start": 52,
+        "end": 57
+      },
+      "kind": "function"
+    },
+    "evidence": {
+      "addresses": []
+    },
+    "preview": {
+      "container": {
+        "language": "tsx",
+        "declaration": {
+          "path": "src/view.tsx",
+          "content": "7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043",
+          "span": {
+            "start": 43,
+            "end": 79
+          }
+        },
+        "name_span": {
+          "start": 52,
+          "end": 57
+        },
+        "kind": "function"
+      },
+      "declaration": {
+        "content": "7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043",
+        "id": "62ae73debeb2",
+        "path": "src/view.tsx",
+        "language": "tsx",
+        "span": {
+          "start": 43,
+          "end": 79
+        },
+        "start": {
+          "line": 2,
+          "column": 2
+        },
+        "end": {
+          "line": 2,
+          "column": 38
+        },
+        "kind": "declaration",
+        "text": "function child() { return <div />; }",
+        "line": "  function child() { return <div />; }",
+        "symbol": {
+          "kind": "function",
+          "name": "child",
+          "name_span": {
+            "start": 52,
+            "end": 57
+          },
+          "span": {
+            "start": 43,
+            "end": 79
+          },
+          "extent": {
+            "start": 43,
+            "end": 79
+          }
+        },
+        "role": "declaration"
+      },
+      "source": {
+        "path": "src/view.tsx",
+        "text": "export const render = () => {\n  child();\n  function child() { return <div />; }\n  return <section>{child()}</section>;\n};\n",
+        "highlights": [
+          {
+            "span": {
+              "start": 0,
+              "end": 6
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 7,
+              "end": 12
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 32,
+              "end": 37
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 43,
+              "end": 51
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 52,
+              "end": 57
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 62,
+              "end": 68
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 82,
+              "end": 88
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 99,
+              "end": 104
+            },
+            "kind": "function"
+          }
+        ],
+        "symbols": [
+          {
+            "kind": "variable",
+            "name": "render",
+            "name_span": {
+              "start": 13,
+              "end": 19
+            },
+            "span": {
+              "start": 13,
+              "end": 120
+            },
+            "extent": {
+              "start": 0,
+              "end": 121
+            },
+            "visibility": {
+              "span": {
+                "start": 0,
+                "end": 6
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "function",
+            "name": "child",
+            "name_span": {
+              "start": 52,
+              "end": 57
+            },
+            "span": {
+              "start": 43,
+              "end": 79
+            },
+            "extent": {
+              "start": 43,
+              "end": 79
+            }
+          }
+        ],
+        "identifiers": [
+          {
+            "path": "src/view.tsx",
+            "content": "7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043",
+            "span": {
+              "start": 13,
+              "end": 19
+            }
+          },
+          {
+            "path": "src/view.tsx",
+            "content": "7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043",
+            "span": {
+              "start": 32,
+              "end": 37
+            }
+          },
+          {
+            "path": "src/view.tsx",
+            "content": "7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043",
+            "span": {
+              "start": 52,
+              "end": 57
+            }
+          },
+          {
+            "path": "src/view.tsx",
+            "content": "7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043",
+            "span": {
+              "start": 70,
+              "end": 73
+            }
+          },
+          {
+            "path": "src/view.tsx",
+            "content": "7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043",
+            "span": {
+              "start": 90,
+              "end": 97
+            }
+          },
+          {
+            "path": "src/view.tsx",
+            "content": "7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043",
+            "span": {
+              "start": 99,
+              "end": 104
+            }
+          },
+          {
+            "path": "src/view.tsx",
+            "content": "7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043",
+            "span": {
+              "start": 109,
+              "end": 116
+            }
+          }
+        ]
+      },
+      "selection": {
+        "start": 52,
+        "end": 57
+      },
+      "identifiers": [
+        {
+          "path": "src/view.tsx",
+          "content": "7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043",
+          "span": {
+            "start": 52,
+            "end": 57
+          }
+        },
+        {
+          "path": "src/view.tsx",
+          "content": "7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043",
+          "span": {
+            "start": 70,
+            "end": 73
+          }
+        }
+      ]
+    }
+  }
+}
+--- stderr ---

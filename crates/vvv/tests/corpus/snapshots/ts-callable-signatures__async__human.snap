@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+Definition  src/values.ts:10:1
+export const asyncValue = async (value: number): Promise<number> =>
+--- stderr ---
+Omitted: 0 item limit, 0 byte limit, 0 lookup limit, 0 file limit, 0 ambiguous, 1 unavailable, 0 without a declaration

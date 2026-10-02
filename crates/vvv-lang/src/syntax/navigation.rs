@@ -24,6 +24,7 @@ pub enum NavigationSyntax {
 #[derive(Default)]
 pub(crate) struct NavigationCoverage {
     blocked: Vec<Span>,
+    references: BTreeSet<Span>,
     modeled: BTreeSet<Span>,
     exclusions: BTreeMap<Span, Vec<Span>>,
 }
@@ -32,9 +33,14 @@ impl NavigationCoverage {
     pub(crate) fn block(&mut self, span: Span) {
         self.blocked.push(span);
     }
-    #[cfg(feature = "rust")]
+    #[cfg(any(feature = "rust", feature = "typescript"))]
     pub(crate) fn model(&mut self, span: Span) {
         self.modeled.insert(span);
+    }
+
+    #[cfg(feature = "typescript")]
+    pub(crate) fn reference(&mut self, span: Span) {
+        self.references.insert(span);
     }
 
     pub(crate) fn supports(&self, span: Span) -> bool {
@@ -57,17 +63,18 @@ impl BindingName {
         Self {
             name: name.text().into_owned(),
             span: name.range().into(),
-            explicit: declaration
-                .children()
-                .any(|child| grammar.binding_markers.contains(&child.kind().as_ref()))
-                || name
-                    .ancestors()
-                    .take_while(|ancestor| ancestor.range() != declaration.range())
-                    .any(|ancestor| {
-                        ancestor
-                            .children()
-                            .any(|child| grammar.binding_markers.contains(&child.kind().as_ref()))
-                    }),
+            explicit: !grammar.binding_markers.is_empty()
+                && (declaration
+                    .children()
+                    .any(|child| grammar.binding_markers.contains(&child.kind().as_ref()))
+                    || name
+                        .ancestors()
+                        .take_while(|ancestor| ancestor.range() != declaration.range())
+                        .any(|ancestor| {
+                            ancestor.children().any(|child| {
+                                grammar.binding_markers.contains(&child.kind().as_ref())
+                            })
+                        })),
         }
     }
 }
@@ -83,6 +90,15 @@ pub(crate) struct BindingSite {
 
 impl BindingSite {
     pub(crate) fn emit(&self, names: Vec<BindingName>, facts: &mut Facts) {
+        self.emit_with_initialization(names, &[], facts);
+    }
+
+    pub(crate) fn emit_with_initialization(
+        &self,
+        names: Vec<BindingName>,
+        uninitialized: &[Span],
+        facts: &mut Facts,
+    ) {
         for name in names {
             facts.lexical.push(LexicalBinding {
                 symbol: facts
@@ -96,6 +112,7 @@ impl BindingSite {
                 scope: self.scope,
                 excluded: self.excluded.clone(),
                 visible_from: self.visible_from,
+                uninitialized: uninitialized.to_vec(),
                 namespace: self.namespace,
                 explicit: name.explicit,
             });
@@ -132,7 +149,7 @@ impl<'a> NavigationFacts<'a> {
         #[cfg(feature = "rust")]
         let rust = super::rust::RustNavigation::new(self);
         #[cfg(feature = "typescript")]
-        let typescript = super::typescript::TypeScriptNavigation::new(self);
+        let mut typescript = super::typescript::TypeScriptNavigation::new(self);
         for node in root.dfs() {
             if matches!(syntax, NavigationSyntax::Tables) {
                 self.macro_scope(&node, facts);
@@ -194,6 +211,14 @@ impl<'a> NavigationFacts<'a> {
                 });
             }
         }
+        #[cfg(feature = "typescript")]
+        if matches!(syntax, NavigationSyntax::TypeScript) {
+            typescript.validate(root.range().into(), facts, &mut coverage);
+            // Header-owned parameter extraction preserves declaration order on the boundary.
+            facts
+                .lexical
+                .sort_by_key(|binding| binding.symbol.span.start);
+        }
         for node in root
             .dfs()
             .filter(|n| self.grammar.identifiers.contains(&n.kind().as_ref()))
@@ -216,7 +241,7 @@ impl<'a> NavigationFacts<'a> {
             {
                 facts.navigation.push(span);
             }
-            if supported && !qualified {
+            if supported && (!qualified || coverage.references.contains(&span)) {
                 if !facts
                     .patterns
                     .iter()
@@ -440,6 +465,9 @@ impl<'a> NavigationFacts<'a> {
         scope: &Node<'_, StrDoc<L>>,
         coverage: &mut NavigationCoverage,
     ) -> Vec<Span> {
+        if self.grammar.lexical_boundaries.is_empty() {
+            return Vec::new();
+        }
         coverage
             .exclusions
             .entry(scope.range().into())

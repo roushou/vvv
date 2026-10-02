@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● parameter head   src/parameters.ts:2:97
+
+[head = renamed, , ...tail]
+--- stderr ---

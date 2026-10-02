@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● function work   src/scopes.ts:22:5
+
+function work() { return 1; }
+--- stderr ---

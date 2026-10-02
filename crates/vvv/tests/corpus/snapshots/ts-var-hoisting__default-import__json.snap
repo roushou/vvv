@@ -1,0 +1,182 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "e83298248c1e6a85c537abeabe9fc6a5a9a8fbc251485d6e79e3e26b8788cd38",
+    "outcome": "resolved",
+    "target": {
+      "language": "typescript",
+      "declaration": {
+        "path": "src/helpers.ts",
+        "content": "2b56569956c938b4ec500c7bf0a8728eee907fadd0a2af61f92bd4bfcf5c0d10",
+        "span": {
+          "start": 0,
+          "end": 24
+        }
+      },
+      "name_span": {
+        "start": 13,
+        "end": 18
+      },
+      "kind": "variable"
+    },
+    "evidence": {
+      "addresses": [
+        {
+          "package": "",
+          "path": [
+            "src",
+            "helpers.ts",
+            "outer"
+          ]
+        }
+      ]
+    },
+    "preview": {
+      "container": {
+        "language": "typescript",
+        "declaration": {
+          "path": "src/helpers.ts",
+          "content": "2b56569956c938b4ec500c7bf0a8728eee907fadd0a2af61f92bd4bfcf5c0d10",
+          "span": {
+            "start": 0,
+            "end": 24
+          }
+        },
+        "name_span": {
+          "start": 13,
+          "end": 18
+        },
+        "kind": "variable"
+      },
+      "declaration": {
+        "content": "2b56569956c938b4ec500c7bf0a8728eee907fadd0a2af61f92bd4bfcf5c0d10",
+        "id": "a3acb28d204b",
+        "path": "src/helpers.ts",
+        "language": "typescript",
+        "span": {
+          "start": 13,
+          "end": 23
+        },
+        "start": {
+          "line": 0,
+          "column": 13
+        },
+        "end": {
+          "line": 0,
+          "column": 23
+        },
+        "kind": "declaration",
+        "text": "outer = 99",
+        "line": "export const outer = 99;",
+        "symbol": {
+          "kind": "variable",
+          "name": "outer",
+          "name_span": {
+            "start": 13,
+            "end": 18
+          },
+          "span": {
+            "start": 13,
+            "end": 23
+          },
+          "extent": {
+            "start": 0,
+            "end": 24
+          },
+          "visibility": {
+            "span": {
+              "start": 0,
+              "end": 6
+            },
+            "text": "export"
+          }
+        },
+        "role": "declaration"
+      },
+      "source": {
+        "path": "src/helpers.ts",
+        "text": "export const outer = 99;\n",
+        "highlights": [
+          {
+            "span": {
+              "start": 0,
+              "end": 6
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 7,
+              "end": 12
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 21,
+              "end": 23
+            },
+            "kind": "number"
+          }
+        ],
+        "symbols": [
+          {
+            "kind": "variable",
+            "name": "outer",
+            "name_span": {
+              "start": 13,
+              "end": 18
+            },
+            "span": {
+              "start": 13,
+              "end": 23
+            },
+            "extent": {
+              "start": 0,
+              "end": 24
+            },
+            "visibility": {
+              "span": {
+                "start": 0,
+                "end": 6
+              },
+              "text": "export"
+            }
+          }
+        ],
+        "identifiers": [
+          {
+            "path": "src/helpers.ts",
+            "content": "2b56569956c938b4ec500c7bf0a8728eee907fadd0a2af61f92bd4bfcf5c0d10",
+            "span": {
+              "start": 13,
+              "end": 18
+            }
+          }
+        ]
+      },
+      "selection": {
+        "start": 13,
+        "end": 18
+      },
+      "identifiers": [
+        {
+          "path": "src/helpers.ts",
+          "content": "2b56569956c938b4ec500c7bf0a8728eee907fadd0a2af61f92bd4bfcf5c0d10",
+          "span": {
+            "start": 13,
+            "end": 18
+          }
+        }
+      ]
+    }
+  }
+}
+--- stderr ---

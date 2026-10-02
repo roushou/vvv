@@ -15,24 +15,45 @@ pub struct DeclarationSignature {
 pub struct SignatureRule {
     pub node: &'static str,
     pub body: Option<&'static str>,
+    /// Direct callable value whose header belongs to this declaration.
+    /// A missing initializer or body does not yield a signature.
+    pub initializer: Option<&'static str>,
     /// Only exclude this body kind (tuple struct fields, for example, stay).
     pub body_kind: Option<&'static str>,
 }
+
 impl SignatureRule {
     pub const fn whole(node: &'static str) -> Self {
         Self {
             node,
             body: None,
+            initializer: None,
             body_kind: None,
         }
     }
+
     pub const fn header(node: &'static str, body: &'static str) -> Self {
         Self {
             node,
             body: Some(body),
+            initializer: None,
             body_kind: None,
         }
     }
+
+    pub const fn callable(
+        node: &'static str,
+        initializer: &'static str,
+        body: &'static str,
+    ) -> Self {
+        Self {
+            node,
+            initializer: Some(initializer),
+            body: Some(body),
+            body_kind: None,
+        }
+    }
+
     pub const fn body_kind(mut self, kind: &'static str) -> Self {
         self.body_kind = Some(kind);
         self

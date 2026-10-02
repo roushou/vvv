@@ -1,0 +1,13 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● function recurse   src/scopes.ts:18:20
+
+function recurse(value = recurse) {
+    recurse(value); outer;
+    return value;
+  }
+--- stderr ---

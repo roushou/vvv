@@ -351,8 +351,43 @@ exit 0
         "spelling": "execute",
         "caller": null,
         "call": "direct",
-        "outcome": "unavailable",
-        "reason": "unsupported_context"
+        "outcome": "confirmed",
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/origin.ts",
+            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
+            "span": {
+              "start": 0,
+              "end": 25
+            }
+          },
+          "name_span": {
+            "start": 16,
+            "end": 20
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "",
+              "path": [
+                "src",
+                "bridge.ts",
+                "task"
+              ]
+            },
+            {
+              "package": "",
+              "path": [
+                "src",
+                "origin.ts",
+                "work"
+              ]
+            }
+          ]
+        }
       },
       {
         "site": {
@@ -385,8 +420,43 @@ exit 0
           "kind": "function"
         },
         "call": "direct",
-        "outcome": "unavailable",
-        "reason": "unsupported_context"
+        "outcome": "confirmed",
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/origin.ts",
+            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
+            "span": {
+              "start": 0,
+              "end": 25
+            }
+          },
+          "name_span": {
+            "start": 16,
+            "end": 20
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "",
+              "path": [
+                "src",
+                "bridge.ts",
+                "task"
+              ]
+            },
+            {
+              "package": "",
+              "path": [
+                "src",
+                "origin.ts",
+                "work"
+              ]
+            }
+          ]
+        }
       },
       {
         "site": {

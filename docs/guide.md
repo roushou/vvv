@@ -174,8 +174,116 @@ parameters and captures, and supported local type/function items. Explicit type
 annotations inside supported function bodies can follow module imports. Inner bindings shadow outer ones; a `let` initializer still sees the previous
 binding. TypeScript follows exact named/default imports, namespace-qualified type
 uses, aliases, named re-exports, local export lists, generic type parameters, and
-simple function or method parameters. Importing one name does not expose other names in that module.
+function and method parameters, including nested object/array destructuring, renamed
+fields, shorthand bindings, defaults, array holes, and rest bindings. Importing one
+name does not expose other names in that module.
 Declaration tokens preview themselves; enum variants preview their enclosing enum.
+
+TypeScript/TSX parameter bindings are initialized in their written parameter and
+pattern order. Defaults and computed property keys can navigate to already initialized
+bindings and supported imports. References to the binding being initialized or a
+later parameter/field return `unsupported_context`; they do not fall through to an
+outer declaration or import. A default for an entire object/array parameter runs
+before that pattern's bindings are initialized. Static property labels are not
+bindings. Unsupported or unfinished patterns block confirmation for the complete
+callable header without publishing a supported prefix. Pattern traversal is
+bounded to 1,024 nodes and 128 levels per header. Duplicate bindings remain explicit
+candidates. Direct `let`/`const` declarations in function, method, and nested blocks
+support the same patterns. Their names belong to the entire block; references before
+initialization return `unsupported_context` instead of falling through to outer names.
+Initializers run before their patterns; earlier declarators and pattern bindings are
+available to later defaults and computed keys. An initialized binding in a strictly
+inner block still wins. `let name;` initializes at its declaration. Unsupported local
+patterns block confirmation for the complete block without publishing a local prefix.
+The traversal budget applies to each block as well as each header.
+
+TypeScript/TSX declaration owners include file roots, callable bodies, lexical blocks,
+switch bodies, class static blocks, and supported namespace bodies. File-level
+`let`/`const` bindings use the same initialization policy as block locals; imports
+remain available throughout their file. Files retain separate environments: script
+globals are not merged across files and project configuration does not imply strict
+mode. Ordinary functions and `var` declarations are visible throughout their file or
+variable owner. Parameter defaults remain outside a callable's body environment.
+
+An explicit import/export marks a module. Modules, class bodies, and inherited
+`use strict` directives establish strict scope evidence. Direct functions in strict
+nested/catch/switch blocks belong to that block, including forward uses; block
+functions do not escape into the enclosing function. Ordinary block functions
+without strict/module evidence and bare conditional function declarations retain
+conservative enclosing-owner coverage rather than assume legacy runtime semantics.
+Generator and async block functions retain block ownership. Each direct function
+group has a 1,024-declaration bound. Overload and ambient function signatures retain
+separate declaration candidates and their own header parameter/type scopes; no
+signature or implementation is silently preferred.
+
+Local classes and enums retain distinct type and value bindings; interfaces and type
+aliases introduce type bindings. Class value bindings remain uninitialized before
+the declaration completes, while the class body owns its initialized self-name.
+Enum bodies own their member names and self-name; self/forward member initializers
+retain uninitialized ownership rather than fall through to outer values. Unsupported
+member names reject the entire member group.
+Class-expression names stay inside that expression; generic type parameters can
+shadow a class name in the type namespace. Switch cases share one lexical scope,
+excluding the scrutinee. A lexical binding is not assumed initialized in another
+case, even when that case appears later in source order.
+
+Class static blocks and simple, non-ambient namespace bodies have separate `var`
+owners, pruning nested callables/classes/namespaces. Locals do not escape into
+sibling static blocks, methods, or enclosing files. Merged, ambient, string-named,
+and qualified namespace bodies remain conservative; namespace-member inference and
+namespace import/export resolution are outside this contract. Conflicting imports,
+lexical/function declarations, nested `var`/lexical declarations, and destructured
+catch/`var` bindings block confirmation in the affected owner. Simple catch bindings
+retain their distinct catch scope when an enclosing `var` repeats the name. A
+`with` statement remains unsupported. All these facts are navigation-only and do
+not authorize additional mutations or infer runtime values, branch execution, or
+invocation time.
+
+TypeScript/TSX arrows (including single parameters and expression bodies), function
+expressions, and generator declarations/expressions support the same parameters and
+patterns. Initialized inner bindings take precedence over an uninitialized outer
+parameter, including inside a parameter default. Named function-expression bindings
+belong only to that expression; its parameters can shadow the name. Supported outer
+bindings remain visible as captures, without inferring invocation time or runtime
+callback targets. Unsupported `var` owners block only their callable body.
+
+`var` declarations in supported TypeScript/TSX variable owners own the complete environment,
+including nested blocks, classic `for`, `for…in`, `for…of`, and `for await…of` headers.
+Names resolve before their declaration and in initializer/default/computed-key uses;
+this identifies source declarations without establishing runtime values or execution
+order. Callable parameter defaults remain outside the body scope. Nested callables
+have separate owners; class, type, and namespace boundaries are not traversed.
+Object/array patterns use the same checked labels, defaults, holes, and rest structure,
+without lexical temporal dead zones. Repeated `var` declarations remain selectable
+candidates. Compatible parameter, `var`, and direct function redeclarations retain every written
+source site as a selectable candidate. Parameters without default or computed-key
+expressions share the body environment, including rest/destructured parameters.
+Parameter expressions create a separate environment: body declarations take precedence
+only inside the body, while header defaults retain parameter ownership. This is binding
+identity evidence, not inference of runtime values or the last executed assignment.
+Conflicts with lexical declarations remain unsupported. Malformed/unsupported patterns and legacy initialized iteration headers
+publish no `var` binding prefix and block the body. The ownership walk visits at most
+1,024 named nodes with a 128-level bound; pattern traversal has the same separate
+bounds. Collection runs once per body containing a `var`, and custom/competing grammar
+rules retain table interpretation. File roots and static/namespace bodies use the same bounded collection.
+
+Catch bindings support identifiers, nested destructuring, ordered defaults, and
+rest bindings. Their names belong only to the catch clause; optional-binding catch
+clauses preserve outer bindings. Unsupported headers publish no binding prefix and
+block their callable or catch owner. Traversal uses the same 1,024-node and 128-level
+bounds. These facts are navigation-only. Anonymous caller identities remain unsupported.
+
+TypeScript/TSX `for (let/const …; …; …)`, `for…in`, `for…of`, and `for await…of`
+headers use the same ordered pattern interpretation. Header bindings belong to the
+loop, including its initializer or iterable, condition, increment, and body; they
+do not escape afterward. A same-named reference in the iterable is in the binding's
+temporal dead zone. Earlier initialized bindings resolve in later declarators and
+pattern defaults. Unsupported headers publish no header-binding prefix and block
+confirmation within the loop. Supported `var` headers belong to the variable owner rather than the loop. Assignment
+iteration headers support checked object/array patterns, defaults, computed keys,
+rest, and member/subscript targets without introducing declarations. Static labels
+remain excluded; references retain existing scope and initialization checks. Optional
+member targets and malformed patterns remain unsupported. Per-header traversal has the same 1,024-node and 128-level bounds.
 
 Rust tuple-struct patterns such as `Some(value)` extract their supported inner
 bindings without treating the constructor as a local binding. In `let … else`,
@@ -257,7 +365,7 @@ No macro name is assumed safe.
 
 Inline module lookup also requires a file placed by the language layout. `#[path]`
 module mappings are not modeled. TypeScript wildcard exports, package/path aliases, arbitrary namespace
-member expressions, and local-variable hoisting are not resolved by this syntax path. A TypeScript default export is not treated as a named export.
+member expressions, and runtime assignment/alias targets are not resolved by this syntax path. A TypeScript default export is not treated as a named export.
 Missing identifiers, unresolved names, external source, cycles, and ambiguous
 definitions have distinct outcomes. A source changed since a search produces a
 stale error; repeat the search to obtain current locations.
@@ -396,10 +504,22 @@ vvv context src/engine.rs:20:12 --detail signature --json
 
 `body` remains the default. Signature mode follows only outgoing identifiers inside
 the signature, and renders related declarations (and `--include-enclosing`) at the
-same detail. Rust and TypeScript use AST body boundaries; braces inside types do
+same detail. TypeScript/TSX variables and class fields with arrow, function,
+or generator initializers retain the declaration prefix and callable header while
+excluding the initializer's implementation. Arrow signatures retain `=>`; expression
+bodies, including JSX, are omitted. Named function-expression bindings also provide
+their own callable header. A later binding in a multi-declaration statement starts at
+its own declarator, avoiding earlier implementations. Body expansion retains the
+indexed declaration extent. Parentheses, non-null assertions, `as`, `satisfies`, and
+TypeScript angle assertions around a written callable retain the exact prefix up to
+its body. Closing wrappers and assertions after the body are omitted; excerpts are
+source prefixes, not reconstructed standalone declarations. Wrapper traversal is
+bounded to 128 levels and 1,024 validation nodes. Literals, class expressions,
+unknown wrappers, and unfinished callable headers remain unsupported; no runtime callable
+inference is performed. Rust and TypeScript use AST body boundaries; braces inside types do
 not end a signature. Container signatures are headers, excluding members; tuple
 structs and type aliases retain their defining types. Unsupported forms, including
-initialized constants and variables, report `signature.outcome: "unsupported"`
+initialized Rust constants and variables, report `signature.outcome: "unsupported"`
 with no source text; request `body` to retrieve them. A complete signature item
 has `complete: true` even though the implementation is omitted.
 

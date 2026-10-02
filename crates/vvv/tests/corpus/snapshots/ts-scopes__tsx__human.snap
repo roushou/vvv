@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● parameter title   src/view.tsx:3:27
+
+{ title }: T
+--- stderr ---

@@ -35,17 +35,25 @@ exit 0
           "content": "39e33edb490eed44c6a1b7d87db97f505968081dd685540b3a442f73684a146a",
           "span": {
             "start": 171,
-            "end": 171
+            "end": 199
           }
         },
         "start": {
           "line": 4,
           "column": 0
         },
-        "text": "",
-        "complete": false,
+        "text": "export const factory = () =>",
+        "complete": true,
         "signature": {
-          "outcome": "unsupported"
+          "outcome": "available",
+          "requested": {
+            "path": "src/signatures.ts",
+            "content": "39e33edb490eed44c6a1b7d87db97f505968081dd685540b3a442f73684a146a",
+            "span": {
+              "start": 171,
+              "end": 199
+            }
+          }
         }
       }
     ],

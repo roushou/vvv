@@ -21,12 +21,10 @@ fn check(input: usize, MIN: usize, outer: usize) {
         _ => work(MIN),
     }
 }
-
 fn local(input: usize) {
     use crate::values::MAX as END;
     match input { 0..=END => work(input), _ => {} }
 }
-
 fn uncertain(input: usize) {
     unknown!();
     match input { MIN | MAX => work(input), crate::values::MIN..=crate::values::MAX => work(input), _ => {} }
@@ -37,7 +35,6 @@ use bridge::{LOW, HIGH, Packet};
 fn relocated(input: usize) {
     match input { LOW..=HIGH => work(input), Packet(value) => work(value), _ => {} }
 }
-
 fn spaced(input: usize) {
     match input { crate /* anchor */ :: values :: MIN..=values :: MAX => work(input), _ => {} }
 }

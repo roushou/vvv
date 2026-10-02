@@ -1,0 +1,9 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+Definition  src/values.ts:11:1
+--- stderr ---
+Signature extraction is not supported for this declaration; request body detail

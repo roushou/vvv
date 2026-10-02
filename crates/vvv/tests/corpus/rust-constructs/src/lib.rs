@@ -27,7 +27,6 @@ fn scopes(value: usize, input: Option<usize>, items: Vec<usize>) {
     }
     work(value);
 }
-
 fn ordered(value: usize, input: Option<usize>) {
     for value in source(value) { work(value); }
     while let Some(value) = input && value > 0 && let Some(value) = next(value) {

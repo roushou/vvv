@@ -33,6 +33,7 @@ impl Fixture {
             symbol: Symbol::plain(kind, "x", Span::new(0, 1), Span::new(0, 1)),
             scope: binding_scope,
             excluded: vec![],
+            uninitialized: vec![],
             visible_from,
             namespace,
             explicit,
@@ -153,6 +154,7 @@ fn equally_ranked_inner_items_remain_selectable_candidates() {
             scope: Span::new(2, 12),
             excluded: vec![],
             visible_from: 2,
+            uninitialized: vec![],
             namespace: BindingNamespace::Value,
             explicit: true,
         });

@@ -1,0 +1,11 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+src/locals.ts
+  1 ●   63:8    let [same, same] = input;
+  2 ●   63:14   let [same, same] = input;
+--- stderr ---
+Several definitions match; use --select with a row number or match id

@@ -1,4 +1,8 @@
 //! Reproducible full-extraction measurements over fixed source inputs.
+//!
+//! Set `VVV_BENCH_CORPUS` to measure all language-matching corpus files, or leave
+//! it unset for fixed inputs. `VVV_BENCH_LANGUAGE` selects one language and
+//! `VVV_BENCH_ROUNDS` sets the sample count for longer profiling runs.
 
 use std::{hint::black_box, path::PathBuf, time::Instant};
 use vvv_core::Language;
@@ -58,18 +62,45 @@ impl Corpus {
     }
 
     fn measure(&self, language: &dyn Language, paths: &[&str]) {
-        let mut sources: Vec<_> = paths
-            .iter()
-            .map(|path| std::fs::read_to_string(self.root.join(path)).unwrap())
-            .collect();
-        if language.id() == vvv_core::LanguageId::new("typescript") {
+        if std::env::var("VVV_BENCH_LANGUAGE")
+            .is_ok_and(|selected| selected != language.id().as_str())
+        {
+            return;
+        }
+        let corpus = std::env::var_os("VVV_BENCH_CORPUS").is_some();
+        let mut sources: Vec<_> = if corpus {
+            let mut input = Self::new();
+            input.collect(self.root.join("crates/vvv/tests/corpus"));
+            input.files.sort();
+            input
+                .files
+                .iter()
+                .filter(|path| {
+                    path.extension()
+                        .and_then(|extension| extension.to_str())
+                        .is_some_and(|extension| language.extensions().contains(&extension))
+                })
+                .map(|path| std::fs::read_to_string(path).unwrap())
+                .collect()
+        } else {
+            paths
+                .iter()
+                .map(|path| std::fs::read_to_string(self.root.join(path)).unwrap())
+                .collect()
+        };
+        if !corpus && language.id() == vvv_core::LanguageId::new("typescript") {
             sources.push((0..100).map(|index| format!("function f{index}(input: number): number {{ const value = input; {{ const inner = value; service.run(inner); }} return value; }}\n")).collect());
         }
         for source in &sources {
             black_box(language.facts(source).unwrap());
         }
         let mut samples = Vec::new();
-        for _ in 0..9 {
+        let rounds = std::env::var("VVV_BENCH_ROUNDS")
+            .ok()
+            .and_then(|rounds| rounds.parse::<usize>().ok())
+            .unwrap_or(9)
+            .max(1);
+        for _ in 0..rounds {
             let started = Instant::now();
             for source in &sources {
                 black_box(language.facts(black_box(source)).unwrap());
@@ -81,9 +112,9 @@ impl Corpus {
             "{} bytes={} median_us={} min_us={} max_us={}",
             language.id(),
             sources.iter().map(String::len).sum::<usize>(),
-            samples[4],
+            samples[samples.len() / 2],
             samples[0],
-            samples[8]
+            samples[samples.len() - 1]
         );
     }
 }
@@ -110,6 +141,15 @@ fn main() {
             "crates/vvv/tests/corpus/ts-navigation/src/local.ts",
             "crates/vvv/tests/corpus/ts/src/app.ts",
             "crates/vvv/tests/corpus/ts-symbol-moves/src/move_selection.ts",
+        ],
+    );
+    #[cfg(feature = "typescript")]
+    corpus.measure(
+        &vvv_lang::typescript::Tsx::default(),
+        &[
+            "crates/vvv/tests/corpus/ts-scopes/src/view.tsx",
+            "crates/vvv/tests/corpus/ts-function-hoisting/src/view.tsx",
+            "crates/vvv/tests/corpus/ts-callable-signatures/src/view.tsx",
         ],
     );
 }

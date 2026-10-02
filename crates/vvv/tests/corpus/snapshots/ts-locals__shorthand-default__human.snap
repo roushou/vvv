@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● variable short   src/locals.ts:34:46
+
+{ label: renamed, nested: { value }, short = seed, ...rest } = input
+--- stderr ---

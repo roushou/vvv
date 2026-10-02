@@ -1,0 +1,12 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+src/scopes.ts
+  1 ●   10:26   export function combined(value) {
+  2 ●   11:7    var value;
+  3 ●   12:3    function value() { return 1; }
+--- stderr ---
+Several definitions match; use --select with a row number or match id

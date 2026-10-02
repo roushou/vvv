@@ -18,8 +18,12 @@ pub struct LexicalBinding {
     /// Lexical owner, including synthetic successful-condition scopes.
     pub scope: Span,
     pub excluded: Vec<Span>,
-    /// Locals start after their declaration, condition bindings after their operand;
-    /// parameters and generics fill their scope.
+    /// Regions where the binding owns its name but is not yet initialized.
+    /// They prevent falling through to an outer binding in a temporal dead zone.
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub uninitialized: Vec<Span>,
+    /// Start of lexical ownership: delayed for sequential bindings, or the scope
+    /// start for parameters, generics and block-owned lexical declarations.
     pub visible_from: usize,
     pub namespace: BindingNamespace,
     /// Syntax forces a binding rather than a possible constant pattern.
@@ -29,6 +33,13 @@ pub struct LexicalBinding {
 }
 
 impl LexicalBinding {
+    pub fn initialized(&self, span: Span) -> bool {
+        !self
+            .uninitialized
+            .iter()
+            .any(|region| region.contains(&span))
+    }
+
     pub fn visible(&self, name: &str, span: Span, namespace: BindingNamespace) -> bool {
         self.symbol.name == name
             && self.namespace == namespace
@@ -218,5 +229,36 @@ impl PatternScope {
                     .excluded
                     .iter()
                     .any(|excluded| excluded.contains(&span)))
+    }
+}
+
+#[cfg(test)]
+mod initialization_tests {
+    use super::*;
+
+    #[test]
+    fn initialization_regions_preserve_ownership_and_older_serialized_facts() {
+        let mut binding = LexicalBinding {
+            symbol: Symbol::plain(SymbolKind::Variable, "x", Span::new(5, 6), Span::new(5, 9)),
+            scope: Span::new(0, 20),
+            excluded: vec![],
+            uninitialized: vec![],
+            visible_from: 0,
+            namespace: BindingNamespace::Value,
+            explicit: true,
+        };
+        let serialized = serde_json::to_value(&binding).unwrap();
+        assert!(serialized.get("uninitialized").is_none());
+        let older: LexicalBinding = serde_json::from_value(serialized).unwrap();
+        assert!(older.initialized(Span::new(2, 3)));
+        binding.uninitialized.push(Span::new(0, 5));
+        assert!(binding.visible("x", Span::new(2, 3), BindingNamespace::Value));
+        assert!(!binding.initialized(Span::new(2, 3)));
+        assert!(binding.initialized(Span::new(10, 11)));
+        assert_eq!(
+            serde_json::from_value::<LexicalBinding>(serde_json::to_value(&binding).unwrap())
+                .unwrap(),
+            binding
+        );
     }
 }

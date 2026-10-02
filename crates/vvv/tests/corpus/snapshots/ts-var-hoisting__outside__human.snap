@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● variable outer   src/helpers.ts:1:14
+
+export const outer = 99;
+--- stderr ---

@@ -10,8 +10,8 @@ task [confirmed] src/bridge.ts:1:18
 execute [confirmed] src/consumer.ts:1:18
 execute [confirmed] src/consumer.ts:4:5
 work [confirmed] src/consumer.ts:5:9
-execute [unresolved] src/consumer.ts:8:47
-execute [unresolved] src/consumer.ts:9:49
+execute [confirmed] src/consumer.ts:8:47
+execute [confirmed] src/consumer.ts:9:49
 work [unresolved] src/consumer.ts:10:57
 --- stderr ---
 8 sites; 3 files scanned; 10 lookups

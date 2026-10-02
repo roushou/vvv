@@ -293,27 +293,33 @@ mod lexical_navigation_tests {
                 .iter()
                 .map(|b| b.symbol.name.as_str())
                 .collect::<Vec<_>>(),
-            ["Runtime", "value"]
+            ["f", "Runtime", "value"]
         );
     }
     #[test]
-    fn unmodeled_local_hoisting_and_patterns_block_outer_parameter_confirmation() {
+    fn parameter_var_redeclarations_retain_body_navigation_and_both_source_sites() {
         let source = "function f(value: number) { if (true) { var value = 2; } return value; }";
         let facts = TypeScript::default().facts(source).unwrap();
         assert!(
-            !facts
+            facts
                 .lexical_tokens
                 .contains(&facts.tokens_named("value").last().unwrap().0)
         );
     }
     #[test]
-    fn nested_signature_bindings_do_not_leak_and_local_items_block_outer_bindings() {
+    fn nested_signature_bindings_do_not_leak_and_type_aliases_preserve_outer_bindings() {
         let source =
             "function f<T>(value: T) { type Local = <U>(x: U) => U; let other: U; return value; }";
         let facts = TypeScript::default().facts(source).unwrap();
-        assert!(!facts.lexical.iter().any(|b| b.symbol.name == "U"));
+        let outer_use = facts.tokens_named("U").last().unwrap().0;
+        let generic = facts
+            .lexical
+            .iter()
+            .find(|binding| binding.symbol.name == "U")
+            .unwrap();
+        assert!(!generic.scope.contains(&outer_use));
         assert!(
-            !facts
+            facts
                 .lexical_tokens
                 .contains(&facts.tokens_named("value").last().unwrap().0)
         );
@@ -413,11 +419,14 @@ mod signature_tests {
             "/** doc */ work(x: number): { value: number }"
         );
         let variable = facts.symbols.iter().find(|s| s.name == "factory").unwrap();
-        assert!(
-            !facts
-                .signatures
-                .iter()
-                .any(|s| s.name_span == variable.name_span)
+        let signature = facts
+            .signatures
+            .iter()
+            .find(|signature| signature.name_span == variable.name_span)
+            .unwrap();
+        assert_eq!(
+            &source[signature.span.start..signature.span.end],
+            "export const factory = () =>"
         );
     }
 }

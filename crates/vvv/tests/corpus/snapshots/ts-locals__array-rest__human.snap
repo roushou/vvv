@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● variable tail   src/locals.ts:35:29
+
+[head = renamed, , ...tail] = input
+--- stderr ---

@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● parameter tail   src/methods.tsx:6:10
+
+[...[tail]]
+--- stderr ---

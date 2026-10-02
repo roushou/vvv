@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● variant First   src/module.ts:57:14
+
+enum Order { First = 2, Second = First, Third = Fourth, Fourth = 4 }
+--- stderr ---

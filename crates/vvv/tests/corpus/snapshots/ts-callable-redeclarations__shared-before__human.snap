@@ -1,0 +1,11 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+src/scopes.ts
+  1 ●    1:24   export function shared(value) {
+  2 ●    3:7    var value;
+--- stderr ---
+Several definitions match; use --select with a row number or match id

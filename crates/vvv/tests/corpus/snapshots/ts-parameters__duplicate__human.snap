@@ -1,0 +1,11 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+src/parameters.ts
+  1 ●   23:29   export function duplicates([same, same]) {
+  2 ●   23:35   export function duplicates([same, same]) {
+--- stderr ---
+Several definitions match; use --select with a row number or match id

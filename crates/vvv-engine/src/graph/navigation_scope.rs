@@ -1,4 +1,4 @@
-//! Navigation precedence in scopes with unknown macro expansions.
+//! Binding initialization and precedence in scopes with unknown macro expansions.
 
 use vvv_core::{BindingNamespace, Facts, LexicalBinding, PathHead, Span, SymbolKind};
 
@@ -13,6 +13,9 @@ impl<'a> NavigationScope<'a> {
     }
 
     pub(super) fn permits_binding(&self, binding: &LexicalBinding) -> bool {
+        if !binding.initialized(self.span) {
+            return false;
+        }
         self.facts
             .scope_uncertainties
             .iter()

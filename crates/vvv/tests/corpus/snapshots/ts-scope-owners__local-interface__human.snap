@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● interface Shape   src/module.ts:42:3
+
+interface Shape { size: number; }
+--- stderr ---

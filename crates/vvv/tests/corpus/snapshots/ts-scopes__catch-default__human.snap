@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● variable code   src/scopes.ts:44:61
+
+{ message: text, nested: { value }, code = outer, later = code, ...rest }
+--- stderr ---

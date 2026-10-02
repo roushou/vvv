@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● function inner   src/script.ts:7:14
+
+function inner() {}
+--- stderr ---

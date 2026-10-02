@@ -1,0 +1,3226 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "fe776436581bedd926fc7b2374d8507bfad5e7213d63135336f4c6ce7b829d66",
+    "outcome": "resolved",
+    "target": {
+      "language": "typescript",
+      "declaration": {
+        "path": "src/locals.ts",
+        "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+        "span": {
+          "start": 803,
+          "end": 860
+        }
+      },
+      "name_span": {
+        "start": 805,
+        "end": 810
+      },
+      "kind": "variable"
+    },
+    "evidence": {
+      "addresses": []
+    },
+    "preview": {
+      "container": {
+        "language": "typescript",
+        "declaration": {
+          "path": "src/locals.ts",
+          "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+          "span": {
+            "start": 803,
+            "end": 860
+          }
+        },
+        "name_span": {
+          "start": 805,
+          "end": 810
+        },
+        "kind": "variable"
+      },
+      "declaration": {
+        "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+        "id": "bbef4445011b",
+        "path": "src/locals.ts",
+        "language": "typescript",
+        "span": {
+          "start": 805,
+          "end": 810
+        },
+        "start": {
+          "line": 38,
+          "column": 10
+        },
+        "end": {
+          "line": 38,
+          "column": 15
+        },
+        "kind": "declaration",
+        "text": "first",
+        "line": "  const { first = seed, second = first, [second]: third } = input;",
+        "symbol": {
+          "kind": "variable",
+          "name": "first",
+          "name_span": {
+            "start": 805,
+            "end": 810
+          },
+          "span": {
+            "start": 803,
+            "end": 860
+          },
+          "extent": {
+            "start": 803,
+            "end": 860
+          }
+        },
+        "role": "declaration"
+      },
+      "source": {
+        "path": "src/locals.ts",
+        "text": "import { seed, later, first, run } from './origin';\nexport function simple(input) {\n  const local = input;\n  let next;\n  next = local;\n  return [input, local, next];\n}\nexport function before(input) {\n  later;\n  const later = seed;\n  return later;\n}\nexport function self(input) {\n  const first = first;\n  return first;\n}\nexport function nested(input) {\n  const local = input;\n  {\n    const local = seed;\n    local;\n  }\n  return local;\n}\nexport function innerWins(input) {\n  {\n    const later = seed;\n    later;\n  }\n  const later = input;\n  return later;\n}\nexport function patterns(input) {\n  const { label: renamed, nested: { value }, short = seed, ...rest } = input;\n  let [head = renamed, , ...tail] = input;\n  return [renamed, value, short, rest, head, tail];\n}\nexport function order(input) {\n  const { first = seed, second = first, [second]: third } = input;\n  return [first, second, third];\n}\nexport function forward(input) {\n  const { first = later, later = seed } = input;\n  return [first, later];\n}\nexport function whole(input) {\n  const { first } = first;\n  return first;\n}\nexport function multiple(input) {\n  let first = input, second = first;\n  return [first, second];\n}\nexport function peers(input) {\n  let first = later, later = input;\n  return [first, later];\n}\nexport function callable(input) {\n  const { run } = input;\n  run();\n}\nexport function duplicates(input) {\n  let [same, same] = input;\n  return same;\n}\nexport function invalid(input) {\n  const good = input;\n  const [first, ...rest, after] = input;\n  return good;\n}\nexport function hoisted(input) {\n  var local = input;\n  return input;\n}\nexport function looping(input) {\n  for (let item of input) { item; }\n  return input;\n}\nexport function signature(value) {\n  const local = value;\n  return local;\n}\n",
+        "highlights": [
+          {
+            "span": {
+              "start": 0,
+              "end": 6
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 35,
+              "end": 39
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 40,
+              "end": 50
+            },
+            "kind": "string"
+          },
+          {
+            "span": {
+              "start": 52,
+              "end": 58
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 59,
+              "end": 67
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 68,
+              "end": 74
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 86,
+              "end": 91
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 109,
+              "end": 112
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 137,
+              "end": 143
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 168,
+              "end": 174
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 175,
+              "end": 183
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 184,
+              "end": 190
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 211,
+              "end": 216
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 233,
+              "end": 239
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 249,
+              "end": 255
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 256,
+              "end": 264
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 265,
+              "end": 269
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 281,
+              "end": 286
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 304,
+              "end": 310
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 320,
+              "end": 326
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 327,
+              "end": 335
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 336,
+              "end": 342
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 354,
+              "end": 359
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 383,
+              "end": 388
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 420,
+              "end": 426
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 436,
+              "end": 442
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 443,
+              "end": 451
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 452,
+              "end": 461
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 479,
+              "end": 484
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 516,
+              "end": 521
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 539,
+              "end": 545
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 555,
+              "end": 561
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 562,
+              "end": 570
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 571,
+              "end": 579
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 591,
+              "end": 596
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 669,
+              "end": 672
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 712,
+              "end": 718
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 764,
+              "end": 770
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 771,
+              "end": 779
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 780,
+              "end": 785
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 797,
+              "end": 802
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 864,
+              "end": 870
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 897,
+              "end": 903
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 904,
+              "end": 912
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 913,
+              "end": 920
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 932,
+              "end": 937
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 981,
+              "end": 987
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1006,
+              "end": 1012
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1013,
+              "end": 1021
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1022,
+              "end": 1027
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 1039,
+              "end": 1044
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1066,
+              "end": 1072
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1082,
+              "end": 1088
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1089,
+              "end": 1097
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1098,
+              "end": 1106
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 1118,
+              "end": 1121
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1155,
+              "end": 1161
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1181,
+              "end": 1187
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1188,
+              "end": 1196
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1197,
+              "end": 1202
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 1214,
+              "end": 1217
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1250,
+              "end": 1256
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1275,
+              "end": 1281
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1282,
+              "end": 1290
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1291,
+              "end": 1299
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 1311,
+              "end": 1316
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1336,
+              "end": 1339
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 1345,
+              "end": 1351
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1352,
+              "end": 1360
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1361,
+              "end": 1371
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 1383,
+              "end": 1386
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1411,
+              "end": 1417
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1426,
+              "end": 1432
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1433,
+              "end": 1441
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1442,
+              "end": 1449
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 1461,
+              "end": 1466
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1483,
+              "end": 1488
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1524,
+              "end": 1530
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1539,
+              "end": 1545
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1546,
+              "end": 1554
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1555,
+              "end": 1562
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 1574,
+              "end": 1577
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1595,
+              "end": 1601
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1611,
+              "end": 1617
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1618,
+              "end": 1626
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1627,
+              "end": 1634
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 1646,
+              "end": 1649
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1651,
+              "end": 1654
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1660,
+              "end": 1662
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1682,
+              "end": 1688
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1698,
+              "end": 1704
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1705,
+              "end": 1713
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1714,
+              "end": 1723
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 1735,
+              "end": 1740
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1758,
+              "end": 1764
+            },
+            "kind": "keyword"
+          }
+        ],
+        "symbols": [
+          {
+            "kind": "function",
+            "name": "simple",
+            "name_span": {
+              "start": 68,
+              "end": 74
+            },
+            "span": {
+              "start": 59,
+              "end": 167
+            },
+            "extent": {
+              "start": 52,
+              "end": 167
+            },
+            "visibility": {
+              "span": {
+                "start": 52,
+                "end": 58
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "local",
+            "name_span": {
+              "start": 92,
+              "end": 97
+            },
+            "span": {
+              "start": 92,
+              "end": 105
+            },
+            "extent": {
+              "start": 92,
+              "end": 105
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "next",
+            "name_span": {
+              "start": 113,
+              "end": 117
+            },
+            "span": {
+              "start": 113,
+              "end": 117
+            },
+            "extent": {
+              "start": 113,
+              "end": 117
+            }
+          },
+          {
+            "kind": "function",
+            "name": "before",
+            "name_span": {
+              "start": 184,
+              "end": 190
+            },
+            "span": {
+              "start": 175,
+              "end": 248
+            },
+            "extent": {
+              "start": 168,
+              "end": 248
+            },
+            "visibility": {
+              "span": {
+                "start": 168,
+                "end": 174
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "later",
+            "name_span": {
+              "start": 217,
+              "end": 222
+            },
+            "span": {
+              "start": 217,
+              "end": 229
+            },
+            "extent": {
+              "start": 217,
+              "end": 229
+            }
+          },
+          {
+            "kind": "function",
+            "name": "self",
+            "name_span": {
+              "start": 265,
+              "end": 269
+            },
+            "span": {
+              "start": 256,
+              "end": 319
+            },
+            "extent": {
+              "start": 249,
+              "end": 319
+            },
+            "visibility": {
+              "span": {
+                "start": 249,
+                "end": 255
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "first",
+            "name_span": {
+              "start": 287,
+              "end": 292
+            },
+            "span": {
+              "start": 287,
+              "end": 300
+            },
+            "extent": {
+              "start": 287,
+              "end": 300
+            }
+          },
+          {
+            "kind": "function",
+            "name": "nested",
+            "name_span": {
+              "start": 336,
+              "end": 342
+            },
+            "span": {
+              "start": 327,
+              "end": 435
+            },
+            "extent": {
+              "start": 320,
+              "end": 435
+            },
+            "visibility": {
+              "span": {
+                "start": 320,
+                "end": 326
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "local",
+            "name_span": {
+              "start": 360,
+              "end": 365
+            },
+            "span": {
+              "start": 360,
+              "end": 373
+            },
+            "extent": {
+              "start": 360,
+              "end": 373
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "local",
+            "name_span": {
+              "start": 389,
+              "end": 394
+            },
+            "span": {
+              "start": 389,
+              "end": 401
+            },
+            "extent": {
+              "start": 389,
+              "end": 401
+            }
+          },
+          {
+            "kind": "function",
+            "name": "innerWins",
+            "name_span": {
+              "start": 452,
+              "end": 461
+            },
+            "span": {
+              "start": 443,
+              "end": 554
+            },
+            "extent": {
+              "start": 436,
+              "end": 554
+            },
+            "visibility": {
+              "span": {
+                "start": 436,
+                "end": 442
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "later",
+            "name_span": {
+              "start": 485,
+              "end": 490
+            },
+            "span": {
+              "start": 485,
+              "end": 497
+            },
+            "extent": {
+              "start": 485,
+              "end": 497
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "later",
+            "name_span": {
+              "start": 522,
+              "end": 527
+            },
+            "span": {
+              "start": 522,
+              "end": 535
+            },
+            "extent": {
+              "start": 522,
+              "end": 535
+            }
+          },
+          {
+            "kind": "function",
+            "name": "patterns",
+            "name_span": {
+              "start": 571,
+              "end": 579
+            },
+            "span": {
+              "start": 562,
+              "end": 763
+            },
+            "extent": {
+              "start": 555,
+              "end": 763
+            },
+            "visibility": {
+              "span": {
+                "start": 555,
+                "end": 561
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "{ label: renamed, nested: { value }, short = seed, ...rest }",
+            "name_span": {
+              "start": 597,
+              "end": 657
+            },
+            "span": {
+              "start": 597,
+              "end": 665
+            },
+            "extent": {
+              "start": 597,
+              "end": 665
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "[head = renamed, , ...tail]",
+            "name_span": {
+              "start": 673,
+              "end": 700
+            },
+            "span": {
+              "start": 673,
+              "end": 708
+            },
+            "extent": {
+              "start": 673,
+              "end": 708
+            }
+          },
+          {
+            "kind": "function",
+            "name": "order",
+            "name_span": {
+              "start": 780,
+              "end": 785
+            },
+            "span": {
+              "start": 771,
+              "end": 896
+            },
+            "extent": {
+              "start": 764,
+              "end": 896
+            },
+            "visibility": {
+              "span": {
+                "start": 764,
+                "end": 770
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "{ first = seed, second = first, [second]: third }",
+            "name_span": {
+              "start": 803,
+              "end": 852
+            },
+            "span": {
+              "start": 803,
+              "end": 860
+            },
+            "extent": {
+              "start": 803,
+              "end": 860
+            }
+          },
+          {
+            "kind": "function",
+            "name": "forward",
+            "name_span": {
+              "start": 913,
+              "end": 920
+            },
+            "span": {
+              "start": 904,
+              "end": 1005
+            },
+            "extent": {
+              "start": 897,
+              "end": 1005
+            },
+            "visibility": {
+              "span": {
+                "start": 897,
+                "end": 903
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "{ first = later, later = seed }",
+            "name_span": {
+              "start": 938,
+              "end": 969
+            },
+            "span": {
+              "start": 938,
+              "end": 977
+            },
+            "extent": {
+              "start": 938,
+              "end": 977
+            }
+          },
+          {
+            "kind": "function",
+            "name": "whole",
+            "name_span": {
+              "start": 1022,
+              "end": 1027
+            },
+            "span": {
+              "start": 1013,
+              "end": 1081
+            },
+            "extent": {
+              "start": 1006,
+              "end": 1081
+            },
+            "visibility": {
+              "span": {
+                "start": 1006,
+                "end": 1012
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "{ first }",
+            "name_span": {
+              "start": 1045,
+              "end": 1054
+            },
+            "span": {
+              "start": 1045,
+              "end": 1062
+            },
+            "extent": {
+              "start": 1045,
+              "end": 1062
+            }
+          },
+          {
+            "kind": "function",
+            "name": "multiple",
+            "name_span": {
+              "start": 1098,
+              "end": 1106
+            },
+            "span": {
+              "start": 1089,
+              "end": 1180
+            },
+            "extent": {
+              "start": 1082,
+              "end": 1180
+            },
+            "visibility": {
+              "span": {
+                "start": 1082,
+                "end": 1088
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "first",
+            "name_span": {
+              "start": 1122,
+              "end": 1127
+            },
+            "span": {
+              "start": 1122,
+              "end": 1135
+            },
+            "extent": {
+              "start": 1122,
+              "end": 1135
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "second",
+            "name_span": {
+              "start": 1137,
+              "end": 1143
+            },
+            "span": {
+              "start": 1137,
+              "end": 1151
+            },
+            "extent": {
+              "start": 1137,
+              "end": 1151
+            }
+          },
+          {
+            "kind": "function",
+            "name": "peers",
+            "name_span": {
+              "start": 1197,
+              "end": 1202
+            },
+            "span": {
+              "start": 1188,
+              "end": 1274
+            },
+            "extent": {
+              "start": 1181,
+              "end": 1274
+            },
+            "visibility": {
+              "span": {
+                "start": 1181,
+                "end": 1187
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "first",
+            "name_span": {
+              "start": 1218,
+              "end": 1223
+            },
+            "span": {
+              "start": 1218,
+              "end": 1231
+            },
+            "extent": {
+              "start": 1218,
+              "end": 1231
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "later",
+            "name_span": {
+              "start": 1233,
+              "end": 1238
+            },
+            "span": {
+              "start": 1233,
+              "end": 1246
+            },
+            "extent": {
+              "start": 1233,
+              "end": 1246
+            }
+          },
+          {
+            "kind": "function",
+            "name": "callable",
+            "name_span": {
+              "start": 1291,
+              "end": 1299
+            },
+            "span": {
+              "start": 1282,
+              "end": 1344
+            },
+            "extent": {
+              "start": 1275,
+              "end": 1344
+            },
+            "visibility": {
+              "span": {
+                "start": 1275,
+                "end": 1281
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "{ run }",
+            "name_span": {
+              "start": 1317,
+              "end": 1324
+            },
+            "span": {
+              "start": 1317,
+              "end": 1332
+            },
+            "extent": {
+              "start": 1317,
+              "end": 1332
+            }
+          },
+          {
+            "kind": "function",
+            "name": "duplicates",
+            "name_span": {
+              "start": 1361,
+              "end": 1371
+            },
+            "span": {
+              "start": 1352,
+              "end": 1425
+            },
+            "extent": {
+              "start": 1345,
+              "end": 1425
+            },
+            "visibility": {
+              "span": {
+                "start": 1345,
+                "end": 1351
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "[same, same]",
+            "name_span": {
+              "start": 1387,
+              "end": 1399
+            },
+            "span": {
+              "start": 1387,
+              "end": 1407
+            },
+            "extent": {
+              "start": 1387,
+              "end": 1407
+            }
+          },
+          {
+            "kind": "function",
+            "name": "invalid",
+            "name_span": {
+              "start": 1442,
+              "end": 1449
+            },
+            "span": {
+              "start": 1433,
+              "end": 1538
+            },
+            "extent": {
+              "start": 1426,
+              "end": 1538
+            },
+            "visibility": {
+              "span": {
+                "start": 1426,
+                "end": 1432
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "good",
+            "name_span": {
+              "start": 1467,
+              "end": 1471
+            },
+            "span": {
+              "start": 1467,
+              "end": 1479
+            },
+            "extent": {
+              "start": 1467,
+              "end": 1479
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "[first, ...rest, after]",
+            "name_span": {
+              "start": 1489,
+              "end": 1512
+            },
+            "span": {
+              "start": 1489,
+              "end": 1520
+            },
+            "extent": {
+              "start": 1489,
+              "end": 1520
+            }
+          },
+          {
+            "kind": "function",
+            "name": "hoisted",
+            "name_span": {
+              "start": 1555,
+              "end": 1562
+            },
+            "span": {
+              "start": 1546,
+              "end": 1610
+            },
+            "extent": {
+              "start": 1539,
+              "end": 1610
+            },
+            "visibility": {
+              "span": {
+                "start": 1539,
+                "end": 1545
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "local",
+            "name_span": {
+              "start": 1578,
+              "end": 1583
+            },
+            "span": {
+              "start": 1578,
+              "end": 1591
+            },
+            "extent": {
+              "start": 1578,
+              "end": 1591
+            }
+          },
+          {
+            "kind": "function",
+            "name": "looping",
+            "name_span": {
+              "start": 1627,
+              "end": 1634
+            },
+            "span": {
+              "start": 1618,
+              "end": 1697
+            },
+            "extent": {
+              "start": 1611,
+              "end": 1697
+            },
+            "visibility": {
+              "span": {
+                "start": 1611,
+                "end": 1617
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "function",
+            "name": "signature",
+            "name_span": {
+              "start": 1714,
+              "end": 1723
+            },
+            "span": {
+              "start": 1705,
+              "end": 1773
+            },
+            "extent": {
+              "start": 1698,
+              "end": 1773
+            },
+            "visibility": {
+              "span": {
+                "start": 1698,
+                "end": 1704
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "local",
+            "name_span": {
+              "start": 1741,
+              "end": 1746
+            },
+            "span": {
+              "start": 1741,
+              "end": 1754
+            },
+            "extent": {
+              "start": 1741,
+              "end": 1754
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "input",
+            "name_span": {
+              "start": 75,
+              "end": 80
+            },
+            "span": {
+              "start": 75,
+              "end": 80
+            },
+            "extent": {
+              "start": 75,
+              "end": 80
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "input",
+            "name_span": {
+              "start": 191,
+              "end": 196
+            },
+            "span": {
+              "start": 191,
+              "end": 196
+            },
+            "extent": {
+              "start": 191,
+              "end": 196
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "input",
+            "name_span": {
+              "start": 270,
+              "end": 275
+            },
+            "span": {
+              "start": 270,
+              "end": 275
+            },
+            "extent": {
+              "start": 270,
+              "end": 275
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "input",
+            "name_span": {
+              "start": 343,
+              "end": 348
+            },
+            "span": {
+              "start": 343,
+              "end": 348
+            },
+            "extent": {
+              "start": 343,
+              "end": 348
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "input",
+            "name_span": {
+              "start": 462,
+              "end": 467
+            },
+            "span": {
+              "start": 462,
+              "end": 467
+            },
+            "extent": {
+              "start": 462,
+              "end": 467
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "input",
+            "name_span": {
+              "start": 580,
+              "end": 585
+            },
+            "span": {
+              "start": 580,
+              "end": 585
+            },
+            "extent": {
+              "start": 580,
+              "end": 585
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "renamed",
+            "name_span": {
+              "start": 606,
+              "end": 613
+            },
+            "span": {
+              "start": 597,
+              "end": 665
+            },
+            "extent": {
+              "start": 597,
+              "end": 665
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "value",
+            "name_span": {
+              "start": 625,
+              "end": 630
+            },
+            "span": {
+              "start": 597,
+              "end": 665
+            },
+            "extent": {
+              "start": 597,
+              "end": 665
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "short",
+            "name_span": {
+              "start": 634,
+              "end": 639
+            },
+            "span": {
+              "start": 597,
+              "end": 665
+            },
+            "extent": {
+              "start": 597,
+              "end": 665
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "rest",
+            "name_span": {
+              "start": 651,
+              "end": 655
+            },
+            "span": {
+              "start": 597,
+              "end": 665
+            },
+            "extent": {
+              "start": 597,
+              "end": 665
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "head",
+            "name_span": {
+              "start": 674,
+              "end": 678
+            },
+            "span": {
+              "start": 673,
+              "end": 708
+            },
+            "extent": {
+              "start": 673,
+              "end": 708
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "tail",
+            "name_span": {
+              "start": 695,
+              "end": 699
+            },
+            "span": {
+              "start": 673,
+              "end": 708
+            },
+            "extent": {
+              "start": 673,
+              "end": 708
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "input",
+            "name_span": {
+              "start": 786,
+              "end": 791
+            },
+            "span": {
+              "start": 786,
+              "end": 791
+            },
+            "extent": {
+              "start": 786,
+              "end": 791
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "first",
+            "name_span": {
+              "start": 805,
+              "end": 810
+            },
+            "span": {
+              "start": 803,
+              "end": 860
+            },
+            "extent": {
+              "start": 803,
+              "end": 860
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "second",
+            "name_span": {
+              "start": 819,
+              "end": 825
+            },
+            "span": {
+              "start": 803,
+              "end": 860
+            },
+            "extent": {
+              "start": 803,
+              "end": 860
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "third",
+            "name_span": {
+              "start": 845,
+              "end": 850
+            },
+            "span": {
+              "start": 803,
+              "end": 860
+            },
+            "extent": {
+              "start": 803,
+              "end": 860
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "input",
+            "name_span": {
+              "start": 921,
+              "end": 926
+            },
+            "span": {
+              "start": 921,
+              "end": 926
+            },
+            "extent": {
+              "start": 921,
+              "end": 926
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "first",
+            "name_span": {
+              "start": 940,
+              "end": 945
+            },
+            "span": {
+              "start": 938,
+              "end": 977
+            },
+            "extent": {
+              "start": 938,
+              "end": 977
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "later",
+            "name_span": {
+              "start": 955,
+              "end": 960
+            },
+            "span": {
+              "start": 938,
+              "end": 977
+            },
+            "extent": {
+              "start": 938,
+              "end": 977
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "input",
+            "name_span": {
+              "start": 1028,
+              "end": 1033
+            },
+            "span": {
+              "start": 1028,
+              "end": 1033
+            },
+            "extent": {
+              "start": 1028,
+              "end": 1033
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "first",
+            "name_span": {
+              "start": 1047,
+              "end": 1052
+            },
+            "span": {
+              "start": 1045,
+              "end": 1062
+            },
+            "extent": {
+              "start": 1045,
+              "end": 1062
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "input",
+            "name_span": {
+              "start": 1107,
+              "end": 1112
+            },
+            "span": {
+              "start": 1107,
+              "end": 1112
+            },
+            "extent": {
+              "start": 1107,
+              "end": 1112
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "input",
+            "name_span": {
+              "start": 1203,
+              "end": 1208
+            },
+            "span": {
+              "start": 1203,
+              "end": 1208
+            },
+            "extent": {
+              "start": 1203,
+              "end": 1208
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "input",
+            "name_span": {
+              "start": 1300,
+              "end": 1305
+            },
+            "span": {
+              "start": 1300,
+              "end": 1305
+            },
+            "extent": {
+              "start": 1300,
+              "end": 1305
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "run",
+            "name_span": {
+              "start": 1319,
+              "end": 1322
+            },
+            "span": {
+              "start": 1317,
+              "end": 1332
+            },
+            "extent": {
+              "start": 1317,
+              "end": 1332
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "input",
+            "name_span": {
+              "start": 1372,
+              "end": 1377
+            },
+            "span": {
+              "start": 1372,
+              "end": 1377
+            },
+            "extent": {
+              "start": 1372,
+              "end": 1377
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "same",
+            "name_span": {
+              "start": 1388,
+              "end": 1392
+            },
+            "span": {
+              "start": 1387,
+              "end": 1407
+            },
+            "extent": {
+              "start": 1387,
+              "end": 1407
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "same",
+            "name_span": {
+              "start": 1394,
+              "end": 1398
+            },
+            "span": {
+              "start": 1387,
+              "end": 1407
+            },
+            "extent": {
+              "start": 1387,
+              "end": 1407
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "input",
+            "name_span": {
+              "start": 1450,
+              "end": 1455
+            },
+            "span": {
+              "start": 1450,
+              "end": 1455
+            },
+            "extent": {
+              "start": 1450,
+              "end": 1455
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "input",
+            "name_span": {
+              "start": 1563,
+              "end": 1568
+            },
+            "span": {
+              "start": 1563,
+              "end": 1568
+            },
+            "extent": {
+              "start": 1563,
+              "end": 1568
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "input",
+            "name_span": {
+              "start": 1635,
+              "end": 1640
+            },
+            "span": {
+              "start": 1635,
+              "end": 1640
+            },
+            "extent": {
+              "start": 1635,
+              "end": 1640
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "item",
+            "name_span": {
+              "start": 1655,
+              "end": 1659
+            },
+            "span": {
+              "start": 1655,
+              "end": 1659
+            },
+            "extent": {
+              "start": 1655,
+              "end": 1659
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "value",
+            "name_span": {
+              "start": 1724,
+              "end": 1729
+            },
+            "span": {
+              "start": 1724,
+              "end": 1729
+            },
+            "extent": {
+              "start": 1724,
+              "end": 1729
+            }
+          }
+        ],
+        "identifiers": [
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 9,
+              "end": 13
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 15,
+              "end": 20
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 22,
+              "end": 27
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 29,
+              "end": 32
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 68,
+              "end": 74
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 75,
+              "end": 80
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 92,
+              "end": 97
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 100,
+              "end": 105
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 113,
+              "end": 117
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 121,
+              "end": 125
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 128,
+              "end": 133
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 145,
+              "end": 150
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 152,
+              "end": 157
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 159,
+              "end": 163
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 184,
+              "end": 190
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 191,
+              "end": 196
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 202,
+              "end": 207
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 217,
+              "end": 222
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 225,
+              "end": 229
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 240,
+              "end": 245
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 265,
+              "end": 269
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 270,
+              "end": 275
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 287,
+              "end": 292
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 295,
+              "end": 300
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 311,
+              "end": 316
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 336,
+              "end": 342
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 343,
+              "end": 348
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 360,
+              "end": 365
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 368,
+              "end": 373
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 389,
+              "end": 394
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 397,
+              "end": 401
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 407,
+              "end": 412
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 427,
+              "end": 432
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 452,
+              "end": 461
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 462,
+              "end": 467
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 485,
+              "end": 490
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 493,
+              "end": 497
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 503,
+              "end": 508
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 522,
+              "end": 527
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 530,
+              "end": 535
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 546,
+              "end": 551
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 571,
+              "end": 579
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 580,
+              "end": 585
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 599,
+              "end": 604
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 606,
+              "end": 613
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 615,
+              "end": 621
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 625,
+              "end": 630
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 634,
+              "end": 639
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 642,
+              "end": 646
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 651,
+              "end": 655
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 660,
+              "end": 665
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 674,
+              "end": 678
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 681,
+              "end": 688
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 695,
+              "end": 699
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 703,
+              "end": 708
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 720,
+              "end": 727
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 729,
+              "end": 734
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 736,
+              "end": 741
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 743,
+              "end": 747
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 749,
+              "end": 753
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 755,
+              "end": 759
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 780,
+              "end": 785
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 786,
+              "end": 791
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 805,
+              "end": 810
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 813,
+              "end": 817
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 819,
+              "end": 825
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 828,
+              "end": 833
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 836,
+              "end": 842
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 845,
+              "end": 850
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 855,
+              "end": 860
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 872,
+              "end": 877
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 879,
+              "end": 885
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 887,
+              "end": 892
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 913,
+              "end": 920
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 921,
+              "end": 926
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 940,
+              "end": 945
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 948,
+              "end": 953
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 955,
+              "end": 960
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 963,
+              "end": 967
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 972,
+              "end": 977
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 989,
+              "end": 994
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 996,
+              "end": 1001
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1022,
+              "end": 1027
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1028,
+              "end": 1033
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1047,
+              "end": 1052
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1057,
+              "end": 1062
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1073,
+              "end": 1078
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1098,
+              "end": 1106
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1107,
+              "end": 1112
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1122,
+              "end": 1127
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1130,
+              "end": 1135
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1137,
+              "end": 1143
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1146,
+              "end": 1151
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1163,
+              "end": 1168
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1170,
+              "end": 1176
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1197,
+              "end": 1202
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1203,
+              "end": 1208
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1218,
+              "end": 1223
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1226,
+              "end": 1231
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1233,
+              "end": 1238
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1241,
+              "end": 1246
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1258,
+              "end": 1263
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1265,
+              "end": 1270
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1291,
+              "end": 1299
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1300,
+              "end": 1305
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1319,
+              "end": 1322
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1327,
+              "end": 1332
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1336,
+              "end": 1339
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1361,
+              "end": 1371
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1372,
+              "end": 1377
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1388,
+              "end": 1392
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1394,
+              "end": 1398
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1402,
+              "end": 1407
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1418,
+              "end": 1422
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1442,
+              "end": 1449
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1450,
+              "end": 1455
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1467,
+              "end": 1471
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1474,
+              "end": 1479
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1490,
+              "end": 1495
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1500,
+              "end": 1504
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1506,
+              "end": 1511
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1515,
+              "end": 1520
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1531,
+              "end": 1535
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1555,
+              "end": 1562
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1563,
+              "end": 1568
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1578,
+              "end": 1583
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1586,
+              "end": 1591
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1602,
+              "end": 1607
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1627,
+              "end": 1634
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1635,
+              "end": 1640
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1655,
+              "end": 1659
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1663,
+              "end": 1668
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1672,
+              "end": 1676
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1689,
+              "end": 1694
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1714,
+              "end": 1723
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1724,
+              "end": 1729
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1741,
+              "end": 1746
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1749,
+              "end": 1754
+            }
+          },
+          {
+            "path": "src/locals.ts",
+            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+            "span": {
+              "start": 1765,
+              "end": 1770
+            }
+          }
+        ]
+      },
+      "selection": {
+        "start": 805,
+        "end": 810
+      },
+      "identifiers": [
+        {
+          "path": "src/locals.ts",
+          "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+          "span": {
+            "start": 805,
+            "end": 810
+          }
+        },
+        {
+          "path": "src/locals.ts",
+          "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+          "span": {
+            "start": 813,
+            "end": 817
+          }
+        },
+        {
+          "path": "src/locals.ts",
+          "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+          "span": {
+            "start": 819,
+            "end": 825
+          }
+        },
+        {
+          "path": "src/locals.ts",
+          "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+          "span": {
+            "start": 828,
+            "end": 833
+          }
+        },
+        {
+          "path": "src/locals.ts",
+          "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+          "span": {
+            "start": 836,
+            "end": 842
+          }
+        },
+        {
+          "path": "src/locals.ts",
+          "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+          "span": {
+            "start": 845,
+            "end": 850
+          }
+        },
+        {
+          "path": "src/locals.ts",
+          "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+          "span": {
+            "start": 855,
+            "end": 860
+          }
+        }
+      ]
+    }
+  }
+}
+--- stderr ---

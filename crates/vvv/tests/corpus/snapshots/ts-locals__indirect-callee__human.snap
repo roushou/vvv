@@ -1,0 +1,11 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+callable src/locals.ts:58:8 [8b84bca3cc33]
+run [indirect] src/locals.ts:60:3
+--- stderr ---
+1 site; 1 file scanned; 1 lookup
+Unresolved sites are possible relationships, not confirmed calls. Receiver types, indirect targets, and macro expansion are not inferred.

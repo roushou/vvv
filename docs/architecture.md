@@ -108,13 +108,24 @@ coverage, inline-module owners, and call classification. `Impl`, `Trait`, `Struc
 lowering through `HeaderBindings`; `Type` currently owns type aliases and their generic
 scope, without type inference. TypeScript/TSX share structural callable questions
 and a typed binding adapter that preserves grammar-owned scope and coverage rules.
-Generic and TypeScript pattern views share the `PatternNames` rule policy; Rust
+Generic and TypeScript pattern views share the `PatternNames` rule policy for
+simple/custom captures. TypeScript callable/catch headers, lexical blocks, and typed loop headers use `PatternBindings`
+for atomic destructuring and initializer/default/computed-key evaluation order.
+`DeclarationScope` owns file, block, and switch declaration environments; `VarBindings`
+collects declarations for callable, file, static, and namespace owners. Strict-scope
+evidence controls block functions, while `CallableScope` retains parameter/body
+environment compatibility. Assignment patterns publish reference roles without bindings.
+Conflicts are validated after all owners publish so traversal order cannot hide them.
+Parameter and block bindings retain initialization regions separately from lexical ownership;
+the engine checks initialization after selecting the innermost owner. Rust
 retains its richer pattern-role and alternative-binding interpretation. Rust imports and modules share typed grouped-import, alias, body, and
 visibility accessors; TypeScript/TSX source statements and specifiers retain their
 distinct forms. Grammar rules still own capture coverage and mutation scope;
 generic table extraction remains available to other grammar-backed
 users. A shared declaration component bridges symbol and signature rules to
-language-specific header views and supplies companion target/shadowing inspection. Parser views are temporary and never cross the plugin boundary.
+language-specific header views and supplies companion target/shadowing inspection.
+Callable initializer signature rules retain direct variable/field headers and
+navigation-only expression-name headers without adding symbols or mutation coverage. Parser views are temporary and never cross the plugin boundary.
 
 Small language test groups live beside the code they exercise. Larger Rust suites
 live in `vvv-lang/src/rust/tests/`, grouped by capability and included as test-only
@@ -167,7 +178,8 @@ Grammar tables declare lexical scopes, visibility start points, noncapturing ite
 boundaries, unsupported binding forms, and exact named-import rules.
 `NavigationSyntax::Tables` retains the generic table path; Rust selects
 construct-owned extraction in `syntax/rust/`; TypeScript/TSX select structural
-callable views in `syntax/typescript.rs` and retain table binding extraction. `Block`, `Function`, `Pattern`,
+callable views and header-owned parameter interpretation in `syntax/typescript.rs`,
+with table fallback for other binding rules. `Block`, `Function`, `Pattern`,
 `LetDeclaration`, `Conditional`, `Match`/`MatchArm`, `Loop`, and `Closure` retain
 parser views only during extraction.
 Their types and behavior remain together; parser nodes never enter shared facts.

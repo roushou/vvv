@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● variable seed   src/origin.ts:1:14
+
+export const seed = 1;
+--- stderr ---

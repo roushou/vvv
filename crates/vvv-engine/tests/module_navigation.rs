@@ -243,6 +243,7 @@ impl Fixture {
             } else {
                 self.span(start).start
             },
+            uninitialized: vec![],
             namespace: vvv_core::BindingNamespace::Value,
             explicit: true,
         });
@@ -472,6 +473,7 @@ fn constant_only_patterns_ignore_locals_and_keep_competing_constants_selectable(
         scope: Span::new(0, f.source.len()),
         excluded: vec![],
         visible_from: 0,
+        uninitialized: vec![],
         namespace: vvv_core::BindingNamespace::Value,
         explicit: false,
     });
@@ -566,6 +568,7 @@ fn alternative_binding_sets_are_compared_after_constant_resolution() {
         scope: Span::new(0, f.source.len()),
         excluded: vec![],
         visible_from: 0,
+        uninitialized: vec![],
         namespace: vvv_core::BindingNamespace::Value,
         explicit: true,
     });

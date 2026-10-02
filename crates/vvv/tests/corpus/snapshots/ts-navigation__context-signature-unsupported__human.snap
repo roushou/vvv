@@ -5,5 +5,5 @@ expression: "corpus.run(args, false)"
 exit 0
 --- stdout ---
 Definition  src/signatures.ts:5:1
+export const factory = () =>
 --- stderr ---
-Signature extraction is not supported for this declaration; request body detail

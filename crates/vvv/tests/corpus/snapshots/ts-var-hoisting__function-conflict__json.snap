@@ -1,0 +1,135 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "c329d031a0acdb9c49cdd2a1471d3e7e4379bb0f7c58836db0b4625545606699",
+    "outcome": "ambiguous",
+    "candidates": [
+      {
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/scopes.ts",
+            "content": "b05ce73c9ede407e5b1f786ceebd097d43143f56dd084df554d647b63bdb84d9",
+            "span": {
+              "start": 880,
+              "end": 886
+            }
+          },
+          "name_span": {
+            "start": 880,
+            "end": 886
+          },
+          "kind": "variable"
+        },
+        "declaration": {
+          "content": "b05ce73c9ede407e5b1f786ceebd097d43143f56dd084df554d647b63bdb84d9",
+          "id": "aa97dacf76ea",
+          "path": "src/scopes.ts",
+          "language": "typescript",
+          "span": {
+            "start": 880,
+            "end": 886
+          },
+          "start": {
+            "line": 35,
+            "column": 6
+          },
+          "end": {
+            "line": 35,
+            "column": 12
+          },
+          "kind": "declaration",
+          "text": "helper",
+          "line": "  var helper;",
+          "symbol": {
+            "kind": "variable",
+            "name": "helper",
+            "name_span": {
+              "start": 880,
+              "end": 886
+            },
+            "span": {
+              "start": 880,
+              "end": 886
+            },
+            "extent": {
+              "start": 880,
+              "end": 886
+            }
+          },
+          "role": "declaration"
+        },
+        "evidence": {
+          "addresses": []
+        }
+      },
+      {
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/scopes.ts",
+            "content": "b05ce73c9ede407e5b1f786ceebd097d43143f56dd084df554d647b63bdb84d9",
+            "span": {
+              "start": 890,
+              "end": 910
+            }
+          },
+          "name_span": {
+            "start": 899,
+            "end": 905
+          },
+          "kind": "function"
+        },
+        "declaration": {
+          "content": "b05ce73c9ede407e5b1f786ceebd097d43143f56dd084df554d647b63bdb84d9",
+          "id": "79d8e4b4f9ae",
+          "path": "src/scopes.ts",
+          "language": "typescript",
+          "span": {
+            "start": 890,
+            "end": 910
+          },
+          "start": {
+            "line": 36,
+            "column": 2
+          },
+          "end": {
+            "line": 36,
+            "column": 22
+          },
+          "kind": "declaration",
+          "text": "function helper() {}",
+          "line": "  function helper() {}",
+          "symbol": {
+            "kind": "function",
+            "name": "helper",
+            "name_span": {
+              "start": 899,
+              "end": 905
+            },
+            "span": {
+              "start": 890,
+              "end": 910
+            },
+            "extent": {
+              "start": 890,
+              "end": 910
+            }
+          },
+          "role": "declaration"
+        },
+        "evidence": {
+          "addresses": []
+        }
+      }
+    ]
+  }
+}
+--- stderr ---

@@ -1,0 +1,88 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "70c460579660a389efff784b74b3219496e009341c89c582b8356b060f881b72",
+    "outcome": "resolved",
+    "items": [
+      {
+        "target": {
+          "language": "tsx",
+          "declaration": {
+            "path": "src/view.tsx",
+            "content": "bd118d58f3b1ff7838a03ff4f0bd3fae187a93baf70db8a712e5c8426c8203f6",
+            "span": {
+              "start": 98,
+              "end": 145
+            }
+          },
+          "name_span": {
+            "start": 98,
+            "end": 105
+          },
+          "kind": "field"
+        },
+        "relation": "definition",
+        "via": null,
+        "excerpt": {
+          "path": "src/view.tsx",
+          "content": "bd118d58f3b1ff7838a03ff4f0bd3fae187a93baf70db8a712e5c8426c8203f6",
+          "span": {
+            "start": 98,
+            "end": 126
+          }
+        },
+        "start": {
+          "line": 2,
+          "column": 2
+        },
+        "text": "handler = (title: string) =>",
+        "complete": true,
+        "signature": {
+          "outcome": "available",
+          "requested": {
+            "path": "src/view.tsx",
+            "content": "bd118d58f3b1ff7838a03ff4f0bd3fae187a93baf70db8a712e5c8426c8203f6",
+            "span": {
+              "start": 98,
+              "end": 126
+            }
+          }
+        }
+      }
+    ],
+    "enclosing": {
+      "language": "tsx",
+      "declaration": {
+        "path": "src/view.tsx",
+        "content": "bd118d58f3b1ff7838a03ff4f0bd3fae187a93baf70db8a712e5c8426c8203f6",
+        "span": {
+          "start": 76,
+          "end": 148
+        }
+      },
+      "name_span": {
+        "start": 89,
+        "end": 93
+      },
+      "kind": "class"
+    },
+    "omissions": {
+      "item_limit": 0,
+      "byte_limit": 0,
+      "lookup_limit": 0,
+      "file_limit": 0,
+      "ambiguous": 0,
+      "unavailable": 0,
+      "no_container": 0
+    },
+    "references_by_name": false
+  }
+}
+--- stderr ---

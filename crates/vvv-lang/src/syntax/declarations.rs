@@ -10,6 +10,8 @@ use vvv_core::{ModifierAt, SymbolRule};
 pub(super) struct Declaration<'tree, L: LanguageExt> {
     node: Node<'tree, StrDoc<L>>,
     shape: Shape<'tree, L>,
+    #[cfg(feature = "typescript")]
+    syntax: NavigationSyntax,
 }
 
 enum Shape<'tree, L: LanguageExt> {
@@ -32,7 +34,12 @@ impl<'tree, L: LanguageExt> Declaration<'tree, L> {
             _ => None,
         }
         .unwrap_or_else(|| Shape::Other(node.clone()));
-        Self { node, shape }
+        Self {
+            node,
+            shape,
+            #[cfg(feature = "typescript")]
+            syntax,
+        }
     }
 
     pub fn field(&self, field: &str) -> Option<Node<'tree, StrDoc<L>>> {
@@ -46,6 +53,62 @@ impl<'tree, L: LanguageExt> Declaration<'tree, L> {
         // Rules may name custom fields. Missing/error captures keep their spans;
         // structural completeness and navigation coverage are separate questions.
         captured.unwrap_or_else(|| self.node.field(field))
+    }
+
+    pub fn initializer(&self, field: &str) -> Option<Node<'tree, StrDoc<L>>> {
+        let initializer = self.field(field)?;
+        #[cfg(feature = "typescript")]
+        if matches!(self.syntax, NavigationSyntax::TypeScript)
+            && (self
+                .node
+                .children()
+                .filter(|child| child.range() != initializer.range())
+                .any(|child| child.dfs().any(|node| node.is_missing() || node.is_error()))
+                || self.node.parent().is_some_and(|parent| {
+                    matches!(
+                        parent.kind().as_ref(),
+                        "lexical_declaration" | "variable_declaration"
+                    ) && parent
+                        .children()
+                        .any(|child| child.is_missing() || child.is_error())
+                }))
+        {
+            return None;
+        }
+        Some(initializer)
+    }
+
+    pub fn signature_start(&self, extent_start: usize) -> usize {
+        #[cfg(feature = "typescript")]
+        if let Shape::TypeScript(super::typescript::Declaration::Variable(variable)) = &self.shape {
+            return variable.signature_start(extent_start);
+        }
+        extent_start
+    }
+
+    pub fn callable_body(&self, field: &str) -> Option<Node<'tree, StrDoc<L>>> {
+        #[cfg(feature = "typescript")]
+        if matches!(self.syntax, NavigationSyntax::TypeScript) {
+            let function = super::typescript::CallableValue::new(self.node.clone()).function()?;
+            let body = if field == "body" {
+                function.body().ok().flatten()?
+            } else {
+                function.syntax().field(field)?
+            };
+            return (!body.is_error() && !body.is_missing()).then_some(body);
+        }
+        let body = self.field(field)?;
+        if body.is_error()
+            || body.is_missing()
+            || self
+                .node
+                .children()
+                .filter(|child| child.range() != body.range())
+                .any(|child| child.dfs().any(|node| node.is_error() || node.is_missing()))
+        {
+            return None;
+        }
+        Some(body)
     }
 
     pub fn name(&self, rule: &SymbolRule) -> Option<Node<'tree, StrDoc<L>>> {

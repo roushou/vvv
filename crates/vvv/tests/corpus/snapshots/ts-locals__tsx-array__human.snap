@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● variable first   src/methods.tsx:3:47
+
+{ title: heading = title, entries: [first, ...rest] } = input
+--- stderr ---

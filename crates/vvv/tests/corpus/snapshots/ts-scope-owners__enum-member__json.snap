@@ -1,0 +1,2161 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "8869f8b1acdd87942bb07cc07bb77f89e8d350bf5bd2f94dfc5e4e52f19e7a27",
+    "outcome": "resolved",
+    "target": {
+      "language": "typescript",
+      "declaration": {
+        "path": "src/module.ts",
+        "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+        "span": {
+          "start": 1250,
+          "end": 1259
+        }
+      },
+      "name_span": {
+        "start": 1250,
+        "end": 1255
+      },
+      "kind": "variant"
+    },
+    "evidence": {
+      "addresses": []
+    },
+    "preview": {
+      "container": {
+        "language": "typescript",
+        "declaration": {
+          "path": "src/module.ts",
+          "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+          "span": {
+            "start": 1237,
+            "end": 1305
+          }
+        },
+        "name_span": {
+          "start": 1242,
+          "end": 1247
+        },
+        "kind": "enum"
+      },
+      "declaration": {
+        "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+        "id": "2d9b0bafcfea",
+        "path": "src/module.ts",
+        "language": "typescript",
+        "span": {
+          "start": 1250,
+          "end": 1259
+        },
+        "start": {
+          "line": 56,
+          "column": 13
+        },
+        "end": {
+          "line": 56,
+          "column": 22
+        },
+        "kind": "declaration",
+        "text": "First = 2",
+        "line": "enum Order { First = 2, Second = First, Third = Fourth, Fourth = 4 }",
+        "symbol": {
+          "kind": "variant",
+          "name": "First",
+          "name_span": {
+            "start": 1250,
+            "end": 1255
+          },
+          "span": {
+            "start": 1250,
+            "end": 1259
+          },
+          "extent": {
+            "start": 1250,
+            "end": 1259
+          }
+        },
+        "role": "declaration"
+      },
+      "source": {
+        "path": "src/module.ts",
+        "text": "import { imported } from './peer';\nexport {};\nforward();\nfunction forward() { return imported; }\nvar early = early;\nlet later = 1;\nlater;\nlet before = after;\nconst after = 2;\n{\n  nested();\n  function nested() { return later; }\n}\nfunction overloads() {\n  overloaded(1);\n  function overloaded(value: number): number;\n  function overloaded(value: string): string;\n  function overloaded(value: number | string) { return value; }\n}\nclass View {\n  static {\n    local;\n    var local = 1;\n    let lexical = local;\n    lexical;\n  }\n  method() { return local; }\n}\nnamespace Space {\n  use();\n  export function use() { return value; }\n  var value = 1;\n  value;\n}\nfunction assignments(entries: unknown[]) {\n  let target = 0;\n  for ({ value: target } of entries) { target; }\n  for ([target] of entries) { target; }\n}\nfunction types() {\n  let value: Shape;\n  interface Shape { size: number; }\n  type Alias = Shape;\n  class Local { method(): Local { return new Local(); } }\n  let instance: Local;\n}\nswitch (later) {\n  case 1:\n    branch();\n    function branch() { return later; }\n    let switched = later; switched;\n  default:\n    switched;\n}\nconst callback = ((value: number) => { return value; }) satisfies (value: number) => number;\nconst First = 1;\nenum Order { First = 2, Second = First, Third = Fourth, Fourth = 4 }\nFirst;\n",
+        "highlights": [
+          {
+            "span": {
+              "start": 0,
+              "end": 6
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 20,
+              "end": 24
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 25,
+              "end": 33
+            },
+            "kind": "string"
+          },
+          {
+            "span": {
+              "start": 35,
+              "end": 41
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 46,
+              "end": 53
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 57,
+              "end": 65
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 66,
+              "end": 73
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 78,
+              "end": 84
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 97,
+              "end": 100
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 116,
+              "end": 119
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 128,
+              "end": 129
+            },
+            "kind": "number"
+          },
+          {
+            "span": {
+              "start": 138,
+              "end": 141
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 158,
+              "end": 163
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 172,
+              "end": 173
+            },
+            "kind": "number"
+          },
+          {
+            "span": {
+              "start": 179,
+              "end": 185
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 191,
+              "end": 199
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 200,
+              "end": 206
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 211,
+              "end": 217
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 229,
+              "end": 237
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 238,
+              "end": 247
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 254,
+              "end": 264
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 265,
+              "end": 266
+            },
+            "kind": "number"
+          },
+          {
+            "span": {
+              "start": 271,
+              "end": 279
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 298,
+              "end": 304
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 307,
+              "end": 313
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 317,
+              "end": 325
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 344,
+              "end": 350
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 353,
+              "end": 359
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 363,
+              "end": 371
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 372,
+              "end": 382
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 390,
+              "end": 396
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 399,
+              "end": 405
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 409,
+              "end": 415
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 427,
+              "end": 432
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 433,
+              "end": 437
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 442,
+              "end": 448
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 466,
+              "end": 469
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 478,
+              "end": 479
+            },
+            "kind": "number"
+          },
+          {
+            "span": {
+              "start": 485,
+              "end": 488
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 525,
+              "end": 531
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 536,
+              "end": 542
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 554,
+              "end": 563
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 574,
+              "end": 577
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 583,
+              "end": 589
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 590,
+              "end": 598
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 599,
+              "end": 602
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 607,
+              "end": 613
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 625,
+              "end": 628
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 637,
+              "end": 638
+            },
+            "kind": "number"
+          },
+          {
+            "span": {
+              "start": 651,
+              "end": 659
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 660,
+              "end": 671
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 681,
+              "end": 688
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 696,
+              "end": 699
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 709,
+              "end": 710
+            },
+            "kind": "number"
+          },
+          {
+            "span": {
+              "start": 714,
+              "end": 717
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 737,
+              "end": 739
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 763,
+              "end": 766
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 777,
+              "end": 779
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 803,
+              "end": 811
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 812,
+              "end": 817
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 824,
+              "end": 827
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 835,
+              "end": 840
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 844,
+              "end": 853
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 854,
+              "end": 859
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 868,
+              "end": 874
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 880,
+              "end": 884
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 885,
+              "end": 890
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 893,
+              "end": 898
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 902,
+              "end": 907
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 908,
+              "end": 913
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 916,
+              "end": 922
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 926,
+              "end": 931
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 934,
+              "end": 940
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 941,
+              "end": 944
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 960,
+              "end": 963
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 974,
+              "end": 979
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 983,
+              "end": 989
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1002,
+              "end": 1006
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1007,
+              "end": 1008
+            },
+            "kind": "number"
+          },
+          {
+            "span": {
+              "start": 1014,
+              "end": 1020
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 1028,
+              "end": 1036
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1037,
+              "end": 1043
+            },
+            "kind": "function"
+          },
+          {
+            "span": {
+              "start": 1048,
+              "end": 1054
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1068,
+              "end": 1071
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1102,
+              "end": 1109
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1127,
+              "end": 1132
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1153,
+              "end": 1159
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 1166,
+              "end": 1172
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1183,
+              "end": 1192
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1201,
+              "end": 1207
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 1212,
+              "end": 1218
+            },
+            "kind": "type"
+          },
+          {
+            "span": {
+              "start": 1220,
+              "end": 1225
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1234,
+              "end": 1235
+            },
+            "kind": "number"
+          },
+          {
+            "span": {
+              "start": 1237,
+              "end": 1241
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 1258,
+              "end": 1259
+            },
+            "kind": "number"
+          },
+          {
+            "span": {
+              "start": 1302,
+              "end": 1303
+            },
+            "kind": "number"
+          }
+        ],
+        "symbols": [
+          {
+            "kind": "function",
+            "name": "forward",
+            "name_span": {
+              "start": 66,
+              "end": 73
+            },
+            "span": {
+              "start": 57,
+              "end": 96
+            },
+            "extent": {
+              "start": 57,
+              "end": 96
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "early",
+            "name_span": {
+              "start": 101,
+              "end": 106
+            },
+            "span": {
+              "start": 101,
+              "end": 114
+            },
+            "extent": {
+              "start": 101,
+              "end": 114
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "later",
+            "name_span": {
+              "start": 120,
+              "end": 125
+            },
+            "span": {
+              "start": 120,
+              "end": 129
+            },
+            "extent": {
+              "start": 120,
+              "end": 129
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "before",
+            "name_span": {
+              "start": 142,
+              "end": 148
+            },
+            "span": {
+              "start": 142,
+              "end": 156
+            },
+            "extent": {
+              "start": 142,
+              "end": 156
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "after",
+            "name_span": {
+              "start": 164,
+              "end": 169
+            },
+            "span": {
+              "start": 164,
+              "end": 173
+            },
+            "extent": {
+              "start": 164,
+              "end": 173
+            }
+          },
+          {
+            "kind": "function",
+            "name": "nested",
+            "name_span": {
+              "start": 200,
+              "end": 206
+            },
+            "span": {
+              "start": 191,
+              "end": 226
+            },
+            "extent": {
+              "start": 191,
+              "end": 226
+            }
+          },
+          {
+            "kind": "function",
+            "name": "overloads",
+            "name_span": {
+              "start": 238,
+              "end": 247
+            },
+            "span": {
+              "start": 229,
+              "end": 426
+            },
+            "extent": {
+              "start": 229,
+              "end": 426
+            }
+          },
+          {
+            "kind": "function",
+            "name": "overloaded",
+            "name_span": {
+              "start": 280,
+              "end": 290
+            },
+            "span": {
+              "start": 271,
+              "end": 314
+            },
+            "extent": {
+              "start": 271,
+              "end": 314
+            }
+          },
+          {
+            "kind": "function",
+            "name": "overloaded",
+            "name_span": {
+              "start": 326,
+              "end": 336
+            },
+            "span": {
+              "start": 317,
+              "end": 360
+            },
+            "extent": {
+              "start": 317,
+              "end": 360
+            }
+          },
+          {
+            "kind": "function",
+            "name": "overloaded",
+            "name_span": {
+              "start": 372,
+              "end": 382
+            },
+            "span": {
+              "start": 363,
+              "end": 424
+            },
+            "extent": {
+              "start": 363,
+              "end": 424
+            }
+          },
+          {
+            "kind": "class",
+            "name": "View",
+            "name_span": {
+              "start": 433,
+              "end": 437
+            },
+            "span": {
+              "start": 427,
+              "end": 553
+            },
+            "extent": {
+              "start": 427,
+              "end": 553
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "local",
+            "name_span": {
+              "start": 470,
+              "end": 475
+            },
+            "span": {
+              "start": 470,
+              "end": 479
+            },
+            "extent": {
+              "start": 470,
+              "end": 479
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "lexical",
+            "name_span": {
+              "start": 489,
+              "end": 496
+            },
+            "span": {
+              "start": 489,
+              "end": 504
+            },
+            "extent": {
+              "start": 489,
+              "end": 504
+            }
+          },
+          {
+            "kind": "method",
+            "name": "method",
+            "name_span": {
+              "start": 525,
+              "end": 531
+            },
+            "span": {
+              "start": 525,
+              "end": 551
+            },
+            "extent": {
+              "start": 525,
+              "end": 551
+            }
+          },
+          {
+            "kind": "function",
+            "name": "use",
+            "name_span": {
+              "start": 599,
+              "end": 602
+            },
+            "span": {
+              "start": 590,
+              "end": 622
+            },
+            "extent": {
+              "start": 583,
+              "end": 622
+            },
+            "visibility": {
+              "span": {
+                "start": 583,
+                "end": 589
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "value",
+            "name_span": {
+              "start": 629,
+              "end": 634
+            },
+            "span": {
+              "start": 629,
+              "end": 638
+            },
+            "extent": {
+              "start": 629,
+              "end": 638
+            }
+          },
+          {
+            "kind": "function",
+            "name": "assignments",
+            "name_span": {
+              "start": 660,
+              "end": 671
+            },
+            "span": {
+              "start": 651,
+              "end": 802
+            },
+            "extent": {
+              "start": 651,
+              "end": 802
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "target",
+            "name_span": {
+              "start": 700,
+              "end": 706
+            },
+            "span": {
+              "start": 700,
+              "end": 710
+            },
+            "extent": {
+              "start": 700,
+              "end": 710
+            }
+          },
+          {
+            "kind": "function",
+            "name": "types",
+            "name_span": {
+              "start": 812,
+              "end": 817
+            },
+            "span": {
+              "start": 803,
+              "end": 982
+            },
+            "extent": {
+              "start": 803,
+              "end": 982
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "value",
+            "name_span": {
+              "start": 828,
+              "end": 833
+            },
+            "span": {
+              "start": 828,
+              "end": 840
+            },
+            "extent": {
+              "start": 828,
+              "end": 840
+            }
+          },
+          {
+            "kind": "interface",
+            "name": "Shape",
+            "name_span": {
+              "start": 854,
+              "end": 859
+            },
+            "span": {
+              "start": 844,
+              "end": 877
+            },
+            "extent": {
+              "start": 844,
+              "end": 877
+            }
+          },
+          {
+            "kind": "field",
+            "name": "size",
+            "name_span": {
+              "start": 862,
+              "end": 866
+            },
+            "span": {
+              "start": 862,
+              "end": 874
+            },
+            "extent": {
+              "start": 862,
+              "end": 874
+            }
+          },
+          {
+            "kind": "type-alias",
+            "name": "Alias",
+            "name_span": {
+              "start": 885,
+              "end": 890
+            },
+            "span": {
+              "start": 880,
+              "end": 899
+            },
+            "extent": {
+              "start": 880,
+              "end": 899
+            }
+          },
+          {
+            "kind": "class",
+            "name": "Local",
+            "name_span": {
+              "start": 908,
+              "end": 913
+            },
+            "span": {
+              "start": 902,
+              "end": 957
+            },
+            "extent": {
+              "start": 902,
+              "end": 957
+            }
+          },
+          {
+            "kind": "method",
+            "name": "method",
+            "name_span": {
+              "start": 916,
+              "end": 922
+            },
+            "span": {
+              "start": 916,
+              "end": 955
+            },
+            "extent": {
+              "start": 916,
+              "end": 955
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "instance",
+            "name_span": {
+              "start": 964,
+              "end": 972
+            },
+            "span": {
+              "start": 964,
+              "end": 979
+            },
+            "extent": {
+              "start": 964,
+              "end": 979
+            }
+          },
+          {
+            "kind": "function",
+            "name": "branch",
+            "name_span": {
+              "start": 1037,
+              "end": 1043
+            },
+            "span": {
+              "start": 1028,
+              "end": 1063
+            },
+            "extent": {
+              "start": 1028,
+              "end": 1063
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "switched",
+            "name_span": {
+              "start": 1072,
+              "end": 1080
+            },
+            "span": {
+              "start": 1072,
+              "end": 1088
+            },
+            "extent": {
+              "start": 1072,
+              "end": 1088
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "callback",
+            "name_span": {
+              "start": 1133,
+              "end": 1141
+            },
+            "span": {
+              "start": 1133,
+              "end": 1218
+            },
+            "extent": {
+              "start": 1133,
+              "end": 1218
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "First",
+            "name_span": {
+              "start": 1226,
+              "end": 1231
+            },
+            "span": {
+              "start": 1226,
+              "end": 1235
+            },
+            "extent": {
+              "start": 1226,
+              "end": 1235
+            }
+          },
+          {
+            "kind": "enum",
+            "name": "Order",
+            "name_span": {
+              "start": 1242,
+              "end": 1247
+            },
+            "span": {
+              "start": 1237,
+              "end": 1305
+            },
+            "extent": {
+              "start": 1237,
+              "end": 1305
+            }
+          },
+          {
+            "kind": "variant",
+            "name": "First",
+            "name_span": {
+              "start": 1250,
+              "end": 1255
+            },
+            "span": {
+              "start": 1250,
+              "end": 1259
+            },
+            "extent": {
+              "start": 1250,
+              "end": 1259
+            }
+          },
+          {
+            "kind": "variant",
+            "name": "Second",
+            "name_span": {
+              "start": 1261,
+              "end": 1267
+            },
+            "span": {
+              "start": 1261,
+              "end": 1275
+            },
+            "extent": {
+              "start": 1261,
+              "end": 1275
+            }
+          },
+          {
+            "kind": "variant",
+            "name": "Third",
+            "name_span": {
+              "start": 1277,
+              "end": 1282
+            },
+            "span": {
+              "start": 1277,
+              "end": 1291
+            },
+            "extent": {
+              "start": 1277,
+              "end": 1291
+            }
+          },
+          {
+            "kind": "variant",
+            "name": "Fourth",
+            "name_span": {
+              "start": 1293,
+              "end": 1299
+            },
+            "span": {
+              "start": 1293,
+              "end": 1303
+            },
+            "extent": {
+              "start": 1293,
+              "end": 1303
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "value",
+            "name_span": {
+              "start": 291,
+              "end": 296
+            },
+            "span": {
+              "start": 291,
+              "end": 304
+            },
+            "extent": {
+              "start": 291,
+              "end": 304
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "value",
+            "name_span": {
+              "start": 337,
+              "end": 342
+            },
+            "span": {
+              "start": 337,
+              "end": 350
+            },
+            "extent": {
+              "start": 337,
+              "end": 350
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "value",
+            "name_span": {
+              "start": 383,
+              "end": 388
+            },
+            "span": {
+              "start": 383,
+              "end": 405
+            },
+            "extent": {
+              "start": 383,
+              "end": 405
+            }
+          },
+          {
+            "kind": "module",
+            "name": "Space",
+            "name_span": {
+              "start": 564,
+              "end": 569
+            },
+            "span": {
+              "start": 554,
+              "end": 650
+            },
+            "extent": {
+              "start": 554,
+              "end": 650
+            }
+          },
+          {
+            "kind": "module",
+            "name": "Space",
+            "name_span": {
+              "start": 564,
+              "end": 569
+            },
+            "span": {
+              "start": 554,
+              "end": 650
+            },
+            "extent": {
+              "start": 554,
+              "end": 650
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "entries",
+            "name_span": {
+              "start": 672,
+              "end": 679
+            },
+            "span": {
+              "start": 672,
+              "end": 690
+            },
+            "extent": {
+              "start": 672,
+              "end": 690
+            }
+          },
+          {
+            "kind": "parameter",
+            "name": "value",
+            "name_span": {
+              "start": 1146,
+              "end": 1151
+            },
+            "span": {
+              "start": 1146,
+              "end": 1159
+            },
+            "extent": {
+              "start": 1146,
+              "end": 1159
+            }
+          }
+        ],
+        "identifiers": [
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 9,
+              "end": 17
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 46,
+              "end": 53
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 66,
+              "end": 73
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 85,
+              "end": 93
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 101,
+              "end": 106
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 109,
+              "end": 114
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 120,
+              "end": 125
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 131,
+              "end": 136
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 142,
+              "end": 148
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 151,
+              "end": 156
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 164,
+              "end": 169
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 179,
+              "end": 185
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 200,
+              "end": 206
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 218,
+              "end": 223
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 238,
+              "end": 247
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 254,
+              "end": 264
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 280,
+              "end": 290
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 291,
+              "end": 296
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 326,
+              "end": 336
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 337,
+              "end": 342
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 372,
+              "end": 382
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 383,
+              "end": 388
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 416,
+              "end": 421
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 433,
+              "end": 437
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 455,
+              "end": 460
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 470,
+              "end": 475
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 489,
+              "end": 496
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 499,
+              "end": 504
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 510,
+              "end": 517
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 525,
+              "end": 531
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 543,
+              "end": 548
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 564,
+              "end": 569
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 574,
+              "end": 577
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 599,
+              "end": 602
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 614,
+              "end": 619
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 629,
+              "end": 634
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 642,
+              "end": 647
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 660,
+              "end": 671
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 672,
+              "end": 679
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 700,
+              "end": 706
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 721,
+              "end": 726
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 728,
+              "end": 734
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 740,
+              "end": 747
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 751,
+              "end": 757
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 769,
+              "end": 775
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 780,
+              "end": 787
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 791,
+              "end": 797
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 812,
+              "end": 817
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 828,
+              "end": 833
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 835,
+              "end": 840
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 854,
+              "end": 859
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 862,
+              "end": 866
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 885,
+              "end": 890
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 893,
+              "end": 898
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 908,
+              "end": 913
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 916,
+              "end": 922
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 926,
+              "end": 931
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 945,
+              "end": 950
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 964,
+              "end": 972
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 974,
+              "end": 979
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 991,
+              "end": 996
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1014,
+              "end": 1020
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1037,
+              "end": 1043
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1055,
+              "end": 1060
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1072,
+              "end": 1080
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1083,
+              "end": 1088
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1090,
+              "end": 1098
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1115,
+              "end": 1123
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1133,
+              "end": 1141
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1146,
+              "end": 1151
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1173,
+              "end": 1178
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1194,
+              "end": 1199
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1226,
+              "end": 1231
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1242,
+              "end": 1247
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1250,
+              "end": 1255
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1261,
+              "end": 1267
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1270,
+              "end": 1275
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1277,
+              "end": 1282
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1285,
+              "end": 1291
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1293,
+              "end": 1299
+            }
+          },
+          {
+            "path": "src/module.ts",
+            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+            "span": {
+              "start": 1306,
+              "end": 1311
+            }
+          }
+        ]
+      },
+      "selection": {
+        "start": 1250,
+        "end": 1255
+      },
+      "identifiers": [
+        {
+          "path": "src/module.ts",
+          "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+          "span": {
+            "start": 1242,
+            "end": 1247
+          }
+        },
+        {
+          "path": "src/module.ts",
+          "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+          "span": {
+            "start": 1250,
+            "end": 1255
+          }
+        },
+        {
+          "path": "src/module.ts",
+          "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+          "span": {
+            "start": 1261,
+            "end": 1267
+          }
+        },
+        {
+          "path": "src/module.ts",
+          "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+          "span": {
+            "start": 1270,
+            "end": 1275
+          }
+        },
+        {
+          "path": "src/module.ts",
+          "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+          "span": {
+            "start": 1277,
+            "end": 1282
+          }
+        },
+        {
+          "path": "src/module.ts",
+          "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+          "span": {
+            "start": 1285,
+            "end": 1291
+          }
+        },
+        {
+          "path": "src/module.ts",
+          "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+          "span": {
+            "start": 1293,
+            "end": 1299
+          }
+        }
+      ]
+    }
+  }
+}
+--- stderr ---

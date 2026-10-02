@@ -1,0 +1,116 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "0f7608fcfe4ddf6ee0116d495bfac0d4942c47de75062a76fc079cf017a0c6f7",
+    "outcome": "resolved",
+    "items": [
+      {
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/parameters.ts",
+            "content": "c3615b4bc541fbf4d6269c93b512a70e9ed099cb536294a6932ee500ebf6ab21",
+            "span": {
+              "start": 62,
+              "end": 248
+            }
+          },
+          "name_span": {
+            "start": 78,
+            "end": 84
+          },
+          "kind": "function"
+        },
+        "relation": "definition",
+        "via": null,
+        "excerpt": {
+          "path": "src/parameters.ts",
+          "content": "c3615b4bc541fbf4d6269c93b512a70e9ed099cb536294a6932ee500ebf6ab21",
+          "span": {
+            "start": 62,
+            "end": 185
+          }
+        },
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "text": "export function object({ original: renamed, nested: { value }, short, count = seed, ...rest }, [head = renamed, , ...tail])",
+        "complete": true,
+        "signature": {
+          "outcome": "available",
+          "requested": {
+            "path": "src/parameters.ts",
+            "content": "c3615b4bc541fbf4d6269c93b512a70e9ed099cb536294a6932ee500ebf6ab21",
+            "span": {
+              "start": 62,
+              "end": 185
+            }
+          }
+        }
+      },
+      {
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/origin.ts",
+            "content": "d3662481bfe150469305f402c95d0ff8e00f66f125ba18968b9eb2c9ce48dfaf",
+            "span": {
+              "start": 0,
+              "end": 22
+            }
+          },
+          "name_span": {
+            "start": 13,
+            "end": 17
+          },
+          "kind": "variable"
+        },
+        "relation": "referenced_definition",
+        "via": {
+          "path": "src/parameters.ts",
+          "content": "c3615b4bc541fbf4d6269c93b512a70e9ed099cb536294a6932ee500ebf6ab21",
+          "span": {
+            "start": 140,
+            "end": 144
+          }
+        },
+        "excerpt": {
+          "path": "src/origin.ts",
+          "content": "d3662481bfe150469305f402c95d0ff8e00f66f125ba18968b9eb2c9ce48dfaf",
+          "span": {
+            "start": 0,
+            "end": 0
+          }
+        },
+        "start": {
+          "line": 0,
+          "column": 0
+        },
+        "text": "",
+        "complete": false,
+        "signature": {
+          "outcome": "unsupported"
+        }
+      }
+    ],
+    "omissions": {
+      "item_limit": 0,
+      "byte_limit": 0,
+      "lookup_limit": 0,
+      "file_limit": 0,
+      "ambiguous": 0,
+      "unavailable": 2,
+      "no_container": 0
+    },
+    "references_by_name": false
+  }
+}
+--- stderr ---

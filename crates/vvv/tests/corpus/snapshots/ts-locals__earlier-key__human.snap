@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● variable second   src/locals.ts:39:25
+
+{ first = seed, second = first, [second]: third } = input
+--- stderr ---

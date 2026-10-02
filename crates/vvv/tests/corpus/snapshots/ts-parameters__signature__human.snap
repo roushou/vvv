@@ -1,0 +1,12 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+Definition  src/parameters.ts:2:1
+export function object({ original: renamed, nested: { value }, short, count = seed, ...rest }, [head = renamed, , ...tail])
+Referenced definition  src/origin.ts:1:1
+--- stderr ---
+Signature extraction is not supported for this declaration; request body detail
+Omitted: 0 item limit, 0 byte limit, 0 lookup limit, 0 file limit, 0 ambiguous, 2 unavailable, 0 without a declaration

@@ -1,0 +1,135 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "fb7d68ccdc73028d2fd1fb9e003c35bfdfad943ba4674e8e37dca384ec74cec4",
+    "outcome": "ambiguous",
+    "candidates": [
+      {
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/loops.ts",
+            "content": "a4845affbef72cb7ab3e3da53eb04b62f6d5e0b334321928ff01976a7154b05f",
+            "span": {
+              "start": 904,
+              "end": 916
+            }
+          },
+          "name_span": {
+            "start": 905,
+            "end": 909
+          },
+          "kind": "variable"
+        },
+        "declaration": {
+          "content": "a4845affbef72cb7ab3e3da53eb04b62f6d5e0b334321928ff01976a7154b05f",
+          "id": "fbb24c467047",
+          "path": "src/loops.ts",
+          "language": "typescript",
+          "span": {
+            "start": 905,
+            "end": 909
+          },
+          "start": {
+            "line": 36,
+            "column": 12
+          },
+          "end": {
+            "line": 36,
+            "column": 16
+          },
+          "kind": "declaration",
+          "text": "same",
+          "line": "  for (let [same, same] of input) { same; }",
+          "symbol": {
+            "kind": "variable",
+            "name": "same",
+            "name_span": {
+              "start": 905,
+              "end": 909
+            },
+            "span": {
+              "start": 904,
+              "end": 916
+            },
+            "extent": {
+              "start": 904,
+              "end": 916
+            }
+          },
+          "role": "declaration"
+        },
+        "evidence": {
+          "addresses": []
+        }
+      },
+      {
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/loops.ts",
+            "content": "a4845affbef72cb7ab3e3da53eb04b62f6d5e0b334321928ff01976a7154b05f",
+            "span": {
+              "start": 904,
+              "end": 916
+            }
+          },
+          "name_span": {
+            "start": 911,
+            "end": 915
+          },
+          "kind": "variable"
+        },
+        "declaration": {
+          "content": "a4845affbef72cb7ab3e3da53eb04b62f6d5e0b334321928ff01976a7154b05f",
+          "id": "1c909164c934",
+          "path": "src/loops.ts",
+          "language": "typescript",
+          "span": {
+            "start": 911,
+            "end": 915
+          },
+          "start": {
+            "line": 36,
+            "column": 18
+          },
+          "end": {
+            "line": 36,
+            "column": 22
+          },
+          "kind": "declaration",
+          "text": "same",
+          "line": "  for (let [same, same] of input) { same; }",
+          "symbol": {
+            "kind": "variable",
+            "name": "same",
+            "name_span": {
+              "start": 911,
+              "end": 915
+            },
+            "span": {
+              "start": 904,
+              "end": 916
+            },
+            "extent": {
+              "start": 904,
+              "end": 916
+            }
+          },
+          "role": "declaration"
+        },
+        "evidence": {
+          "addresses": []
+        }
+      }
+    ]
+  }
+}
+--- stderr ---

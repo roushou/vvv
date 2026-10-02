@@ -76,8 +76,10 @@ inferred targets, Rust block-local modules, inline scopes in unplaced files,
 `#[path]` module mappings, qualified type paths, block-local glob imports,
 inferred constructor namespace/pattern evidence, macro argument navigation, required-expression
 evidence through wrappers such as unary expressions, and expansion-aware binding
-evidence, TypeScript local
-hoisting, wildcard exports, arbitrary namespace-member expressions, and package/path
+evidence, TypeScript runtime assignment/alias evidence, legacy non-strict block and
+bare conditional function semantics, namespace merging and qualified/ambient namespace
+member ownership, project-configured module detection and cross-file script globals,
+receiver/member targets, wildcard exports, arbitrary namespace-member expressions, and package/path
 aliases. Declarations and accessors generated inside macro invocations remain
 unindexed; the typed-view accessor macro exposes this gap when dogfooding the
 syntax adapter. External/generated source previews need dedicated source-provider support.
@@ -90,8 +92,9 @@ result caching or changing the interactive preview protocol.
 
 Context incoming scans are bounded and same-spelling only. Alias-complete
 references and structural test identification need dedicated evidence and protocol
-contracts. Signature extraction for initialized variables/constants and other
-unsupported declaration forms needs grammar-specific contracts. Relationship queries classify call
+contracts. Broader signature extraction for initialized Rust bindings, non-callable TypeScript
+initializers, and other unsupported declaration forms
+needs grammar-specific contracts. Relationship queries classify call
 expressions and follow named imports, but receiver-dependent targets, wildcard and
 namespace alias enumeration, anonymous caller identities, and resumable relationship
 scans remain open.

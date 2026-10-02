@@ -164,6 +164,26 @@ mod tests {
     }
 
     #[test]
+    fn missing_fields_are_errors_even_when_optional() {
+        let tree = Rust.ast_grep("fn f() { let value = other.; }");
+        let access = tree
+            .root()
+            .dfs()
+            .find(|node| node.kind() == "field_expression")
+            .unwrap();
+        let child = access.field("field").unwrap();
+        assert!(child.is_missing());
+        let expected = SyntaxError {
+            span: child.range().into(),
+            field: "field",
+            issue: FieldIssue::Missing,
+        };
+        let field = Field { name: "field" };
+        assert_eq!(field.optional(&access).err().unwrap(), expected);
+        assert_eq!(field.required(&access).err().unwrap(), expected);
+    }
+
+    #[test]
     fn direct_children_do_not_flatten_nested_blocks_or_keep_comments() {
         let tree = Rust.ast_grep("fn f() { // comment\n let outer = 0; { let inner = 1; } }");
         let block = tree

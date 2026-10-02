@@ -3,7 +3,6 @@ mod api {
     pub struct Data;
     pub const UNIT: () = ();
 }
-
 fn branches(value: Option<usize>) {
     if let Some(value) = value {
         let _ = value;
@@ -12,7 +11,6 @@ fn branches(value: Option<usize>) {
     }
     let _ = value;
 }
-
 fn chain(value: usize, input: Option<usize>) {
     if let Some(value) = input
         && value > 0
@@ -25,7 +23,6 @@ fn chain(value: usize, input: Option<usize>) {
     }
     let _ = value;
 }
-
 fn imports(input: Option<usize>, ready: bool) {
     use crate::api::work;
     if ready {
@@ -41,7 +38,6 @@ fn imports(input: Option<usize>, ready: bool) {
         fn nested() { let _ = value; }
     }
 }
-
 fn inner_import(input: Option<fn()>) {
     if let Some(work) = input {
         work();
@@ -51,7 +47,6 @@ fn inner_import(input: Option<fn()>) {
         }
     }
 }
-
 fn alternatives(first: Option<usize>, second: Option<usize>, value: usize) {
     if let Some(value) = first {
         let _ = value;
@@ -61,7 +56,6 @@ fn alternatives(first: Option<usize>, second: Option<usize>, value: usize) {
         let _ = value;
     }
 }
-
 fn unsupported(input: Option<Point>, value: usize) {
     if let Some(Point { value }) = input {
         let _ = value;
@@ -70,7 +64,6 @@ fn unsupported(input: Option<Point>, value: usize) {
     }
     let _ = value;
 }
-
 struct Point { value: usize }
 fn macro_branch(input: Option<usize>) {
     if let Some(mut value) = input {
@@ -81,14 +74,12 @@ fn macro_branch(input: Option<usize>) {
         crate::api::work();
     }
 }
-
 fn constant_pattern(input: Option<()>) {
     use crate::api::UNIT;
     if let Some(UNIT) = input {
         let _ = UNIT;
     }
 }
-
 fn loop_barrier(input: Option<usize>) {
     if let Some(value) = input {
         while true { let _ = value; }
@@ -107,7 +98,6 @@ fn module_imported_constant(input: Option<()>) {
         let _ = IMPORTED;
     }
 }
-
 fn ambiguity(ready: bool) {
     if ready {
         use crate::api::work;
@@ -115,7 +105,6 @@ fn ambiguity(ready: bool) {
         work();
     }
 }
-
 fn pattern_competition(input: (usize, usize)) {
     if let (value, value) = input {
         let _ = value;

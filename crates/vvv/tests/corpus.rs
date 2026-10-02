@@ -1679,6 +1679,447 @@ fn rust_navigation_golden() {
 
 #[cfg(feature = "typescript")]
 #[test]
+fn ts_scope_owners_golden() {
+    golden(&Corpus {
+        name: "ts-scope-owners",
+        cases: &[
+            ("root-function", &["navigate", "src/module.ts:3:1"]),
+            ("root-import", &["navigate", "src/module.ts:4:29"]),
+            ("root-var", &["navigate", "src/module.ts:5:13"]),
+            ("root-lexical", &["navigate", "src/module.ts:7:1"]),
+            ("root-tdz", &["navigate", "src/module.ts:8:14"]),
+            ("nested-function", &["navigate", "src/module.ts:11:3"]),
+            ("overloads", &["navigate", "src/module.ts:15:3"]),
+            ("static-var", &["navigate", "src/module.ts:22:5"]),
+            ("static-lexical", &["navigate", "src/module.ts:25:5"]),
+            ("static-isolation", &["navigate", "src/module.ts:27:21"]),
+            ("namespace-function", &["navigate", "src/module.ts:30:3"]),
+            ("namespace-var", &["navigate", "src/module.ts:33:3"]),
+            ("assignment-object", &["navigate", "src/module.ts:37:17"]),
+            ("assignment-array", &["navigate", "src/module.ts:38:9"]),
+            ("local-interface", &["navigate", "src/module.ts:41:14"]),
+            ("class-self", &["navigate", "src/module.ts:44:27"]),
+            ("switch-function", &["navigate", "src/module.ts:49:5"]),
+            ("switch-lexical", &["navigate", "src/module.ts:53:5"]),
+            ("switch-same-case", &["navigate", "src/module.ts:51:27"]),
+            (
+                "wrapped-signature",
+                &["context", "src/module.ts:55:7", "--detail", "signature"],
+            ),
+            ("enum-member", &["navigate", "src/module.ts:57:34"]),
+            ("enum-forward", &["navigate", "src/module.ts:57:49"]),
+            ("enum-outer", &["navigate", "src/module.ts:58:1"]),
+            ("script-legacy", &["navigate", "src/script.ts:3:3"]),
+            ("script-strict", &["navigate", "src/script.ts:7:5"]),
+            ("script-root", &["navigate", "src/script.ts:9:1"]),
+            ("script-redeclarations", &["navigate", "src/script.ts:13:1"]),
+        ],
+        mutations: Vec::new,
+    });
+}
+
+#[cfg(feature = "typescript")]
+#[test]
+fn ts_callable_redeclarations_golden() {
+    golden(&Corpus {
+        name: "ts-callable-redeclarations",
+        cases: &[
+            ("shared-before", &["navigate", "src/scopes.ts:2:3"]),
+            ("shared-after", &["navigate", "src/scopes.ts:4:10"]),
+            ("separate", &["navigate", "src/scopes.ts:8:10"]),
+            ("combined", &["navigate", "src/scopes.ts:13:10"]),
+            ("lexical", &["navigate", "src/scopes.ts:18:10"]),
+            ("pattern", &["navigate", "src/scopes.ts:22:10"]),
+            ("pattern-default", &["navigate", "src/scopes.ts:26:10"]),
+            ("functions", &["navigate", "src/scopes.ts:30:10"]),
+        ],
+        mutations: Vec::new,
+    });
+}
+
+#[cfg(feature = "typescript")]
+#[test]
+fn ts_var_hoisting_golden() {
+    golden(&Corpus {
+        name: "ts-var-hoisting",
+        cases: &[
+            ("before", &["navigate", "src/scopes.ts:3:3"]),
+            ("default-import", &["navigate", "src/scopes.ts:2:30"]),
+            ("capture", &["navigate", "src/scopes.ts:5:25"]),
+            ("inner-shadow", &["navigate", "src/scopes.ts:6:20"]),
+            ("after-block", &["navigate", "src/scopes.ts:7:10"]),
+            ("pattern-before", &["navigate", "src/scopes.ts:10:3"]),
+            ("pattern-self", &["navigate", "src/scopes.ts:11:24"]),
+            ("pattern-forward", &["navigate", "src/scopes.ts:11:49"]),
+            ("pattern-key", &["navigate", "src/scopes.ts:11:32"]),
+            ("array-rest", &["navigate", "src/scopes.ts:12:19"]),
+            ("classic-before", &["navigate", "src/scopes.ts:16:3"]),
+            ("classic-header", &["navigate", "src/scopes.ts:17:23"]),
+            ("iteration-default", &["navigate", "src/scopes.ts:18:27"]),
+            ("iteration-body", &["navigate", "src/scopes.ts:18:49"]),
+            ("iteration-after", &["navigate", "src/scopes.ts:20:10"]),
+            ("duplicate", &["navigate", "src/scopes.ts:23:3"]),
+            ("inner-before", &["navigate", "src/scopes.ts:28:25"]),
+            ("outer-capture", &["navigate", "src/scopes.ts:29:10"]),
+            ("parameter-conflict", &["navigate", "src/scopes.ts:33:10"]),
+            ("function-conflict", &["navigate", "src/scopes.ts:38:10"]),
+            ("unsupported-pattern", &["navigate", "src/scopes.ts:43:10"]),
+            ("legacy-header", &["navigate", "src/scopes.ts:47:10"]),
+            ("await-after", &["navigate", "src/scopes.ts:51:10"]),
+            ("outside", &["navigate", "src/scopes.ts:53:1"]),
+            ("tsx", &["navigate", "src/view.tsx:2:3"]),
+        ],
+        mutations: Vec::new,
+    });
+}
+
+#[cfg(feature = "typescript")]
+#[test]
+fn ts_function_hoisting_golden() {
+    golden(&Corpus {
+        name: "ts-function-hoisting",
+        cases: &[
+            ("before", &["navigate", "src/scopes.ts:3:3"]),
+            ("parameter-default", &["navigate", "src/scopes.ts:2:34"]),
+            ("recursive", &["navigate", "src/scopes.ts:4:47"]),
+            ("capture", &["navigate", "src/scopes.ts:5:25"]),
+            ("inner-shadow", &["navigate", "src/scopes.ts:6:29"]),
+            ("after-inner", &["navigate", "src/scopes.ts:7:3"]),
+            ("generator-before", &["navigate", "src/scopes.ts:11:3"]),
+            ("generator-recursive", &["navigate", "src/scopes.ts:12:51"]),
+            ("arrow-before", &["navigate", "src/scopes.ts:15:3"]),
+            ("arrow-recursive", &["navigate", "src/scopes.ts:16:28"]),
+            ("method-before", &["navigate", "src/scopes.ts:21:5"]),
+            ("duplicate", &["navigate", "src/scopes.ts:27:3"]),
+            ("nested-before", &["navigate", "src/scopes.ts:32:3"]),
+            ("nested-inside", &["navigate", "src/scopes.ts:33:26"]),
+            ("nested-after", &["navigate", "src/scopes.ts:34:3"]),
+            ("overload", &["navigate", "src/scopes.ts:37:3"]),
+            ("var-barrier", &["navigate", "src/scopes.ts:42:3"]),
+            ("outside", &["navigate", "src/scopes.ts:46:1"]),
+            ("default-import", &["navigate", "src/scopes.ts:47:39"]),
+            ("default-body", &["navigate", "src/scopes.ts:48:3"]),
+            (
+                "signature",
+                &["context", "src/scopes.ts:3:3", "--detail", "signature"],
+            ),
+            ("tsx", &["navigate", "src/view.tsx:2:3"]),
+        ],
+        mutations: Vec::new,
+    });
+}
+
+#[cfg(feature = "typescript")]
+#[test]
+fn ts_callable_signatures_golden() {
+    golden(&Corpus {
+        name: "ts-callable-signatures",
+        cases: &[
+            (
+                "arrow",
+                &["context", "src/values.ts:2:14", "--detail", "signature"],
+            ),
+            (
+                "block",
+                &["context", "src/values.ts:3:14", "--detail", "signature"],
+            ),
+            (
+                "expression-value",
+                &["context", "src/values.ts:4:14", "--detail", "signature"],
+            ),
+            (
+                "expression-name",
+                &["context", "src/values.ts:5:18", "--detail", "signature"],
+            ),
+            (
+                "generator-value",
+                &["context", "src/values.ts:7:14", "--detail", "signature"],
+            ),
+            (
+                "generator-name",
+                &["context", "src/values.ts:8:22", "--detail", "signature"],
+            ),
+            (
+                "async",
+                &["context", "src/values.ts:10:14", "--detail", "signature"],
+            ),
+            (
+                "literal",
+                &["context", "src/values.ts:11:14", "--detail", "signature"],
+            ),
+            (
+                "wrapped",
+                &["context", "src/values.ts:12:14", "--detail", "signature"],
+            ),
+            (
+                "first",
+                &["context", "src/values.ts:13:12", "--detail", "signature"],
+            ),
+            (
+                "second",
+                &["context", "src/values.ts:13:46", "--detail", "signature"],
+            ),
+            (
+                "field",
+                &["context", "src/values.ts:15:3", "--detail", "signature"],
+            ),
+            (
+                "literal-field",
+                &["context", "src/values.ts:16:3", "--detail", "signature"],
+            ),
+            (
+                "local",
+                &["context", "src/values.ts:20:10", "--detail", "signature"],
+            ),
+            (
+                "tsx",
+                &["context", "src/view.tsx:1:14", "--detail", "signature"],
+            ),
+            (
+                "tsx-field",
+                &["context", "src/view.tsx:3:3", "--detail", "signature"],
+            ),
+        ],
+        mutations: Vec::new,
+    });
+}
+
+#[cfg(feature = "typescript")]
+#[test]
+fn ts_callable_scopes_golden() {
+    golden(&Corpus {
+        name: "ts-scopes",
+        cases: &[
+            ("single", &["navigate", "src/scopes.ts:2:27"]),
+            ("capture", &["navigate", "src/scopes.ts:2:35"]),
+            ("pattern", &["navigate", "src/scopes.ts:6:13"]),
+            ("inner-default", &["navigate", "src/scopes.ts:10:44"]),
+            ("default-earlier", &["navigate", "src/scopes.ts:10:60"]),
+            ("forward", &["navigate", "src/scopes.ts:14:29"]),
+            ("recursion", &["navigate", "src/scopes.ts:19:5"]),
+            ("recursion-default", &["navigate", "src/scopes.ts:18:45"]),
+            ("name-no-leak", &["navigate", "src/scopes.ts:22:3"]),
+            ("name-shadow", &["navigate", "src/scopes.ts:26:49"]),
+            ("generator", &["navigate", "src/scopes.ts:31:9"]),
+            ("generator-local", &["navigate", "src/scopes.ts:31:22"]),
+            ("generator-expression", &["navigate", "src/scopes.ts:35:11"]),
+            ("async", &["navigate", "src/scopes.ts:40:35"]),
+            ("catch-pattern", &["navigate", "src/scopes.ts:46:5"]),
+            ("catch-local", &["navigate", "src/scopes.ts:46:31"]),
+            ("catch-default", &["navigate", "src/scopes.ts:44:83"]),
+            ("catch-no-leak", &["navigate", "src/scopes.ts:48:3"]),
+            ("simple-catch", &["navigate", "src/scopes.ts:52:34"]),
+            ("after-catch", &["navigate", "src/scopes.ts:53:10"]),
+            ("optional-catch", &["navigate", "src/scopes.ts:56:26"]),
+            ("catch-forward", &["navigate", "src/scopes.ts:60:26"]),
+            ("isolated-var", &["navigate", "src/scopes.ts:65:10"]),
+            ("invalid", &["navigate", "src/scopes.ts:68:56"]),
+            ("invalid-after", &["navigate", "src/scopes.ts:69:10"]),
+            ("duplicates", &["navigate", "src/scopes.ts:72:38"]),
+            ("generic-value", &["navigate", "src/scopes.ts:80:40"]),
+            ("generic-type", &["navigate", "src/scopes.ts:80:35"]),
+            ("tsx", &["navigate", "src/view.tsx:3:50"]),
+            (
+                "references",
+                &[
+                    "relationships",
+                    "references",
+                    "src/scopes.ts:2:27",
+                    "--path",
+                    "src/scopes.ts",
+                    "--max-lookups",
+                    "100",
+                ],
+            ),
+        ],
+        mutations: Vec::new,
+    });
+}
+
+#[cfg(feature = "typescript")]
+#[test]
+fn ts_loop_bindings_golden() {
+    golden(&Corpus {
+        name: "ts-loops",
+        cases: &[
+            ("classic-condition", &["navigate", "src/loops.ts:2:41"]),
+            ("classic-update", &["navigate", "src/loops.ts:2:55"]),
+            ("earlier-declarator", &["navigate", "src/loops.ts:2:34"]),
+            ("classic-body", &["navigate", "src/loops.ts:3:5"]),
+            ("inner-shadow", &["navigate", "src/loops.ts:4:28"]),
+            ("classic-no-leak", &["navigate", "src/loops.ts:6:3"]),
+            ("parameter-after", &["navigate", "src/loops.ts:7:10"]),
+            ("self", &["navigate", "src/loops.ts:10:20"]),
+            ("self-body", &["navigate", "src/loops.ts:10:45"]),
+            ("self-after", &["navigate", "src/loops.ts:11:10"]),
+            ("forward", &["navigate", "src/loops.ts:14:20"]),
+            ("each", &["navigate", "src/loops.ts:19:5"]),
+            ("each-default", &["navigate", "src/loops.ts:18:56"]),
+            ("each-rest", &["navigate", "src/loops.ts:19:22"]),
+            ("label", &["navigate", "src/loops.ts:18:16"]),
+            ("each-no-leak", &["navigate", "src/loops.ts:21:3"]),
+            ("iterable-tdz", &["navigate", "src/loops.ts:25:21"]),
+            ("iterable-body", &["navigate", "src/loops.ts:25:30"]),
+            ("iterable-after", &["navigate", "src/loops.ts:26:10"]),
+            ("keys-body", &["navigate", "src/loops.ts:29:28"]),
+            ("keys-source", &["navigate", "src/loops.ts:29:21"]),
+            ("awaited", &["navigate", "src/loops.ts:33:54"]),
+            ("duplicate", &["navigate", "src/loops.ts:37:37"]),
+            ("invalid", &["navigate", "src/loops.ts:40:48"]),
+            ("invalid-after", &["navigate", "src/loops.ts:41:10"]),
+            ("var-after", &["navigate", "src/loops.ts:45:10"]),
+            ("assignment", &["navigate", "src/loops.ts:48:29"]),
+            ("assignment-after", &["navigate", "src/loops.ts:49:10"]),
+            ("empty-body", &["navigate", "src/loops.ts:52:14"]),
+            ("tsx", &["navigate", "src/view.tsx:3:46"]),
+            ("malformed-header", &["navigate", "src/loops.ts:56:46"]),
+            ("malformed-after", &["navigate", "src/loops.ts:57:10"]),
+            ("initialized-var-after", &["navigate", "src/loops.ts:61:10"]),
+        ],
+        mutations: Vec::new,
+    });
+}
+
+#[cfg(feature = "typescript")]
+#[test]
+fn ts_local_bindings_golden() {
+    golden(&Corpus {
+        name: "ts-locals",
+        cases: &[
+            ("parameter", &["navigate", "src/locals.ts:6:11"]),
+            ("const", &["navigate", "src/locals.ts:6:18"]),
+            (
+                "let-uninitialized-value",
+                &["navigate", "src/locals.ts:6:25"],
+            ),
+            ("assignment", &["navigate", "src/locals.ts:5:10"]),
+            ("before", &["navigate", "src/locals.ts:9:3"]),
+            ("after", &["navigate", "src/locals.ts:11:10"]),
+            ("self", &["navigate", "src/locals.ts:14:17"]),
+            ("self-after", &["navigate", "src/locals.ts:15:10"]),
+            ("nested", &["navigate", "src/locals.ts:21:5"]),
+            ("outer", &["navigate", "src/locals.ts:23:10"]),
+            ("inner-wins", &["navigate", "src/locals.ts:28:5"]),
+            ("outer-after", &["navigate", "src/locals.ts:31:10"]),
+            ("renamed", &["navigate", "src/locals.ts:36:11"]),
+            ("nested-pattern", &["navigate", "src/locals.ts:36:20"]),
+            ("shorthand-default", &["navigate", "src/locals.ts:36:27"]),
+            ("object-rest", &["navigate", "src/locals.ts:36:34"]),
+            ("array-default", &["navigate", "src/locals.ts:36:40"]),
+            ("array-rest", &["navigate", "src/locals.ts:36:46"]),
+            ("label", &["navigate", "src/locals.ts:34:11"]),
+            ("earlier-default", &["navigate", "src/locals.ts:39:34"]),
+            ("earlier-key", &["navigate", "src/locals.ts:39:42"]),
+            ("forward-default", &["navigate", "src/locals.ts:43:19"]),
+            ("whole-initializer", &["navigate", "src/locals.ts:47:21"]),
+            ("multiple", &["navigate", "src/locals.ts:51:31"]),
+            ("forward-declarator", &["navigate", "src/locals.ts:55:15"]),
+            ("duplicate", &["navigate", "src/locals.ts:64:10"]),
+            ("unsupported-peer", &["navigate", "src/locals.ts:69:10"]),
+            ("var-barrier", &["navigate", "src/locals.ts:73:10"]),
+            ("loop-barrier", &["navigate", "src/locals.ts:77:10"]),
+            ("tsx-parameter", &["navigate", "src/methods.tsx:4:22"]),
+            ("tsx-local", &["navigate", "src/methods.tsx:4:29"]),
+            ("tsx-array", &["navigate", "src/methods.tsx:4:38"]),
+            ("tsx-rest", &["navigate", "src/methods.tsx:4:45"]),
+            ("tsx-default", &["navigate", "src/methods.tsx:3:30"]),
+            (
+                "indirect-callee",
+                &["relationships", "callees", "src/locals.ts:58:17"],
+            ),
+            (
+                "local-references",
+                &[
+                    "relationships",
+                    "references",
+                    "src/locals.ts:6:18",
+                    "--path",
+                    "src/locals.ts",
+                    "--max-lookups",
+                    "100",
+                ],
+            ),
+            (
+                "signature",
+                &["context", "src/locals.ts:79:17", "--detail", "signature"],
+            ),
+        ],
+        mutations: Vec::new,
+    });
+}
+
+#[cfg(feature = "typescript")]
+#[test]
+fn ts_parameter_patterns_golden() {
+    golden(&Corpus {
+        name: "ts-parameters",
+        cases: &[
+            ("renamed", &["navigate", "src/parameters.ts:3:11"]),
+            ("nested", &["navigate", "src/parameters.ts:3:20"]),
+            ("shorthand", &["navigate", "src/parameters.ts:3:27"]),
+            ("default-binding", &["navigate", "src/parameters.ts:3:34"]),
+            ("object-rest", &["navigate", "src/parameters.ts:3:41"]),
+            ("array-default", &["navigate", "src/parameters.ts:3:47"]),
+            ("array-rest", &["navigate", "src/parameters.ts:3:53"]),
+            ("label", &["navigate", "src/parameters.ts:2:26"]),
+            ("declaration", &["navigate", "src/parameters.ts:2:64"]),
+            ("default-import", &["navigate", "src/parameters.ts:5:35"]),
+            ("earlier-field", &["navigate", "src/parameters.ts:5:50"]),
+            ("earlier-parameter", &["navigate", "src/parameters.ts:5:67"]),
+            ("forward-default", &["navigate", "src/parameters.ts:8:35"]),
+            ("self-default", &["navigate", "src/parameters.ts:11:32"]),
+            ("computed-import", &["navigate", "src/parameters.ts:14:29"]),
+            ("computed-earlier", &["navigate", "src/parameters.ts:14:47"]),
+            ("whole-default", &["navigate", "src/parameters.ts:17:42"]),
+            ("whole-body", &["navigate", "src/parameters.ts:18:10"]),
+            ("duplicate", &["navigate", "src/parameters.ts:24:10"]),
+            ("unsupported-peer", &["navigate", "src/parameters.ts:27:10"]),
+            ("local-barrier", &["navigate", "src/parameters.ts:31:10"]),
+            (
+                "anonymous-barrier",
+                &["navigate", "src/parameters.ts:34:16"],
+            ),
+            ("tsx-heading", &["navigate", "src/methods.tsx:4:22"]),
+            ("tsx-array", &["navigate", "src/methods.tsx:4:31"]),
+            ("tsx-rest", &["navigate", "src/methods.tsx:4:38"]),
+            ("tsx-later-default", &["navigate", "src/methods.tsx:3:72"]),
+            ("nested-array-rest", &["navigate", "src/methods.tsx:7:12"]),
+            (
+                "duplicate-selected",
+                &[
+                    "navigate",
+                    "src/parameters.ts:24:10",
+                    "--select",
+                    "0d2839d288e7",
+                ],
+            ),
+            (
+                "parameter-references",
+                &[
+                    "relationships",
+                    "references",
+                    "src/parameters.ts:3:11",
+                    "--path",
+                    "src/parameters.ts",
+                    "--max-lookups",
+                    "100",
+                ],
+            ),
+            (
+                "signature",
+                &["context", "src/parameters.ts:2:17", "--detail", "signature"],
+            ),
+            (
+                "indirect-callee",
+                &["relationships", "callees", "src/parameters.ts:20:17"],
+            ),
+        ],
+        mutations: Vec::new,
+    });
+}
+
+#[cfg(feature = "typescript")]
+#[test]
 fn ts_navigation_golden() {
     golden(&Corpus {
         name: "ts-navigation",

@@ -1,0 +1,11 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+src/scopes.ts
+  1 ●   72:22   const callback = ([same, same]) => same;
+  2 ●   72:28   const callback = ([same, same]) => same;
+--- stderr ---
+Several definitions match; use --select with a row number or match id

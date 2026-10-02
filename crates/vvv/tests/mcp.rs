@@ -1543,3 +1543,725 @@ async fn codex_client_resolves_pattern_constants_constructors_and_reexports() {
     );
     client.close().await;
 }
+
+#[cfg(feature = "typescript")]
+#[tokio::test]
+async fn codex_client_navigates_ts_parameter_patterns_and_preserves_initialization_order() {
+    let fixture = Fixture::new();
+    std::fs::write(
+        fixture.root.join("package.json"),
+        "{\"name\":\"parameter-probe\",\"version\":\"1.0.0\"}",
+    )
+    .unwrap();
+    let parameters = include_str!("corpus/ts-parameters/src/parameters.ts");
+    let methods = include_str!("corpus/ts-parameters/src/methods.tsx");
+    for (file, source) in [
+        (
+            "origin.ts",
+            include_str!("corpus/ts-parameters/src/origin.ts"),
+        ),
+        ("parameters.ts", parameters),
+        ("methods.tsx", methods),
+    ] {
+        std::fs::write(fixture.root.join("src").join(file), source).unwrap();
+    }
+    let client = Client::new(&fixture.root).await;
+    let origin = |path: &str, source: &str, line: usize, token: &str, occurrence: usize| {
+        let column = source
+            .lines()
+            .nth(line)
+            .unwrap()
+            .match_indices(token)
+            .nth(occurrence)
+            .unwrap()
+            .0;
+        json!({"kind":"position", "path":path, "position":{"line":line,"column":column}})
+    };
+    for (line, token, occurrence, target_kind, target_path) in [
+        (2, "renamed", 0, "parameter", "src/parameters.ts"),
+        (2, "tail", 0, "parameter", "src/parameters.ts"),
+        (4, "seed", 0, "variable", "src/origin.ts"),
+        (4, "first", 1, "parameter", "src/parameters.ts"),
+        (4, "second", 1, "parameter", "src/parameters.ts"),
+        (13, "selected", 1, "parameter", "src/parameters.ts"),
+    ] {
+        let result = client
+            .call(
+                "vvv_navigate",
+                json!({"origin":origin("src/parameters.ts", parameters, line, token, occurrence)}),
+            )
+            .await;
+        assert_eq!(result["result"]["outcome"], "resolved", "{result}");
+        assert_eq!(result["result"]["target"]["kind"], target_kind);
+        assert_eq!(
+            result["result"]["target"]["declaration"]["path"],
+            target_path
+        );
+    }
+    for (line, token, occurrence) in [
+        (7, "later", 0),
+        (10, "first", 1),
+        (16, "first", 1),
+        (1, "original", 0),
+        (26, "supported", 0),
+    ] {
+        let result = client
+            .call(
+                "vvv_navigate",
+                json!({"origin":origin("src/parameters.ts", parameters, line, token, occurrence)}),
+            )
+            .await;
+        assert_eq!(result["result"]["outcome"], "unavailable", "{result}");
+        assert_eq!(result["result"]["reason"], "unsupported_context");
+    }
+    let result = client
+        .call(
+            "vvv_navigate",
+            json!({"origin":origin("src/methods.tsx", methods, 3, "heading", 0)}),
+        )
+        .await;
+    assert_eq!(result["result"]["outcome"], "resolved", "{result}");
+    assert_eq!(result["result"]["target"]["kind"], "parameter");
+
+    let duplicate_origin = origin("src/parameters.ts", parameters, 23, "same", 0);
+    let result = client
+        .call("vvv_navigate", json!({"origin":duplicate_origin}))
+        .await;
+    assert_eq!(result["result"]["outcome"], "ambiguous", "{result}");
+    let candidates = result["result"]["candidates"].as_array().unwrap();
+    assert_eq!(candidates.len(), 2);
+    let selected = client
+        .call(
+            "vvv_navigate",
+            json!({"origin":duplicate_origin, "selection":{"ids":[candidates[1]["id"]]}}),
+        )
+        .await;
+    assert_eq!(selected["result"]["outcome"], "resolved", "{selected}");
+    assert_eq!(selected["result"]["target"], candidates[1]["target"]);
+
+    let callable = origin("src/parameters.ts", parameters, 19, "callable", 0);
+    let result = client
+        .call(
+            "vvv_relationships",
+            json!({"origin":callable,"kind":"callees"}),
+        )
+        .await;
+    assert_eq!(
+        result["result"]["items"][0]["outcome"], "indirect",
+        "{result}"
+    );
+    assert_eq!(result["result"]["items"][0]["binding"]["kind"], "parameter");
+    let context = client.call("vvv_context", json!({"origin":origin("src/parameters.ts", parameters, 1, "object", 0), "detail":"signature"})).await;
+    assert_eq!(context["result"]["outcome"], "resolved", "{context}");
+    assert!(
+        context["result"]["items"][0]["text"]
+            .as_str()
+            .unwrap()
+            .contains("original: renamed")
+    );
+    client.close().await;
+}
+
+#[cfg(feature = "typescript")]
+#[tokio::test]
+async fn typescript_block_bindings_preserve_initialization_and_inner_precedence() {
+    let fixture = Fixture::new();
+    std::fs::write(fixture.root.join("package.json"), "{}").unwrap();
+    let source = include_str!("corpus/ts-locals/src/locals.ts");
+    for (file, text) in [
+        ("locals.ts", source),
+        ("origin.ts", include_str!("corpus/ts-locals/src/origin.ts")),
+        (
+            "methods.tsx",
+            include_str!("corpus/ts-locals/src/methods.tsx"),
+        ),
+    ] {
+        std::fs::write(fixture.root.join("src").join(file), text).unwrap();
+    }
+    let client = Client::new(&fixture.root).await;
+    for (line, column, outcome) in [
+        (5, 17, "resolved"),
+        (8, 2, "unavailable"),
+        (13, 16, "unavailable"),
+        (27, 4, "resolved"),
+        (38, 33, "resolved"),
+        (42, 18, "unavailable"),
+        (46, 20, "unavailable"),
+        (50, 30, "resolved"),
+        (54, 14, "unavailable"),
+        (63, 9, "ambiguous"),
+        (68, 9, "unavailable"),
+        (72, 9, "resolved"),
+        (76, 9, "resolved"),
+    ] {
+        let result = client.call("vvv_navigate", json!({"origin":{"kind":"position","path":"src/locals.ts","position":{"line":line,"column":column}}})).await;
+        assert_eq!(result["result"]["outcome"], outcome, "{result}");
+        if outcome == "unavailable" {
+            assert_eq!(result["result"]["reason"], "unsupported_context");
+        }
+    }
+    let result = client.call("vvv_relationships", json!({"origin":{"kind":"position","path":"src/locals.ts","position":{"line":57,"column":16}},"kind":"callees"})).await;
+    assert_eq!(
+        result["result"]["items"][0]["outcome"], "indirect",
+        "{result}"
+    );
+    assert_eq!(result["result"]["items"][0]["binding"]["kind"], "variable");
+    client.close().await;
+}
+
+#[cfg(feature = "typescript")]
+#[tokio::test]
+async fn typescript_loop_headers_preserve_scope_initialization_and_selection() {
+    let fixture = Fixture::new();
+    std::fs::write(fixture.root.join("package.json"), "{}").unwrap();
+    std::fs::write(
+        fixture.root.join("src/loops.ts"),
+        include_str!("corpus/ts-loops/src/loops.ts"),
+    )
+    .unwrap();
+    let client = Client::new(&fixture.root).await;
+    for (line, column, outcome) in [
+        (1, 40, "resolved"),
+        (9, 19, "unavailable"),
+        (9, 44, "resolved"),
+        (10, 9, "resolved"),
+        (17, 55, "resolved"),
+        (24, 20, "unavailable"),
+        (24, 29, "resolved"),
+        (25, 9, "resolved"),
+        (32, 53, "resolved"),
+        (39, 47, "unavailable"),
+        (40, 9, "resolved"),
+        (44, 9, "resolved"),
+    ] {
+        let result = client.call("vvv_navigate", json!({"origin":{"kind":"position","path":"src/loops.ts","position":{"line":line,"column":column}}})).await;
+        assert_eq!(result["result"]["outcome"], outcome, "{result}");
+        if outcome == "unavailable" {
+            assert_eq!(result["result"]["reason"], "unsupported_context");
+        }
+    }
+    let origin =
+        json!({"kind":"position","path":"src/loops.ts","position":{"line":36,"column":36}});
+    let result = client.call("vvv_navigate", json!({"origin":origin})).await;
+    assert_eq!(result["result"]["outcome"], "ambiguous", "{result}");
+    let candidates = result["result"]["candidates"].as_array().unwrap();
+    assert_eq!(candidates.len(), 2);
+    let selected = client
+        .call(
+            "vvv_navigate",
+            json!({"origin":origin,"selection":{"ids":[candidates[1]["id"]]}}),
+        )
+        .await;
+    assert_eq!(selected["result"]["outcome"], "resolved", "{selected}");
+    assert_eq!(selected["result"]["target"], candidates[1]["target"]);
+    client.close().await;
+}
+
+#[cfg(feature = "typescript")]
+#[tokio::test]
+async fn typescript_callable_and_catch_scopes_preserve_owners_initialization_and_selection() {
+    let fixture = Fixture::new();
+    std::fs::write(fixture.root.join("package.json"), "{}").unwrap();
+    let source = include_str!("corpus/ts-scopes/src/scopes.ts");
+    std::fs::write(fixture.root.join("src/scopes.ts"), source).unwrap();
+    let client = Client::new(&fixture.root).await;
+    let origin = |line: usize, token: &str, occurrence: usize| {
+        let column = source
+            .lines()
+            .nth(line)
+            .unwrap()
+            .match_indices(token)
+            .nth(occurrence)
+            .unwrap()
+            .0;
+        json!({"kind":"position","path":"src/scopes.ts","position":{"line":line,"column":column}})
+    };
+    for (line, token, occurrence, kind) in [
+        (1, "value", 1, "parameter"),
+        (1, "outer", 0, "parameter"),
+        (9, "value", 2, "parameter"),
+        (18, "recurse", 0, "function"),
+        (25, "same", 2, "parameter"),
+        (30, "first", 0, "parameter"),
+        (34, "recur", 0, "function"),
+        (45, "value", 0, "variable"),
+        (51, "error", 2, "variable"),
+        (52, "error", 0, "parameter"),
+        (64, "outer", 0, "parameter"),
+    ] {
+        let result = client
+            .call(
+                "vvv_navigate",
+                json!({"origin":origin(line,token,occurrence)}),
+            )
+            .await;
+        assert_eq!(result["result"]["outcome"], "resolved", "{result}");
+        assert_eq!(result["result"]["target"]["kind"], kind, "{result}");
+    }
+    for (line, token, occurrence) in [(13, "later", 0), (59, "later", 0), (67, "good", 1)] {
+        let result = client
+            .call(
+                "vvv_navigate",
+                json!({"origin":origin(line,token,occurrence)}),
+            )
+            .await;
+        assert_eq!(result["result"]["outcome"], "unavailable", "{result}");
+        assert_eq!(result["result"]["reason"], "unsupported_context");
+    }
+    let duplicate = origin(71, "same", 2);
+    let result = client
+        .call("vvv_navigate", json!({"origin":duplicate}))
+        .await;
+    assert_eq!(result["result"]["outcome"], "ambiguous", "{result}");
+    let candidates = result["result"]["candidates"].as_array().unwrap();
+    assert_eq!(candidates.len(), 2);
+    let selected = client
+        .call(
+            "vvv_navigate",
+            json!({"origin":duplicate,"selection":{"ids":[candidates[1]["id"]]}}),
+        )
+        .await;
+    assert_eq!(selected["result"]["outcome"], "resolved", "{selected}");
+    assert_eq!(selected["result"]["target"], candidates[1]["target"]);
+    let result = client
+        .call(
+            "vvv_context",
+            json!({"origin":origin(28,"generator",0),"detail":"signature"}),
+        )
+        .await;
+    assert_eq!(result["result"]["outcome"], "resolved", "{result}");
+    let result = client.call("vvv_relationships", json!({"origin":origin(1,"value",1),"kind":"references","scope":{"paths":["src/scopes.ts"]},"budget":{"max_files":2,"max_lookups":100,"max_items":10,"max_bytes":8000}})).await;
+    let items = result["result"]["items"].as_array().unwrap();
+    assert_eq!(items.len(), 1, "{result}");
+    assert_eq!(items[0]["outcome"], "confirmed");
+    assert_eq!(items[0]["caller"], serde_json::Value::Null);
+    assert_eq!(result["result"]["coverage"]["scan_complete"], true);
+    client.close().await;
+}
+
+#[cfg(feature = "typescript")]
+#[tokio::test]
+async fn callable_value_signatures_preserve_headers_and_offer_complete_body_expansion() {
+    let fixture = Fixture::new();
+    std::fs::write(fixture.root.join("package.json"), "{}").unwrap();
+    let source = include_str!("corpus/ts-callable-signatures/src/values.ts");
+    std::fs::write(fixture.root.join("src/values.ts"), source).unwrap();
+    let client = Client::new(&fixture.root).await;
+    let origin = |line: usize, token: &str| {
+        let column = source.lines().nth(line).unwrap().find(token).unwrap();
+        json!({"kind":"position","path":"src/values.ts","position":{"line":line,"column":column}})
+    };
+    for (line, token, expected) in [
+        (
+            1,
+            "arrow",
+            "/** Callback documentation. */\nexport const arrow = <T>(value: T): T =>",
+        ),
+        (11, "wrapped", "export const wrapped = ((value: number) =>"),
+        (4, "recurse", "function recurse(value: number): number"),
+        (7, "recur", "function* recur(value: number)"),
+        (12, "second", "second = function other()"),
+        (14, "handler", "handler = ({ title }: { title: string }) =>"),
+        (19, "local", "local = (value: number): number =>"),
+    ] {
+        let result = client
+            .call(
+                "vvv_context",
+                json!({"origin":origin(line,token),"detail":"signature"}),
+            )
+            .await;
+        assert_eq!(result["result"]["outcome"], "resolved", "{result}");
+        let item = &result["result"]["items"][0];
+        assert_eq!(item["signature"]["outcome"], "available");
+        assert_eq!(item["text"], expected);
+        let expanded = client
+            .call(
+                "vvv_expand",
+                json!({"cursor":item["body_expansion"],"max_bytes":16000}),
+            )
+            .await;
+        assert!(
+            expanded["result"]["text"].as_str().unwrap().len() > expected.len(),
+            "{expanded}"
+        );
+    }
+    for (line, token) in [(10, "literal"), (15, "literal")] {
+        let result = client
+            .call(
+                "vvv_context",
+                json!({"origin":origin(line,token),"detail":"signature"}),
+            )
+            .await;
+        assert_eq!(
+            result["result"]["items"][0]["signature"]["outcome"], "unsupported",
+            "{result}"
+        );
+    }
+    client.close().await;
+}
+
+#[cfg(feature = "typescript")]
+#[tokio::test]
+async fn hoisted_functions_resolve_forward_uses_recursion_captures_and_explicit_selection() {
+    let fixture = Fixture::new();
+    std::fs::write(fixture.root.join("package.json"), "{}").unwrap();
+    let source = include_str!("corpus/ts-function-hoisting/src/scopes.ts");
+    std::fs::write(fixture.root.join("src/scopes.ts"), source).unwrap();
+    std::fs::write(
+        fixture.root.join("src/helpers.ts"),
+        include_str!("corpus/ts-function-hoisting/src/helpers.ts"),
+    )
+    .unwrap();
+    let client = Client::new(&fixture.root).await;
+    let origin = |line: usize, token: &str, occurrence: usize| {
+        let column = source
+            .lines()
+            .nth(line)
+            .unwrap()
+            .match_indices(token)
+            .nth(occurrence)
+            .unwrap()
+            .0;
+        json!({"kind":"position","path":"src/scopes.ts","position":{"line":line,"column":column}})
+    };
+    let mut helper = None;
+    for (line, token, occurrence) in [
+        (2, "helper", 0),
+        (3, "helper", 1),
+        (4, "helper", 0),
+        (6, "helper", 0),
+        (10, "recur", 0),
+        (11, "recur", 1),
+        (14, "work", 0),
+        (20, "work", 0),
+    ] {
+        let result = client
+            .call(
+                "vvv_navigate",
+                json!({"origin":origin(line,token,occurrence)}),
+            )
+            .await;
+        assert_eq!(result["result"]["outcome"], "resolved", "{result}");
+        assert_eq!(result["result"]["target"]["kind"], "function");
+        if token == "helper" {
+            let target = result["result"]["target"].clone();
+            assert_eq!(helper.get_or_insert(target.clone()), &target);
+        }
+    }
+    let context = client
+        .call(
+            "vvv_context",
+            json!({"origin":origin(2,"helper",0),"detail":"signature"}),
+        )
+        .await;
+    assert_eq!(
+        context["result"]["items"][0]["text"],
+        "function helper(value = 1)"
+    );
+    let duplicate = origin(26, "same", 0);
+    let result = client
+        .call("vvv_navigate", json!({"origin":duplicate}))
+        .await;
+    assert_eq!(result["result"]["outcome"], "ambiguous");
+    let candidates = result["result"]["candidates"].as_array().unwrap();
+    assert_eq!(candidates.len(), 2);
+    let selected = client
+        .call(
+            "vvv_navigate",
+            json!({"origin":duplicate,"selection":{"ids":[candidates[1]["id"]]}}),
+        )
+        .await;
+    assert_eq!(selected["result"]["target"], candidates[1]["target"]);
+    let result = client
+        .call("vvv_navigate", json!({"origin":origin(1,"helper",1)}))
+        .await;
+    assert_eq!(result["result"]["reason"], "unsupported_context");
+    for line in [31, 33] {
+        let result = client
+            .call("vvv_navigate", json!({"origin":origin(line,"helper",0)}))
+            .await;
+        assert_eq!(
+            result["result"]["target"]["declaration"]["path"],
+            "src/helpers.ts"
+        );
+    }
+    let result = client
+        .call("vvv_navigate", json!({"origin":origin(32,"helper",1)}))
+        .await;
+    assert_eq!(result["result"]["outcome"], "resolved");
+    assert_eq!(
+        result["result"]["target"]["declaration"]["path"],
+        "src/scopes.ts"
+    );
+    let result = client
+        .call("vvv_navigate", json!({"origin":origin(36,"helper",0)}))
+        .await;
+    assert_eq!(result["result"]["outcome"], "ambiguous");
+    assert_eq!(result["result"]["candidates"].as_array().unwrap().len(), 2);
+    for line in [45, 46] {
+        let result = client
+            .call("vvv_navigate", json!({"origin":origin(line,"helper",0)}))
+            .await;
+        assert_eq!(result["result"]["outcome"], "resolved", "{result}");
+        assert_eq!(
+            result["result"]["target"]["declaration"]["path"],
+            "src/helpers.ts"
+        );
+    }
+    client.close().await;
+}
+
+#[cfg(feature = "typescript")]
+#[tokio::test]
+async fn var_hoisting_resolves_body_names_and_keeps_conflicts_and_defaults_explicit() {
+    let fixture = Fixture::new();
+    std::fs::write(fixture.root.join("package.json"), "{}").unwrap();
+    let source = include_str!("corpus/ts-var-hoisting/src/scopes.ts");
+    for (path, text) in [
+        ("src/scopes.ts", source),
+        (
+            "src/helpers.ts",
+            include_str!("corpus/ts-var-hoisting/src/helpers.ts"),
+        ),
+        (
+            "src/view.tsx",
+            include_str!("corpus/ts-var-hoisting/src/view.tsx"),
+        ),
+    ] {
+        std::fs::write(fixture.root.join(path), text).unwrap();
+    }
+    let client = Client::new(&fixture.root).await;
+    let origin = |line: usize, token: &str, occurrence: usize| {
+        let column = source
+            .lines()
+            .nth(line)
+            .unwrap()
+            .match_indices(token)
+            .nth(occurrence)
+            .unwrap()
+            .0;
+        json!({"kind":"position","path":"src/scopes.ts","position":{"line":line,"column":column}})
+    };
+    let mut outer = None;
+    for (line, token, occurrence) in [
+        (2, "outer", 0),
+        (4, "outer", 0),
+        (6, "outer", 0),
+        (9, "first", 0),
+        (10, "first", 1),
+        (10, "tail", 0),
+        (15, "index", 0),
+        (17, "item", 1),
+        (19, "item", 0),
+        (27, "local", 0),
+        (50, "item", 0),
+    ] {
+        let result = client
+            .call(
+                "vvv_navigate",
+                json!({"origin":origin(line,token,occurrence)}),
+            )
+            .await;
+        assert_eq!(result["result"]["outcome"], "resolved", "{result}");
+        assert_eq!(result["result"]["target"]["kind"], "variable");
+        if token == "outer" {
+            let target = result["result"]["target"].clone();
+            assert_eq!(outer.get_or_insert(target.clone()), &target);
+        }
+    }
+    for line in [1, 52] {
+        let result = client
+            .call("vvv_navigate", json!({"origin":origin(line,"outer",0)}))
+            .await;
+        assert_eq!(result["result"]["outcome"], "resolved", "{result}");
+        assert_eq!(
+            result["result"]["target"]["declaration"]["path"],
+            "src/helpers.ts"
+        );
+    }
+    let duplicate = origin(22, "value", 0);
+    let result = client
+        .call("vvv_navigate", json!({"origin":duplicate}))
+        .await;
+    assert_eq!(result["result"]["outcome"], "ambiguous");
+    let candidates = result["result"]["candidates"].as_array().unwrap();
+    assert_eq!(candidates.len(), 2);
+    let selected = client
+        .call(
+            "vvv_navigate",
+            json!({"origin":duplicate,"selection":{"ids":[candidates[1]["id"]]}}),
+        )
+        .await;
+    assert_eq!(selected["result"]["target"], candidates[1]["target"]);
+    for (line, token) in [(32, "value"), (37, "helper")] {
+        let request = origin(line, token, 0);
+        let result = client.call("vvv_navigate", json!({"origin":request})).await;
+        assert_eq!(result["result"]["outcome"], "ambiguous", "{result}");
+        let candidates = result["result"]["candidates"].as_array().unwrap();
+        assert_eq!(candidates.len(), 2);
+        let selected = client
+            .call(
+                "vvv_navigate",
+                json!({"origin":request,"selection":{"ids":[candidates[0]["id"]]}}),
+            )
+            .await;
+        assert_eq!(selected["result"]["target"], candidates[0]["target"]);
+    }
+    for (line, token) in [(42, "good"), (46, "entries")] {
+        let result = client
+            .call("vvv_navigate", json!({"origin":origin(line,token,0)}))
+            .await;
+        assert_eq!(result["result"]["outcome"], "unavailable", "{result}");
+        assert_eq!(result["result"]["reason"], "unsupported_context");
+    }
+    let result = client.call("vvv_navigate", json!({"origin":{"kind":"position","path":"src/view.tsx","position":{"line":1,"column":2}}})).await;
+    assert_eq!(result["result"]["outcome"], "resolved", "{result}");
+    client.close().await;
+}
+
+#[cfg(feature = "typescript")]
+#[tokio::test]
+async fn callable_parameter_expressions_keep_body_redeclarations_in_separate_environments() {
+    let fixture = Fixture::new();
+    std::fs::write(fixture.root.join("package.json"), "{}").unwrap();
+    std::fs::write(
+        fixture.root.join("src/scopes.ts"),
+        include_str!("corpus/ts-callable-redeclarations/src/scopes.ts"),
+    )
+    .unwrap();
+    let client = Client::new(&fixture.root).await;
+    for (line, candidates) in [(1, 2), (7, 1), (12, 3), (21, 2), (25, 1), (29, 2)] {
+        let result = client.call("vvv_navigate",json!({"origin":{"kind":"position","path":"src/scopes.ts","position":{"line":line,"column":if line==1 {2} else {9}}}})).await;
+        if candidates == 1 {
+            assert_eq!(result["result"]["outcome"], "resolved", "{result}");
+            assert_eq!(result["result"]["target"]["kind"], "variable");
+        } else {
+            assert_eq!(result["result"]["outcome"], "ambiguous", "{result}");
+            assert_eq!(
+                result["result"]["candidates"].as_array().unwrap().len(),
+                candidates
+            );
+        }
+    }
+    client.close().await;
+}
+
+#[cfg(feature = "typescript")]
+#[tokio::test]
+async fn typescript_scope_owners_compose_navigation_selection_context_and_calls() {
+    let fixture = Fixture::new();
+    std::fs::write(fixture.root.join("package.json"), "{}").unwrap();
+    let source = include_str!("corpus/ts-scope-owners/src/module.ts");
+    std::fs::write(fixture.root.join("src/module.ts"), source).unwrap();
+    std::fs::write(
+        fixture.root.join("src/peer.ts"),
+        include_str!("corpus/ts-scope-owners/src/peer.ts"),
+    )
+    .unwrap();
+    std::fs::write(
+        fixture.root.join("src/script.ts"),
+        include_str!("corpus/ts-scope-owners/src/script.ts"),
+    )
+    .unwrap();
+    let client = Client::new(&fixture.root).await;
+    let origin = |line: usize, token: &str, occurrence: usize| {
+        let column = source
+            .lines()
+            .nth(line)
+            .unwrap()
+            .match_indices(token)
+            .nth(occurrence)
+            .unwrap()
+            .0;
+        json!({"kind":"position","path":"src/module.ts","position":{"line":line,"column":column}})
+    };
+    for (line, name, occurrence, kind) in [
+        (2, "forward", 0, "function"),
+        (4, "early", 1, "variable"),
+        (6, "later", 0, "variable"),
+        (10, "nested", 0, "function"),
+        (21, "local", 0, "variable"),
+        (24, "lexical", 0, "variable"),
+        (29, "use", 0, "function"),
+        (32, "value", 0, "variable"),
+        (36, "target", 0, "variable"),
+        (37, "target", 0, "variable"),
+        (40, "Shape", 0, "interface"),
+        (43, "Local", 1, "class"),
+        (48, "branch", 0, "function"),
+        (50, "switched", 1, "variable"),
+    ] {
+        let result = client
+            .call(
+                "vvv_navigate",
+                json!({"origin":origin(line,name,occurrence)}),
+            )
+            .await;
+        assert_eq!(
+            result["result"]["outcome"],
+            "resolved",
+            "line {}: {result}",
+            line + 1
+        );
+        assert_eq!(result["result"]["target"]["kind"], kind);
+    }
+    let member = client
+        .call("vvv_navigate", json!({"origin":origin(56,"First",1)}))
+        .await;
+    assert_eq!(member["result"]["target"]["kind"], "variant");
+    let forward_member = client
+        .call("vvv_navigate", json!({"origin":origin(56,"Fourth",0)}))
+        .await;
+    assert_eq!(forward_member["result"]["reason"], "unsupported_context");
+    let cross_case = client
+        .call("vvv_navigate", json!({"origin":origin(52,"switched",0)}))
+        .await;
+    assert_eq!(cross_case["result"]["reason"], "unsupported_context");
+    let result = client
+        .call("vvv_navigate", json!({"origin":origin(7,"after",0)}))
+        .await;
+    assert_eq!(result["result"]["reason"], "unsupported_context");
+    let result = client
+        .call("vvv_navigate", json!({"origin":origin(26,"local",0)}))
+        .await;
+    assert_eq!(result["result"]["outcome"], "unavailable");
+    let request = json!({"origin":origin(14,"overloaded",0)});
+    let ambiguous = client.call("vvv_navigate", request.clone()).await;
+    assert_eq!(ambiguous["result"]["outcome"], "ambiguous");
+    let candidates = ambiguous["result"]["candidates"].as_array().unwrap();
+    assert_eq!(candidates.len(), 3);
+    for candidate in candidates {
+        let mut selected = request.clone();
+        selected["selection"] = json!({"ids":[candidate["id"]]});
+        let result = client.call("vvv_navigate", selected).await;
+        assert_eq!(result["result"]["target"], candidate["target"]);
+    }
+    let signature = client
+        .call(
+            "vvv_context",
+            json!({"origin":origin(54,"callback",0),"detail":"signature"}),
+        )
+        .await;
+    let definition = &signature["result"]["items"][0];
+    assert_eq!(definition["signature"]["outcome"], "available");
+    assert!(definition["text"].as_str().unwrap().ends_with("=>"));
+    assert!(
+        !definition["text"]
+            .as_str()
+            .unwrap()
+            .contains("return value")
+    );
+    let calls = client
+        .call(
+            "vvv_relationships",
+            json!({"origin":origin(3,"forward",0),"kind":"references"}),
+        )
+        .await;
+    assert!(
+        calls["result"]["items"]
+            .as_array()
+            .is_some_and(|items| items.iter().any(|item| item["outcome"] == "confirmed")),
+        "{calls}"
+    );
+    client.close().await;
+}

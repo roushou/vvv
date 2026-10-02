@@ -1,0 +1,390 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "f0ae3fa1adc27464ae585a21a9b6025725c6ce3a98667184fd9ef01388426c5a",
+    "outcome": "resolved",
+    "target": {
+      "language": "typescript",
+      "declaration": {
+        "path": "src/origin.ts",
+        "content": "d3662481bfe150469305f402c95d0ff8e00f66f125ba18968b9eb2c9ce48dfaf",
+        "span": {
+          "start": 0,
+          "end": 22
+        }
+      },
+      "name_span": {
+        "start": 13,
+        "end": 17
+      },
+      "kind": "variable"
+    },
+    "evidence": {
+      "addresses": [
+        {
+          "package": "",
+          "path": [
+            "src",
+            "origin.ts",
+            "seed"
+          ]
+        }
+      ]
+    },
+    "preview": {
+      "container": {
+        "language": "typescript",
+        "declaration": {
+          "path": "src/origin.ts",
+          "content": "d3662481bfe150469305f402c95d0ff8e00f66f125ba18968b9eb2c9ce48dfaf",
+          "span": {
+            "start": 0,
+            "end": 22
+          }
+        },
+        "name_span": {
+          "start": 13,
+          "end": 17
+        },
+        "kind": "variable"
+      },
+      "declaration": {
+        "content": "d3662481bfe150469305f402c95d0ff8e00f66f125ba18968b9eb2c9ce48dfaf",
+        "id": "1955d7059a19",
+        "path": "src/origin.ts",
+        "language": "typescript",
+        "span": {
+          "start": 13,
+          "end": 21
+        },
+        "start": {
+          "line": 0,
+          "column": 13
+        },
+        "end": {
+          "line": 0,
+          "column": 21
+        },
+        "kind": "declaration",
+        "text": "seed = 1",
+        "line": "export const seed = 1;",
+        "symbol": {
+          "kind": "variable",
+          "name": "seed",
+          "name_span": {
+            "start": 13,
+            "end": 17
+          },
+          "span": {
+            "start": 13,
+            "end": 21
+          },
+          "extent": {
+            "start": 0,
+            "end": 22
+          },
+          "visibility": {
+            "span": {
+              "start": 0,
+              "end": 6
+            },
+            "text": "export"
+          }
+        },
+        "role": "declaration"
+      },
+      "source": {
+        "path": "src/origin.ts",
+        "text": "export const seed = 1;\nexport const later = 2;\nexport const first = 3;\nexport const original = 4;\nexport function run() {}\n",
+        "highlights": [
+          {
+            "span": {
+              "start": 0,
+              "end": 6
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 7,
+              "end": 12
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 20,
+              "end": 21
+            },
+            "kind": "number"
+          },
+          {
+            "span": {
+              "start": 23,
+              "end": 29
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 30,
+              "end": 35
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 44,
+              "end": 45
+            },
+            "kind": "number"
+          },
+          {
+            "span": {
+              "start": 47,
+              "end": 53
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 54,
+              "end": 59
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 68,
+              "end": 69
+            },
+            "kind": "number"
+          },
+          {
+            "span": {
+              "start": 71,
+              "end": 77
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 78,
+              "end": 83
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 95,
+              "end": 96
+            },
+            "kind": "number"
+          },
+          {
+            "span": {
+              "start": 98,
+              "end": 104
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 105,
+              "end": 113
+            },
+            "kind": "keyword"
+          },
+          {
+            "span": {
+              "start": 114,
+              "end": 117
+            },
+            "kind": "function"
+          }
+        ],
+        "symbols": [
+          {
+            "kind": "variable",
+            "name": "seed",
+            "name_span": {
+              "start": 13,
+              "end": 17
+            },
+            "span": {
+              "start": 13,
+              "end": 21
+            },
+            "extent": {
+              "start": 0,
+              "end": 22
+            },
+            "visibility": {
+              "span": {
+                "start": 0,
+                "end": 6
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "later",
+            "name_span": {
+              "start": 36,
+              "end": 41
+            },
+            "span": {
+              "start": 36,
+              "end": 45
+            },
+            "extent": {
+              "start": 23,
+              "end": 46
+            },
+            "visibility": {
+              "span": {
+                "start": 23,
+                "end": 29
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "first",
+            "name_span": {
+              "start": 60,
+              "end": 65
+            },
+            "span": {
+              "start": 60,
+              "end": 69
+            },
+            "extent": {
+              "start": 47,
+              "end": 70
+            },
+            "visibility": {
+              "span": {
+                "start": 47,
+                "end": 53
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "variable",
+            "name": "original",
+            "name_span": {
+              "start": 84,
+              "end": 92
+            },
+            "span": {
+              "start": 84,
+              "end": 96
+            },
+            "extent": {
+              "start": 71,
+              "end": 97
+            },
+            "visibility": {
+              "span": {
+                "start": 71,
+                "end": 77
+              },
+              "text": "export"
+            }
+          },
+          {
+            "kind": "function",
+            "name": "run",
+            "name_span": {
+              "start": 114,
+              "end": 117
+            },
+            "span": {
+              "start": 105,
+              "end": 122
+            },
+            "extent": {
+              "start": 98,
+              "end": 122
+            },
+            "visibility": {
+              "span": {
+                "start": 98,
+                "end": 104
+              },
+              "text": "export"
+            }
+          }
+        ],
+        "identifiers": [
+          {
+            "path": "src/origin.ts",
+            "content": "d3662481bfe150469305f402c95d0ff8e00f66f125ba18968b9eb2c9ce48dfaf",
+            "span": {
+              "start": 13,
+              "end": 17
+            }
+          },
+          {
+            "path": "src/origin.ts",
+            "content": "d3662481bfe150469305f402c95d0ff8e00f66f125ba18968b9eb2c9ce48dfaf",
+            "span": {
+              "start": 36,
+              "end": 41
+            }
+          },
+          {
+            "path": "src/origin.ts",
+            "content": "d3662481bfe150469305f402c95d0ff8e00f66f125ba18968b9eb2c9ce48dfaf",
+            "span": {
+              "start": 60,
+              "end": 65
+            }
+          },
+          {
+            "path": "src/origin.ts",
+            "content": "d3662481bfe150469305f402c95d0ff8e00f66f125ba18968b9eb2c9ce48dfaf",
+            "span": {
+              "start": 84,
+              "end": 92
+            }
+          },
+          {
+            "path": "src/origin.ts",
+            "content": "d3662481bfe150469305f402c95d0ff8e00f66f125ba18968b9eb2c9ce48dfaf",
+            "span": {
+              "start": 114,
+              "end": 117
+            }
+          }
+        ]
+      },
+      "selection": {
+        "start": 13,
+        "end": 17
+      },
+      "identifiers": [
+        {
+          "path": "src/origin.ts",
+          "content": "d3662481bfe150469305f402c95d0ff8e00f66f125ba18968b9eb2c9ce48dfaf",
+          "span": {
+            "start": 13,
+            "end": 17
+          }
+        }
+      ]
+    }
+  }
+}
+--- stderr ---

@@ -1,0 +1,135 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "d2bf6d56752f77846d227d0f50e83dd5443e51cc3a43cf24da44269c0850d010",
+    "outcome": "ambiguous",
+    "candidates": [
+      {
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/scopes.ts",
+            "content": "e64f3fdedd12329704df474998349fb9fa29bfd03ceb91284042105b850f3373",
+            "span": {
+              "start": 487,
+              "end": 492
+            }
+          },
+          "name_span": {
+            "start": 487,
+            "end": 492
+          },
+          "kind": "parameter"
+        },
+        "declaration": {
+          "content": "e64f3fdedd12329704df474998349fb9fa29bfd03ceb91284042105b850f3373",
+          "id": "7d21c8d67c74",
+          "path": "src/scopes.ts",
+          "language": "typescript",
+          "span": {
+            "start": 487,
+            "end": 492
+          },
+          "start": {
+            "line": 27,
+            "column": 26
+          },
+          "end": {
+            "line": 27,
+            "column": 31
+          },
+          "kind": "declaration",
+          "text": "value",
+          "line": "export function functions(value) {",
+          "symbol": {
+            "kind": "parameter",
+            "name": "value",
+            "name_span": {
+              "start": 487,
+              "end": 492
+            },
+            "span": {
+              "start": 487,
+              "end": 492
+            },
+            "extent": {
+              "start": 487,
+              "end": 492
+            }
+          },
+          "role": "declaration"
+        },
+        "evidence": {
+          "addresses": []
+        }
+      },
+      {
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/scopes.ts",
+            "content": "e64f3fdedd12329704df474998349fb9fa29bfd03ceb91284042105b850f3373",
+            "span": {
+              "start": 498,
+              "end": 528
+            }
+          },
+          "name_span": {
+            "start": 507,
+            "end": 512
+          },
+          "kind": "function"
+        },
+        "declaration": {
+          "content": "e64f3fdedd12329704df474998349fb9fa29bfd03ceb91284042105b850f3373",
+          "id": "a158f6577b07",
+          "path": "src/scopes.ts",
+          "language": "typescript",
+          "span": {
+            "start": 498,
+            "end": 528
+          },
+          "start": {
+            "line": 28,
+            "column": 2
+          },
+          "end": {
+            "line": 28,
+            "column": 32
+          },
+          "kind": "declaration",
+          "text": "function value() { return 1; }",
+          "line": "  function value() { return 1; }",
+          "symbol": {
+            "kind": "function",
+            "name": "value",
+            "name_span": {
+              "start": 507,
+              "end": 512
+            },
+            "span": {
+              "start": 498,
+              "end": 528
+            },
+            "extent": {
+              "start": 498,
+              "end": 528
+            }
+          },
+          "role": "declaration"
+        },
+        "evidence": {
+          "addresses": []
+        }
+      }
+    ]
+  }
+}
+--- stderr ---

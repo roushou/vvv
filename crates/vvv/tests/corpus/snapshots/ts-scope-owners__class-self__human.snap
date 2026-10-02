@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● class Local   src/module.ts:44:3
+
+class Local { method(): Local { return new Local(); } }
+--- stderr ---

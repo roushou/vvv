@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● function use   src/module.ts:31:10
+
+export function use() { return value; }
+--- stderr ---

@@ -1,0 +1,12 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● function recur   src/scopes.ts:34:20
+
+function* recur({ value = outer }) {
+    yield recur(value); yield value;
+  }
+--- stderr ---

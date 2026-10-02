@@ -1,0 +1,10 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+● variable first   src/loops.ts:18:32
+
+{ label: renamed, first = input, second = first, ...rest }
+--- stderr ---

@@ -1,0 +1,12 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, false)"
+---
+exit 0
+--- stdout ---
+src/module.ts
+  1 ●   16:3    function overloaded(value: number): number;
+  2 ●   17:3    function overloaded(value: string): string;
+  3 ●   18:3    function overloaded(value: number | string) { return value; }
+--- stderr ---
+Several definitions match; use --select with a row number or match id

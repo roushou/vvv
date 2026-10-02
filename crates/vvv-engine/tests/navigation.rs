@@ -344,6 +344,7 @@ fn lexical_facts_select_the_innermost_binding_and_preserve_symbol_roundtrips() {
             scope,
             visible_from: from,
             excluded: vec![],
+            uninitialized: vec![],
             namespace: BindingNamespace::Value,
             explicit: true,
         });
@@ -715,6 +716,7 @@ fn delayed_pattern_binding_preserves_outer_initializer_and_failure_branch_bindin
             scope: Span::new(0, source.len()),
             excluded: vec![],
             visible_from: from,
+            uninitialized: vec![],
             namespace: BindingNamespace::Value,
             explicit: false,
         });
@@ -764,6 +766,7 @@ fn conditional_owner_spans_select_ordered_bindings_without_leaking_into_else() {
             scope,
             excluded: vec![Span::new(18, 19)],
             visible_from: from,
+            uninitialized: vec![],
             namespace: BindingNamespace::Value,
             explicit: false,
         });
@@ -810,6 +813,7 @@ fn synthetic_conditional_owners_do_not_exempt_patterns_from_macro_uncertainty() 
         scope: Span::new(2, 9),
         excluded: vec![],
         visible_from: 4,
+        uninitialized: vec![],
         namespace: BindingNamespace::Value,
         explicit: false,
     });
@@ -878,6 +882,7 @@ fn shared_pattern_owners_keep_distinct_ids_and_select_the_exact_name_token() {
             scope: Span::new(0, 5),
             excluded: vec![],
             visible_from: 3,
+            uninitialized: vec![],
             namespace: BindingNamespace::Value,
             explicit: false,
         });
@@ -909,4 +914,151 @@ fn shared_pattern_owners_keep_distinct_ids_and_select_the_exact_name_token() {
         };
         assert_eq!(target.name_span, Span::new(2, 3));
     }
+}
+
+struct InitializationFixture {
+    source: &'static str,
+    facts: vvv_core::Facts,
+}
+
+impl InitializationFixture {
+    fn new() -> Self {
+        let source = "x x x x x x x x x";
+        let mut facts = vvv_core::Facts::default();
+        for start in (0..source.len()).step_by(2) {
+            let span = Span::new(start, start + 1);
+            facts.push_token("x", "identifier", span);
+            facts.lexical_tokens.push(span);
+        }
+        Self { source, facts }
+    }
+
+    fn binding(&mut self, name: usize, scope: Span, uninitialized: Vec<Span>) {
+        self.facts.lexical.push(vvv_core::LexicalBinding {
+            symbol: vvv_core::Symbol::plain(
+                vvv_core::SymbolKind::Variable,
+                "x",
+                Span::new(name, name + 1),
+                Span::new(name, name + 1),
+            ),
+            scope,
+            visible_from: scope.start,
+            excluded: vec![],
+            uninitialized,
+            namespace: vvv_core::BindingNamespace::Value,
+            explicit: true,
+        });
+    }
+
+    fn engine(self) -> Engine {
+        Engine::new(
+            Workspace::new(
+                "/ws",
+                Arc::new(MemoryVfs::new().with_file("/ws/a.p", self.source)),
+            ),
+            Languages::new().with(Fake::default().with_navigation_facts(self.facts)),
+        )
+    }
+}
+
+#[test]
+fn uninitialized_inner_bindings_own_the_name_without_hiding_initialized_deeper_bindings() {
+    let mut fixture = InitializationFixture::new();
+    fixture.binding(0, Span::new(0, 17), vec![]);
+    fixture.binding(8, Span::new(2, 13), vec![Span::new(2, 8)]);
+    fixture.binding(4, Span::new(4, 7), vec![]);
+    let engine = fixture.engine();
+    let before = NavigationQuery::at("a.p", Position::new(0, 2))
+        .execute(&engine)
+        .unwrap();
+    assert!(matches!(
+        before.outcome,
+        NavigationOutcome::Unavailable {
+            reason: UnavailableReason::UnsupportedContext
+        }
+    ));
+    for (column, declaration) in [(6, 4), (10, 8), (14, 0)] {
+        let reply = NavigationQuery::at("a.p", Position::new(0, column))
+            .execute(&engine)
+            .unwrap();
+        let NavigationOutcome::Resolved { target, .. } = reply.outcome else {
+            panic!("{reply:?}")
+        };
+        assert_eq!(target.name_span.start, declaration);
+    }
+    // Declaration previews remain available while the name is in its TDZ.
+    assert!(matches!(
+        NavigationQuery::at("a.p", Position::new(0, 8))
+            .execute(&engine)
+            .unwrap()
+            .outcome,
+        NavigationOutcome::Resolved { .. }
+    ));
+}
+
+#[test]
+fn an_uninitialized_peer_blocks_confirmation_and_initialized_peers_remain_selectable() {
+    let mut fixture = InitializationFixture::new();
+    fixture.binding(0, Span::new(0, 17), vec![]);
+    fixture.binding(8, Span::new(2, 17), vec![Span::new(2, 8)]);
+    fixture.binding(12, Span::new(2, 17), vec![Span::new(2, 12)]);
+    let engine = fixture.engine();
+    assert!(matches!(
+        NavigationQuery::at("a.p", Position::new(0, 10))
+            .execute(&engine)
+            .unwrap()
+            .outcome,
+        NavigationOutcome::Unavailable {
+            reason: UnavailableReason::UnsupportedContext
+        }
+    ));
+    let query = NavigationQuery::at("a.p", Position::new(0, 16));
+    let reply = query.clone().execute(&engine).unwrap();
+    let NavigationOutcome::Ambiguous { candidates } = reply.outcome else {
+        panic!("{reply:?}")
+    };
+    assert_eq!(candidates.len(), 2);
+    let selected = NavigationQuery {
+        selection: vvv_engine::Selection::Ordinals([2].into()),
+        ..query
+    }
+    .execute(&engine)
+    .unwrap();
+    let NavigationOutcome::Resolved { target, .. } = selected.outcome else {
+        panic!("{selected:?}")
+    };
+    assert_eq!(target, candidates[1].target);
+}
+
+#[test]
+fn initialization_regions_are_namespace_specific_and_can_follow_non_source_evaluation_order() {
+    let mut fixture = InitializationFixture::new();
+    fixture.binding(0, Span::new(0, 17), vec![]);
+    fixture.binding(
+        8,
+        Span::new(2, 17),
+        vec![Span::new(2, 4), Span::new(10, 13)],
+    );
+    fixture.binding(4, Span::new(2, 17), vec![]);
+    fixture.facts.lexical[2].namespace = vvv_core::BindingNamespace::Type;
+    fixture.facts.navigation_types.push(Span::new(2, 3));
+    let engine = fixture.engine();
+    for (column, declaration) in [(2, 4), (6, 8), (14, 8)] {
+        let reply = NavigationQuery::at("a.p", Position::new(0, column))
+            .execute(&engine)
+            .unwrap();
+        let NavigationOutcome::Resolved { target, .. } = reply.outcome else {
+            panic!("{reply:?}")
+        };
+        assert_eq!(target.name_span.start, declaration);
+    }
+    assert!(matches!(
+        NavigationQuery::at("a.p", Position::new(0, 10))
+            .execute(&engine)
+            .unwrap()
+            .outcome,
+        NavigationOutcome::Unavailable {
+            reason: UnavailableReason::UnsupportedContext
+        }
+    ));
 }

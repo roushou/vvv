@@ -12,7 +12,6 @@ fn patterns(input: Option<usize>, items: &[usize], outer: usize) {
     if let Some(value @ 0..=9) = input { work(value); }
     work(value);
 }
-
 fn ranges(LIMIT: usize, input: usize) {
     match input { value @ 0..=LIMIT => work(value), _ => work(LIMIT) }
 }
