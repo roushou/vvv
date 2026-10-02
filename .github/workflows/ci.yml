@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
 
+# Every job only reads the repository. Without this the token keeps the
+# repository default, which is broader than CI needs.
+permissions:
+  contents: read
+
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -D warnings
@@ -17,6 +22,7 @@ jobs:
   fmt:
     name: rustfmt
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -27,6 +33,7 @@ jobs:
   dprint:
     name: dprint
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
       - uses: dprint/check@v2
@@ -37,6 +44,7 @@ jobs:
   clippy:
     name: clippy
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -48,6 +56,7 @@ jobs:
   test:
     name: test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -67,6 +76,7 @@ jobs:
   features:
     name: feature combinations
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -82,23 +92,31 @@ jobs:
       - run: cargo build -p vvv-rs --no-default-features --features schemas
       - run: cargo build -p vvv-rs --no-default-features --features rust,schemas
       - run: cargo build -p vvv-rs --no-default-features --features typescript,schemas
+      # The declared MSRV must hold for the heaviest optional dependency tree:
+      # `mcp` pulls rmcp and tokio. Spelled as an explicit `+1.90.0` so the check
+      # cannot be satisfied by the stable toolchain installed above.
+      - uses: dtolnay/rust-toolchain@1.90.0
+      - run: cargo +1.90.0 check -p vvv-rs --no-default-features --features mcp --locked
 
   mcp:
-    name: MCP (${{ matrix.os }}, ${{ matrix.features }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest]
-        features: [mcp, 'mcp,rust', 'mcp,typescript']
+    name: MCP
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
-      - run: cargo test -p vvv-rs --no-default-features --features ${{ matrix.features }} --test mcp
+      # The MCP surface answers per registered language, so each combination needs
+      # its own compile. Windows needs no cell of its own: `test (windows-latest)`
+      # runs this same `--test mcp` target under `--all-features`.
+      - run: cargo test -p vvv-rs --no-default-features --features mcp --test mcp
+      - run: cargo test -p vvv-rs --no-default-features --features mcp,rust --test mcp
+      - run: cargo test -p vvv-rs --no-default-features --features mcp,typescript --test mcp
 
-  mcp-targets:
-    name: MCP release target (${{ matrix.target }})
+  release-targets:
+    name: release target (${{ matrix.target }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -126,18 +144,10 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu')
       - run: cargo check -p vvv-rs --features mcp --locked --target ${{ matrix.target }}
 
-  mcp-msrv:
-    name: MCP MSRV
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: dtolnay/rust-toolchain@1.90.0
-      - uses: Swatinem/rust-cache@v2
-      - run: cargo check -p vvv-rs --no-default-features --features mcp --locked
-
   schemas:
     name: published schemas
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -147,6 +157,7 @@ jobs:
   docs:
     name: rustdoc
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     env:
       RUSTDOCFLAGS: -D warnings
     steps:
