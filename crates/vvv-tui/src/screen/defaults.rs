@@ -110,7 +110,11 @@ pub static LIST: Layer<Action> = Layer {
     name: "Lists",
     bindings: &[
         Keybinding {
-            triggers: &[Trigger::Key(Key::down()), Trigger::Key(Key::char('j'))],
+            triggers: &[
+                Trigger::Key(Key::down()),
+                Trigger::Key(Key::char('j')),
+                Trigger::Key(Key::ctrl('n')),
+            ],
             dispatch: Run(A::Move(1)),
             when: When::Always,
             legend: Legend {
@@ -119,7 +123,11 @@ pub static LIST: Layer<Action> = Layer {
             },
         },
         Keybinding {
-            triggers: &[Trigger::Key(Key::up()), Trigger::Key(Key::char('k'))],
+            triggers: &[
+                Trigger::Key(Key::up()),
+                Trigger::Key(Key::char('k')),
+                Trigger::Key(Key::ctrl('p')),
+            ],
             dispatch: Run(A::Move(-1)),
             when: When::Always,
             legend: Legend {
@@ -128,12 +136,21 @@ pub static LIST: Layer<Action> = Layer {
             },
         },
         Keybinding {
-            triggers: &[Trigger::Key(Key::page_down()), Trigger::Key(Key::page_up())],
+            triggers: &[Trigger::Key(Key::page_down())],
             dispatch: Run(A::Page(1)),
             when: When::Always,
             legend: Legend {
                 bar: None,
                 help: "page",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::page_up())],
+            dispatch: Run(A::Page(-1)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "previous page",
             },
         },
         Keybinding {

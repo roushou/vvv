@@ -494,10 +494,10 @@ fn keys_depend_on_the_focused_panel() {
     );
     assert_eq!(
         m.action_for(ctrl('n')),
-        Some(Action::Move(1)),
-        "walk the results without leaving the query"
+        Some(Action::File(1)),
+        "switch files without leaving the query"
     );
-    assert_eq!(m.action_for(ctrl('p')), Some(Action::Move(-1)));
+    assert_eq!(m.action_for(ctrl('p')), Some(Action::File(-1)));
     assert_eq!(
         m.action_for(key(KeyCode::Char('?'))),
         Some(Action::Input('?')),
@@ -523,13 +523,13 @@ fn keys_depend_on_the_focused_panel() {
         Some(Action::MoveSymbol)
     );
     assert_eq!(
-        m.action_for(key(KeyCode::Char('3'))),
-        Some(Action::FocusNth(3))
+        m.action_for(key(KeyCode::Char('4'))),
+        Some(Action::FocusNth(4))
     );
     assert_eq!(m.action_for(key(KeyCode::Char('e'))), Some(Action::Edit));
     assert_eq!(m.action_for(key(KeyCode::Char('v'))), Some(Action::View));
 
-    m.update(Action::FocusNth(3));
+    m.update(Action::FocusNth(4));
     assert_eq!(m.search.focus, SearchPanel::Context);
     assert_eq!(
         m.action_for(key(KeyCode::Char('j'))),
@@ -542,7 +542,7 @@ fn keys_depend_on_the_focused_panel() {
 }
 
 #[test]
-fn the_results_cursor_stays_emphasised_while_the_query_has_the_focus() {
+fn unfocused_lists_keep_selection_markers_without_the_focused_style() {
     use ratatui::style::Modifier;
 
     let m = searched();
@@ -572,9 +572,87 @@ fn the_results_cursor_stays_emphasised_while_the_query_has_the_focus() {
             .contains(Modifier::REVERSED)
     });
     assert!(
-        cursor,
-        "a cursor row carries the cursor style, not just dim"
+        !cursor,
+        "unfocused selections use a quiet style and retain their marker"
     );
+}
+
+#[test]
+fn selection_colors_cover_wrapped_paths_and_full_rows_without_dimming_match_text() {
+    use ratatui::style::{Color, Modifier};
+    let mut m = searched();
+    let path = "crates/vvv-engine/src/a/very/long/module/directory/engine.rs";
+    m.search.results.replace(vec![
+        fx::m(path, 0, 4, "Engine", "use Engine;"),
+        fx::m(path, 9, 0, "Engine", "Engine::new()"),
+        fx::m("src/other.rs", 20, 0, "Engine", "Engine::new()"),
+    ]);
+    m.search.selection_changed();
+    m.on_event(Event::Viewport {
+        width: 120,
+        height: 30,
+    });
+    let active = Color::Rgb(32, 59, 70);
+    let retained = Color::Rgb(23, 40, 47);
+    for (focus, file_bg, match_bg) in [
+        (2, active, retained),
+        (3, retained, active),
+        (4, retained, retained),
+    ] {
+        m.update(Action::FocusNth(focus));
+        let frame = m.search_frame();
+        let mut terminal = Terminal::new(TestBackend::new(120, 30)).unwrap();
+        terminal
+            .draw(|f| App::new(&m, Painter::colored(), 0).render(f.area(), f.buffer_mut()))
+            .unwrap();
+        let buffer = terminal.backend().buffer();
+        let files = &frame.lists[0];
+        let wrapped = crate::render::Fit(path, files.area.width.saturating_sub(10) as usize)
+            .wrapped()
+            .len();
+        assert!(wrapped > 1);
+        for row in 0..wrapped {
+            let y = files.content.y + row as u16;
+            for x in files.content.x..files.content.right() {
+                assert_eq!(buffer[(x, y)].bg, file_bg, "wrapped path row {row}, x {x}");
+            }
+            assert!(
+                !buffer[(files.content.x + 2, y)]
+                    .modifier
+                    .contains(Modifier::DIM)
+            );
+        }
+        assert_eq!(
+            buffer[(files.content.x, files.content.y)].fg,
+            if focus == 2 {
+                Color::Rgb(123, 220, 199)
+            } else {
+                Color::Rgb(84, 179, 172)
+            }
+        );
+        let matches = &frame.lists[1];
+        let y = matches.content.y;
+        for x in matches.content.x..matches.content.right() {
+            assert_eq!(buffer[(x, y)].bg, match_bg, "match row x {x}");
+        }
+        let code = matches.content.x + 6;
+        assert_eq!(buffer[(code, y)].symbol(), "u");
+        assert!(!buffer[(code, y)].modifier.contains(Modifier::DIM));
+        assert_eq!(buffer[(code + 4, y)].fg, Painter::colored().hit.fg.unwrap());
+        assert_eq!(
+            buffer[(matches.content.x, y)].fg,
+            if focus == 3 {
+                Color::Rgb(123, 220, 199)
+            } else {
+                Color::Rgb(84, 179, 172)
+            }
+        );
+        assert_eq!(
+            buffer[(matches.content.x, y + 1)].bg,
+            Color::Reset,
+            "unselected matches retain the terminal background"
+        );
+    }
 }
 
 #[test]
@@ -633,12 +711,12 @@ fn moving_the_cursor_asks_for_the_row_file_once() {
     m.update(Action::Enter);
     // Row 0 is the declaration in src/lang/mod.rs, already previewed.
     assert!(m.update(Action::Move(0)).is_empty());
-    let effects = m.update(Action::Move(1));
+    let effects = m.update(Action::File(1));
     assert!(
         matches!(&effects[..], [Effect::Definition { .. }, Effect::Preview { path }] if path.ends_with("registry.rs")),
         "{effects:?}"
     );
-    let effects = m.update(Action::Move(1));
+    let effects = m.update(Action::File(1));
     assert!(
         matches!(&effects[..], [Effect::Definition { .. }, Effect::Preview { path }] if path.ends_with("lib.rs")),
         "a third file"
@@ -671,7 +749,7 @@ fn symbol_menu_writes_a_filter_into_the_query() {
         panic!()
     };
     assert_eq!(
-        menu.current().value.as_deref(),
+        menu.current().unwrap().value.as_deref(),
         Some("struct"),
         "preselected"
     );
@@ -871,10 +949,10 @@ fn move_plans_as_the_destination_changes_and_commits_the_plan() {
 fn move_symbol_needs_a_declaration_row() {
     let mut m = searched();
     m.update(Action::Enter);
-    m.update(Action::Move(1));
+    m.update(Action::File(1));
     assert!(m.update(Action::MoveSymbol).is_empty());
     assert!(matches!(&m.status.message, Some((Level::Error, _))));
-    m.update(Action::Top);
+    m.update(Action::File(-1));
     let effects = m.update(Action::MoveSymbol);
     assert!(
         effects.is_empty(),
@@ -1125,7 +1203,9 @@ fn enter_anchors_the_declaration_under_the_cursor() {
 fn esc_leaves_the_scope_and_keeps_the_search() {
     let mut m = anchored();
     assert_eq!(m.search.results.len(), 4);
-    m.update(Action::Back);
+    m.update(Action::Back); // Matches → Files
+    m.update(Action::Back); // Files → Query
+    m.update(Action::Back); // Leave the relation
     assert!(!m.search.results.is_anchored());
     assert_eq!(m.search.results.matches.len(), 4, "the search survives");
 }
@@ -1255,7 +1335,8 @@ fn the_relation_menu_asks_for_definition_and_deps() {
 fn o_resolves_the_selected_occurrence_without_moving_before_success() {
     let mut m = searched();
     m.update(Action::Enter); // into the results
-    m.update(Action::Move(3)); // onto a use
+    m.update(Action::File(2));
+    m.update(Action::Move(1)); // onto a use
     let effects = m.update(Action::Follow);
     assert!(matches!(effects.as_slice(), [Effect::Follow { .. }]));
     assert_eq!(
@@ -1481,7 +1562,7 @@ fn report_overlay_opens_declaration_sites_and_skips_suggested_imports() {
 fn body_focus_scroll_and_editor_are_independent_of_context() {
     let mut m = searched();
     m.update(Action::Move(1)); // a use in another file
-    m.update(Action::FocusNth(4));
+    m.update(Action::FocusNth(5));
     assert_eq!(m.search.focus, SearchPanel::Body);
     assert_eq!(
         m.action_for(key(KeyCode::Char('j'))),
@@ -1524,7 +1605,10 @@ fn body_ignores_unrelated_preview_answers_and_unresolved_references() {
     assert!(m.search.body.pending().is_some());
     m.update(Action::Move(2));
     assert!(m.search.body.pending().is_some());
-    assert!(m.search.results.has_body(), "space remains reserved");
+    assert!(
+        m.search.results.has_body(),
+        "definition focus remains available"
+    );
 }
 
 #[test]
@@ -1532,25 +1616,243 @@ fn body_ambiguity_and_empty_results_do_not_leave_invisible_focus() {
     let mut m = searched();
     let mut other = m.search.results.matches[0].clone();
     other.path = "other.rs".into();
-    std::sync::Arc::make_mut(&mut m.search.results.matches).push(other);
+    other.id = vvv_engine::MatchId::derive(&other.path, other.span, &other.text);
+    let mut matches = m.search.results.matches.to_vec();
+    matches.push(other);
+    m.search.results.replace(matches);
     m.update(Action::Move(1));
     assert!(m.search.body.pending().is_some());
-    m.update(Action::FocusNth(4));
+    m.update(Action::FocusNth(5));
     m.search.results.replace(vec![]);
     m.search.selection_changed();
     assert_eq!(m.search.focus, SearchPanel::Results);
-    m.update(Action::FocusNth(4));
+    m.update(Action::FocusNth(5));
     assert_eq!(m.search.focus, SearchPanel::Results);
+    m.update(Action::PreviewTab);
+    assert_eq!(m.search.focus, SearchPanel::Results);
+    m.update(Action::FocusPrev);
     m.update(Action::FocusPrev);
     m.update(Action::FocusPrev);
     assert_eq!(m.search.focus, SearchPanel::Context);
 }
 
 #[test]
+fn preview_borders_stay_quiet_and_focus_keys_and_p_select_the_destination() {
+    let mut m = searched();
+    m.update(Action::Move(1));
+    m.search.focus = SearchPanel::Results;
+    let wide = FrameFixture::new(&m).render_size(120, 30);
+    assert!(!wide.contains("4 source"));
+    assert!(!wide.contains("5 definition"));
+    assert!(!wide.contains("p source") && !wide.contains("p definition"));
+    m.on_key(key(KeyCode::Char('4')));
+    assert_eq!(m.search.focus, SearchPanel::Context);
+    m.on_key(key(KeyCode::Char('p')));
+    assert_eq!(m.search.focus, SearchPanel::Body);
+    assert!(FrameFixture::new(&m).render().contains("definition"));
+    m.on_key(key(KeyCode::Char('p')));
+    assert_eq!(m.search.focus, SearchPanel::Context);
+    assert!(FrameFixture::new(&m).render().contains("source"));
+    m.on_key(key(KeyCode::Char('5')));
+    assert_eq!(m.search.focus, SearchPanel::Body);
+}
+
+#[test]
 fn snapshot_body_focused() {
     let mut m = searched();
-    m.update(Action::FocusNth(4));
+    m.update(Action::FocusNth(5));
     insta::assert_snapshot!(FrameFixture::new(&m).render());
+}
+
+#[test]
+fn single_preview_choice_survives_file_match_filter_query_and_resize_navigation() {
+    let mut m = searched();
+    m.on_event(Event::Viewport {
+        width: 90,
+        height: 24,
+    });
+    m.update(Action::FocusNth(3));
+    assert!(!m.search.definition_tab, "source is the default preview");
+    let preview_panels = |model: &Model| {
+        model
+            .search_frame()
+            .panels
+            .into_iter()
+            .filter(|(panel, _)| matches!(panel, SearchPanel::Context | SearchPanel::Body))
+            .collect::<Vec<_>>()
+    };
+    let source = preview_panels(&m);
+    assert!(!source[0].1.is_empty());
+    assert!(source[1].1.is_empty());
+    m.on_key(key(KeyCode::Char('5')));
+    m.on_key(key(KeyCode::Esc));
+    let definition = preview_panels(&m);
+    assert!(definition[0].1.is_empty());
+    assert_eq!(definition[1].1, source[0].1);
+    for by in [1, 1, -1, -1] {
+        m.update(Action::File(by));
+        assert_eq!(preview_panels(&m), definition);
+        assert!(m.search.definition_tab);
+    }
+    m.on_key(key(KeyCode::Char('F')));
+    typed(&mut m, "lib");
+    m.on_key(key(KeyCode::Enter));
+    m.update(Action::FocusNth(3));
+    m.update(Action::Move(1)); // import -> use in the same file
+    assert_eq!(
+        m.search.results.current().unwrap().role,
+        vvv_engine::Role::Use
+    );
+    assert_eq!(preview_panels(&m), definition);
+    m.update(Action::ClearFileFilter);
+    m.update(Action::FocusNth(1));
+    m.on_key(ctrl('p'));
+    assert_eq!(m.search.focus, SearchPanel::Query);
+    assert_eq!(preview_panels(&m), definition);
+    m.on_event(Event::Searched {
+        generation: m.generation,
+        matches: m.search.results.matches.to_vec(),
+        skipped: vec![],
+    });
+    assert_eq!(preview_panels(&m), definition);
+    insta::assert_snapshot!("narrow_definition_choice", FrameFixture::new(&m).render());
+    m.update(Action::FocusNth(3));
+    m.on_key(key(KeyCode::Char('4')));
+    m.on_key(key(KeyCode::Esc));
+    m.update(Action::File(-1));
+    assert_eq!(preview_panels(&m), source);
+    m.on_event(Event::Viewport {
+        width: 120,
+        height: 30,
+    });
+    let wide = preview_panels(&m);
+    assert!(!wide[0].1.is_empty() && !wide[1].1.is_empty());
+    insta::assert_snapshot!(
+        "wide_declaration_previews",
+        FrameFixture::new(&m).render_size(120, 30)
+    );
+    m.on_event(Event::Viewport {
+        width: 90,
+        height: 24,
+    });
+    assert_eq!(preview_panels(&m), source);
+    insta::assert_snapshot!("narrow_source_choice", FrameFixture::new(&m).render());
+    m.on_key(key(KeyCode::Char('p')));
+    m.on_key(key(KeyCode::Esc));
+    assert_eq!(preview_panels(&m), definition, "p also retains its choice");
+    m.on_event(Event::Searched {
+        generation: m.generation,
+        matches: vec![],
+        skipped: vec![],
+    });
+    assert_eq!(
+        preview_panels(&m),
+        definition,
+        "empty results retain the choice"
+    );
+}
+
+#[test]
+fn source_preview_keeps_its_displayed_file_until_the_latest_selection_arrives() {
+    let mut m = model();
+    typed(&mut m, "Engine");
+    let a = numbered(60, &[(21, "Engine::from_a()")]);
+    let b = numbered(60, &[(26, "Engine::from_b()")]);
+    let c = numbered(60, &[(36, "Engine::from_c()")]);
+    let a_text = a.join("\n");
+    let matches = vec![
+        fx::at(
+            fx::m("a.rs", 20, 0, "Engine", "Engine::from_a()"),
+            a_text.find("Engine").unwrap(),
+        ),
+        fx::at(
+            fx::m("b.rs", 25, 0, "Engine", "Engine::from_b()"),
+            b.join("\n").find("Engine").unwrap(),
+        ),
+        fx::at(
+            fx::m("c.rs", 35, 0, "Engine", "Engine::from_c()"),
+            c.join("\n").find("Engine").unwrap(),
+        ),
+    ];
+    m.on_event(Event::Searched {
+        generation: m.generation,
+        matches,
+        skipped: vec![],
+    });
+    let reply = |path: &str, lines: &[String]| {
+        preview(path, &lines.iter().map(String::as_str).collect::<Vec<_>>())
+    };
+    m.on_event(reply("a.rs", &a));
+    m.on_event(Event::Viewport {
+        width: 120,
+        height: 30,
+    });
+    m.search.preview_scroll = Some(18);
+    let anchor = m.search.displayed_source().unwrap();
+    let before = FrameFixture::new(&m).render_size(120, 30);
+    let effects = m.on_key(ctrl('n'));
+    assert!(effects.iter().any(
+        |e| matches!(e, Effect::Preview { path } if path.as_path() == std::path::Path::new("b.rs"))
+    ));
+    let pending = FrameFixture::new(&m).render_size(120, 30);
+    let source = m
+        .search_frame()
+        .panels
+        .into_iter()
+        .find(|(panel, _)| *panel == SearchPanel::Context)
+        .unwrap()
+        .1;
+    let source_rows = |frame: &str| {
+        frame
+            .lines()
+            .skip(source.y as usize)
+            .take(source.height.saturating_sub(1) as usize)
+            .map(|line| {
+                line.chars()
+                    .skip(source.x as usize)
+                    .take(source.width as usize)
+                    .collect::<String>()
+            })
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        source_rows(&before),
+        source_rows(&pending),
+        "the source text and its title remain steady while another file loads"
+    );
+    assert_eq!(m.search.displayed_source(), Some(anchor.clone()));
+    assert_eq!(m.search.preview_scroll, Some(18));
+    assert!(pending.contains("updating"));
+    insta::assert_snapshot!("source_preview_pending", pending);
+    m.on_key(ctrl('n'));
+    m.on_event(reply("b.rs", &b));
+    assert_eq!(m.search.displayed_source(), Some(anchor));
+    assert_eq!(
+        m.search.preview.as_ref().unwrap().path.as_path(),
+        std::path::Path::new("a.rs")
+    );
+    m.update(Action::FocusNth(4));
+    assert_eq!(
+        m.search.site().unwrap().0.as_path(),
+        std::path::Path::new("a.rs"),
+        "source actions use the displayed file during loading"
+    );
+    m.on_event(reply("c.rs", &c));
+    assert_eq!(
+        m.search.displayed_source().unwrap().path.as_path(),
+        std::path::Path::new("c.rs")
+    );
+    assert_eq!(m.search.preview_scroll, None);
+    let ready = FrameFixture::new(&m).render_size(120, 30);
+    assert!(ready.contains("source · c.rs:36"));
+    assert!(ready.contains("Engine::from_c()"));
+    insta::assert_snapshot!("source_preview_ready", ready);
+    m.on_event(reply("a.rs", &a));
+    assert_eq!(
+        FrameFixture::new(&m).render_size(120, 30),
+        ready,
+        "late replies cannot replace the latest file"
+    );
 }
 
 #[test]
@@ -1575,8 +1877,10 @@ fn body_tracks_declarations_and_requests_both_files_when_needed() {
     let mut declaration = fx::decl("other.rs", 0, SymbolKind::Struct, "Other", "struct Other {");
     declaration.symbol.as_mut().unwrap().span =
         vvv_engine::Span::new(0, text.find("\nfn").unwrap());
-    std::sync::Arc::make_mut(&mut m.search.results.matches).push(declaration);
-    m.update(Action::Move(4));
+    let mut matches = m.search.results.matches.to_vec();
+    matches.push(declaration);
+    m.search.results.replace(matches);
+    m.update(Action::Top);
     assert!(
         m.search
             .body
@@ -1594,12 +1898,13 @@ fn body_tracks_declarations_and_requests_both_files_when_needed() {
         m.search.body.lines(m.search.results.current().unwrap()),
         Some(0..3)
     );
+    m.update(Action::FocusNth(5));
     let frame = FrameFixture::new(&m).render();
     let body_rows = frame
         .lines()
         .skip_while(|line| !line.contains("definition"))
         .take(7)
-        .map(|line| line.chars().take(45).collect::<String>())
+        .map(|line| line.chars().skip(45).collect::<String>())
         .collect::<Vec<_>>()
         .join("\n");
     assert!(body_rows.contains("value: usize"));
@@ -1636,7 +1941,7 @@ fn snapshot_body_scrolled() {
         text,
         highlights: vec![],
     });
-    m.update(Action::FocusNth(4));
+    m.update(Action::FocusNth(5));
     m.on_key(key(KeyCode::PageDown));
     assert_eq!(m.search.body.scroll, 20);
     assert_eq!(m.search.results.cursor.index, 0);
@@ -1652,6 +1957,7 @@ fn snapshot_body_scrolled() {
 #[test]
 fn definition_text_keeps_its_inset_across_loading_and_redraws() {
     let mut m = searched();
+    m.update(Action::FocusNth(5));
     let source = m.search.body.preview.clone().unwrap();
     m.search.body.clear();
     let event = Event::Previewed {
@@ -1672,33 +1978,34 @@ fn definition_text_keeps_its_inset_across_loading_and_redraws() {
         terminal.backend().buffer().clone()
     };
     let loading = draw(&m);
-    assert_eq!(loading[(2, 12)].symbol(), " ");
+    assert_eq!(loading[(47, 4)].symbol(), " ");
     m.on_event(event.clone());
     let loaded = draw(&m);
-    assert_eq!(loaded[(1, 12)].symbol(), " ");
-    assert_eq!(loaded[(2, 12)].symbol(), "p");
+    assert_eq!(loaded[(46, 4)].symbol(), " ");
+    assert_eq!(loaded[(47, 4)].symbol(), "p");
     assert_eq!(
-        loaded[(6, 13)].symbol(),
+        loaded[(51, 5)].symbol(),
         "f",
         "source indentation is preserved"
     );
-    assert_eq!(loaded[(1, 11)], loading[(1, 11)], "the border stays put");
+    assert_eq!(loaded[(46, 3)], loading[(46, 3)], "the border stays put");
     m.on_event(event);
     assert_eq!(
         draw(&m),
         loaded,
         "a repeated file response cannot shift the text"
     );
-    m.update(Action::FocusNth(4));
+    m.update(Action::FocusNth(5));
     m.on_key(key(KeyCode::Down));
     let scrolled = draw(&m);
-    assert_eq!(scrolled[(6, 12)].symbol(), "f");
-    assert_eq!(scrolled[(1, 12)].symbol(), " ");
+    assert_eq!(scrolled[(51, 4)].symbol(), "f");
+    assert_eq!(scrolled[(46, 4)].symbol(), " ");
 }
 
 #[test]
 fn nested_definitions_keep_the_same_alignment_when_loaded_and_scrolled() {
     let mut m = searched();
+    m.update(Action::FocusNth(5));
     for indent in ["", "    ", "        ", "\t", "\t    "] {
         let text =
             format!("mod outer {{\n{indent}fn nested() {{\n{indent}    nested();\n{indent}}}");
@@ -1718,10 +2025,10 @@ fn nested_definitions_keep_the_same_alignment_when_loaded_and_scrolled() {
         assert!(
             loading
                 .lines()
-                .nth(12)
+                .nth(4)
                 .unwrap()
                 .chars()
-                .take(45)
+                .skip(45)
                 .all(|c| c == '│' || c == ' ')
         );
         assert!(!loading.contains("Loading"));
@@ -1739,30 +2046,48 @@ fn nested_definitions_keep_the_same_alignment_when_loaded_and_scrolled() {
         assert!(
             loaded
                 .lines()
-                .nth(12)
+                .nth(4)
                 .unwrap()
+                .chars()
+                .skip(45)
+                .collect::<String>()
                 .starts_with("│ fn nested() {"),
             "indent {indent:?}: {loaded}"
         );
         assert!(
             loaded
                 .lines()
-                .nth(13)
+                .nth(5)
                 .unwrap()
+                .chars()
+                .skip(45)
+                .collect::<String>()
                 .starts_with("│     nested();")
         );
-        assert!(loaded.lines().nth(14).unwrap().starts_with("│ }"));
+        assert!(
+            loaded
+                .lines()
+                .nth(6)
+                .unwrap()
+                .chars()
+                .skip(45)
+                .collect::<String>()
+                .starts_with("│ }")
+        );
         if indent == "        " {
             insta::assert_snapshot!("definition_nested", loaded);
         }
-        m.update(Action::FocusNth(4));
+        m.update(Action::FocusNth(5));
         m.update(Action::Scroll(1));
         let scrolled = FrameFixture::new(&m).render();
         assert!(
             scrolled
                 .lines()
-                .nth(12)
+                .nth(4)
                 .unwrap()
+                .chars()
+                .skip(45)
+                .collect::<String>()
                 .starts_with("│     nested();")
         );
     }
@@ -1793,14 +2118,16 @@ fn enum_variant_shows_its_whole_enum_when_its_file_arrives() {
     m.search.results.replace(vec![declaration]);
     m.search.selection_changed();
     m.search.body.clear();
+    m.update(Action::FocusNth(5));
+    m.update(Action::FocusNth(1));
     let loading = FrameFixture::new(&m).render();
     assert!(
         loading
             .lines()
-            .nth(12)
+            .nth(4)
             .unwrap()
             .chars()
-            .take(45)
+            .skip(45)
             .all(|c| c == '│' || c == ' ')
     );
     assert!(!loading.contains("Loading"));
@@ -1818,12 +2145,24 @@ fn enum_variant_shows_its_whole_enum_when_its_file_arrives() {
     assert!(
         loaded
             .lines()
-            .nth(12)
+            .nth(4)
             .unwrap()
+            .chars()
+            .skip(45)
+            .collect::<String>()
             .starts_with("│ enum Error {")
     );
-    assert!(loaded.lines().nth(15).unwrap().starts_with("│     Engine("));
-    m.update(Action::FocusNth(4));
+    assert!(
+        loaded
+            .lines()
+            .nth(7)
+            .unwrap()
+            .chars()
+            .skip(45)
+            .collect::<String>()
+            .starts_with("│     Engine(")
+    );
+    m.update(Action::FocusNth(5));
     assert!(
         matches!(m.update(Action::Edit).as_slice(), [Effect::Edit { path, line: 3 }]
         if path.as_path() == std::path::Path::new("error.rs"))
@@ -1835,24 +2174,53 @@ fn enum_variant_shows_its_whole_enum_when_its_file_arrives() {
     terminal
         .draw(|frame| App::new(&m, Painter::colored(), 0).render(frame.area(), frame.buffer_mut()))
         .unwrap();
-    assert_eq!(terminal.backend().buffer()[(6, 15)].symbol(), "E");
-    let highlighted = terminal.backend().buffer()[(6, 15)].style();
+    assert_eq!(terminal.backend().buffer()[(51, 7)].symbol(), "E");
+    let highlighted = terminal.backend().buffer()[(51, 7)].style();
     assert_eq!(highlighted.fg, Painter::colored().hit.fg);
     assert_eq!(
         highlighted.add_modifier,
         Painter::colored().hit.add_modifier
     );
-    assert!(loaded.lines().nth(13).unwrap().starts_with("│     Io,"));
-    assert!(loaded.lines().nth(16).unwrap().starts_with("│     Editor,"));
-    assert!(loaded.lines().nth(17).unwrap().starts_with("│ }"));
+    assert!(
+        loaded
+            .lines()
+            .nth(5)
+            .unwrap()
+            .chars()
+            .skip(45)
+            .collect::<String>()
+            .starts_with("│     Io,")
+    );
+    assert!(
+        loaded
+            .lines()
+            .nth(8)
+            .unwrap()
+            .chars()
+            .skip(45)
+            .collect::<String>()
+            .starts_with("│     Editor,")
+    );
+    assert!(
+        loaded
+            .lines()
+            .nth(9)
+            .unwrap()
+            .chars()
+            .skip(45)
+            .collect::<String>()
+            .starts_with("│ }")
+    );
     insta::assert_snapshot!("definition_enum_variant", loaded);
     let mut sibling = fx::decl("error.rs", 1, SymbolKind::Variant, "Io", "    Io,");
     let sibling_start = text.find("Io,").unwrap();
     sibling.symbol.as_mut().unwrap().span = vvv_engine::Span::new(sibling_start, sibling_start + 2);
     sibling.symbol.as_mut().unwrap().name_span = sibling.symbol.as_ref().unwrap().span;
-    std::sync::Arc::make_mut(&mut m.search.results.matches).push(sibling);
+    let mut matches = m.search.results.matches.to_vec();
+    matches.push(sibling);
+    m.search.results.replace(matches);
     assert!(
-        m.update(Action::Move(1))
+        m.update(Action::Move(-1))
             .iter()
             .any(|e| matches!(e, Effect::Definition { .. })),
         "a new occurrence requests coherent metadata"
@@ -1865,7 +2233,7 @@ fn enum_variant_shows_its_whole_enum_when_its_file_arrives() {
             .name,
         "Error"
     );
-    m.update(Action::FocusNth(4));
+    m.update(Action::FocusNth(5));
     m.update(Action::Bottom);
     assert_eq!(m.search.body.scroll, 5, "scroll bounds cover the full enum");
 }
@@ -1873,7 +2241,7 @@ fn enum_variant_shows_its_whole_enum_when_its_file_arrives() {
 #[test]
 fn definition_replies_are_ticketed_and_keep_the_previous_frame_while_pending() {
     let mut m = searched();
-    m.update(Action::FocusNth(4));
+    m.update(Action::FocusNth(5));
     m.update(Action::Scroll(1));
     let before = m.search.body.preview.clone();
     m.update(Action::Move(1));
@@ -1934,7 +2302,7 @@ fn old_success_cannot_replace_a_new_selection_or_result_set() {
 #[test]
 fn same_definition_keeps_scroll_and_duplicate_success_has_no_effect() {
     let mut m = searched();
-    m.update(Action::FocusNth(4));
+    m.update(Action::FocusNth(5));
     m.update(Action::Scroll(2));
     let file = m.search.body.preview.clone().unwrap();
     m.update(Action::Move(1));
@@ -2030,11 +2398,10 @@ fn variant_navigation_reveals_the_selection_using_the_actual_pane_height() {
     assert_eq!(m.search.body.scroll, 20 - (height - 1));
     let frame = FrameFixture::new(&m).render();
     assert!(
-        frame.lines().skip(12).any(|line| line
-            .chars()
-            .take(45)
-            .collect::<String>()
-            .contains("V19"))
+        frame
+            .lines()
+            .skip(4)
+            .any(|line| line.chars().skip(45).collect::<String>().contains("V19"))
     );
 }
 
@@ -2446,4 +2813,959 @@ fn back_to_an_ambiguous_origin_validates_without_opening_a_picker() {
         m.search.body.message.as_deref(),
         Some("Several definitions match")
     );
+}
+
+#[test]
+fn categories_keep_exact_occurrences_and_switching_from_kinds_restores_uses() {
+    use crate::modes::search::Category;
+    let mut m = searched();
+    m.search.focus = SearchPanel::Results;
+    m.update(Action::File(2));
+    m.update(Action::Move(1));
+    let use_id = m.search.results.current().unwrap().id.clone();
+    m.update(Action::OpenMenu(MenuTarget::Category));
+    m.update(Action::Move(3));
+    m.update(Action::MenuChoose);
+    assert_eq!(m.search.results.category, Category::Uses);
+    assert_eq!(m.search.results.len(), 1);
+    assert_eq!(m.search.results.current().unwrap().id, use_id);
+    assert_eq!(
+        m.search.results.matches.len(),
+        4,
+        "hidden roles stay available"
+    );
+    let rw = crate::modes::rewrite::RewriteMode::from_results(&m.search.results).unwrap();
+    assert_eq!(
+        rw.matches.len(),
+        1,
+        "rewrite only offers the visible search matches"
+    );
+    m.update(Action::OpenMenu(MenuTarget::Symbol));
+    typed(&mut m, "trait");
+    m.update(Action::MenuChoose);
+    assert_eq!(m.search.results.category, Category::Declarations);
+    assert_eq!(m.search.query.filter(Filter::Symbol), Some("trait"));
+    m.update(Action::OpenMenu(MenuTarget::Category));
+    typed(&mut m, "uses");
+    let effects = m.update(Action::MenuChoose);
+    assert!(m.search.query.filter(Filter::Symbol).is_none());
+    assert!(matches!(effects.as_slice(), [Effect::Search { .. }]));
+    assert_eq!(m.search.results.category, Category::Uses);
+}
+
+#[test]
+fn locations_are_engine_scopes_but_navigation_and_reference_subjects_are_global() {
+    use crate::modes::search::Category;
+    use vvv_engine::{NavigationOrigin, NavigationOutcome};
+    let definition = DefinitionFixture::new(
+        "Language",
+        "crates/vvv-lang/src/language.rs",
+        "trait Language {}",
+    )
+    .reply();
+    let NavigationOutcome::Resolved { preview, .. } = &definition.outcome else {
+        panic!()
+    };
+    let declaration_id = preview.declaration.id.clone();
+    let mut m = model();
+    typed(&mut m, "Language");
+    m.update(Action::OpenMenu(MenuTarget::Location));
+    typed(&mut m, "crates/vvv");
+    let effects = m.update(Action::MenuChoose);
+    assert!(
+        matches!(effects.as_slice(), [Effect::Search { scope, .. }] if scope.paths == [vvv_engine::RelPath::from("crates/vvv")])
+    );
+    let occurrence = fx::m("crates/vvv/src/main.rs", 5, 0, "Language", "Language");
+    m.on_event(Event::Searched {
+        generation: generation_of(&effects),
+        matches: vec![occurrence.clone()],
+        skipped: vec![],
+    });
+    m.search.focus = SearchPanel::Results;
+    m.update(Action::FilterFiles);
+    typed(&mut m, "main");
+    m.update(Action::Enter);
+    let (ticket, query) = m.search.body.pending().unwrap();
+    assert!(
+        matches!(&query.origin, NavigationOrigin::Position { path, .. } if path.as_path() == std::path::Path::new("crates/vvv/src/main.rs"))
+    );
+    m.on_event(Event::DefinitionResolved {
+        ticket,
+        query,
+        reply: Ok(definition.clone()),
+    });
+    assert!(
+        m.search
+            .body
+            .declaration()
+            .unwrap()
+            .path
+            .starts_with("crates/vvv-lang")
+    );
+    let references = m.update(Action::Enter);
+    assert!(
+        matches!(references.as_slice(), [Effect::Query { request: Request::References(query), .. }] if query.declared_in.as_ref().unwrap().as_path() == std::path::Path::new("crates/vvv-lang/src/language.rs"))
+    );
+    m.status.busy = false;
+    let query_text = m.search.query.text().to_owned();
+    m.search.results.set_category(Category::Uses);
+    let effects = m.update(Action::Follow);
+    m.on_event(FollowFixture { effects }.reply(Ok(definition)));
+    assert_eq!(
+        m.search.results.len(),
+        1,
+        "a followed declaration remains visible outside the result location"
+    );
+    assert_eq!(m.search.results.current().unwrap().id, declaration_id);
+    assert!(m.search.results.files.filter.is_empty());
+    m.update(Action::BrowseBack);
+    assert_eq!(m.search.query.text(), query_text);
+    assert_eq!(m.search.results.category, Category::Uses);
+    assert_eq!(
+        m.search.locations.selected.unwrap().as_path(),
+        std::path::Path::new("crates/vvv")
+    );
+    assert_eq!(m.search.results.current().unwrap().id, occurrence.id);
+    assert_eq!(m.search.results.files.filter, "main");
+}
+
+#[test]
+fn file_jumps_skip_headings_and_filters_preserve_the_selected_match_id() {
+    let mut m = searched();
+    m.search.focus = SearchPanel::Results;
+    m.on_key(key(KeyCode::Char(']')));
+    assert_eq!(
+        m.search.results.current().unwrap().path.as_path(),
+        std::path::Path::new("src/lang/registry.rs")
+    );
+    m.on_key(key(KeyCode::Char(']')));
+    assert_eq!(m.search.results.current().unwrap().start.line, 25);
+    m.update(Action::Move(1));
+    m.on_key(key(KeyCode::Char('[')));
+    assert_eq!(
+        m.search.results.current().unwrap().path.as_path(),
+        std::path::Path::new("src/lang/registry.rs")
+    );
+    let id = m.search.results.current().unwrap().id.clone();
+    let mut matches = m.search.results.matches.to_vec();
+    matches.push(fx::decl(
+        "aaa.rs",
+        0,
+        SymbolKind::Struct,
+        "Language",
+        "struct Language {}",
+    ));
+    m.search.results.replace(matches);
+    assert_eq!(m.search.results.current().unwrap().id, id);
+}
+
+#[test]
+fn searchable_menus_handle_no_matches_and_reject_paths_outside_the_workspace() {
+    let mut m = searched();
+    m.search.focus = SearchPanel::Results;
+    m.on_key(key(KeyCode::Char('s')));
+    typed(&mut m, "DOES_NOT_EXIST");
+    assert!(m.update(Action::MenuChoose).is_empty());
+    assert!(m.overlay.is_some(), "an empty menu has no implicit choice");
+    m.update(Action::Back);
+    m.on_key(key(KeyCode::Char('f')));
+    typed(&mut m, "../outside");
+    m.update(Action::MenuChoose);
+    assert!(m.search.locations.selected.is_none());
+    assert!(matches!(m.status.message, Some((Level::Error, _))));
+    m.update(Action::OpenMenu(MenuTarget::Location));
+    m.update(Action::MenuChoose);
+    assert!(m.search.locations.selected.is_none());
+    m.search.focus = SearchPanel::Query;
+    assert_eq!(
+        m.action_for(ctrl('f')),
+        Some(Action::OpenMenu(MenuTarget::Location))
+    );
+    assert_eq!(
+        m.action_for(key(KeyCode::Char('f'))),
+        Some(Action::Input('f'))
+    );
+}
+
+#[test]
+fn file_list_keeps_its_full_identity_while_matches_scroll_or_paths_wrap() {
+    let mut m = model();
+    typed(&mut m, "Engine");
+    let directory = "crates/vvv-engine/src/very/long/module/directory";
+    let matches = (0..35)
+        .map(|line| {
+            fx::m(
+                &format!("{directory}/engine.rs"),
+                line,
+                0,
+                "Engine",
+                "Engine",
+            )
+        })
+        .collect();
+    m.on_event(Event::Searched {
+        generation: m.generation,
+        matches,
+        skipped: vec![],
+    });
+    m.search.focus = SearchPanel::Results;
+    let before = FrameFixture::new(&m).render_size(120, 24);
+    m.update(Action::Bottom);
+    let wide = FrameFixture::new(&m).render_size(120, 24);
+    let files = |frame: &str| {
+        frame
+            .lines()
+            .take_while(|row| !row.starts_with('├'))
+            .map(|row| row.chars().take(60).collect::<String>())
+            .collect::<Vec<_>>()
+    };
+    assert_eq!(
+        files(&before),
+        files(&wide),
+        "match scrolling cannot move the file viewport"
+    );
+    assert!(wide.contains("engine.rs"));
+    assert!(wide.contains(directory));
+    assert!(wide.contains("> 35  Engine"));
+    let narrow = FrameFixture::new(&m).render_size(70, 20);
+    let left: String = narrow
+        .lines()
+        .skip(3)
+        .take(16)
+        .map(|row| {
+            row.chars()
+                .skip(3)
+                .take(25)
+                .filter(|c| c.is_alphanumeric() || matches!(c, '/' | '-' | '.'))
+                .collect::<String>()
+        })
+        .collect();
+    assert!(
+        left.contains(&format!("{directory}/engine.rs")),
+        "wrapped headings preserve every path component: {narrow}"
+    );
+    insta::assert_snapshot!("grouped_scrolled", wide);
+}
+
+#[test]
+fn fuzzy_file_filter_is_local_cancellable_and_keeps_each_files_selected_match() {
+    let mut m = searched();
+    m.search.focus = SearchPanel::Results;
+    let query = m.search.query.text().to_owned();
+    let generation = m.generation;
+    m.on_key(key(KeyCode::Char('F')));
+    assert_eq!(
+        m.action_for(key(KeyCode::Char('r'))),
+        Some(Action::Input('r'))
+    );
+    assert_eq!(
+        m.action_for(key(KeyCode::Char('F'))),
+        Some(Action::Input('F'))
+    );
+    let effects = typed(&mut m, "lib");
+    assert!(
+        !effects
+            .iter()
+            .any(|e| matches!(e, Effect::Search { .. } | Effect::Query { .. }))
+    );
+    assert_eq!(m.generation, generation);
+    assert_eq!(m.search.query.text(), query);
+    assert_eq!(m.search.results.file_groups().len(), 1);
+    assert_eq!(m.search.results.len(), 2);
+    let frame = FrameFixture::new(&m).render_size(120, 24);
+    assert!(frame.contains("Files · filter") && frame.contains("ctrl+f in:"));
+    assert!(
+        !frame.contains("F files")
+            && !frame.contains("4 source")
+            && !frame.contains("5 definition")
+    );
+    insta::assert_snapshot!("fuzzy_file_filter", frame);
+    m.on_key(key(KeyCode::Enter));
+    assert!(m.search.results.files.edit.is_none());
+    m.update(Action::Move(1));
+    let selected = m.search.results.current().unwrap().id.clone();
+    assert_eq!(m.search.results.current().unwrap().start.line, 40);
+    m.on_key(key(KeyCode::Char('F')));
+    m.on_key(ctrl('u'));
+    m.on_key(key(KeyCode::Up));
+    assert_eq!(
+        m.search.results.current().unwrap().path.as_path(),
+        std::path::Path::new("src/lang/registry.rs")
+    );
+    m.on_key(key(KeyCode::Esc));
+    assert_eq!(m.search.results.files.filter, "lib");
+    assert_eq!(m.search.results.current().unwrap().id, selected);
+    m.on_key(key(KeyCode::Char('F')));
+    m.on_key(ctrl('u'));
+    m.on_key(key(KeyCode::Enter));
+    m.on_key(key(KeyCode::Char('[')));
+    m.on_key(key(KeyCode::Char(']')));
+    assert_eq!(m.search.results.current().unwrap().id, selected);
+    assert_eq!(m.search.results.matches.len(), 4);
+}
+
+#[test]
+fn empty_file_filter_results_clear_selection_reject_old_previews_and_cancel_restores_it() {
+    let mut m = searched();
+    m.search.focus = SearchPanel::Results;
+    m.update(Action::File(1));
+    let selected = m.search.results.current().unwrap().id.clone();
+    let (ticket, query) = m.search.body.pending().unwrap();
+    m.update(Action::FilterFiles);
+    typed(&mut m, "zzzzzz");
+    assert_eq!(m.search.results.len(), 0);
+    assert!(m.search.results.current_site().is_none());
+    assert!(m.search.body.pending().is_none());
+    m.on_event(Event::DefinitionResolved {
+        ticket,
+        query,
+        reply: Err(vvv_engine::Failure::new(
+            vvv_engine::ErrorCode::Stale,
+            "old reply",
+        )),
+    });
+    assert!(
+        !m.search
+            .body
+            .message
+            .as_deref()
+            .unwrap()
+            .contains("old reply")
+    );
+    insta::assert_snapshot!("file_filter_empty", FrameFixture::new(&m).render());
+    m.on_key(key(KeyCode::Esc));
+    assert_eq!(m.search.results.current().unwrap().id, selected);
+    assert!(m.search.results.files.filter.is_empty());
+    assert!(m.search.body.pending().is_some());
+}
+
+#[test]
+fn file_filter_cancel_restores_preview_focus_and_never_changes_panel_shortcuts() {
+    let mut m = searched();
+    m.update(Action::FocusNth(5));
+    assert_eq!(
+        m.action_for(key(KeyCode::Char('F'))),
+        Some(Action::FilterFiles)
+    );
+    m.on_key(key(KeyCode::Char('F')));
+    typed(&mut m, "lib");
+    m.on_key(key(KeyCode::Esc));
+    assert_eq!(m.search.focus, SearchPanel::Body);
+    assert!(m.search.results.files.filter.is_empty());
+    m.on_key(key(KeyCode::Char('4')));
+    assert_eq!(m.search.focus, SearchPanel::Context);
+    m.on_key(key(KeyCode::Char('5')));
+    assert_eq!(m.search.focus, SearchPanel::Body);
+}
+
+#[test]
+fn fuzzy_file_filter_never_narrows_rewrite_and_references_keep_one_group_per_file() {
+    let mut m = searched();
+    m.search.focus = SearchPanel::Results;
+    m.update(Action::FilterFiles);
+    typed(&mut m, "lib");
+    m.update(Action::Enter);
+    let rewrite = crate::modes::rewrite::RewriteMode::from_results(&m.search.results).unwrap();
+    assert_eq!(rewrite.matches.len(), 4);
+    assert_eq!(rewrite.ticks.len(), 4);
+    m.on_event(Event::Answered {
+        generation: m.generation,
+        answer: Box::new(Answer::References(fx::references())),
+    });
+    assert_eq!(m.search.results.file_groups().len(), 1);
+    assert_eq!(m.search.results.file_groups()[0].matches.len(), 2);
+    assert_eq!(
+        m.search
+            .results
+            .references
+            .as_ref()
+            .unwrap()
+            .occurrences
+            .len(),
+        4
+    );
+    let frame = FrameFixture::new(&m).render_size(120, 24);
+    assert!(frame.contains("✓ 3  ? 1  ✗ 0"));
+    assert_eq!(
+        crate::modes::rewrite::RewriteMode::from_results(&m.search.results)
+            .unwrap()
+            .matches
+            .len(),
+        4
+    );
+}
+
+#[test]
+fn changing_categories_and_entering_references_keep_the_active_file_when_possible() {
+    use crate::modes::search::Category;
+    let mut m = searched();
+    m.search.focus = SearchPanel::Results;
+    m.update(Action::File(2));
+    m.update(Action::Move(1));
+    m.search.results.set_category(Category::Imports);
+    m.search.selection_changed();
+    assert_eq!(
+        m.search.results.current().unwrap().path.as_path(),
+        std::path::Path::new("src/lib.rs")
+    );
+    assert_eq!(m.search.results.current().unwrap().start.line, 25);
+    m.search.results.set_category(Category::All);
+    m.search.selection_changed();
+    m.update(Action::Move(1));
+    let selected = m.search.results.current().unwrap().id.clone();
+    m.on_event(Event::Answered {
+        generation: m.generation,
+        answer: Box::new(Answer::References(fx::references())),
+    });
+    assert_eq!(m.search.results.current().unwrap().id, selected);
+    m.search.results.set_relation(Relation::Unresolved);
+    assert_eq!(m.search.results.current().unwrap().id, selected);
+    m.update(Action::Back); // Matches → Files
+    m.update(Action::Back); // Files → Query
+    m.update(Action::Back); // Leave the relation
+    assert!(!m.search.results.is_anchored());
+    assert_eq!(m.search.results.current().unwrap().id, selected);
+}
+
+#[test]
+fn source_excerpts_explain_results_without_opening_a_preview() {
+    let mut m = model();
+    typed(&mut m, "Engine");
+    let import = "use vvv_engine::{Answer, Call, ErrorCode, Failure, Engine, Reply};";
+    let matches = vec![
+        fx::m(
+            "crates/vvv/src/cli/commands/serve.rs",
+            5,
+            import.find("Engine").unwrap() as u32,
+            "Engine",
+            import,
+        ),
+        fx::m(
+            "crates/vvv/src/cli/commands/serve.rs",
+            37,
+            8,
+            "Engine",
+            "engine: Engine,",
+        ),
+        fx::m(
+            "crates/vvv/src/cli/commands/serve.rs",
+            62,
+            15,
+            "Engine",
+            "fn engine() -> Engine {",
+        ),
+        fx::m(
+            "crates/vvv/src/context.rs",
+            11,
+            8,
+            "Engine",
+            "engine: Engine,",
+        ),
+    ];
+    m.on_event(Event::Searched {
+        generation: m.generation,
+        matches,
+        skipped: vec![],
+    });
+    m.search.focus = SearchPanel::Results;
+    let frame = FrameFixture::new(&m).render_size(120, 24);
+    assert!(frame.contains("crates/vvv/src/cli/commands/serve.rs"));
+    assert!(frame.contains("engine: Engine,"));
+    assert!(frame.contains("fn engine() -> Engine {"));
+    let import_row = frame
+        .lines()
+        .find(|line| line.contains("use vvv_engine::{"))
+        .unwrap();
+    assert!(import_row.contains("Engine"), "{import_row}");
+    assert!(import_row.contains('…'), "{import_row}");
+    m.update(Action::Move(1));
+    assert_eq!(m.search.results.current().unwrap().start.line, 37);
+    m.update(Action::File(1));
+    assert_eq!(
+        m.search.results.current().unwrap().path.as_path(),
+        std::path::Path::new("crates/vvv/src/context.rs")
+    );
+    insta::assert_snapshot!("readable_results", frame);
+}
+
+#[test]
+fn snapshot_location_category_and_wide_cross_crate_preview() {
+    let definition = DefinitionFixture::new(
+        "Engine",
+        "crates/vvv-engine/src/engine.rs",
+        "pub struct Engine {\n    workspace: Workspace,\n    languages: LanguageRegistry,\n}",
+    )
+    .reply();
+    let mut m = model();
+    typed(&mut m, "Engine");
+    m.search.locations.select(Some("crates/vvv")).unwrap();
+    m.search
+        .results
+        .set_location(m.search.locations.selected.clone());
+    let matches = vec![
+        fx::m(
+            "crates/vvv/src/cli/commands/serve.rs",
+            37,
+            8,
+            "Engine",
+            "engine: Engine,",
+        ),
+        fx::m(
+            "crates/vvv/src/cli/context.rs",
+            11,
+            8,
+            "Engine",
+            "engine: Engine,",
+        ),
+    ];
+    m.on_event(Event::Searched {
+        generation: m.generation,
+        matches,
+        skipped: vec![],
+    });
+    m.search.focus = SearchPanel::Results;
+    let (ticket, query) = m.search.body.pending().unwrap();
+    m.on_event(Event::DefinitionResolved {
+        ticket,
+        query,
+        reply: Ok(definition),
+    });
+    m.on_event(preview(
+        "crates/vvv/src/cli/commands/serve.rs",
+        &numbered(42, &[(38, "    engine: Engine,")])
+            .iter()
+            .map(String::as_str)
+            .collect::<Vec<_>>(),
+    ));
+    insta::assert_snapshot!("scoped_wide", FrameFixture::new(&m).render_size(120, 30));
+    m.update(Action::OpenMenu(MenuTarget::Location));
+    typed(&mut m, "crates");
+    insta::assert_snapshot!(
+        "location_picker",
+        FrameFixture::new(&m).render_size(120, 30)
+    );
+    m.update(Action::Back);
+    m.update(Action::OpenMenu(MenuTarget::Category));
+    insta::assert_snapshot!("category_picker", FrameFixture::new(&m).render());
+}
+
+#[test]
+fn reference_locations_keep_global_verdicts_and_leaving_refreshes_changed_search_scope() {
+    let mut m = anchored();
+    m.search.focus = SearchPanel::Results;
+    let query = m.search.query.text().to_owned();
+    m.update(Action::OpenMenu(MenuTarget::Location));
+    typed(&mut m, "src/lib.rs");
+    let effects = m.update(Action::MenuChoose);
+    assert!(
+        !effects.iter().any(|e| matches!(e, Effect::Search { .. })),
+        "reference scopes filter an already judged answer"
+    );
+    assert_eq!(m.search.results.len(), 2);
+    assert!(
+        m.search
+            .results
+            .listed()
+            .iter()
+            .all(|m| m.path.as_path() == std::path::Path::new("src/lib.rs"))
+    );
+    assert_eq!(
+        m.search
+            .results
+            .references
+            .as_ref()
+            .unwrap()
+            .occurrences
+            .len(),
+        4
+    );
+    m.update(Action::Move(1));
+    let frame = FrameFixture::new(&m).render();
+    assert!(frame.contains("? Language::new()"));
+    m.update(Action::Back);
+    m.update(Action::Back);
+    let effects = m.update(Action::Back);
+    assert!(
+        matches!(effects.as_slice(), [Effect::Search { scope, .. }] if scope.paths == [vvv_engine::RelPath::from("src/lib.rs")])
+    );
+    assert_eq!(m.search.query.text(), query);
+}
+
+impl Model {
+    fn large_file_results(&mut self) {
+        let matches = (0..20)
+            .flat_map(|file| {
+                (0..30).map(move |line| {
+                    let path = format!("src/file{file:02}.rs");
+                    let mut m = fx::m(&path, file * 100 + line, 0, "Thing", "Thing()");
+                    m.id = vvv_engine::MatchId::derive(&m.path, m.span, &format!("{file}-{line}"));
+                    m
+                })
+            })
+            .collect();
+        self.search.results.replace(matches);
+        self.search.selection_changed();
+        self.on_event(Event::Viewport {
+            width: 120,
+            height: 24,
+        });
+    }
+
+    fn mouse(
+        &mut self,
+        kind: ratatui::crossterm::event::MouseEventKind,
+        column: u16,
+        row: u16,
+    ) -> Vec<Effect> {
+        let event = ratatui::crossterm::event::MouseEvent {
+            kind,
+            column,
+            row,
+            modifiers: ratatui::crossterm::event::KeyModifiers::NONE,
+        };
+        self.search_frame()
+            .pointer(event)
+            .map_or_else(Vec::new, |pointer| self.on_event(Event::Pointer(pointer)))
+    }
+}
+
+#[test]
+fn file_list_keys_share_search_actions_and_keep_filter_text_and_focus_local() {
+    let mut m = searched();
+    m.on_key(key(KeyCode::Tab));
+    assert_eq!(m.search.focus, SearchPanel::Files);
+    for (c, expected) in [
+        ('f', Action::OpenMenu(MenuTarget::Location)),
+        ('s', Action::OpenMenu(MenuTarget::Symbol)),
+        ('t', Action::OpenMenu(MenuTarget::Category)),
+        ('L', Action::OpenMenu(MenuTarget::Language)),
+        ('r', Action::Rename),
+        ('m', Action::MoveFile),
+        ('M', Action::MoveSymbol),
+        ('w', Action::Rewrite),
+        ('o', Action::Follow),
+        ('p', Action::PreviewTab),
+        ('h', Action::History),
+        ('u', Action::Undo),
+        ('/', Action::FocusNth(1)),
+        ('i', Action::FocusNth(1)),
+        ('[', Action::File(-1)),
+        (']', Action::File(1)),
+        ('q', Action::Quit),
+    ] {
+        assert_eq!(m.action_for(key(KeyCode::Char(c))), Some(expected), "{c}");
+    }
+    for (c, target) in [
+        ('f', MenuTarget::Location),
+        ('s', MenuTarget::Symbol),
+        ('t', MenuTarget::Category),
+        ('L', MenuTarget::Language),
+    ] {
+        m.on_key(key(KeyCode::Char(c)));
+        assert!(
+            matches!(&m.overlay, Some(Overlay::Menu(menu)) if menu.target == target),
+            "{c}"
+        );
+        m.on_key(key(KeyCode::Esc));
+        assert_eq!(m.search.focus, SearchPanel::Files);
+    }
+    m.on_key(ctrl('n'));
+    assert_eq!(
+        m.search.results.current().unwrap().path.as_path(),
+        std::path::Path::new("src/lang/registry.rs")
+    );
+    m.on_key(ctrl('p'));
+    assert_eq!(
+        m.search.results.current().unwrap().path.as_path(),
+        std::path::Path::new("src/lang/mod.rs")
+    );
+    m.on_key(key(KeyCode::Right));
+    assert_eq!(m.search.focus, SearchPanel::Results);
+    m.on_key(key(KeyCode::Esc));
+    m.on_key(key(KeyCode::Char('/')));
+    assert_eq!(m.search.focus, SearchPanel::Query);
+
+    m.on_key(key(KeyCode::Tab));
+    m.search.results.entered(fx::references());
+    assert_eq!(
+        m.action_for(key(KeyCode::Char('R'))),
+        Some(Action::OpenMenu(MenuTarget::Relation))
+    );
+    m.on_key(key(KeyCode::Char('F')));
+    for c in ['f', 's', 't', 'L', 'R', 'r', 'o', '/', 'q'] {
+        assert_eq!(m.action_for(key(KeyCode::Char(c))), Some(Action::Input(c)));
+    }
+    m.on_key(key(KeyCode::Esc));
+    let frame = FrameFixture::new(&m).render_size(120, 24);
+    assert!(frame.contains("f location") && frame.contains("t category"));
+    insta::assert_snapshot!("file_list_keys", frame);
+}
+
+#[test]
+fn files_and_matches_have_independent_focus_and_clamped_keyboard_navigation() {
+    let mut m = searched();
+    m.update(Action::FocusNext);
+    assert_eq!(m.search.focus, SearchPanel::Files);
+    m.on_key(key(KeyCode::Down));
+    assert_eq!(
+        m.search.results.current().unwrap().path.as_path(),
+        std::path::Path::new("src/lang/registry.rs")
+    );
+    m.on_key(key(KeyCode::End));
+    assert_eq!(
+        m.search.results.current().unwrap().path.as_path(),
+        std::path::Path::new("src/lib.rs")
+    );
+    m.on_key(key(KeyCode::Enter));
+    assert_eq!(m.search.focus, SearchPanel::Results);
+    m.on_key(key(KeyCode::End));
+    let last = m.search.results.current().unwrap().id.clone();
+    m.on_key(key(KeyCode::Down));
+    assert_eq!(m.search.results.current().unwrap().id, last);
+    m.on_key(key(KeyCode::Home));
+    m.on_key(key(KeyCode::Up));
+    assert_eq!(
+        m.search.results.current().unwrap().path.as_path(),
+        std::path::Path::new("src/lib.rs")
+    );
+    m.on_key(key(KeyCode::End));
+    m.on_key(key(KeyCode::Esc));
+    assert_eq!(m.search.focus, SearchPanel::Files);
+    m.on_key(key(KeyCode::Up));
+    m.on_key(key(KeyCode::Down));
+    assert_eq!(m.search.results.current().unwrap().id, last);
+    m.on_key(key(KeyCode::Esc));
+    assert_eq!(m.search.focus, SearchPanel::Query);
+    let query = m.search.query.text().to_owned();
+    let generation = m.generation;
+    m.on_key(ctrl('p'));
+    assert_eq!(
+        m.search.results.current().unwrap().path.as_path(),
+        std::path::Path::new("src/lang/registry.rs")
+    );
+    m.on_key(ctrl('n'));
+    assert_eq!(m.search.results.current().unwrap().id, last);
+    assert_eq!(m.search.focus, SearchPanel::Query);
+    assert_eq!(m.search.query.text(), query);
+    assert_eq!(m.generation, generation);
+}
+
+#[test]
+fn file_shortcuts_and_tab_order_skip_unavailable_panes_without_renumbering() {
+    let mut m = searched();
+    for (n, panel) in [
+        (2, SearchPanel::Files),
+        (3, SearchPanel::Results),
+        (4, SearchPanel::Context),
+        (5, SearchPanel::Body),
+    ] {
+        m.update(Action::FocusNth(n));
+        assert_eq!(m.search.focus, panel);
+    }
+    m.search.results.entered(fx::references());
+    m.search.results.show_impact(fx::impact());
+    m.search.focus = SearchPanel::Query;
+    m.update(Action::FocusNext);
+    assert_eq!(m.search.focus, SearchPanel::Results);
+    m.update(Action::FocusNth(2));
+    assert_eq!(m.search.focus, SearchPanel::Results);
+    m.update(Action::FocusNth(4));
+    assert_eq!(m.search.focus, SearchPanel::Context);
+}
+
+#[test]
+fn mouse_wheel_scrolls_the_hovered_list_without_selection_or_focus_changes() {
+    use ratatui::crossterm::event::{MouseButton, MouseEventKind};
+    let mut m = searched();
+    m.large_file_results();
+    let selected = m.search.results.current().unwrap().id.clone();
+    let frame = m.search_frame();
+    let files = &frame.lists[0];
+    let (x, y) = (files.content.x, files.content.y);
+    assert!(m.mouse(MouseEventKind::ScrollDown, x, y).is_empty());
+    assert_eq!(m.search.results.files.viewport.offset, 3);
+    assert_eq!(m.search.focus, SearchPanel::Query);
+    assert_eq!(m.search.results.current().unwrap().id, selected);
+    m.mouse(MouseEventKind::Down(MouseButton::Left), x, y + 1);
+    assert_eq!(m.search.focus, SearchPanel::Files);
+    assert_eq!(
+        m.search.results.current().unwrap().path.as_path(),
+        std::path::Path::new("src/file04.rs")
+    );
+    let current = m.search.results.current().unwrap().id.clone();
+    let frame = m.search_frame();
+    let matches = &frame.lists[1];
+    let (x, y) = (matches.content.x, matches.content.y);
+    m.mouse(
+        MouseEventKind::Down(MouseButton::Left),
+        matches.area.x + 1,
+        matches.area.y,
+    );
+    assert_eq!(
+        m.search.focus,
+        SearchPanel::Results,
+        "shared border belongs to the Matches title"
+    );
+    m.update(Action::FocusNth(2));
+    m.mouse(MouseEventKind::ScrollDown, x, y);
+    assert_eq!(m.search.results.current().unwrap().id, current);
+    assert_eq!(m.search.focus, SearchPanel::Files);
+    m.mouse(MouseEventKind::Down(MouseButton::Left), x, y + 2);
+    assert_eq!(m.search.focus, SearchPanel::Results);
+    assert_eq!(m.search.results.current().unwrap().start.line, 405);
+    insta::assert_snapshot!(
+        "interactive_file_browser",
+        FrameFixture::new(&m).render_size(120, 24)
+    );
+}
+
+#[test]
+fn paging_uses_the_list_viewport_and_restores_each_files_match_scroll() {
+    let mut m = searched();
+    m.large_file_results();
+    m.update(Action::FocusNth(2));
+    let frame = m.search_frame();
+    let height = frame.lists[0].content.height as usize;
+    m.on_key(key(KeyCode::PageDown));
+    assert_eq!(
+        m.search.results.current().unwrap().path,
+        vvv_engine::RelPath::from(format!("src/file{height:02}.rs"))
+    );
+    m.on_key(key(KeyCode::PageUp));
+    assert_eq!(
+        m.search.results.current().unwrap().path.as_path(),
+        std::path::Path::new("src/file00.rs")
+    );
+    m.update(Action::Enter);
+    m.update(Action::Bottom);
+    let id = m.search.results.current().unwrap().id.clone();
+    let offset = m
+        .search
+        .results
+        .files
+        .match_viewports
+        .get(std::path::Path::new("src/file00.rs"))
+        .unwrap()
+        .offset;
+    assert!(offset > 0);
+    m.update(Action::File(1));
+    m.update(Action::File(-1));
+    assert_eq!(m.search.results.current().unwrap().id, id);
+    assert_eq!(
+        m.search
+            .results
+            .files
+            .match_viewports
+            .get(std::path::Path::new("src/file00.rs"))
+            .unwrap()
+            .offset,
+        offset
+    );
+    m.update(Action::Top);
+    assert_eq!(m.search.results.current().unwrap().start.line, 0);
+    m.update(Action::Move(-1));
+    assert_eq!(m.search.results.current().unwrap().start.line, 0);
+}
+
+#[test]
+fn wrapped_unicode_paths_map_every_visible_row_to_the_same_file() {
+    use ratatui::crossterm::event::{MouseButton, MouseEventKind};
+    let mut m = searched();
+    let path = "src/语言/long-directory/another-directory/engine.rs";
+    let matched = fx::m(path, 0, 0, "Thing", "Thing()");
+    let id = matched.id.clone();
+    m.search.results.replace(vec![matched]);
+    m.search.selection_changed();
+    m.on_event(Event::Viewport {
+        width: 70,
+        height: 24,
+    });
+    let frame = m.search_frame();
+    let list = &frame.lists[0];
+    assert!(list.rows.len() > 1);
+    let (x, y) = (list.content.x, list.content.y + 1);
+    m.mouse(MouseEventKind::Down(MouseButton::Left), x, y);
+    assert_eq!(m.search.focus, SearchPanel::Files);
+    assert_eq!(m.search.results.current().unwrap().id, id);
+    let frame = m.search_frame();
+    let list = &frame.lists[0];
+    m.mouse(
+        MouseEventKind::Down(MouseButton::Left),
+        list.content.x,
+        list.content.y + list.content.height - 1,
+    );
+    assert_eq!(
+        m.search.results.current().unwrap().id,
+        id,
+        "blank rows only change focus"
+    );
+}
+
+#[test]
+fn overlays_and_changed_results_reject_pointer_targets_from_an_old_frame() {
+    use ratatui::crossterm::event::{KeyModifiers, MouseButton, MouseEvent, MouseEventKind};
+    let mut m = searched();
+    m.large_file_results();
+    let frame = m.search_frame();
+    let list = &frame.lists[0];
+    let event = MouseEvent {
+        kind: MouseEventKind::Down(MouseButton::Left),
+        column: list.content.x,
+        row: list.content.y + 1,
+        modifiers: KeyModifiers::NONE,
+    };
+    let pointer = frame.pointer(event).unwrap();
+    let id = m.search.results.current().unwrap().id.clone();
+    m.update(Action::FocusNth(3));
+    m.update(Action::Help);
+    assert!(m.on_event(Event::Pointer(pointer.clone())).is_empty());
+    assert_eq!(m.search.results.current().unwrap().id, id);
+    m.update(Action::Back);
+    m.search.results.replace(vec![]);
+    assert!(m.on_event(Event::Pointer(pointer)).is_empty());
+    assert!(m.search.results.current().is_none());
+}
+
+#[test]
+fn filtering_keeps_layout_stable_and_cancellation_restores_manual_viewports() {
+    use ratatui::crossterm::event::MouseEventKind;
+    let mut m = searched();
+    m.large_file_results();
+    m.update(Action::FocusNth(2));
+    let frame = m.search_frame();
+    let list = &frame.lists[0];
+    m.mouse(MouseEventKind::ScrollDown, list.content.x, list.content.y);
+    let old = m.search.results.files.viewport.offset;
+    let rect = m.search_frame().lists[0].area;
+    m.update(Action::FilterFiles);
+    typed(&mut m, "file19");
+    assert_eq!(m.search_frame().lists[0].area, rect);
+    m.update(Action::Back);
+    assert_eq!(m.search.focus, SearchPanel::Files);
+    assert_eq!(m.search.results.files.viewport.offset, old);
+    m.update(Action::FilterFiles);
+    typed(&mut m, "zzzz");
+    m.update(Action::FocusNext);
+    assert_eq!(m.search.focus, SearchPanel::Results);
+    assert!(m.search.results.files.edit.is_none());
+    m.update(Action::FocusNth(2));
+    m.on_key(ctrl('u'));
+    assert!(m.search.results.files.filter.is_empty());
+    assert!(m.search.results.current().is_some());
+}
+
+#[test]
+fn short_terminal_keeps_the_focused_list_browsable_and_geometry_in_bounds() {
+    let mut m = searched();
+    m.large_file_results();
+    for (width, height) in [(1, 1), (20, 6), (40, 10), (90, 20)] {
+        m.on_event(Event::Viewport { width, height });
+        for focus in [2, 3, 4, 5] {
+            m.update(Action::FocusNth(focus));
+            FrameFixture::new(&m).render_size(width, height);
+            for (_, area) in m.search_frame().panels {
+                assert!(area.is_empty() || (area.right() <= width && area.bottom() < height));
+            }
+        }
+    }
 }

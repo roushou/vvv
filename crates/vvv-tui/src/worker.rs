@@ -214,8 +214,14 @@ impl Runner {
 
     fn execute(&self, effect: Effect) -> Result<Event, Failure> {
         Ok(match effect {
-            Effect::Search { generation, query } => {
-                let search = SearchQuery::from(query.clone()).execute(&self.engine)?;
+            Effect::Search {
+                generation,
+                query,
+                scope,
+            } => {
+                let search = SearchQuery::from(query)
+                    .scoped(scope)
+                    .execute(&self.engine)?;
                 Event::Searched {
                     generation,
                     matches: search.matches,

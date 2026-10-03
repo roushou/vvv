@@ -37,7 +37,12 @@ impl<'a> StatusBar<'a> {
                 };
                 (bar.keys.to_owned(), what)
             })
-            .collect()
+            .fold(Vec::new(), |mut hints, hint| {
+                if !hints.contains(&hint) {
+                    hints.push(hint);
+                }
+                hints
+            })
     }
 }
 

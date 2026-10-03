@@ -2,23 +2,23 @@
 source: crates/vvv-tui/src/tests.rs
 expression: loaded
 ---
-┌ vvv ~/dev/nx ───────────────────────────────────────────────────────────── ● 1  1 file ┐
+┌ vvv ~/dev/nx ──────────────────────────────────────────────────────── 1 query · search ┐
 │> Language▏                                                                             │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-┌ results ──────────────────────────────────┐┌ error.rs ─────────────────────────────────┐
-│● error.rs:4             variant Engine    ││    1 │ enum Error {                       │
-│                                           ││    2 │     Io,                            │
-│                                           ││    3 │     #[error(transparent)]          │
-│                                           ││    4 │     Engine(#[from] vvv_engine::Eng…│
-│                                           ││    5 │     Editor,                        │
-│                                           ││    6 │ }                                  │
-└───────────────────────────────────────────┘│                                           │
-┌ definition ───────────────────────────────┐│                                           │
-│ enum Error {                              ││                                           │
-│     Io,                                   ││                                           │
-│     #[error(transparent)]                 ││                                           │
-│     Engine(#[from] vvv_engine::EngineErro…││                                           │
-│     Editor,                               ││                                           │
-│ }                                         ││                                           │
-└───────────────────────────────────────────┘└───────────────────────────────────────────┘
- search ↓ results  ctrl+n ctrl+p walk
+└ ctrl+f in: workspace  ·  ctrl+s kind: any  ·  ctrl+l lang: any ────────────────────────┘
+┌ 2 Files ───────────────────── 1/1 · 1 hit ┐┌ definition · error.rs:4 ──────────────────┐
+│> error.rs                               1 ││ enum Error {                              │
+│                                           ││     Io,                                   │
+├ 3 Matches · j/k ───────────────────── 1/1 ┤│     #[error(transparent)]                 │
+│> 4      Engine(#[from] vvv_engine::Engine…││     Engine(#[from] vvv_engine::EngineErro…│
+│                                           ││     Editor,                               │
+│                                           ││ }                                         │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+└ [All 1] Decl 1 Imp 0 Uses 0 ──────────────┘└───────────────────────────────────────────┘
+ search ↓ results  ctrl+n ctrl+p files

@@ -26,6 +26,13 @@ pub enum Action {
     FocusNth(u8),
     /// Move the cursor of the focused list by `n` rows (negative = up).
     Move(i32),
+    /// Jump to the previous / next file in the search results.
+    File(i32),
+    /// Edit the local fuzzy filter on result file paths.
+    FilterFiles,
+    ClearFileFilter,
+    /// Switch the source / definition preview on a single-preview layout.
+    PreviewTab,
     Page(i32),
     Top,
     Bottom,
@@ -73,6 +80,7 @@ pub enum Effect {
     Search {
         generation: u64,
         query: Query,
+        scope: vvv_engine::SearchScope,
     },
     /// Ask the engine a read-only question: the search's subject answered
     /// with its references, impact, definition or deps. A mutation is
@@ -121,6 +129,7 @@ pub enum Effect {
 /// The engine's answer to an [`Effect`].
 #[derive(Debug, Clone)]
 pub enum Event {
+    Pointer(crate::modes::search::files::Pointer),
     Viewport {
         width: u16,
         height: u16,

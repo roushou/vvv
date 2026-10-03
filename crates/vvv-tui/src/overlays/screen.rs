@@ -22,7 +22,7 @@ const MENU: Layer<Action> = Layer {
     name: "Menus and questions",
     bindings: &[
         Keybinding {
-            triggers: &[Trigger::Key(Key::enter()), Trigger::Key(Key::char(' '))],
+            triggers: &[Trigger::Key(Key::enter())],
             dispatch: Run(A::MenuChoose),
             when: When::Always,
             legend: Legend {
@@ -34,7 +34,7 @@ const MENU: Layer<Action> = Layer {
             },
         },
         Keybinding {
-            triggers: &[Trigger::Key(Key::esc()), Trigger::Key(Key::char('q'))],
+            triggers: &[Trigger::Key(Key::esc())],
             dispatch: Run(A::Back),
             when: When::Always,
             legend: Legend {
@@ -46,7 +46,7 @@ const MENU: Layer<Action> = Layer {
             },
         },
         Keybinding {
-            triggers: &[Trigger::Key(Key::down()), Trigger::Key(Key::char('j'))],
+            triggers: &[Trigger::Key(Key::down()), Trigger::Key(Key::ctrl('n'))],
             dispatch: Run(A::Move(1)),
             when: When::Always,
             legend: Legend {
@@ -55,12 +55,30 @@ const MENU: Layer<Action> = Layer {
             },
         },
         Keybinding {
-            triggers: &[Trigger::Key(Key::up()), Trigger::Key(Key::char('k'))],
+            triggers: &[Trigger::Key(Key::up()), Trigger::Key(Key::ctrl('p'))],
             dispatch: Run(A::Move(-1)),
             when: When::Always,
             legend: Legend {
                 bar: None,
                 help: "move",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::backspace())],
+            dispatch: Run(A::Backspace),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "erase filter",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Text],
+            dispatch: Dispatch::Type,
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "type to filter; look in also accepts a relative path",
             },
         },
     ],
@@ -275,32 +293,54 @@ impl<'a> MenuBox<'a> {
 
 impl MenuBox<'_> {
     fn draw(&self, area: Rect, buf: &mut Buffer) {
-        let height = (self.menu.items.len() as u16 + 2).min(area.height);
-        let boxed = area.centered(Constraint::Length(30), Constraint::Length(height));
+        let items = self.menu.shown();
+        let height = (items.len() as u16 + 4).min(area.height);
+        let width = items
+            .iter()
+            .map(|i| Line::from(i.label.as_str()).width() + 4)
+            .max()
+            .unwrap_or(30)
+            .clamp(40, 76) as u16;
+        let boxed = area.centered(Constraint::Length(width), Constraint::Length(height));
         Clear.render(boxed, buf);
         let block = Block::bordered()
             .border_style(self.painter.focused)
             .title(Span::styled(
                 format!(" {} ", self.menu.title()),
                 self.painter.title,
+            ))
+            .title_bottom(Span::styled(
+                " Enter select · Esc cancel ",
+                self.painter.dim,
             ));
         let inner = block.inner(boxed);
         block.render(boxed, buf);
-        let lines: Vec<Line> = self
-            .menu
-            .items
-            .iter()
-            .enumerate()
-            .map(|(i, item)| {
-                let line = Line::from(format!(" {} ", item.label));
-                if i == self.menu.cursor {
-                    line.style(self.painter.cursor)
-                } else {
-                    line
-                }
-            })
-            .collect();
-        Paragraph::new(lines).render(inner, buf);
+        let mut rows = vec![Line::from(format!("> {}▏", self.menu.filter))];
+        rows.push(Line::default());
+        let height = inner.height.saturating_sub(2) as usize;
+        let offset = self.menu.cursor.saturating_sub(height.saturating_sub(1));
+        rows.extend(
+            items
+                .iter()
+                .enumerate()
+                .skip(offset)
+                .take(height)
+                .map(|(i, item)| {
+                    let line = Line::from(vec![
+                        Span::styled(
+                            if i == self.menu.cursor { "> " } else { "  " },
+                            self.painter.selection_marker(true),
+                        ),
+                        Span::raw(item.label.clone()),
+                    ]);
+                    if i == self.menu.cursor {
+                        self.painter.selected_line(line, true, inner.width as usize)
+                    } else {
+                        line
+                    }
+                }),
+        );
+        Paragraph::new(rows).render(inner, buf);
     }
 }
 
@@ -459,9 +499,6 @@ impl ReportBox<'_> {
             .iter()
             .map(|r| painter.line(&r.line))
             .collect();
-        if let Some(row) = cursor {
-            lines[row] = std::mem::take(&mut lines[row]).style(painter.cursor);
-        }
         if !presentation.notes.is_empty() {
             if !lines.is_empty() {
                 lines.push(Line::default());
@@ -479,6 +516,10 @@ impl ReportBox<'_> {
             .title(Span::styled(" report ", painter.title));
         let inner = block.inner(boxed);
         block.render(boxed, buf);
+        if let Some(row) = cursor {
+            lines[row] =
+                painter.selected_line(std::mem::take(&mut lines[row]), true, inner.width as usize);
+        }
         // Keep the cursor row in view.
         let visible = inner.height as usize;
         let offset = cursor.map_or(0, |c| c.saturating_sub(visible.saturating_sub(1)));
@@ -646,7 +687,7 @@ impl<'a> NavigationBox<'a> {
                 .map(|(i, item)| {
                     let line = Line::from(item.label.as_str());
                     if i == self.picker.cursor.index {
-                        line.style(self.painter.cursor)
+                        self.painter.selected_line(line, true, inner.width as usize)
                     } else {
                         line
                     }

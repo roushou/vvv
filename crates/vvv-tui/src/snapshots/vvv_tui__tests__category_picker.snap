@@ -1,0 +1,24 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: "FrameFixture::new(&m).render()"
+---
+┌ vvv ~/dev/nx ──────────────────────────────────────────────────────── 1 query · search ┐
+│> Engine                                                                                │
+└ f in: crates/vvv  ·  s kind: any  ·  L lang: any ──────────────────────────────────────┘
+┌ 2 Files ──────────────────── 1/2 · 2 hits ┐┌ source ───────────────────────────────────┐
+│> crates/vvv/src/cli/commands/             ││ crates/vvv/src/cli/commands/serve.rs:38   │
+│  serve.rs                               1 ││   33 │ // line 33                         │
+│  crates/vvv/src/cli/con┌ result category ─────────────────────┐                        │
+│                        │> ▏                                   │                        │
+├ 3 Matches · j/k ───────│                                      │                        │
+│> 38  engine: Engine,   │> All  2                              │                        │
+│                        │  Declarations  0                     │ Engine,                │
+│                        │  Imports  0                          │                        │
+│                        │  Uses  2                             │                        │
+│                        └ Enter select · Esc cancel ───────────┘                        │
+│                                           ││   42 │ // line 42                         │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+└ [All 2] Decl 0 Imp 0 Uses 2 ──────────────┘└───────────────────────────────────────────┘
+ search ⏎ choose  esc cancel

@@ -1,7 +1,7 @@
 //! Overlay questions, selection, and typed rendering.
 pub(crate) mod navigation;
 pub(crate) mod screen;
-use crate::modes::search::Relation;
+use crate::modes::search::{Category, Relation};
 use crate::modes::search::{Search, query::Filter};
 use crate::render::Painter;
 use crate::screen::Screen;
@@ -110,6 +110,7 @@ pub struct Menu {
     pub target: MenuTarget,
     pub items: Vec<MenuItem>,
     pub cursor: usize,
+    pub filter: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -117,6 +118,8 @@ pub enum MenuTarget {
     Symbol,
     Language,
     Relation,
+    Category,
+    Location,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -145,6 +148,7 @@ impl Menu {
             target,
             items,
             cursor,
+            filter: String::new(),
         }
     }
 
@@ -165,6 +169,7 @@ impl Menu {
             target: MenuTarget::Relation,
             items,
             cursor,
+            filter: String::new(),
         }
     }
 
@@ -173,15 +178,40 @@ impl Menu {
             MenuTarget::Symbol => "symbol kind",
             MenuTarget::Language => "language",
             MenuTarget::Relation => "relation",
+            MenuTarget::Category => "result category",
+            MenuTarget::Location => "look in",
         }
     }
 
-    pub fn current(&self) -> &MenuItem {
-        &self.items[self.cursor]
+    pub fn shown(&self) -> Vec<MenuItem> {
+        let filter = self.filter.to_lowercase();
+        let mut items: Vec<_> = self
+            .items
+            .iter()
+            .filter(|i| i.label.to_lowercase().contains(&filter))
+            .cloned()
+            .collect();
+        if self.target == MenuTarget::Location
+            && !self.filter.is_empty()
+            && !items
+                .iter()
+                .any(|i| i.value.as_deref() == Some(self.filter.as_str()))
+        {
+            items.push(MenuItem {
+                label: format!("Use path: {}", self.filter),
+                value: Some(self.filter.clone()),
+            });
+        }
+        items
+    }
+
+    pub fn input(&mut self, c: Option<char>) {
+        crate::input::TextInput::new(&mut self.filter).edit(c);
+        self.cursor = 0;
     }
 
     pub fn move_cursor(&mut self, by: i32) {
-        let last = self.items.len() as i32 - 1;
+        let last = self.shown().len().saturating_sub(1) as i32;
         self.cursor = (self.cursor as i32 + by).clamp(0, last) as usize;
     }
 
@@ -200,10 +230,50 @@ impl Menu {
                 Self::new(target, languages.to_vec(), current.as_deref())
             }
             MenuTarget::Relation => Self::relations(search.results.relation),
+            MenuTarget::Category => {
+                let items = Category::ALL
+                    .iter()
+                    .map(|c| MenuItem {
+                        label: format!(
+                            "{}  {}",
+                            c.label(),
+                            search
+                                .results
+                                .matches
+                                .iter()
+                                .filter(|m| c.includes(m.role))
+                                .count()
+                        ),
+                        value: Some(c.key().to_owned()),
+                    })
+                    .collect();
+                Self {
+                    target,
+                    items,
+                    cursor: Category::ALL
+                        .iter()
+                        .position(|c| *c == search.results.category)
+                        .unwrap_or(0),
+                    filter: String::new(),
+                }
+            }
+            MenuTarget::Location => {
+                let mut menu = Self::new(
+                    target,
+                    search.locations.choices(),
+                    search.locations.selected.as_ref().map(|p| p.as_str()),
+                );
+                menu.items[0].label = "Entire workspace".into();
+                menu
+            }
         }
     }
-    pub fn chosen(&self) -> (MenuTarget, Option<String>) {
-        (self.target, self.current().value.clone())
+    pub fn chosen(&self) -> Option<(MenuTarget, Option<String>)> {
+        self.current().map(|i| (self.target, i.value))
+    }
+
+    pub fn current(&self) -> Option<MenuItem> {
+        self.shown().get(self.cursor).cloned()
     }
 }
 

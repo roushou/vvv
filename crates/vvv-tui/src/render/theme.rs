@@ -25,6 +25,9 @@ pub struct Theme {
     /// `▪`, a ticked row.
     pub tick: Style,
     pub cursor: Style,
+    pub retained_selection: Style,
+    pub active_marker: Style,
+    pub retained_marker: Style,
     pub added: Style,
     pub removed: Style,
     pub hunk: Style,
@@ -58,6 +61,9 @@ impl Theme {
             reexport: none,
             tick: none.add_modifier(Modifier::BOLD),
             cursor: none.add_modifier(Modifier::REVERSED),
+            retained_selection: none,
+            active_marker: none.add_modifier(Modifier::BOLD),
+            retained_marker: none.add_modifier(Modifier::BOLD),
             added: none,
             removed: none,
             hunk: none,
@@ -90,7 +96,10 @@ impl Theme {
             address: Style::new().add_modifier(Modifier::BOLD),
             reexport: fg(Color::Magenta),
             tick: fg(Color::Yellow).add_modifier(Modifier::BOLD),
-            cursor: Style::new().bg(Color::DarkGray),
+            cursor: fg(Color::Rgb(220, 230, 234)).bg(Color::Rgb(32, 59, 70)),
+            retained_selection: fg(Color::Rgb(220, 230, 234)).bg(Color::Rgb(23, 40, 47)),
+            active_marker: fg(Color::Rgb(123, 220, 199)).add_modifier(Modifier::BOLD),
+            retained_marker: fg(Color::Rgb(84, 179, 172)).add_modifier(Modifier::BOLD),
             added: fg(Color::Green),
             removed: fg(Color::Red),
             hunk: fg(Color::Cyan),
@@ -130,6 +139,23 @@ impl Theme {
             self.focused
         } else {
             self.unfocused
+        }
+    }
+
+    pub fn selection(&self, emphasized: bool) -> Style {
+        if emphasized {
+            self.cursor
+        } else {
+            self.retained_selection
+        }
+        .remove_modifier(Modifier::DIM)
+    }
+
+    pub fn selection_marker(&self, emphasized: bool) -> Style {
+        if emphasized {
+            self.active_marker
+        } else {
+            self.retained_marker
         }
     }
 

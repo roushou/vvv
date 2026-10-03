@@ -1,0 +1,28 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: frame
+---
+┌ vvv ~/dev/nx ────────────────────────────────────────────────────────────────────────────────────── 1 query · search ┐
+│> Language                                                                                                            │
+└ ctrl+f in: workspace  ·  ctrl+s kind: any  ·  ctrl+l lang: any ──────────────────────────────────────────────────────┘
+┌ 2 Files · filter ─────────────────── 1/1 of 3 · 2/4 hits ┐┌ source · src/lang/mod.rs:64 ─────────────────────────────┐
+│ files: lib▏                                              ││   59 │ // line 59                                        │
+│> src/lib.rs                                            2 ││   60 │ // line 60                                        │
+│                                                          ││   61 │ // line 61                                        │
+│                                                          ││   62 │ // line 62                                        │
+├ 3 Matches · j/k ──────────────────────────────────── 1/2 ┤│   63 │ // line 63                                        │
+│> 26  pub use lang::{Language, LanguageId};               ││   64 │ pub trait Language: Send + Sync {                 │
+│  41  Language::new()                                     ││   65 │     fn name(&self) -> &str;                       │
+│                                                          ││   66 │     fn extensions(&self) -> &[&str];              │
+│                                                          ││   67 │ }                                                 │
+│                                                          ││   68 │ // line 68                                        │
+│                                                          │└ updating ────────────────────────────────────────────────┘
+│                                                          │┌ definition · src/lang/mod.rs:64 ─────────────────────────┐
+│                                                          ││ pub trait Language: Send + Sync {                        │
+│                                                          ││     fn name(&self) -> &str;                              │
+│                                                          ││     fn extensions(&self) -> &[&str];                     │
+│                                                          ││ }                                                        │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+└ [All 4] Declaration 1 Imports 2 Use 1 ───────────────────┘└ updating ────────────────────────────────────────────────┘
+ search ↑/↓ files  ⏎ keep filter  esc cancel  ctrl+u clear

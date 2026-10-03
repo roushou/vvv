@@ -3,15 +3,15 @@ source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
 ┌ vvv ~/dev/nx ──────────────────────────────────────────────────────── 1 query · search ┐
-│> Language                                                                              │
-└ f in: workspace  ·  s kind: any  ·  L lang: any ───────────────────────────────────────┘
-┌ 2 Files ──────────────────── 1/3 · 4 hits ┐┌ definition · src/lang/mod.rs:64 ──────────┐
-│> src/lang/mod.rs                        1 ││ pub trait Language: Send + Sync {         │
-│  src/lang/registry.rs                   1 ││     fn name(&self) -> &str;               │
+│> Language▏                                                                             │
+└ ctrl+f in: workspace  ·  ctrl+s kind: any  ·  ctrl+l lang: any ────────────────────────┘
+┌ 2 Files ──────────────────── 2/3 · 4 hits ┐┌ definition · src/lang/mod.rs:64 ──────────┐
+│  src/lang/mod.rs                        1 ││ pub trait Language: Send + Sync {         │
+│> src/lang/registry.rs                   1 ││     fn name(&self) -> &str;               │
 │  src/lib.rs                             2 ││     fn extensions(&self) -> &[&str];      │
 │                                           ││ }                                         │
 ├ 3 Matches · j/k ───────────────────── 1/1 ┤│                                           │
-│> 64  pub trait Language: Send + Sync {    ││                                           │
+│> 4  use super::{Language, LanguageId};    ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
@@ -20,5 +20,5 @@ expression: "FrameFixture::new(&m).render()"
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
-└ [All 4] Decl 1 Imp 2 Use 1 ───────────────┘└───────────────────────────────────────────┘
- search p preview  ⏎ follow  ← results  < > resize  F files  j/k scroll  d/u page  e edito
+└ [All 4] Decl 1 Imp 2 Use 1 ───────────────┘└ updating ─────────────────────────────────┘
+ search ↓ results  ctrl+n ctrl+p files

@@ -1136,7 +1136,8 @@ your keys go to; `tab`/`shift-tab` cycle panels, `1`–`5` jump to one, and the 
 bar at the bottom names the mode, then the keys that matter in that panel — with `⏎`
 always spelled out. In an **input** panel (the query, a new name, a rewrite
 template) a plain key types; actions live on modified keys, so `ctrl+n`/`ctrl+p`
-walk the results without leaving the query. A `?` in a pattern (a Rust `?`, a
+select the next/previous result file without leaving the query, restoring that
+file's selected match and updating its previews. A `?` in a pattern (a Rust `?`, a
 TypeScript `x?: T`) is just text. `esc` goes back one step, ultimately to search;
 `e` opens `$EDITOR` at the row under the cursor; `?` on a list or detail shows the
 marks and every key that works where you are, by where it comes from (`j`/`k` scroll
@@ -1145,26 +1146,124 @@ The status bar and that list are two views of one table, so they never disagree.
 it looks at the tree again at most once a second while you type, and always right
 after the editor returns or it writes something itself.
 
-**Search** is the hub: the query in the title, the rows below (`●` declarations first,
-`→` imports dimmed, the file and line shortened to `dir/file.rs:line`), and a context
-panel on the right that names the declaration a use resolves to —
-`→ ● struct Engine   engine.rs:64` — or, for a declaration, is just the source
-around it, since the row already says what it is. Filter words (`symbol:trait`, `name:Foo`, `kind:impl_item`, `lang:rust`)
-go anywhere in the query; `s` and `L` pick them from a list. The results list is
-where you act: `↓` or `⏎` from the query (from the context, `esc` or `←`), then the
-letters — `r` renames what is under the cursor, `m` moves its file, `M` moves the
-declaration, `w` rewrites the search's matches, `h` opens history, `u` undoes the
-newest apply. `v`
-switches the rows between the compact list and the full report's result rows —
-search results, a rename's verdict rows, a move's paths and notices. CLI flag
-hints stay in the CLI; the picker shows its own actions.
+**Search** is the hub. The left column separates files from the selected file's
+matches. The lists share a border; the file list uses a bounded part of the column
+and shrinks when there are few files, leaving the remaining rows for matches.
+Files show full workspace-relative paths and match counts, with filenames
+emphasized in place. Long paths wrap in reading order at path separators and
+remain visible while matches scroll. Each match shows its line number and source
+excerpt, with the hit highlighted. The line-number column fits the largest match
+line in the selected file and stays aligned while scrolling. Long excerpts retain the hit and surrounding
+code, marking omitted sections with ellipses. Files and Matches have independent
+focus and scrolling. From a non-input pane, `1` focuses Query, `2` Files, `3`
+Matches, `4` Source, and `5` Definition; Tab/Shift+Tab follow that order, skipping
+unavailable panes without renumbering the shortcuts. Relations without a file
+list skip Files. Query Enter jumps directly to Matches.
 
-A **definition preview** pane below a nonempty results list shows the selected
-occurrence's resolved declaration, including its signature and body, without line
-numbers or a gutter. The declaration's outer indentation is removed; indentation
-within its body is preserved and stays fixed while scrolling. Code uses a fixed
-left inset. Selecting an enum variant previews the containing enum and highlights
-the variant's name; `e` opens the selected variant's declaration line.
+In Files, `j`/`k`, arrows, or Ctrl+N/P select a file and immediately update Matches and the
+preview. Enter or Right/`l` focuses Matches; Escape focuses Query. In Matches, movement stays
+inside the selected file, including at its first and last occurrence. Escape
+focuses Files. Page Up/Down move by a visible page, and Home/End or `g`/`G` select
+the first/last item in the focused list. `[`/`]` switch files directly from
+Matches. Returning to a file restores its last selected match and list viewport.
+Focused panes have a stronger border and a deep teal selection background with a
+bright mint marker. Unfocused selections retain a subtler teal background and
+marker at normal text brightness. Selection spans the full row, including wrapped
+paths, while preserving syntax and hit colors. With color disabled, the focused
+selection uses reverse video and retained selections keep their markers. Counts and arrow indicators show position and scrollable
+content.
+
+Files and Matches share the search shortcuts: `f` location, `s` symbol kind,
+`t` category, `L` language, `R` relation in an entered view, and `/` or `i` query.
+Actions such as follow, rename, move, and rewrite use the selected match shown
+in Matches, including when Files has focus. While editing the file filter,
+ordinary characters remain text.
+
+Click a file or match to select it and focus its pane; wrapped path lines select
+the same file. Clicking a title or blank space only changes focus. The mouse
+wheel scrolls the pane under the pointer by three displayed rows without changing
+selection or keyboard focus. Keyboard movement reveals the selected row again.
+Mouse input does not pass through overlays. Mouse reporting is suspended while
+an editor owns the terminal. On short terminals, the focused list receives the
+available browsing space; the other list remains reachable through its header
+and keyboard focus.
+
+From a non-input panel, `F` edits an inline fuzzy filter on result file paths.
+Matching is case-insensitive and accepts subsequences such as `ctx` or `cli srv`;
+every space-separated term must match. Filename, boundary and consecutive matches
+rank higher, and matching path characters are highlighted. Typing updates the
+file and match lists locally, with no engine search. Arrows or Ctrl+N/P switch
+matching files while editing; Enter keeps the filter and returns to matches,
+Escape restores the previous filter, selection, list viewports, and focus. Tab or
+clicking another pane accepts the filter before changing focus. Ctrl+U clears the
+filter both while editing and when Files has focus.
+The filter remains visible after editing. Empty results show explicit feedback.
+Categories and location scope still apply before file filtering.
+
+Pane borders hold the active location, symbol kind and language, result counts,
+category tabs, and source locations. Counted labels use singular wording for one
+result and plural wording for zero or multiple results. `t` chooses **All**, **Declarations**,
+**Imports**, or **Uses**; the border abbreviates labels on smaller terminals.
+Categories filter search occurrences, not resolved relationships. `s` chooses a
+symbol kind and switches to Declarations; choosing another category clears that
+kind filter. `L` chooses a language. These pickers accept text to filter their
+choices, arrows or Ctrl+N/P to move, Enter to select, and Escape to cancel. Filter
+words (`symbol:trait`, `name:Foo`, `kind:impl_item`, `lang:rust`) still work in the
+query. Ctrl+F, Ctrl+S, Ctrl+L and Ctrl+T open location, kind, language and category pickers while
+query focus keeps ordinary letters as text.
+
+`f` chooses where results are located. The picker suggests directories observed
+in search results and accepts a typed workspace-relative file or directory path;
+**Entire workspace** removes the restriction. Location filtering uses the engine's
+component-aware search scope: `crates/vvv` does not include `crates/vvv-lang`.
+Definitions resolve across the whole workspace. A use in `crates/vvv` can therefore
+preview and follow a declaration in another crate; its definition border marks
+**outside location**. Location and category are restored by browsing Back. Within
+an entered declaration's references, location filters the judged occurrence list;
+leaving it reruns search if its location changed.
+
+The results list is where you act: `↓` or `⏎` from the query (from a preview, `esc`
+or `←`), then `r` to rename, `m` to move the file, `M` to move the declaration,
+`w` to rewrite the category's search matches, `h` for history, and `u` to undo the
+newest apply. `v` switches references and other reports between compact rows and
+the full report's result rows; ordinary search keeps source excerpts in both views.
+The footer prioritizes navigation; `?` lists the available actions.
+CLI flag hints stay in the CLI.
+
+Inside an entered reference view, rewrite still uses the retained search matches;
+reference location and verdict filters do not change that search. Rename and move
+continue to plan against the declaration and its workspace-wide consumers.
+The fuzzy file filter only changes navigation, including within references; it
+never narrows rewrite selection or changes an operation's scope. Reference files
+appear once, with each match marked by its confidence and global verdict counts
+retained on the border. Following a declaration clears the file filter on the
+destination page; browsing Back restores it along with file and match selection.
+
+A **definition preview** shows the selected occurrence's resolved declaration,
+including its signature and body, without line numbers or a gutter. Wide
+terminals stack source and definition in fixed panes in the right column, leaving
+the full left column for results. Selecting a declaration, loading a preview, or
+receiving empty results keeps those panes in place. Below 110 columns or at short
+heights, one preview fills the right column. From a non-input panel, `4`
+focuses source and `5` focuses definition, revealing the chosen preview when
+only one fits. `p`
+toggles between the previews and focuses the destination. Source is shown by
+default when only one preview fits. The chosen preview persists when returning
+to results or the query, selecting another file or match, filtering, and resizing.
+Explicitly following a reference opens its definition; browsing Back restores the
+previous preview choice. Both previews keep independent
+scroll positions. Source locations sit beside preview titles on the top border;
+when they cannot fit, the complete path wraps directly beneath the title.
+Resolution status appears on the definition pane's bottom border.
+When selecting another file, the source pane keeps its previous text, location,
+highlight, and scroll position while the replacement loads. An `updating` hint
+marks this interval; the text and its location switch together when the selected
+file arrives. Replies for files no longer selected cannot replace the pane.
+
+The declaration's outer indentation is removed; indentation within its body is
+preserved and stays fixed while scrolling. Code uses a fixed left inset.
+Selecting an enum variant previews the containing enum and highlights the
+variant's name; `e` opens the selected variant's declaration line.
 
 The engine resolves the exact source occurrence. A same-named struct elsewhere or
 an enum variant does not hide a definition reached through imports and re-exports.
@@ -1173,16 +1272,16 @@ show “Cannot follow this reference yet”. Other outcomes distinguish a missin
 identifier, unresolved name, external source, or cyclic imports. These are the same
 outcomes exposed by `navigate`.
 
-The pane fills the left column's width and half its available height, capped at
-16 rows including borders. Space stays reserved while navigating or loading, even
-for short bodies. The previous definition and scroll remain visible until the
-replacement source and metadata arrive together. No loading message flashes between
-rows, and replies for an older selection cannot replace the current request.
+Preview space remains reserved while navigating or loading. The previous
+definition and scroll remain visible until replacement source and metadata arrive
+together, with **updating** on the border. Replies for an older selection cannot
+replace the current request.
 
-The title is `definition`. `4` focuses the pane; `tab`/`shift-tab` include it in the
-panel cycle. Use `j`/`k` or arrows to scroll, `d`/`u` or Page Down/Up to page, and
-`g`/`G` or Home/End to reach the top/bottom. `esc` returns to results; `e` opens the
-displayed declaration. Moving between uses of the same definition preserves
+`5` focuses the definition; `tab`/`shift-tab` include it in the panel cycle and
+reveal it when sharing a single preview with source. Use `j`/`k` or arrows to
+scroll, `d`/`u` or Page Down/Up to page, and `g`/`G` or Home/End to reach the
+top/bottom. `esc` returns to results; `e` opens the displayed declaration.
+Moving between uses of the same definition preserves
 scroll. A different definition or source version resets it; selecting a variant
 outside the visible portion of its enum reveals that variant.
 
@@ -1207,7 +1306,8 @@ blocked. The trail retains at most 64 pages with a 16 MiB estimated payload budg
 shared payloads are charged per entry, and the oldest entries are evicted first.
 The currently displayed page is outside this retention budget.
 
-`⏎` on a declaration — or on a use that resolves to exactly one — _enters its scope_:
+`⏎` on a declaration — or on an occurrence whose exact navigation has resolved
+one definition — _enters its references_:
 the rows become that declaration's judged references, grouped by verdict (`✓ safe`,
 `? unverified`, `✗ another declaration's`), each with the reason's glyph. A name
 search becomes the symbol's impact and context. `r`, `m` and `M` then act on the

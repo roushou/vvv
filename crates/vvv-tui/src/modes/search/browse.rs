@@ -1,5 +1,5 @@
 //! Explicit browsing, request identity, and bounded immutable page snapshots.
-use super::{Results, Search, SearchPanel, body::Body, query::QueryBar};
+use super::{Locations, Results, Search, SearchPanel, SourceAnchor, body::Body, query::QueryBar};
 use crate::model::FilePreview;
 use std::collections::VecDeque;
 use vvv_engine::{NavigationQuery, SymbolRef};
@@ -17,10 +17,13 @@ pub enum BrowsePage {
 pub struct NavigationEntry {
     page: BrowsePage,
     query: QueryBar,
+    locations: Locations,
     results: Results,
     focus: SearchPanel,
     preview: Option<FilePreview>,
+    source_anchor: Option<SourceAnchor>,
     body: Body,
+    definition_tab: bool,
     preview_scroll: Option<usize>,
     bytes: usize,
 }
@@ -29,7 +32,7 @@ impl NavigationEntry {
     pub fn capture(search: &Search) -> Self {
         // Charge shared payloads on every entry. This deliberately overcounts
         // shared allocations and bounds retention without an ownership registry.
-        let mut bytes = 1024 + search.query.text().len();
+        let mut bytes = 1024 + search.query.text().len() + search.locations.retained_bytes();
         for preview in [search.preview.as_ref(), search.body.preview.as_ref()]
             .into_iter()
             .flatten()
@@ -37,13 +40,20 @@ impl NavigationEntry {
             bytes += preview.retained_bytes();
         }
         bytes += search.results.retained_bytes();
+        bytes += search
+            .source_anchor
+            .as_ref()
+            .map_or(0, |a| a.path.as_str().len() + 128);
         Self {
             page: search.page.clone(),
             query: search.query.clone(),
+            locations: search.locations.clone(),
             results: search.results.clone(),
             focus: search.focus,
             preview: search.preview.clone(),
+            source_anchor: search.source_anchor.clone(),
             body: search.body.clone(),
+            definition_tab: search.definition_tab,
             preview_scroll: search.preview_scroll,
             bytes,
         }
@@ -53,10 +63,13 @@ impl NavigationEntry {
         let viewport = search.body.viewport;
         search.page = self.page;
         search.query = self.query;
+        search.locations = self.locations;
         search.results = self.results;
         search.focus = self.focus;
         search.preview = self.preview;
+        search.source_anchor = self.source_anchor;
         search.body = self.body;
+        search.definition_tab = self.definition_tab;
         search.body.reticket(ticket);
         search.body.viewport = viewport;
         search.preview_scroll = self.preview_scroll;

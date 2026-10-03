@@ -20,7 +20,6 @@ use crate::modes::rename::RenameMode;
 use crate::modes::rename::screen as rename;
 use crate::modes::rewrite::RewriteMode;
 use crate::modes::rewrite::screen as rewrite;
-use crate::modes::search::screen as search;
 use crate::modes::search::{Navigation, Search, SearchPanel};
 pub(crate) use crate::overlays::{MenuTarget, Overlay};
 
@@ -41,6 +40,7 @@ pub struct Model {
     pub view: ReportView,
     /// Width of the left column as a percentage of the body.
     pub split: u16,
+    viewport: Option<(u16, u16)>,
     pub status: Status,
     /// Bumps on every request whose answer may be superseded (search, plan).
     pub generation: u64,
@@ -91,7 +91,14 @@ impl Model {
             When::Always => true,
             When::QueryEmpty => self.search.query.is_empty(),
             When::QueryNotEmpty => !self.search.query.is_empty(),
-            When::Anchored => self.search.results.is_anchored(),
+            When::SearchList => {
+                matches!(self.search.focus, SearchPanel::Files | SearchPanel::Results)
+                    && !self.search.input_focused()
+            }
+            When::SearchListAnchored => {
+                self.search.results.is_anchored() && self.holds(When::SearchList)
+            }
+            When::FileList => self.search.results.has_file_list() && !self.search.input_focused(),
         }
     }
 
@@ -103,7 +110,7 @@ impl Model {
     /// The view of the mode on screen.
     pub fn mode_screen(&self) -> &'static Screen {
         match self.shown() {
-            Mode::Search => &search::SEARCH,
+            Mode::Search => self.search.screen(),
             Mode::Rename(_) => &rename::RENAME,
             Mode::Move(_) => &moving::MOVE,
             Mode::Rewrite(_) => &rewrite::REWRITE,
@@ -169,6 +176,7 @@ impl Model {
             overlay: None,
             view: ReportView::default(),
             split: 50,
+            viewport: None,
             status: Status::default(),
             generation: 0,
             quit: false,
@@ -201,6 +209,19 @@ impl Model {
     }
 
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
+        if let Some(Overlay::Menu(menu)) = &mut self.overlay {
+            match action {
+                Action::Input(c) => {
+                    menu.input(Some(c));
+                    return Vec::new();
+                }
+                Action::Backspace => {
+                    menu.input(None);
+                    return Vec::new();
+                }
+                _ => {}
+            }
+        }
         if let Some(Overlay::Navigation(picker)) = &mut self.overlay {
             match action {
                 Action::Input(c) => {
@@ -250,12 +271,23 @@ impl Model {
                     self.moved(n)
                 }
             }
-            Action::Page(n) => self.moved(n * 10),
+            Action::Page(n) => {
+                let page = if self.overlay.is_none()
+                    && matches!(self.mode, Mode::Search)
+                    && matches!(self.search.focus, SearchPanel::Files | SearchPanel::Results)
+                {
+                    self.search_page_size()
+                } else {
+                    10
+                };
+                self.moved(n * page as i32)
+            }
             Action::Top => self.jump(true),
             Action::Bottom => self.jump(false),
             Action::Scroll(n) => self.scrolled(n),
             Action::Resize(by) => {
                 self.split = (i32::from(self.split) + i32::from(by)).clamp(20, 80) as u16;
+                self.sync_viewport();
                 Vec::new()
             }
             Action::View => {
@@ -292,17 +324,124 @@ impl Model {
             status: &mut self.status,
             generation: &mut self.generation,
         };
-        match &mut self.mode {
+        let effects = match &mut self.mode {
             Mode::Search => self.search.update(action, &mut context),
             Mode::Rename(r) => r.update(action, &mut context),
             Mode::Move(mv) => mv.update(action, &mut context),
             Mode::Rewrite(rw) => rw.update(action, &mut context),
             Mode::History(h) => h.update(action, &mut context),
+        };
+        self.sync_viewport();
+        effects
+    }
+
+    pub(crate) fn search_frame(&self) -> crate::modes::search::files::SearchFrame {
+        let Some((width, height)) = self.viewport else {
+            return Default::default();
+        };
+        if !matches!(self.mode, Mode::Search) || self.overlay.is_some() {
+            return Default::default();
+        }
+        crate::modes::search::screen::SearchView::new(
+            &self.search,
+            &self.root,
+            self.status.busy,
+            crate::render::Painter::plain(),
+            self.split,
+            self.view,
+        )
+        .frame(ratatui::layout::Rect::new(
+            0,
+            0,
+            width,
+            height.saturating_sub(1),
+        ))
+    }
+
+    fn search_page_size(&self) -> usize {
+        let frame = self.search_frame();
+        let Some(list) = frame
+            .lists
+            .iter()
+            .find(|list| list.panel == self.search.focus)
+        else {
+            return 10;
+        };
+        if list.panel == SearchPanel::Files {
+            let mut paths = std::collections::BTreeSet::new();
+            for row in list
+                .rows
+                .iter()
+                .skip(list.offset)
+                .take(list.content.height as usize)
+            {
+                if let crate::modes::search::files::PointerIntent::File(path) = row {
+                    paths.insert(path);
+                }
+            }
+            paths.len().max(1)
+        } else {
+            (list.content.height as usize).max(1)
+        }
+    }
+
+    fn sync_viewport(&mut self) {
+        let Some((width, height)) = self.viewport else {
+            return;
+        };
+        let view = crate::modes::search::screen::SearchView::new(
+            &self.search,
+            &self.root,
+            self.status.busy,
+            crate::render::Painter::plain(),
+            self.split,
+            self.view,
+        );
+        let frame = view.frame(ratatui::layout::Rect::new(
+            0,
+            0,
+            width,
+            height.saturating_sub(1),
+        ));
+        let definition_rows = view.definition_rows(ratatui::layout::Rect::new(
+            0,
+            0,
+            width,
+            height.saturating_sub(1),
+        ));
+        self.search.body.viewport = Some(definition_rows);
+        for list in frame.lists {
+            let viewport = if list.panel == SearchPanel::Files {
+                &mut self.search.results.files.viewport
+            } else if let Some(path) = self.search.results.current().map(|m| m.path.clone()) {
+                self.search
+                    .results
+                    .files
+                    .match_viewports
+                    .entry(path)
+                    .or_default()
+            } else {
+                continue;
+            };
+            viewport.offset = list.offset;
+            viewport.reveal = false;
         }
     }
 
     pub fn on_event(&mut self, event: Event) -> Vec<Effect> {
         match event {
+            Event::Pointer(pointer) => {
+                if self.overlay.is_some() || !matches!(self.mode, Mode::Search) {
+                    return Vec::new();
+                }
+                let mut context = ModeContext {
+                    status: &mut self.status,
+                    generation: &mut self.generation,
+                };
+                let effects = self.search.pointer(pointer, &mut context);
+                self.sync_viewport();
+                effects
+            }
             Event::SourcesChanged => {
                 self.next_generation();
                 self.search.trail.cancel();
@@ -319,6 +458,31 @@ impl Model {
                 query,
                 reply,
             } => {
+                if self
+                    .search
+                    .trail
+                    .pending
+                    .as_ref()
+                    .is_some_and(|p| p.ticket == ticket && p.query == query && !p.restoring)
+                    && let Ok(vvv_engine::NavigationReply {
+                        outcome: vvv_engine::NavigationOutcome::Resolved { preview, .. },
+                        ..
+                    }) = &reply
+                    && let Some((width, height)) = self.viewport
+                {
+                    let view = crate::modes::search::screen::SearchView::new(
+                        &self.search,
+                        &self.root,
+                        self.status.busy,
+                        crate::render::Painter::plain(),
+                        self.split,
+                        self.view,
+                    );
+                    self.search.body.viewport = Some(view.full_definition_rows(
+                        ratatui::layout::Rect::new(0, 0, width, height.saturating_sub(1)),
+                        &preview.declaration,
+                    ));
+                }
                 let picker = self.search.followed(
                     ticket,
                     query,
@@ -331,23 +495,12 @@ impl Model {
                 if let Some(picker) = picker {
                     self.overlay = Some(Overlay::Navigation(picker));
                 }
+                self.sync_viewport();
                 Vec::new()
             }
             Event::Viewport { width, height } => {
-                let view = crate::modes::search::screen::SearchView::new(
-                    &self.search,
-                    &self.root,
-                    self.status.busy,
-                    crate::render::Painter::plain(),
-                    self.split,
-                    self.view,
-                );
-                self.search.body.viewport = Some(view.definition_rows(ratatui::layout::Rect::new(
-                    0,
-                    0,
-                    width,
-                    height.saturating_sub(1),
-                )));
+                self.viewport = Some((width, height));
+                self.sync_viewport();
                 Vec::new()
             }
             Event::DefinitionResolved {
@@ -355,7 +508,28 @@ impl Model {
                 query,
                 reply,
             } => {
+                self.sync_viewport();
+                if let Ok(vvv_engine::NavigationReply {
+                    outcome: vvv_engine::NavigationOutcome::Resolved { preview, .. },
+                    ..
+                }) = &reply
+                    && let Some((width, height)) = self.viewport
+                {
+                    let view = crate::modes::search::screen::SearchView::new(
+                        &self.search,
+                        &self.root,
+                        self.status.busy,
+                        crate::render::Painter::plain(),
+                        self.split,
+                        self.view,
+                    );
+                    self.search.body.viewport = Some(view.definition_rows_for(
+                        ratatui::layout::Rect::new(0, 0, width, height.saturating_sub(1)),
+                        Some(&preview.declaration),
+                    ));
+                }
                 self.search.body.resolved(ticket, &query, reply);
+                self.sync_viewport();
                 Vec::new()
             }
             Event::Searched {
@@ -374,6 +548,7 @@ impl Model {
                         generation: &mut self.generation,
                     },
                 );
+                self.sync_viewport();
                 self.preview_effect()
             }
             Event::Answered { generation, answer } => {
@@ -389,6 +564,7 @@ impl Model {
                 ) {
                     return Vec::new();
                 }
+                self.sync_viewport();
                 self.preview_effect()
             }
             Event::Previewed {
@@ -445,6 +621,7 @@ impl Model {
                 self.mode = Mode::Search;
                 self.search.trail.cancel();
                 self.search.preview = None;
+                self.search.source_anchor = None;
                 self.search.body.clear();
                 self.overlay = Some(Overlay::Report {
                     report: Box::new(report),
@@ -469,6 +646,7 @@ impl Model {
                 self.mode = Mode::Search;
                 self.search.trail.cancel();
                 self.search.preview = None;
+                self.search.source_anchor = None;
                 self.search.body.clear();
                 let effects = self.search();
                 self.status.busy = false;
@@ -626,10 +804,12 @@ impl Model {
             self.status.clear();
             return self.preview_effect();
         }
-        self.search.back(&mut ModeContext {
+        let effects = self.search.back(&mut ModeContext {
             status: &mut self.status,
             generation: &mut self.generation,
-        })
+        });
+        self.sync_viewport();
+        effects
     }
 
     // ------------------------------------------------------------ modes
@@ -639,6 +819,7 @@ impl Model {
         match navigation {
             Navigation::Selection => {
                 self.search.selection_changed();
+                self.sync_viewport();
                 self.preview_effect()
             }
             Navigation::Effects(effects) => effects,
@@ -721,7 +902,9 @@ impl Model {
         let Some(Overlay::Menu(menu)) = &self.overlay else {
             return Vec::new();
         };
-        let choice = menu.chosen();
+        let Some(choice) = menu.chosen() else {
+            return Vec::new();
+        };
         self.overlay = None;
         let navigation = self.search.choose_menu(
             choice,

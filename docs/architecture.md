@@ -712,8 +712,10 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
 - `modes/<name>/mod.rs` — each mode's state and methods, including action and event
   transitions (`rename`, `moves`, `rewrite`, `history`, `search`). Its `screen.rs`
   defines a separate view type with its rendering methods. Search's `query.rs`
-  owns the query bar; its state includes read-only references, impact, definition,
-  and dependency relations. Mode inputs drive plans; queries drive searches, with
+  owns the query bar; `files.rs` owns fuzzy file ranking, filter edits, file and match viewports, remembered
+  occurrence selections, and stable pointer targets; `locations.rs` keeps result scope and directory suggestions
+  separate from global navigation. Its state includes role categories, read-only
+  references, impact, definition, and dependency relations. Mode inputs drive plans; queries drive searches, with
   generations preventing stale answers from replacing retained data.
 - `action.rs` — `Action` (what the user did, generic across modes: `Input`, `Enter`,
   `Toggle`, `FocusNth`…), `Effect` (what to ask the engine: `Search`, `Query` for a
@@ -770,7 +772,24 @@ rows are content-derived ids fed to `Selection::Ids`.
 
 The search mode owns explicit browsing pages and a bounded navigation trail. Saved
 results and file previews share immutable allocations; entries retain query,
-selection, focus and scroll, never mutation plans. Explicit follows use a separate
+result location, category, file filter, per-file selection, focus and both preview scroll positions,
+never mutation plans. Search scopes constrain result files; definition navigation
+continues to use the whole workspace. File and match lists share the left column;
+Files and Matches have independent focus and viewports. The selected file's
+occurrences stay within their file during match navigation. Search view geometry
+supplies both rendering and pointer hit testing; the terminal loop maps mouse input
+against the last presented frame, and pure transitions validate stable identities
+and result revisions before accepting selection. Wheel scrolling preserves focus
+and selection. The terminal session owns mouse capture and suspends it for the editor. Local fuzzy filtering ranks retained file groups and preserves
+stable match identities without changing query execution or mutation selection.
+Reference files group all visible confidences together; verdicts remain engine data.
+Source preview anchors retain the displayed file's location and hit while a new
+file loads; its text, anchor, and scroll position change together on an accepted
+preview. Pending file selection never relabels retained text as the destination.
+Wide previews reserve fixed source and definition regions independent of selection,
+loading, and empty results. Single-preview layouts reveal source or definition
+according to focus and the retained preview choice; selecting a result does not
+change that choice. Explicit follows use a separate
 request ticket from coalesced row previews and only successful follows push
 history. Restoring a page validates its versioned occurrence and displayed target
 before following again. Identifier/candidate choices belong to a typed navigation

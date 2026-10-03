@@ -1,0 +1,28 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: wide
+---
+┌ vvv ~/dev/nx ────────────────────────────────────────────────────────────────────────────────────── 1 query · search ┐
+│> Engine                                                                                                              │
+└ f in: workspace  ·  s kind: any  ·  L lang: any ─────────────────────────────────────────────────────────────────────┘
+┌ 2 Files ────────────────────────────────── 1/1 · 35 hits ┐┌ source ──────────────────────────────────────────────────┐
+│> crates/vvv-engine/src/very/long/module/directory/       ││ crates/vvv-engine/src/very/long/module/directory/        │
+│  engine.rs                                            35 ││ engine.rs:35                                             │
+│                                                          ││                                                          │
+├ 3 Matches · j/k ──────────────────────────────── 35/35 ↑ ┤│                                                          │
+│  22  Engine                                              ││                                                          │
+│  23  Engine                                              ││                                                          │
+│  24  Engine                                              ││                                                          │
+│  25  Engine                                              ││                                                          │
+│  26  Engine                                              ││                                                          │
+│  27  Engine                                              ││                                                          │
+│  28  Engine                                              │└──────────────────────────────────────────────────────────┘
+│  29  Engine                                              │┌ definition ──────────────────────────────────────────────┐
+│  30  Engine                                              ││                                                          │
+│  31  Engine                                              ││                                                          │
+│  32  Engine                                              ││                                                          │
+│  33  Engine                                              ││                                                          │
+│  34  Engine                                              ││                                                          │
+│> 35  Engine                                              ││                                                          │
+└ [All 35] Declarations 0 Imports 0 Uses 35 ───────────────┘└ updating ────────────────────────────────────────────────┘
+ search j/k move  ⏎ references  F files  f location  t category  o follow  / query  e editor  ? keys  v view

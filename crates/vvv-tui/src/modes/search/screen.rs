@@ -1,30 +1,78 @@
-//! The hub: a query, flat result rows (`●` first, `→` dim), and context
-//! for the cursor row — what it is, then the source around it.
+//! The hub: separate files and matches, filters, and source/definition previews.
 
 use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Widget;
-use vvv_engine::Role;
-use vvv_engine::{Answer, Confidence, Impact, Occurrence};
+use vvv_engine::{Answer, Confidence, Impact};
 
-use super::{Relation, Search, SearchPanel};
+use super::files::{ListGeometry, PointerIntent, SearchFrame};
+use super::query::Filter;
+use super::{Category, Relation, Search, SearchPanel};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
 use crate::model::{MenuTarget, PanelKind, ReportView};
 use crate::render::Pane;
-use crate::render::{Header, Painter, Region};
+use crate::render::{Fit, Header, Painter, Region};
 use crate::screen::{BoundScreen, Panel, Screen};
-use vvv_engine::protocol::vocabulary::{Files, Mark};
+use vvv_engine::protocol::vocabulary::{Files, Mark, Plural};
 use vvv_engine::report::{Document, Options, View};
 
 use Action as A;
 use Dispatch::Run;
 
-/// Browsing history and refresh are available from every search panel.
+/// Shared search keys; list actions apply in Files and Matches outside inputs.
 const MODE: Layer<Action> = Layer {
     name: "Search",
     bindings: &[
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('F'))],
+            dispatch: Run(A::FilterFiles),
+            when: When::FileList,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "F",
+                    word: "files",
+                }),
+                help: "fuzzy-filter result files (navigation only)",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('f'))],
+            dispatch: Run(A::OpenMenu(MenuTarget::Location)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "choose result location",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('s'))],
+            dispatch: Run(A::OpenMenu(MenuTarget::Symbol)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "choose declaration kind",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('t'))],
+            dispatch: Run(A::OpenMenu(MenuTarget::Category)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "choose result category",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('l'))],
+            dispatch: Run(A::OpenMenu(MenuTarget::Language)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "choose language",
+            },
+        },
         Keybinding {
             triggers: &[Trigger::Key(Key::alt_left())],
             dispatch: Run(A::BrowseBack),
@@ -50,6 +98,183 @@ const MODE: Layer<Action> = Layer {
             legend: Legend {
                 bar: None,
                 help: "refresh search after source changes",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('f'))],
+            dispatch: Run(A::OpenMenu(MenuTarget::Location)),
+            when: When::SearchList,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "f",
+                    word: "location",
+                }),
+                help: "choose result location",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('t'))],
+            dispatch: Run(A::OpenMenu(MenuTarget::Category)),
+            when: When::SearchList,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "t",
+                    word: "category",
+                }),
+                help: "all, declarations, imports, or uses",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('['))],
+            dispatch: Run(A::File(-1)),
+            when: When::SearchList,
+            legend: Legend {
+                bar: None,
+                help: "previous file; restore its selected match",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char(']'))],
+            dispatch: Run(A::File(1)),
+            when: When::SearchList,
+            legend: Legend {
+                bar: None,
+                help: "next file; restore its selected match",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('p'))],
+            dispatch: Run(A::PreviewTab),
+            when: When::SearchList,
+            legend: Legend {
+                bar: None,
+                help: "toggle source / definition focus; reveal the hidden preview",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('r'))],
+            dispatch: Run(A::Rename),
+            when: When::SearchList,
+            legend: Legend {
+                bar: None,
+                help: "rename",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('m'))],
+            dispatch: Run(A::MoveFile),
+            when: When::SearchList,
+            legend: Legend {
+                bar: None,
+                help: "move the file / the declaration",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('M'))],
+            dispatch: Run(A::MoveSymbol),
+            when: When::SearchList,
+            legend: Legend {
+                bar: None,
+                help: "move the file / the declaration",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('w'))],
+            dispatch: Run(A::Rewrite),
+            when: When::SearchList,
+            legend: Legend {
+                bar: None,
+                help: "rewrite",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('o'))],
+            dispatch: Run(A::Follow),
+            when: When::SearchList,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "o",
+                    word: "follow",
+                }),
+                help: "follow the exact reference to its definition",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('R'))],
+            dispatch: Run(A::OpenMenu(MenuTarget::Relation)),
+            when: When::SearchListAnchored,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "R",
+                    word: "relation",
+                }),
+                help: "what to show about the entered declaration",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('s'))],
+            dispatch: Run(A::OpenMenu(MenuTarget::Symbol)),
+            when: When::SearchList,
+            legend: Legend {
+                bar: None,
+                help: "pick a symbol kind",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('L'))],
+            dispatch: Run(A::OpenMenu(MenuTarget::Language)),
+            when: When::SearchList,
+            legend: Legend {
+                bar: None,
+                help: "pick a language",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('h'))],
+            dispatch: Run(A::History),
+            when: When::SearchList,
+            legend: Legend {
+                bar: None,
+                help: "history",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('u'))],
+            dispatch: Run(A::Undo),
+            when: When::SearchList,
+            legend: Legend {
+                bar: None,
+                help: "undo the newest apply",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('/')), Trigger::Key(Key::char('i'))],
+            dispatch: Run(A::FocusNth(1)),
+            when: When::SearchList,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "/",
+                    word: "query",
+                }),
+                help: "the query",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('<')), Trigger::Key(Key::char('>'))],
+            dispatch: Run(A::Resize(-5)),
+            when: When::SearchList,
+            legend: Legend {
+                bar: None,
+                help: "resize",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('q'))],
+            dispatch: Run(A::Quit),
+            when: When::SearchList,
+            legend: Legend {
+                bar: None,
+                help: "quit",
             },
         },
     ],
@@ -100,26 +325,26 @@ const QUERY: Layer<Action> = Layer {
         },
         Keybinding {
             triggers: &[Trigger::Key(Key::ctrl('n'))],
-            dispatch: Run(A::Move(1)),
+            dispatch: Run(A::File(1)),
             when: When::Always,
             legend: Legend {
                 bar: Some(Bar {
                     keys: "ctrl+n ctrl+p",
-                    word: "walk",
+                    word: "files",
                 }),
-                help: "walk the results without leaving the query",
+                help: "switch files without leaving the query",
             },
         },
         Keybinding {
             triggers: &[Trigger::Key(Key::ctrl('p'))],
-            dispatch: Run(A::Move(-1)),
+            dispatch: Run(A::File(-1)),
             when: When::Always,
             legend: Legend {
                 bar: Some(Bar {
                     keys: "ctrl+n ctrl+p",
-                    word: "walk",
+                    word: "files",
                 }),
-                help: "walk the results without leaving the query",
+                help: "switch files without leaving the query",
             },
         },
         Keybinding {
@@ -139,131 +364,35 @@ const RESULTS: Layer<Action> = Layer {
     name: "Search",
     bindings: &[
         Keybinding {
-            triggers: &[Trigger::Key(Key::char('r'))],
-            dispatch: Run(A::Rename),
+            triggers: &[Trigger::Key(Key::down()), Trigger::Key(Key::char('j'))],
+            dispatch: Run(A::Move(1)),
             when: When::Always,
             legend: Legend {
                 bar: Some(Bar {
-                    keys: "r",
-                    word: "rename",
+                    keys: "j/k",
+                    word: "move",
                 }),
-                help: "rename",
+                help: "move between matches in this file",
             },
         },
         Keybinding {
-            triggers: &[Trigger::Key(Key::char('m'))],
-            dispatch: Run(A::MoveFile),
+            triggers: &[Trigger::Key(Key::up()), Trigger::Key(Key::char('k'))],
+            dispatch: Run(A::Move(-1)),
             when: When::Always,
             legend: Legend {
                 bar: Some(Bar {
-                    keys: "m/M",
-                    word: "move file/symbol",
+                    keys: "j/k",
+                    word: "move",
                 }),
-                help: "move the file / the declaration",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::char('M'))],
-            dispatch: Run(A::MoveSymbol),
-            when: When::Always,
-            legend: Legend {
-                bar: Some(Bar {
-                    keys: "m/M",
-                    word: "move file/symbol",
-                }),
-                help: "move the file / the declaration",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::char('w'))],
-            dispatch: Run(A::Rewrite),
-            when: When::Always,
-            legend: Legend {
-                bar: Some(Bar {
-                    keys: "w",
-                    word: "rewrite",
-                }),
-                help: "rewrite",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::char('o'))],
-            dispatch: Run(A::Follow),
-            when: When::Always,
-            legend: Legend {
-                bar: Some(Bar {
-                    keys: "o",
-                    word: "declaration",
-                }),
-                help: "follow the exact reference to its definition",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::char('R'))],
-            dispatch: Run(A::OpenMenu(MenuTarget::Relation)),
-            when: When::Anchored,
-            legend: Legend {
-                bar: Some(Bar {
-                    keys: "R",
-                    word: "relation",
-                }),
-                help: "what to show about the entered declaration",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::char('s'))],
-            dispatch: Run(A::OpenMenu(MenuTarget::Symbol)),
-            when: When::Always,
-            legend: Legend {
-                bar: Some(Bar {
-                    keys: "s",
-                    word: "kind",
-                }),
-                help: "pick a symbol kind",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::char('L'))],
-            dispatch: Run(A::OpenMenu(MenuTarget::Language)),
-            when: When::Always,
-            legend: Legend {
-                bar: Some(Bar {
-                    keys: "L",
-                    word: "lang",
-                }),
-                help: "pick a language",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::char('h'))],
-            dispatch: Run(A::History),
-            when: When::Always,
-            legend: Legend {
-                bar: Some(Bar {
-                    keys: "h",
-                    word: "history",
-                }),
-                help: "history",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::char('u'))],
-            dispatch: Run(A::Undo),
-            when: When::Always,
-            legend: Legend {
-                bar: None,
-                help: "undo the newest apply",
+                help: "move between matches in this file",
             },
         },
         Keybinding {
             triggers: &[Trigger::Key(Key::right()), Trigger::Key(Key::char('l'))],
-            dispatch: Run(A::FocusNth(3)),
+            dispatch: Run(A::FocusNth(4)),
             when: When::Always,
             legend: Legend {
-                bar: Some(Bar {
-                    keys: "→",
-                    word: "context",
-                }),
+                bar: None,
                 help: "the context panel",
             },
         },
@@ -274,21 +403,9 @@ const RESULTS: Layer<Action> = Layer {
             legend: Legend {
                 bar: Some(Bar {
                     keys: "⏎",
-                    word: "scope",
+                    word: "references",
                 }),
                 help: "enter the declaration's scope: its judged references",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::char('/')), Trigger::Key(Key::char('i'))],
-            dispatch: Run(A::FocusNth(1)),
-            when: When::Always,
-            legend: Legend {
-                bar: Some(Bar {
-                    keys: "/",
-                    word: "query",
-                }),
-                help: "the query",
             },
         },
         Keybinding {
@@ -297,25 +414,7 @@ const RESULTS: Layer<Action> = Layer {
             when: When::Always,
             legend: Legend {
                 bar: None,
-                help: "leave the declaration's scope, then the query",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::char('<')), Trigger::Key(Key::char('>'))],
-            dispatch: Run(A::Resize(-5)),
-            when: When::Always,
-            legend: Legend {
-                bar: None,
-                help: "resize",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::char('q'))],
-            dispatch: Run(A::Quit),
-            when: When::Always,
-            legend: Legend {
-                bar: None,
-                help: "quit",
+                help: "focus Files, or leave the entered relation",
             },
         },
     ],
@@ -325,6 +424,18 @@ const RESULTS: Layer<Action> = Layer {
 const CONTEXT: Layer<Action> = Layer {
     name: "Search",
     bindings: &[
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('p'))],
+            dispatch: Run(A::PreviewTab),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "p",
+                    word: "preview",
+                }),
+                help: "toggle source / definition focus; reveal the hidden preview",
+            },
+        },
         Keybinding {
             triggers: &[Trigger::Key(Key::enter()), Trigger::Key(Key::char('o'))],
             dispatch: Run(A::Follow),
@@ -343,7 +454,7 @@ const CONTEXT: Layer<Action> = Layer {
                 Trigger::Key(Key::left()),
                 Trigger::Key(Key::char('h')),
             ],
-            dispatch: Run(A::FocusNth(2)),
+            dispatch: Run(A::FocusNth(3)),
             when: When::Always,
             legend: Legend {
                 bar: Some(Bar {
@@ -386,6 +497,80 @@ const CONTEXT: Layer<Action> = Layer {
     ],
 };
 
+const FILES: Layer<Action> = Layer {
+    name: "Files",
+    bindings: &[
+        Keybinding {
+            triggers: &[Trigger::Key(Key::down()), Trigger::Key(Key::char('j'))],
+            dispatch: Run(A::Move(1)),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "j/k",
+                    word: "move",
+                }),
+                help: "move between files",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::up()), Trigger::Key(Key::char('k'))],
+            dispatch: Run(A::Move(-1)),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "j/k",
+                    word: "move",
+                }),
+                help: "move between files",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::enter())],
+            dispatch: Run(A::Enter),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "⏎",
+                    word: "matches",
+                }),
+                help: "browse this file's matches",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::esc())],
+            dispatch: Run(A::Back),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "return to query",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('u'))],
+            dispatch: Run(A::ClearFileFilter),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "clear file filter",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::right()), Trigger::Key(Key::char('l'))],
+            dispatch: Run(A::FocusNth(3)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "browse this file's matches",
+            },
+        },
+    ],
+};
+
+static FILES_PANEL: Panel = Panel {
+    layer: FILES,
+    kind: Some(PanelKind::List),
+};
+
 static QUERY_PANEL: Panel = Panel {
     layer: QUERY,
     kind: Some(PanelKind::Input),
@@ -401,10 +586,111 @@ static CONTEXT_PANEL: Panel = Panel {
     kind: Some(PanelKind::Text),
 };
 
+const FILE_FILTER: Layer<Action> = Layer {
+    name: "File filter",
+    bindings: &[
+        Keybinding {
+            triggers: &[Trigger::Key(Key::down()), Trigger::Key(Key::ctrl('n'))],
+            dispatch: Run(A::File(1)),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "↑/↓",
+                    word: "files",
+                }),
+                help: "next matching file",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::up()), Trigger::Key(Key::ctrl('p'))],
+            dispatch: Run(A::File(-1)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "previous matching file",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::enter())],
+            dispatch: Run(A::Enter),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "⏎",
+                    word: "keep filter",
+                }),
+                help: "keep filter and return to matches",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::esc())],
+            dispatch: Run(A::Back),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "esc",
+                    word: "cancel",
+                }),
+                help: "restore the previous filter and selection",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::backspace())],
+            dispatch: Run(A::Backspace),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "erase a character",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('u'))],
+            dispatch: Run(A::Clear),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "ctrl+u",
+                    word: "clear",
+                }),
+                help: "clear the file filter",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Text],
+            dispatch: Dispatch::Type,
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "filter file paths",
+            },
+        },
+    ],
+};
+
+pub(crate) static FILTER_SEARCH: Screen = Screen {
+    layer: MODE,
+    panels: &[
+        QUERY_PANEL,
+        Panel {
+            layer: FILE_FILTER,
+            kind: Some(PanelKind::Input),
+        },
+        RESULTS_PANEL,
+        CONTEXT_PANEL,
+        CONTEXT_PANEL,
+    ],
+};
+
 /// The search screen.
 pub(crate) static SEARCH: Screen = Screen {
     layer: MODE,
-    panels: &[QUERY_PANEL, RESULTS_PANEL, CONTEXT_PANEL, CONTEXT_PANEL],
+    panels: &[
+        QUERY_PANEL,
+        FILES_PANEL,
+        RESULTS_PANEL,
+        CONTEXT_PANEL,
+        CONTEXT_PANEL,
+    ],
 };
 
 pub struct SearchView<'a> {
@@ -435,40 +721,229 @@ impl<'a> SearchView<'a> {
         }
     }
 
-    pub fn screen(self) -> BoundScreen<Self, 4> {
+    pub fn screen(self) -> BoundScreen<Self, 5> {
+        let metadata = self.search.screen();
         BoundScreen::new(
             self,
-            &SEARCH,
+            metadata,
             Self::layout,
             [
                 Self::draw_query,
+                Self::draw_files,
                 Self::draw_results,
                 Self::draw_context,
                 Self::draw_body,
             ],
         )
     }
+    pub(crate) fn frame(&self, area: Rect) -> SearchFrame {
+        let regions = self.layout(Region::new(area));
+        let panels = [
+            SearchPanel::Query,
+            SearchPanel::Files,
+            SearchPanel::Results,
+            SearchPanel::Context,
+            SearchPanel::Body,
+        ]
+        .into_iter()
+        .zip(regions.iter().map(|region| region.rect()))
+        .collect();
+        let mut lists = Vec::new();
+        if self.search.results.has_file_list() {
+            lists.push(self.list_geometry(SearchPanel::Files, regions[1].rect()));
+            lists.push(self.list_geometry(SearchPanel::Results, regions[2].rect()));
+        }
+        SearchFrame {
+            revision: self.search.results.revision,
+            panels,
+            lists,
+        }
+    }
+
+    fn list_geometry(&self, panel: SearchPanel, area: Rect) -> ListGeometry {
+        let s = self.search;
+        let groups = s.results.file_groups();
+        let selected = s.results.current();
+        let active = groups
+            .iter()
+            .position(|g| selected.is_some_and(|m| m.path == *g.path));
+        let filtering = s.results.files.edit.is_some() || !s.results.files.filter.is_empty();
+        let prefix = usize::from(panel == SearchPanel::Files && filtering)
+            .min(area.height.saturating_sub(3) as usize);
+        let content = Rect::new(
+            area.x.saturating_add(1),
+            area.y.saturating_add(1 + prefix as u16),
+            area.width.saturating_sub(2),
+            area.height.saturating_sub(2 + prefix as u16),
+        );
+        let mut rows = Vec::new();
+        let mut selection = None;
+        let viewport = if panel == SearchPanel::Files {
+            let width = area.width.saturating_sub(10).max(1) as usize;
+            for (index, group) in groups.iter().enumerate() {
+                let start = rows.len();
+                let count = Fit(group.path.as_str(), width).wrapped().len();
+                rows.extend((0..count).map(|_| PointerIntent::File(group.path.clone())));
+                if active == Some(index) {
+                    selection = Some(start..rows.len());
+                }
+            }
+            s.results.files.viewport
+        } else {
+            if let Some(index) = active {
+                for m in &groups[index].matches {
+                    let index = rows.len();
+                    if selected.is_some_and(|selected| selected.id == m.id) {
+                        selection = Some(index..index + 1);
+                    }
+                    rows.push(PointerIntent::Match(m.id.clone()));
+                }
+            }
+            selected
+                .and_then(|m| s.results.files.match_viewports.get(&m.path))
+                .copied()
+                .unwrap_or_default()
+        };
+        let offset = viewport.offset(rows.len(), content.height as usize, selection);
+        ListGeometry {
+            panel,
+            area,
+            content,
+            rows,
+            offset,
+        }
+    }
+
     pub(crate) fn definition_rows(&self, area: Rect) -> usize {
+        self.definition_rows_for(area, self.search.body.declaration())
+    }
+
+    pub(crate) fn definition_rows_for(
+        &self,
+        area: Rect,
+        declaration: Option<&vvv_engine::Match>,
+    ) -> usize {
+        let regions = self.layout(Region::new(area));
+        let body = regions[4].rect();
+        let region = if body.is_empty() {
+            regions[3].rect()
+        } else {
+            body
+        };
+        let mut pane = Pane::new(self.painter, Line::from("definition"), false);
+        if let Some(d) = declaration {
+            pane = pane.location(format!("{}:{}", d.path, d.start.line + 1));
+        }
+        pane.content_height(region)
+    }
+
+    pub(crate) fn full_definition_rows(
+        &self,
+        area: Rect,
+        declaration: &vvv_engine::Match,
+    ) -> usize {
         let (_, body) = self.header().areas(Region::new(area));
-        ((body.rect().height / 2).min(16)).saturating_sub(2) as usize
+        let (_, right) = body.columns(self.split);
+        Pane::new(self.painter, Line::from("definition"), false)
+            .location(format!(
+                "{}:{}",
+                declaration.path,
+                declaration.start.line + 1
+            ))
+            .content_height(right.rect())
+    }
+
+    fn definition_pane(&self) -> Pane<'a> {
+        let t = self.painter;
+        let mut pane = Pane::new(
+            t,
+            Line::from(Span::styled("definition", t.title)),
+            self.search.focus == SearchPanel::Body,
+        );
+        if let Some(d) = self.search.body.declaration() {
+            pane = pane.location(format!("{}:{}", d.path, d.start.line + 1));
+        }
+        pane
     }
 
     fn layout(&self, area: Region) -> Vec<Region> {
+        let mut regions = self.base_layout(area);
+        let left = regions[1].rect();
+        let (files, matches) = self.navigator_areas(left);
+        regions[1] = Region::new(matches);
+        regions.insert(1, Region::new(files));
+        regions
+    }
+
+    fn navigator_areas(&self, area: Rect) -> (Rect, Rect) {
+        if !self.search.results.has_file_list() {
+            return (Rect::default(), area);
+        }
+        if area.height < 6 {
+            let height = area.height.saturating_sub(1);
+            if self.search.focus == SearchPanel::Files {
+                return (
+                    Rect::new(area.x, area.y, area.width, height),
+                    Rect::new(area.x, area.y + height, area.width, area.height - height),
+                );
+            }
+            return (
+                Rect::new(area.x, area.y, area.width, area.height.min(1)),
+                Rect::new(area.x, area.y + area.height.min(1), area.width, height),
+            );
+        }
+        let width = area.width.saturating_sub(10).max(1) as usize;
+        let unfiltered = super::files::FileNavigator::default();
+        let needed = unfiltered
+            .groups(self.search.results.eligible())
+            .iter()
+            .map(|group| Fit(group.path.as_str(), width).wrapped().len())
+            .sum::<usize>()
+            + 3;
+        let height = (area.height / 2)
+            .max(3)
+            .min(needed.min(u16::MAX as usize) as u16);
+        (
+            Rect::new(area.x, area.y, area.width, height),
+            Rect::new(
+                area.x,
+                area.y + height - 1,
+                area.width,
+                area.height - height + 1,
+            ),
+        )
+    }
+
+    fn base_layout(&self, area: Region) -> Vec<Region> {
         let (top, body) = self.header().areas(area);
         let (left, right) = body.columns(self.split);
-        if self.search.results.has_body() {
-            let height = (left.rect().height / 2).min(16);
-            let (results, body) = left.split(left.rect().height.saturating_sub(height));
-            vec![top, results, right, body]
+        if area.rect().width < 110 || right.rect().height < 14 {
+            if self.search.focus == SearchPanel::Body
+                || (self.search.definition_tab && self.search.focus != SearchPanel::Context)
+            {
+                vec![top, left, Region::new(Rect::default()), right]
+            } else {
+                vec![top, left, right, Region::new(Rect::default())]
+            }
         } else {
-            vec![top, left, right, Region::new(Rect::default())]
+            let (source, definition) = right.split(right.rect().height * 3 / 5);
+            vec![top, left, source, definition]
         }
     }
     fn draw_query(&self, area: Rect, buf: &mut Buffer) {
         self.header().render(area, buf);
     }
+    fn draw_files(&self, area: Rect, buf: &mut Buffer) {
+        if !area.is_empty() {
+            self.files(area, buf);
+        }
+    }
     fn draw_results(&self, area: Rect, buf: &mut Buffer) {
-        self.results(area, buf);
+        if self.search.results.has_file_list() {
+            self.matches(area, buf);
+        } else {
+            self.results(area, buf);
+        }
     }
     fn draw_context(&self, area: Rect, buf: &mut Buffer) {
         self.context(area, buf);
@@ -479,7 +954,7 @@ impl<'a> SearchView<'a> {
         }
         let (s, t) = (self.search, self.painter);
         let declaration = s.body.declaration();
-        let title = Line::from(Span::styled("definition", t.title));
+        let pane = self.definition_pane();
         let mut rows = Vec::new();
         let mut empty = s.body.message.as_deref().unwrap_or("");
         if let Some(d) = declaration
@@ -490,7 +965,7 @@ impl<'a> SearchView<'a> {
             if let Some(lines) = s.body.lines(d)
                 && let Some(symbol) = s.body.symbol(d)
             {
-                let height = area.height.saturating_sub(2) as usize;
+                let height = pane.content_height(area);
                 let offset = s.body.scroll.min(lines.len().saturating_sub(1));
                 let first = lines.start + offset;
                 let hit = d
@@ -507,82 +982,33 @@ impl<'a> SearchView<'a> {
                 );
             }
         }
-        Pane::new(t, title, s.focus == SearchPanel::Body)
-            .rows(rows)
-            .empty(empty)
-            .render(area, buf);
+        let status = if s.body.pending().is_some() {
+            "updating"
+        } else if declaration.is_some_and(|d| !s.locations.includes(&d.path)) {
+            "outside location"
+        } else {
+            ""
+        };
+        let pane = if status.is_empty() {
+            pane
+        } else {
+            pane.footer(Line::from(Span::styled(format!(" {status} "), t.warning)))
+        };
+        pane.rows(rows).empty(empty).render(area, buf);
     }
     fn header(&self) -> Header<'a> {
         let (s, t) = (self.search, self.painter);
         let focused = s.focus == SearchPanel::Query;
-        let mut right = Vec::new();
-        if let Some(subject) = &s.results.subject {
-            // Entered a declaration: the right names it and counts the
-            // verdicts, the way `references` groups them.
-            let kind = subject.symbol.map_or(String::new(), |k| format!("{k} "));
-            right.push(t.glyph(Mark::Declaration));
-            right.push(Span::styled(
-                format!("{kind}{}  ", subject.name),
-                t.declaration,
-            ));
-            match s.results.relation {
-                relation if relation.is_impact() => match &s.results.impact {
-                    Some(i) => {
-                        right.push(t.glyph(Mark::ImportedBy));
-                        right.push(Span::raw(format!("{}  ", i.consumers.len())));
-                        let files = Files::among(i.consumers.iter().map(|c| c.path.as_path()));
-                        right.push(Span::styled(files.to_string(), t.dim));
-                    }
-                    None => right.push(Span::styled("…", t.dim)),
-                },
-                Relation::Definition => right.push(Span::styled("definition", t.dim)),
-                Relation::Deps => right.push(Span::styled("imports", t.dim)),
-                _ => match &s.results.references {
-                    Some(r) => {
-                        for (confidence, mark) in [
-                            (Confidence::Resolved, Mark::Safe),
-                            (Confidence::Unresolved, Mark::Unverified),
-                            (Confidence::Other, Mark::Other),
-                        ] {
-                            let n = r
-                                .occurrences
-                                .iter()
-                                .filter(|o| o.confidence == confidence)
-                                .count();
-                            right.push(t.glyph(mark));
-                            right.push(Span::raw(format!("{n}  ")));
-                        }
-                        right.push(Span::styled(
-                            Files::among(r.occurrences.iter().map(|o| o.m.path.as_path()))
-                                .to_string(),
-                            t.dim,
-                        ));
-                    }
-                    None => right.push(Span::styled("…", t.dim)),
-                },
-            }
+        let input = s.input_focused();
+        let right = if s.stale {
+            "stale · ctrl+r refresh"
+        } else if self.busy {
+            "searching"
+        } else if matches!(s.page, super::browse::BrowsePage::Definition(_)) {
+            "definition"
         } else {
-            let declarations = s.results.declarations().count();
-            let uses = s.results.matches.len() - declarations;
-            let files = Files::among(s.results.matches.iter().map(|x| x.path.as_path()));
-            if declarations > 0 {
-                right.push(t.glyph(Mark::Declaration));
-                right.push(Span::raw(format!("{declarations}  ")));
-            }
-            if uses > 0 {
-                right.push(Span::styled("○ ", t.dim));
-                right.push(Span::raw(format!("{uses}  ")));
-            }
-            if files.count() > 0 {
-                right.push(Span::styled(files.to_string(), t.dim));
-            }
-        }
-        if s.stale {
-            right.push(Span::styled("  stale · ctrl+r refresh", t.warning));
-        }
-        if matches!(s.page, super::browse::BrowsePage::Definition(_)) {
-            right.push(Span::styled("  definition", t.dim));
-        }
+            "search"
+        };
         let placeholder = if s.query.is_empty() && !focused {
             Span::styled("type to search", t.dim)
         } else {
@@ -596,7 +1022,25 @@ impl<'a> SearchView<'a> {
                 Span::styled(format!("{} ", self.root), t.dim),
             ]),
         )
-        .right(Line::from(right))
+        .right(Line::from(Span::styled(
+            format!("1 query · {right}"),
+            t.dim,
+        )))
+        .bottom(Line::from(Span::styled(
+            format!(
+                " {} in: {}  ·  {} kind: {}  ·  {} lang: {} ",
+                if input { "ctrl+f" } else { "f" },
+                s.locations
+                    .selected
+                    .as_ref()
+                    .map_or("workspace", |p| p.as_str()),
+                if input { "ctrl+s" } else { "s" },
+                s.query.filter(Filter::Symbol).unwrap_or("any"),
+                if input { "ctrl+l" } else { "L" },
+                s.query.filter(Filter::Lang).unwrap_or("any")
+            ),
+            t.dim,
+        )))
         .line(Line::from(vec![
             Span::styled("> ", t.key),
             Span::raw(s.query.text().to_owned()),
@@ -610,60 +1054,25 @@ impl<'a> SearchView<'a> {
         let width = area.width.saturating_sub(2) as usize;
         let view = self.view.view();
 
-        // The rows: the search's hits, or, once a declaration is entered,
-        // one read-only answer about it.
-        let (rows, selectable): (Vec<Line>, Vec<usize>) = if s.results.is_anchored() {
-            match s.results.relation {
-                Relation::Impact => s
-                    .results
-                    .impact
-                    .as_ref()
-                    .map_or_else(|| (Vec::new(), Vec::new()), |i| Self::impact_rows(t, i)),
-                Relation::Definition => s.results.definition.as_ref().map_or_else(
-                    || (Vec::new(), Vec::new()),
-                    |e| Self::present(t, &*view, &Answer::Explain((**e).clone()), width),
-                ),
-                Relation::Deps => s.results.deps.as_ref().map_or_else(
-                    || (Vec::new(), Vec::new()),
-                    |d| Self::present(t, &*view, &Answer::Deps((**d).clone()), width),
-                ),
-                _ => match &s.results.references {
-                    Some(r) => {
-                        let confidence = s.results.relation.confidence();
-                        let shown: Vec<&Occurrence> = r
-                            .occurrences
-                            .iter()
-                            .filter(|o| confidence.is_none_or(|c| o.confidence == c))
-                            .collect();
-                        let mut rows: Vec<Line> = Vec::new();
-                        let mut selectable: Vec<usize> = Vec::new();
-                        let mut group: Option<Confidence> = None;
-                        for (i, o) in shown.iter().enumerate() {
-                            if group != Some(o.confidence) {
-                                group = Some(o.confidence);
-                                rows.push(Self::verdict_head(t, &r.occurrences, o.confidence));
-                            }
-                            selectable.push(rows.len());
-                            rows.push(t.line(&view.relation(o, i + 1, width).line));
-                        }
-                        (rows, selectable)
-                    }
-                    None => (Vec::new(), Vec::new()),
-                },
-            }
-        } else {
-            // The report's rows, laid out by the view the picker has chosen.
-            let document = Document::search(&s.results.matches, &[]);
-            let presentation = view.present(&document, Options::default(), width);
-            let rows: Vec<Line> = presentation.body.iter().map(|r| t.line(&r.line)).collect();
-            let selectable: Vec<usize> = presentation
-                .body
-                .iter()
-                .enumerate()
-                .filter(|(_, r)| r.source.is_some())
-                .map(|(i, _)| i)
-                .collect();
-            (rows, selectable)
+        if s.results.has_file_list() {
+            self.matches(area, buf);
+            return;
+        }
+        let (rows, selectable) = match s.results.relation {
+            Relation::Impact => s
+                .results
+                .impact
+                .as_ref()
+                .map_or_else(|| (Vec::new(), Vec::new()), |i| Self::impact_rows(t, i)),
+            Relation::Definition => s.results.definition.as_ref().map_or_else(
+                || (Vec::new(), Vec::new()),
+                |e| Self::present(t, &*view, &Answer::Explain((**e).clone()), width),
+            ),
+            Relation::Deps => s.results.deps.as_ref().map_or_else(
+                || (Vec::new(), Vec::new()),
+                |d| Self::present(t, &*view, &Answer::Deps((**d).clone()), width),
+            ),
+            _ => (Vec::new(), Vec::new()),
         };
         let empty = if s.query.is_empty() {
             ""
@@ -680,14 +1089,340 @@ impl<'a> SearchView<'a> {
                     Span::styled(format!(" {kind}{}", subject.name), t.title),
                 ])
             }
-            None => Line::from(Span::styled("results", t.title)),
+            None => Line::from(Span::styled(
+                format!(
+                    "results · {}",
+                    Files::among(s.results.listed().iter().map(|m| m.path.as_path()))
+                ),
+                t.title,
+            )),
         };
         Pane::new(t, title, s.focus == SearchPanel::Results)
+            .right(Line::from(Span::styled(
+                format!(
+                    "{}/{}",
+                    if selectable.is_empty() {
+                        0
+                    } else {
+                        s.results.cursor.index + 1
+                    },
+                    selectable.len()
+                ),
+                t.dim,
+            )))
+            .footer(self.categories(width))
             .rows(rows)
             .cursor(selectable.get(s.results.cursor.index).copied())
-            .emphasized(true)
+            .emphasized(s.focus == SearchPanel::Results)
             .empty(empty)
             .render(area, buf);
+    }
+
+    fn categories(&self, width: usize) -> Line<'static> {
+        let (s, t) = (self.search, self.painter);
+        if s.results.is_anchored() {
+            let mut line = Line::from(Span::styled(
+                format!(" {} · R relation ", s.results.relation.label()),
+                t.dim,
+            ));
+            if s.results.relation.is_references()
+                && let Some(references) = &s.results.references
+            {
+                let counts = [
+                    Confidence::Resolved,
+                    Confidence::Unresolved,
+                    Confidence::Other,
+                ]
+                .map(|c| {
+                    (
+                        Mark::from(c),
+                        references
+                            .occurrences
+                            .iter()
+                            .filter(|o| o.confidence == c)
+                            .count(),
+                    )
+                });
+                let summary = t.line(&vvv_engine::protocol::display::Line::counts(&counts));
+                if summary.width() + line.width() + 1 > width {
+                    line = Line::from(Span::styled(
+                        format!(" {} · R ", s.results.relation.label()),
+                        t.dim,
+                    ));
+                }
+                line.spans.extend(summary.spans);
+                line.spans.push(Span::raw(" "));
+            }
+            return line;
+        }
+        let short = ["All", "Decl", "Imp", "Uses"];
+        let full_width: usize = Category::ALL.iter().map(|c| c.label().len() + 6).sum();
+        let spans = Category::ALL
+            .iter()
+            .enumerate()
+            .map(|(i, c)| {
+                let count = s
+                    .results
+                    .matches
+                    .iter()
+                    .filter(|m| c.includes(m.role))
+                    .count();
+                let label = if full_width <= width {
+                    c.count_label(count)
+                } else {
+                    match (c, count) {
+                        (Category::Uses, 1) => "Use",
+                        _ => short[i],
+                    }
+                };
+                if *c == s.results.category {
+                    Span::styled(format!(" [{label} {count}] "), t.key)
+                } else {
+                    Span::styled(format!("{label} {count} "), t.dim)
+                }
+            })
+            .collect::<Vec<_>>();
+        let line = Line::from(spans);
+        if line.width() <= width {
+            line
+        } else {
+            Line::from(Span::styled(
+                format!(
+                    " {} {} · t category ",
+                    s.results.category.count_label(s.results.len()),
+                    s.results.len()
+                ),
+                t.key,
+            ))
+        }
+    }
+
+    fn files(&self, area: Rect, buf: &mut Buffer) {
+        let (s, t) = (self.search, self.painter);
+        let width = area.width.saturating_sub(2) as usize;
+        let groups = s.results.file_groups();
+        let selected = s.results.current();
+        let active = groups
+            .iter()
+            .position(|g| selected.is_some_and(|m| m.path == *g.path));
+        let editing = s.results.files.edit.is_some();
+        let filtering = editing || !s.results.files.filter.is_empty();
+        let path_width = width.saturating_sub(8).max(1);
+        let mut rows = Vec::new();
+        let mut cursor = None;
+        for (i, group) in groups.iter().enumerate() {
+            let chosen = active == Some(i);
+            let mut offset = 0;
+            let wrapped = Fit(group.path.as_str(), path_width).wrapped();
+            let last = wrapped.len().saturating_sub(1);
+            for (row, text) in wrapped.into_iter().enumerate() {
+                let mut spans = vec![Span::styled(
+                    if chosen && row == 0 { "> " } else { "  " },
+                    if chosen {
+                        t.selection_marker(s.focus == SearchPanel::Files)
+                    } else {
+                        t.key
+                    },
+                )];
+                let filename = group
+                    .path
+                    .as_str()
+                    .rfind('/')
+                    .map_or(0, |j| group.path.as_str()[..j + 1].chars().count());
+                for (j, c) in text.chars().enumerate() {
+                    let position = offset + j;
+                    let style = if group.rank.positions.binary_search(&position).is_ok() {
+                        t.key
+                    } else if position >= filename {
+                        t.title
+                    } else {
+                        ratatui::style::Style::new()
+                    };
+                    if let Some(span) = spans.last_mut().filter(|span| span.style == style) {
+                        span.content.to_mut().push(c);
+                    } else {
+                        spans.push(Span::styled(c.to_string(), style));
+                    }
+                }
+                offset += text.chars().count();
+                if row == last {
+                    let used = Line::from(spans.clone()).width();
+                    let count = group.matches.len().to_string();
+                    spans.push(Span::raw(
+                        " ".repeat(width.saturating_sub(used + count.len() + 1)),
+                    ));
+                    spans.push(Span::styled(format!("{count} "), t.dim));
+                }
+                let line = Line::from(spans);
+                rows.push(if chosen {
+                    t.selected_line(line, s.focus == SearchPanel::Files, width)
+                } else {
+                    line
+                });
+            }
+            if chosen {
+                cursor = Some(rows.len().saturating_sub(1));
+            }
+        }
+        let eligible = s.results.eligible();
+        let total_files = Files::among(eligible.iter().map(|m| m.path.as_path()));
+        let visible: usize = groups.iter().map(|g| g.matches.len()).sum();
+        let geometry = self.list_geometry(SearchPanel::Files, area);
+        let count = if s.results.files.filter.trim().is_empty() {
+            format!(
+                "{}/{} · {}{}",
+                active.map_or(0, |i| i + 1),
+                total_files.count(),
+                Plural(visible, "hit"),
+                geometry.indicator()
+            )
+        } else {
+            format!(
+                "{}/{} of {} · {visible}/{}{}",
+                active.map_or(0, |i| i + 1),
+                groups.len(),
+                total_files.count(),
+                Plural(eligible.len(), "hit"),
+                geometry.indicator()
+            )
+        };
+        let prefix = if filtering {
+            vec![Line::from(vec![
+                Span::styled(" files: ", t.dim),
+                Span::raw(Fit(&s.results.files.filter, width.saturating_sub(9)).to_string()),
+                t.caret(editing),
+            ])]
+        } else {
+            Vec::new()
+        };
+        Pane::new(
+            t,
+            Line::from(Span::styled(
+                if editing {
+                    "2 Files · filter"
+                } else {
+                    "2 Files"
+                },
+                t.title,
+            )),
+            s.focus == SearchPanel::Files,
+        )
+        .right(Line::from(Span::styled(count, t.dim)))
+        .prefix(prefix)
+        .rows(rows)
+        .cursor(cursor)
+        .emphasized(s.focus == SearchPanel::Files)
+        .list_offset(geometry.offset)
+        .empty(if eligible.is_empty() {
+            "no result files"
+        } else if editing {
+            "no matching files · Ctrl+U clear"
+        } else {
+            "no matching files · F edit"
+        })
+        .render(area, buf);
+    }
+
+    fn matches(&self, area: Rect, buf: &mut Buffer) {
+        if area.is_empty() {
+            return;
+        }
+        let (s, t) = (self.search, self.painter);
+        let width = area.width.saturating_sub(2) as usize;
+        let groups = s.results.file_groups();
+        let selected = s.results.current();
+        let active = groups
+            .iter()
+            .position(|g| selected.is_some_and(|m| m.path == *g.path));
+        let eligible = s.results.eligible();
+        let visible: usize = groups.iter().map(|g| g.matches.len()).sum();
+        let file_matches = active.map_or(&[][..], |i| groups[i].matches.as_slice());
+        let line_width = file_matches
+            .iter()
+            .map(|m| m.start.line + 1)
+            .max()
+            .unwrap_or(1)
+            .to_string()
+            .len();
+        let position = file_matches
+            .iter()
+            .position(|m| selected.is_some_and(|current| current.id == m.id));
+        let rows = file_matches
+            .iter()
+            .enumerate()
+            .map(|(i, m)| {
+                let mut spans = vec![
+                    Span::styled(
+                        if position == Some(i) { "> " } else { "  " },
+                        if position == Some(i) {
+                            t.selection_marker(s.focus == SearchPanel::Results)
+                        } else {
+                            t.key
+                        },
+                    ),
+                    Span::styled(format!("{:>line_width$}  ", m.start.line + 1), t.dim),
+                ];
+                let occurrence = s.results.references.as_ref().and_then(|r| {
+                    r.occurrences
+                        .iter()
+                        .find(|o| o.m.id == m.id && o.m.path == m.path)
+                });
+                if let Some(o) = occurrence {
+                    spans.push(t.glyph(Mark::from(o.confidence)));
+                }
+                if self.view == ReportView::Detailed
+                    && let Some(o) = occurrence
+                {
+                    return t.line(&self.view.view().relation(o, i + 1, width).line);
+                }
+                let used = Line::from(spans.clone()).width();
+                spans.extend(t.excerpt(
+                    &vvv_engine::protocol::display::Line::hit(
+                        m,
+                        vvv_engine::protocol::display::Role::Plain,
+                    ),
+                    width.saturating_sub(used),
+                ));
+                Line::from(spans)
+            })
+            .collect();
+        let geometry = self.list_geometry(SearchPanel::Results, area);
+        let title = if let Some(subject) = &s.results.subject {
+            format!("3 Matches · {}", subject.name)
+        } else {
+            "3 Matches · j/k".into()
+        };
+        Pane::new(
+            t,
+            Line::from(Span::styled(title, t.title)),
+            s.focus == SearchPanel::Results,
+        )
+        .right(Line::from(Span::styled(
+            format!(
+                "{}/{}{}",
+                position.map_or(0, |i| i + 1),
+                file_matches.len(),
+                geometry.indicator()
+            ),
+            t.dim,
+        )))
+        .footer(self.categories(width))
+        .rows(rows)
+        .cursor(position)
+        .emphasized(s.focus == SearchPanel::Results)
+        .list_offset(geometry.offset)
+        .empty(if eligible.is_empty() && self.busy {
+            "searching…"
+        } else if visible == 0 && !s.results.files.filter.is_empty() {
+            "no matching files · F edit / clear"
+        } else {
+            "no matches"
+        })
+        .render(area, buf);
+        if area.height > 1 {
+            buf[(area.x, area.y)].set_symbol("├");
+            buf[(area.right().saturating_sub(1), area.y)].set_symbol("┤");
+        }
     }
 
     /// A report answer as rows: what `Document`/`View` compose, with the
@@ -709,30 +1444,6 @@ impl<'a> SearchView<'a> {
             .map(|(i, _)| i)
             .collect();
         (rows, selectable)
-    }
-
-    /// One verdict's heading in the anchored list: `✓ safe 12  3 files`.
-    fn verdict_head(
-        t: Painter,
-        occurrences: &[Occurrence],
-        confidence: Confidence,
-    ) -> Line<'static> {
-        let mark = Mark::from(confidence);
-        let group: Vec<&Occurrence> = occurrences
-            .iter()
-            .filter(|o| o.confidence == confidence)
-            .collect();
-        Line::from(vec![
-            t.glyph(mark),
-            Span::styled(format!("{} {}", mark.word(), group.len()), t.title),
-            Span::styled(
-                format!(
-                    "  {}",
-                    Files::among(group.iter().map(|o| o.m.path.as_path()))
-                ),
-                t.dim,
-            ),
-        ])
     }
 
     /// The impact view: a heading per depth, then a row per consumer module,
@@ -768,79 +1479,44 @@ impl<'a> SearchView<'a> {
     /// What the cursor row is, then the file around it.
     fn context(&self, area: Rect, buf: &mut Buffer) {
         let (s, t) = (self.search, self.painter);
+        if area.is_empty() {
+            return;
+        }
         let focused = s.focus == SearchPanel::Context;
-        let current = s.results.current();
-        let consumer = s.results.current_consumer();
         let site = s.results.current_site();
-        let title = site.as_ref().map_or_else(
-            || Line::from(Span::styled("context", t.dim)),
-            |(path, _)| Line::from(Span::styled(path.short(), t.path)),
-        );
+        let displayed = s.displayed_source();
+        let title = Line::from(Span::styled("source", t.title));
         let mut rows: Vec<Line> = Vec::new();
-        if let Some(consumer) = consumer {
-            rows.push(Line::from(vec![
-                t.glyph(Mark::ImportedBy),
-                Span::styled(format!(" depth {}  ", consumer.depth), t.declaration),
-                Span::styled(consumer.module.to_string(), t.address),
-            ]));
-        } else if let Some(c) = current {
-            match (&c.symbol, c.role) {
-                // The results row already says what it is; the source below
-                // is the detail. Only a use needs a card, to name what it
-                // resolves to.
-                (Some(_), Role::Declaration) => {}
-                _ => {
-                    let declaration = if s.results.is_anchored() {
-                        s.results.anchored_declarations().first()
-                    } else {
-                        s.results.declaration_of(c)
-                    };
-                    if let Some(d) = declaration
-                        && let Some(sym) = &d.symbol
-                    {
-                        let mut spans = vec![
-                            t.glyph(Mark::Import),
-                            t.glyph(Mark::Declaration),
-                            Span::styled(format!("{} {}", sym.kind, sym.name), t.declaration),
-                        ];
-                        spans.push(Span::styled(
-                            format!("   {}:{}", d.path.short(), d.start.line + 1),
-                            t.dim,
-                        ));
-                        rows.push(Line::from(spans));
-                    }
-                }
-            }
+        let head = 0;
+        let mut panel = Pane::new(t, title, focused).empty("");
+        if let Some(anchor) = &displayed {
+            panel = panel.location(format!("{}:{}", anchor.path, anchor.line + 1));
+        } else if let Some((path, line)) = &site {
+            panel = panel.location(format!("{}:{}", path, line + 1));
         }
-        if !rows.is_empty() {
-            rows.push(Line::default());
-        }
-        let head = rows.len();
-        let panel = Pane::new(t, title, focused).empty("");
-        // The source fills whatever the card leaves.
-        let inner_height = area.height.saturating_sub(2) as usize;
-        let inner_width = area.width.saturating_sub(2) as usize;
-        if let (Some((path, _)), Some(preview)) = (site.as_ref(), &s.preview)
-            && preview.path == *path
+        if displayed
+            .as_ref()
+            .is_some_and(|anchor| site.as_ref().is_some_and(|(path, _)| *path != anchor.path))
         {
+            panel = panel.footer(Line::from(Span::styled(" updating ", t.warning)));
+        }
+        // Source rows fill the space below pane metadata.
+        let inner_height = panel.content_height(area);
+        let inner_width = area.width.saturating_sub(2) as usize;
+        if let (Some(anchor), Some(preview)) = (displayed.as_ref(), &s.preview) {
             let height = inner_height.saturating_sub(head);
             let first = s
                 .preview_scroll
                 .unwrap_or_else(|| s.preview_anchor())
                 .min(preview.line_count().saturating_sub(1));
-            let highlight = current
-                .filter(|c| c.path == *path)
-                .map(|c| (c.span.start, c.span.end));
-            let span_lines = current
-                .filter(|c| c.path == *path)
-                .map(|c| (c.start.line as usize, c.end.line as usize));
+            let highlight = anchor.hit.map(|span| (span.start, span.end));
             rows.extend(t.source_window(
                 preview,
                 first,
                 height,
                 inner_width,
                 highlight,
-                span_lines,
+                anchor.lines,
             ));
         }
         panel.rows(rows).render(area, buf);
@@ -852,31 +1528,62 @@ mod tests {
     use super::*;
 
     #[test]
-    fn body_layout_uses_its_full_budget_independent_of_selection_and_loading() {
+    fn preview_regions_stay_fixed_across_selection_loading_and_empty_results() {
         let mut search = Search::default();
         search.results.replace(crate::fixtures::search().matches);
-        for (height, body_height) in [(24, 10), (60, 16)] {
-            let area = Region::new(Rect::new(0, 0, 100, height));
-            let layout = |s: &Search| {
-                SearchView::new(
-                    s,
-                    "repo",
-                    false,
-                    Painter::plain(),
-                    50,
-                    ReportView::default(),
-                )
-                .layout(area)
-            };
-            let before = layout(&search);
-            assert_eq!(before[3].rect().height, body_height);
-            assert_eq!(before[3].rect().width, before[1].rect().width);
-            search.results.cursor.index = 1;
-            assert_eq!(before, layout(&search));
-            std::sync::Arc::make_mut(&mut search.results.matches)[1].text = "unrelated".into();
-            search.selection_changed();
-            assert!(search.body.pending().is_some());
-            assert_eq!(before, layout(&search));
-        }
+        search.selection_changed();
+        let layout = |s: &Search, width, height| {
+            SearchView::new(
+                s,
+                "repo",
+                false,
+                Painter::plain(),
+                40,
+                ReportView::default(),
+            )
+            .layout(Region::new(Rect::new(0, 0, width, height)))
+        };
+        let declaration = layout(&search, 120, 30);
+        assert!(!declaration[3].rect().is_empty());
+        assert!(!declaration[4].rect().is_empty());
+        assert_eq!(
+            declaration[3].rect().height + declaration[4].rect().height,
+            declaration[1].rect().height + declaration[2].rect().height - 1
+        );
+        search.moved(1);
+        let uses = layout(&search, 120, 30);
+        assert_eq!(declaration, uses, "selection does not resize previews");
+        assert_eq!(uses[3].rect().x, uses[4].rect().x);
+        assert_eq!(uses[3].rect().width, uses[4].rect().width);
+        assert_eq!(
+            uses[3].rect().height + uses[4].rect().height,
+            uses[1].rect().height + uses[2].rect().height - 1
+        );
+        search.body.clear();
+        assert_eq!(
+            uses,
+            layout(&search, 120, 30),
+            "loading does not resize previews"
+        );
+        search.results.replace(vec![]);
+        search.selection_changed();
+        let empty = layout(&search, 120, 30);
+        assert_eq!(empty[3..], uses[3..], "empty results keep both regions");
+        let narrow = layout(&search, 90, 24);
+        assert!(narrow[4].rect().is_empty());
+        search.results.replace(crate::fixtures::search().matches);
+        search.selection_changed();
+        assert_eq!(narrow[3..], layout(&search, 90, 24)[3..]);
+        search.focus_nth(5);
+        let definition = layout(&search, 90, 24);
+        assert!(definition[3].rect().is_empty());
+        assert_eq!(definition[4].rect(), narrow[3].rect());
+        let short = layout(&search, 120, 16);
+        assert!(short[3].rect().is_empty());
+        assert!(!short[4].rect().is_empty());
+        search.focus_nth(4);
+        let short_source = layout(&search, 120, 16);
+        assert!(short_source[4].rect().is_empty());
+        assert_eq!(short_source[3].rect(), short[4].rect());
     }
 }

@@ -52,6 +52,139 @@ impl Painter {
         TextLine::from(self.spans(line))
     }
 
+    /// Selection fills the row without dimming its text or replacing semantic spans.
+    pub fn selected_line<'a>(
+        &self,
+        mut line: TextLine<'a>,
+        emphasized: bool,
+        width: usize,
+    ) -> TextLine<'a> {
+        let padding = width.saturating_sub(line.width());
+        if padding > 0 {
+            line.spans.push(Span::raw(" ".repeat(padding)));
+        }
+        line.patch_style(self.selection(emphasized))
+    }
+
+    /// A continuous path: readable directories with the filename emphasized
+    /// in place. Wrapped path segments retain their original reading order.
+    pub fn path_line(&self, path: &str) -> TextLine<'static> {
+        let split = path.rfind('/').map_or(0, |i| i + 1);
+        TextLine::from(vec![
+            Span::raw(path[..split].to_owned()),
+            Span::styled(path[split..].to_owned(), self.title),
+        ])
+    }
+
+    /// Fit source around its hit, retaining the beginning of the statement
+    /// when a middle section must be omitted. Ellipses mark every omission;
+    /// budgets use terminal columns, including wide Unicode characters.
+    pub fn excerpt(&self, line: &Line, width: usize) -> Vec<Span<'static>> {
+        use vvv_engine::protocol::display::Role;
+
+        if width == 0 {
+            return Vec::new();
+        }
+        let chars: Vec<_> = line
+            .pieces()
+            .iter()
+            .flat_map(|p| p.text.chars().map(move |c| (c, p.role)))
+            .map(|(c, role)| (c, role, Span::raw(c.to_string()).width()))
+            .collect();
+        let columns =
+            |start: usize, end: usize| chars[start..end].iter().map(|c| c.2).sum::<usize>();
+        if columns(0, chars.len()) <= width {
+            return self.spans(line);
+        }
+        if width == 1 {
+            return vec![Span::styled("…", self.dim)];
+        }
+        let prefix = |start: usize, end: usize, budget: usize| {
+            let mut used = 0;
+            start
+                + chars[start..end]
+                    .iter()
+                    .take_while(|c| {
+                        used += c.2;
+                        used <= budget
+                    })
+                    .count()
+        };
+        let suffix = |start: usize, end: usize, budget: usize| {
+            let mut used = 0;
+            end - chars[start..end]
+                .iter()
+                .rev()
+                .take_while(|c| {
+                    used += c.2;
+                    used <= budget
+                })
+                .count()
+        };
+        let hit = chars
+            .iter()
+            .position(|c| c.1 == Role::Hit)
+            .zip(chars.iter().rposition(|c| c.1 == Role::Hit).map(|i| i + 1));
+        let ranges = match hit {
+            Some((start, end))
+                if columns(0, end) + columns(end, chars.len()).min(8) + 1 > width =>
+            {
+                let hit_width = columns(start, end);
+                if hit_width + 2 >= width {
+                    let leading = usize::from(start > 0);
+                    std::iter::once(start..prefix(start, end, width.saturating_sub(leading + 1)))
+                        .collect::<Vec<_>>()
+                } else {
+                    let after_budget = columns(end, chars.len())
+                        .min((width - hit_width - 2) / 3)
+                        .min(12);
+                    let before_budget = width - hit_width - after_budget - 2;
+                    let word = |c: char| c.is_alphanumeric() || c == '_';
+                    let mut head = prefix(0, start, before_budget * 2 / 3);
+                    if head > 0 && head < start && word(chars[head - 1].0) && word(chars[head].0) {
+                        while head > 0 && word(chars[head - 1].0) {
+                            head -= 1;
+                        }
+                    }
+                    let mut near = suffix(head, start, before_budget - columns(0, head));
+                    if near > head && near < start && word(chars[near - 1].0) && word(chars[near].0)
+                    {
+                        while near < start && word(chars[near].0) {
+                            near += 1;
+                        }
+                    }
+                    let tail = prefix(end, chars.len(), after_budget);
+                    if head == near {
+                        std::iter::once(0..tail).collect()
+                    } else {
+                        vec![0..head, near..tail]
+                    }
+                }
+            }
+            _ => std::iter::once(0..prefix(0, chars.len(), width.saturating_sub(1))).collect(),
+        };
+        let mut out: Vec<Span<'static>> = Vec::new();
+        let mut previous = 0;
+        for range in ranges {
+            if range.start > previous {
+                out.push(Span::styled("…", self.dim));
+            }
+            for &(c, role, _) in &chars[range.clone()] {
+                let style = self.role(role);
+                if let Some(span) = out.last_mut().filter(|s| s.style == style) {
+                    span.content.to_mut().push(c);
+                } else {
+                    out.push(Span::styled(c.to_string(), style));
+                }
+            }
+            previous = range.end;
+        }
+        if previous < chars.len() {
+            out.push(Span::styled("…", self.dim));
+        }
+        out
+    }
+
     /// Lines `first..first + height` of a file, `hit` (a byte range)
     /// highlighted, `marked` lines' numbers in the hit colour.
     pub fn source_window(
@@ -215,6 +348,53 @@ impl Deref for Painter {
 mod tests {
     use super::*;
     use vvv_engine::{Highlight, HighlightKind, Span as SourceSpan};
+
+    #[test]
+    fn long_excerpts_keep_the_hit_and_statement_context_within_terminal_columns() {
+        use vvv_engine::protocol::display::Role;
+        let painter = Painter::colored();
+        for (before, hit, after) in [
+            (
+                "use vvv_engine::{Answer, Call, ErrorCode, Failure, ",
+                "Engine",
+                ", Reply};",
+            ),
+            (
+                "let 世界 = some_really_long_expression(",
+                "Engine",
+                "::new());",
+            ),
+            ("", "ExtremelyLongMatchedIdentifier", "::new();"),
+        ] {
+            let line = Line::new()
+                .and(Role::Plain, before)
+                .and(Role::Hit, hit)
+                .and(Role::Plain, after);
+            for width in 0..80 {
+                let spans = painter.excerpt(&line, width);
+                let rendered = TextLine::from(spans.clone());
+                assert!(rendered.width() <= width, "width {width}: {rendered}");
+                if width >= hit.len() + 4 {
+                    assert!(
+                        spans
+                            .iter()
+                            .any(|s| s.style == painter.hit && s.content == hit)
+                    );
+                }
+            }
+        }
+        let line = Line::new()
+            .and(
+                Role::Plain,
+                "use vvv_engine::{Answer, Call, ErrorCode, Failure, ",
+            )
+            .and(Role::Hit, "Engine")
+            .and(Role::Plain, ", Reply};");
+        let excerpt = TextLine::from(painter.excerpt(&line, 49)).to_string();
+        assert!(excerpt.starts_with("use vvv_engine::{"), "{excerpt}");
+        assert!(excerpt.contains("Engine"));
+        assert!(excerpt.contains('…'));
+    }
 
     #[test]
     fn declaration_clipping_keeps_original_highlight_coordinates() {

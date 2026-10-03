@@ -2,23 +2,23 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ vvv ~/dev/nx ─────────────────────────────────────────────── ● trait Language  imports ┐
+┌ vvv ~/dev/nx ──────────────────────────────────────────────────────── 1 query · search ┐
 │> Language                                                                              │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-┌ ●  trait Language ────────────────────────┐┌ lang/mod.rs ──────────────────────────────┐
+└ f in: workspace  ·  s kind: any  ·  L lang: any ───────────────────────────────────────┘
+┌ ●  trait Language ─────────────────── 0/0 ┐┌ source · src/lang/mod.rs:1 ───────────────┐
 │src/lang/mod.rs                            ││    1 │ // line 1                          │
 │                                           ││    2 │ // line 2                          │
 │→ 0                                        ││    3 │ // line 3                          │
 │  ∅                                        ││    4 │ // line 4                          │
 │                                           ││    5 │ // line 5                          │
 │← 0   0 files                              ││    6 │ // line 6                          │
-└───────────────────────────────────────────┘│    7 │ // line 7                          │
-┌ definition ───────────────────────────────┐│    8 │ // line 8                          │
-│ Select a source row                       ││    9 │ // line 9                          │
+│  ∅                                        ││    7 │ // line 7                          │
+│                                           ││    8 │ // line 8                          │
+│                                           ││    9 │ // line 9                          │
 │                                           ││   10 │ // line 10                         │
 │                                           ││   11 │ // line 11                         │
 │                                           ││   12 │ // line 12                         │
 │                                           ││   13 │ // line 13                         │
 │                                           ││   14 │ // line 14                         │
-└───────────────────────────────────────────┘└───────────────────────────────────────────┘
- search r rename  m/M move file/symbol  w rewrite  o declaration  R relation  s kind  L la
+└ deps (imports) · R relation ──────────────┘└───────────────────────────────────────────┘
+ search j/k move  ⏎ references  f location  t category  o follow  R relation  / query  e e

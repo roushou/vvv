@@ -1,0 +1,34 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: "FrameFixture::new(&m).render_size(120, 30)"
+---
+┌ vvv ~/dev/nx ────────────────────────────────────────────────────────────────────────────────────── 1 query · search ┐
+│> Engine                                                                                                              │
+└ f in: crates/vvv  ·  s kind: any  ·  L lang: any ────────────────────────────────────────────────────────────────────┘
+┌ 2 Files ─────────────────────────────────── 1/2 · 2 hits ┐┌ source · crates/vvv/src/cli/commands/serve.rs:38 ────────┐
+│> crates/vvv/src/cli/commands/serve.rs                  1 ││   33 │ // line 33                                        │
+│  crates/vvv/src/cli/context.rs                         1 ││   34 │ // line 34                                        │
+│                                                          ││   35 │ // line 35                                        │
+├ 3 Matches · j/k ──────────────────────────────────── 1/1 ┤│   36 │ // line 36                                        │
+│> 38  engine: Engine,                                     ││   37 │ // line 37                                        │
+│                                                          ││   38 │     engine: Engine,                               │
+│                                                          ││   39 │ // line 39                                        │
+│                                       ┌ look in ─────────────────────────────┐                                       │
+│                                       │> crates▏                             │                                       │
+│                                       │                                      │                                       │
+│                                       │> crates                              │                                       │
+│                                       │  crates/vvv                          │                                       │
+│                                       │  crates/vvv/src                      │                                       │
+│                                       │  crates/vvv/src/cli                  │───────────────────────────────────────┘
+│                                       │  crates/vvv/src/cli/commands         │s/vvv-engine/src/engine.rs:1 ──────────┐
+│                                       └ Enter select · Esc cancel ───────────┘{                                      │
+│                                                          ││     workspace: Workspace,                                │
+│                                                          ││     languages: LanguageRegistry,                         │
+│                                                          ││ }                                                        │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+└ [All 2] Declarations 0 Imports 0 Uses 2 ─────────────────┘└ outside location ────────────────────────────────────────┘
+ search ⏎ choose  esc cancel

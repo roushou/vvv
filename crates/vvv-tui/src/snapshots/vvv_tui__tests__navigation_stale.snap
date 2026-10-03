@@ -2,23 +2,23 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ vvv ~/dev/nx ───────────────────────────────────── ● 1  1 file  stale · ctrl+r refresh ┐
+┌ vvv ~/dev/nx ──────────────────────────────────────── 1 query · stale · ctrl+r refresh ┐
 │> Alpha                                                                                 │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-┌ results ──────────────────────────────────┐┌ a.rs ─────────────────────────────────────┐
-│● a.rs:1                 struct Alpha      ││    1 │ struct Alpha {                     │
-│                                           ││    2 │     first: Beta,                   │
-│                                           ││    3 │     second: Beta,                  │
-│                                           ││    4 │ }                                  │
+└ f in: workspace  ·  s kind: any  ·  L lang: any ───────────────────────────────────────┘
+┌ 2 Files ───────────────────── 1/1 · 1 hit ┐┌ definition · a.rs:1 ──────────────────────┐
+│> a.rs                                   1 ││ struct Alpha {                            │
+│                                           ││     first: Beta,                          │
+├ 3 Matches · j/k ───────────────────── 1/1 ┤│     second: Beta,                         │
+│> 1  struct Alpha {    first: Beta,    s…  ││ }                                         │
 │                                           ││                                           │
 │                                           ││                                           │
-└───────────────────────────────────────────┘│                                           │
-┌ definition ───────────────────────────────┐│                                           │
-│ struct Alpha {                            ││                                           │
-│     first: Beta,                          ││                                           │
-│     second: Beta,                         ││                                           │
-│ }                                         ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
-└───────────────────────────────────────────┘└───────────────────────────────────────────┘
- search  Saved source needs validation or refresh (ctrl+r)  ⏎ follow  ← results  < > resiz
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+└ [All 1] Decl 1 Imp 0 Uses 0 ──────────────┘└───────────────────────────────────────────┘
+ search  Saved source needs validation or refresh (ctrl+r)  p preview  ⏎ follow  ← results

@@ -91,8 +91,12 @@ pub enum When {
     QueryEmpty,
     /// The search query holds something.
     QueryNotEmpty,
-    /// A declaration is entered as the search's subject.
-    Anchored,
+    /// Files or Matches has focus, outside filter editing.
+    SearchList,
+    /// A declaration is entered and a search list has focus, outside filter editing.
+    SearchListAnchored,
+    /// Result files are displayed and focus is outside an input.
+    FileList,
 }
 
 /// A named set of bindings.

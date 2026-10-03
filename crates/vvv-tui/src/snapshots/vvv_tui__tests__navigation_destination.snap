@@ -2,23 +2,23 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ vvv ~/dev/nx ───────────────────────────────────────────────── ● 1  1 file  definition ┐
+┌ vvv ~/dev/nx ──────────────────────────────────────────────────── 1 query · definition ┐
 │> Alpha                                                                                 │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-┌ results ──────────────────────────────────┐┌ b.rs ─────────────────────────────────────┐
-│● b.rs:1                 struct Beta       ││    1 │ struct Beta {}                     │
+└ f in: workspace  ·  s kind: any  ·  L lang: any ───────────────────────────────────────┘
+┌ 2 Files ───────────────────── 1/1 · 1 hit ┐┌ definition · b.rs:1 ──────────────────────┐
+│> b.rs                                   1 ││ struct Beta {}                            │
+│                                           ││                                           │
+├ 3 Matches · j/k ───────────────────── 1/1 ┤│                                           │
+│> 1  struct Beta {}                        ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
-└───────────────────────────────────────────┘│                                           │
-┌ definition ───────────────────────────────┐│                                           │
-│ struct Beta {}                            ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
-└───────────────────────────────────────────┘└───────────────────────────────────────────┘
- search ⏎ follow  ← results  < > resize  j/k scroll  d/u page  e editor  v view
+└All 1  [Decl 1] Imp 0 Uses 0 ──────────────┘└───────────────────────────────────────────┘
+ search p preview  ⏎ follow  ← results  < > resize  F files  j/k scroll  d/u page  e edito

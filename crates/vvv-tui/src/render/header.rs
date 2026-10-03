@@ -6,13 +6,14 @@ use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Paragraph, Widget};
 
-use super::{Painter, Region};
+use super::{Fit, Painter, Region};
 
 pub struct Header<'a> {
     painter: Painter,
     focused: bool,
     left: Line<'a>,
     right: Line<'a>,
+    bottom: Line<'a>,
     lines: Vec<Line<'a>>,
 }
 
@@ -23,6 +24,7 @@ impl<'a> Header<'a> {
             focused,
             left,
             right: Line::default(),
+            bottom: Line::default(),
             lines: Vec::new(),
         }
     }
@@ -37,6 +39,11 @@ impl<'a> Header<'a> {
         self
     }
 
+    pub fn bottom(mut self, bottom: Line<'a>) -> Self {
+        self.bottom = bottom;
+        self
+    }
+
     /// Rows the header takes: its lines plus the border.
     pub fn height(&self) -> u16 {
         self.lines.len() as u16 + 2
@@ -44,7 +51,13 @@ impl<'a> Header<'a> {
 
     /// Split `area` into the header's rows and the rest.
     pub fn areas(&self, area: Region) -> (Region, Region) {
-        area.split(self.height())
+        let width = area.rect().width.saturating_sub(4) as usize;
+        let extra = if self.bottom.width() > width {
+            Fit(&self.bottom.to_string(), width).wrapped().len() as u16
+        } else {
+            0
+        };
+        area.split(self.height() + extra)
     }
 }
 
@@ -55,12 +68,26 @@ impl Widget for Header<'_> {
             right.spans.insert(0, Span::raw(" "));
             right.spans.push(Span::raw(" "));
         }
+        let width = area.width.saturating_sub(4) as usize;
+        let mut lines = self.lines;
+        let bottom = if self.bottom.width() > width {
+            lines.extend(
+                Fit(&self.bottom.to_string(), width)
+                    .wrapped()
+                    .into_iter()
+                    .map(Line::from),
+            );
+            Line::default()
+        } else {
+            self.bottom
+        };
         let block = Block::bordered()
             .border_style(self.painter.border(self.focused))
             .title(self.left)
+            .title_bottom(bottom)
             .title_top(right.right_aligned());
         let inner = block.inner(area);
         block.render(area, buf);
-        Paragraph::new(self.lines).render(inner, buf);
+        Paragraph::new(lines).render(inner, buf);
     }
 }

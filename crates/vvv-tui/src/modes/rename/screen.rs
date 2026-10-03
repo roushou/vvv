@@ -262,7 +262,11 @@ impl<'a> RenameView<'a> {
                 ));
                 if r.declarations.len() > 1 {
                     line.push(Span::styled(
-                        format!("   +{} more declarations", r.declarations.len() - 1),
+                        format!(
+                            "   +{} more declaration{}",
+                            r.declarations.len() - 1,
+                            if r.declarations.len() == 2 { "" } else { "s" }
+                        ),
                         t.warning,
                     ));
                 }

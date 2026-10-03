@@ -5,7 +5,9 @@ use std::process::Command;
 use std::time::{Duration, Instant};
 
 use ratatui::crossterm::SynchronizedUpdate;
-use ratatui::crossterm::event::{self, Event as TermEvent, KeyEventKind};
+use ratatui::crossterm::event::{
+    self, DisableMouseCapture, EnableMouseCapture, Event as TermEvent, KeyEventKind,
+};
 use vvv_engine::{Engine, Retention};
 
 use crate::action::{Action, Effect};
@@ -73,6 +75,7 @@ impl Tui {
         let worker = Worker::spawn(self.engine);
         let mut model = Model::new(root.display().to_string(), languages);
         let mut terminal = ratatui::init();
+        let capture = MouseCapture::new()?;
         let outcome = Self::event_loop(
             &mut terminal,
             &mut model,
@@ -81,6 +84,7 @@ impl Tui {
             &root,
             editor.as_deref(),
         );
+        drop(capture);
         ratatui::restore();
         outcome
     }
@@ -141,10 +145,16 @@ impl Tui {
                 return Ok(());
             }
 
+            let frame = model.search_frame();
             if event::poll(TICK)? {
                 match event::read()? {
                     TermEvent::Key(key) if key.kind == KeyEventKind::Press => {
                         effects.extend(model.on_key(key));
+                    }
+                    TermEvent::Mouse(mouse) => {
+                        if let Some(pointer) = frame.pointer(mouse) {
+                            effects.extend(model.on_event(crate::action::Event::Pointer(pointer)));
+                        }
                     }
                     TermEvent::Resize(width, height) => {
                         effects.extend(
@@ -173,6 +183,7 @@ impl Tui {
         let Some(program) = words.next() else {
             return Ok(());
         };
+        ratatui::crossterm::execute!(std::io::stdout(), DisableMouseCapture)?;
         ratatui::restore();
         let status = Command::new(program)
             .args(words)
@@ -180,11 +191,35 @@ impl Tui {
             .arg(root.join(path))
             .status();
         *terminal = ratatui::init();
+        ratatui::crossterm::execute!(std::io::stdout(), EnableMouseCapture)?;
         terminal.clear()?;
         status.map_err(|source| Error::Editor {
             command: editor.to_owned(),
             source,
         })?;
         Ok(())
+    }
+}
+
+/// Mouse reporting follows the terminal session, including error unwinding.
+struct MouseCapture {
+    enabled: bool,
+}
+impl MouseCapture {
+    fn new() -> Result<Self, Error> {
+        let mut capture = Self { enabled: true };
+        if let Err(error) = ratatui::crossterm::execute!(std::io::stdout(), EnableMouseCapture) {
+            capture.enabled = false;
+            ratatui::restore();
+            return Err(error.into());
+        }
+        Ok(capture)
+    }
+}
+impl Drop for MouseCapture {
+    fn drop(&mut self) {
+        if self.enabled {
+            let _ = ratatui::crossterm::execute!(std::io::stdout(), DisableMouseCapture);
+        }
     }
 }

@@ -2,23 +2,23 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ vvv ~/dev/nx ──────────────────────────────────────────── ● trait Language  definition ┐
+┌ vvv ~/dev/nx ──────────────────────────────────────────────────────── 1 query · search ┐
 │> Language                                                                              │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-┌ ●  trait Language ────────────────────────┐┌ lang/mod.rs ──────────────────────────────┐
-│src/lang/mod.rs:64:11                      ││    1 │ // line 1                          │
-│    64 │ pub trait Language: Send + Sync { ││    2 │ // line 2                          │
-│       │           ^^^^^^^^                ││    3 │ // line 3                          │
-│                                           ││    4 │ // line 4                          │
-│● trait Language                           ││    5 │ // line 5                          │
-│← 1                                        ││    6 │ // line 6                          │
-└───────────────────────────────────────────┘│    7 │ // line 7                          │
-┌ definition ───────────────────────────────┐│    8 │ // line 8                          │
-│ Select a source row                       ││    9 │ // line 9                          │
-│                                           ││   10 │ // line 10                         │
-│                                           ││   11 │ // line 11                         │
-│                                           ││   12 │ // line 12                         │
-│                                           ││   13 │ // line 13                         │
-│                                           ││   14 │ // line 14                         │
-└───────────────────────────────────────────┘└───────────────────────────────────────────┘
- search r rename  m/M move file/symbol  w rewrite  o declaration  R relation  s kind  L la
+└ f in: workspace  ·  s kind: any  ·  L lang: any ───────────────────────────────────────┘
+┌ ●  trait Language ─────────────────── 1/2 ┐┌ source · src/lang/mod.rs:64 ──────────────┐
+│src/lang/mod.rs:64:11                      ││   59 │ // line 59                         │
+│    64 │ pub trait Language: Send + Sync { ││   60 │ // line 60                         │
+│       │           ^^^^^^^^                ││   61 │ // line 61                         │
+│                                           ││   62 │ // line 62                         │
+│● trait Language                           ││   63 │ // line 63                         │
+│← 1                                        ││   64 │ pub trait Language: Send + Sync {  │
+│  src/lib.rs                               ││   65 │     fn name(&self) -> &str;        │
+│                                           ││   66 │     fn extensions(&self) -> &[&str…│
+│                                           ││   67 │ }                                  │
+│                                           ││   68 │ // line 68                         │
+│                                           ││   69 │ // line 69                         │
+│                                           ││   70 │ // line 70                         │
+│                                           ││                                           │
+│                                           ││                                           │
+└ definition · R relation ──────────────────┘└───────────────────────────────────────────┘
+ search j/k move  ⏎ references  f location  t category  o follow  R relation  / query  e e

@@ -2,23 +2,23 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ vvv ~/dev/nx ──────────────────────────────── ● trait Language  ✓ 3  ? 1  ✗ 0  3 files ┐
+┌ vvv ~/dev/nx ──────────────────────────────────────────────────────── 1 query · search ┐
 │> Language                                                                              │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-┌ ●  trait Language ────────────────────────┐┌ lang/mod.rs ──────────────────────────────┐
-│✓ safe 3  3 files                          ││   59 │ // line 59                         │
-│● lang/mod.rs:64         pub trait Languag…││   60 │ // line 60                         │
-│→ lang/registry.rs:4     use super::{Langu…││   61 │ // line 61                         │
-│→ src/lib.rs:26          pub use lang::{La…││   62 │ // line 62                         │
-│? unverified 1  1 file                     ││   63 │ // line 63                         │
-│∅ src/lib.rs:41          Language::new()   ││   64 │ pub trait Language: Send + Sync {  │
-└───────────────────────────────────────────┘│   65 │     fn name(&self) -> &str;        │
-┌ definition ───────────────────────────────┐│   66 │     fn extensions(&self) -> &[&str…│
-│ pub trait Language: Send + Sync {         ││   67 │ }                                  │
-│     fn name(&self) -> &str;               ││   68 │ // line 68                         │
-│     fn extensions(&self) -> &[&str];      ││   69 │ // line 69                         │
-│ }                                         ││   70 │ // line 70                         │
+└ f in: workspace  ·  s kind: any  ·  L lang: any ───────────────────────────────────────┘
+┌ 2 Files ──────────────────── 1/3 · 4 hits ┐┌ source · src/lang/mod.rs:64 ──────────────┐
+│> src/lang/mod.rs                        1 ││   59 │ // line 59                         │
+│  src/lang/registry.rs                   1 ││   60 │ // line 60                         │
+│  src/lib.rs                             2 ││   61 │ // line 61                         │
+│                                           ││   62 │ // line 62                         │
+├ 3 Matches · Language ──────────────── 1/1 ┤│   63 │ // line 63                         │
+│> 64  ✓ pub trait Language: Send + Sync {  ││   64 │ pub trait Language: Send + Sync {  │
+│                                           ││   65 │     fn name(&self) -> &str;        │
+│                                           ││   66 │     fn extensions(&self) -> &[&str…│
+│                                           ││   67 │ }                                  │
+│                                           ││   68 │ // line 68                         │
+│                                           ││   69 │ // line 69                         │
+│                                           ││   70 │ // line 70                         │
 │                                           ││                                           │
 │                                           ││                                           │
-└───────────────────────────────────────────┘└───────────────────────────────────────────┘
- search r rename  m/M move file/symbol  w rewrite  o declaration  R relation  s kind  L la
+└ references · R relation ✓ 3  ? 1  ✗ 0 ────┘└───────────────────────────────────────────┘
+ search j/k move  ⏎ references  F files  f location  t category  o follow  R relation  / q

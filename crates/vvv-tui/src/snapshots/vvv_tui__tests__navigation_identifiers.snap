@@ -2,23 +2,23 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ vvv ~/dev/nx ───────────────────────────────────────────────────────────── ● 1  1 file ┐
+┌ vvv ~/dev/nx ──────────────────────────────────────────────────────── 1 query · search ┐
 │> Al┌ Follow identifier · ↑/↓ choose · enter follow · esc cancel ───────────────────┐   │
-└────│Filter: Beta  (2 choices)                                                      │───┘
-┌ res│Beta  2:12  first: Beta,                                                       │───┐
-│● a.│Beta  3:13  second: Beta,                                                      │   │
+└ f i│Filter: Beta  (2 choices)                                                      │───┘
+┌ 2 F│Beta  2:12  first: Beta,                                                       │───┐
+│> a.│Beta  3:13  second: Beta,                                                      │   │
+│    │                                                                               │   │
+├ 3 M│                                                                               │   │
+│> 1 │                                                                               │   │
 │    │                                                                               │   │
 │    │                                                                               │   │
 │    │                                                                               │   │
 │    │                                                                               │   │
 │    │                                                                               │   │
-└────│                                                                               │   │
-┌ def│                                                                               │   │
-│ str│                                                                               │   │
 │    │                                                                               │   │
 │    │                                                                               │   │
-│ }  │                                                                               │   │
 │    │                                                                               │   │
 │    │                                                                               │   │
-└────└───────────────────────────────────────────────────────────────────────────────┘───┘
+│    │                                                                               │   │
+└ [Al└───────────────────────────────────────────────────────────────────────────────┘───┘
  search

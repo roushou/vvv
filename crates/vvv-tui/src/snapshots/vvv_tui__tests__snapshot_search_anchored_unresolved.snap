@@ -2,23 +2,23 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ vvv ~/dev/nx ──────────────────────────────── ● trait Language  ✓ 3  ? 1  ✗ 0  3 files ┐
+┌ vvv ~/dev/nx ──────────────────────────────────────────────────────── 1 query · search ┐
 │> Language                                                                              │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-┌ ●  trait Language ────────────────────────┐┌ src/lib.rs ───────────────────────────────┐
-│? unverified 1  1 file                     ││→ ● trait Language   lang/mod.rs:64        │
-│∅ src/lib.rs:41          Language::new()   ││                                           │
+└ f in: workspace  ·  s kind: any  ·  L lang: any ───────────────────────────────────────┘
+┌ 2 Files ───────────────────── 1/1 · 1 hit ┐┌ source · src/lang/mod.rs:64 ──────────────┐
+│> src/lib.rs                             1 ││   59 │ // line 59                         │
+│                                           ││   60 │ // line 60                         │
+├ 3 Matches · Language ──────────────── 1/1 ┤│   61 │ // line 61                         │
+│> 41  ? Language::new()                    ││   62 │ // line 62                         │
+│                                           ││   63 │ // line 63                         │
+│                                           ││   64 │ pub trait Language: Send + Sync {  │
+│                                           ││   65 │     fn name(&self) -> &str;        │
+│                                           ││   66 │     fn extensions(&self) -> &[&str…│
+│                                           ││   67 │ }                                  │
+│                                           ││   68 │ // line 68                         │
+│                                           ││   69 │ // line 69                         │
+│                                           ││   70 │ // line 70                         │
 │                                           ││                                           │
 │                                           ││                                           │
-│                                           ││                                           │
-│                                           ││                                           │
-└───────────────────────────────────────────┘│                                           │
-┌ definition ───────────────────────────────┐│                                           │
-│ Cannot follow this reference yet          ││                                           │
-│                                           ││                                           │
-│                                           ││                                           │
-│                                           ││                                           │
-│                                           ││                                           │
-│                                           ││                                           │
-└───────────────────────────────────────────┘└───────────────────────────────────────────┘
- search r rename  m/M move file/symbol  w rewrite  o declaration  R relation  s kind  L la
+└ ? unverified · R relation ✓ 3  ? 1  ✗ 0 ──┘└ updating ─────────────────────────────────┘
+ search j/k move  ⏎ references  F files  f location  t category  o follow  R relation  / q

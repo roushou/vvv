@@ -196,11 +196,16 @@ impl RewriteMode {
         };
         // Rewrite is query-scoped: its ticks must be a subset of what the
         // query searches for, not the (possibly wider) anchored occurrences.
-        let matches = results.matches.clone();
+        let matches: Vec<_> = if results.is_anchored() {
+            results.matches.iter().collect()
+        } else {
+            // File filtering is navigation-only; it cannot narrow a plan.
+            results.eligible()
+        };
         if matches.is_empty() {
             return Err("nothing matched; a rewrite acts on the matches");
         }
-        Ok(Self::new(query, matches.to_vec()))
+        Ok(Self::new(query, matches.into_iter().cloned().collect()))
     }
     pub fn scroll_focused(&self) -> bool {
         self.focus == RewritePanel::Detail

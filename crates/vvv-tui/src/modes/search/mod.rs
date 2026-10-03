@@ -1,5 +1,8 @@
 //! The retained query hub and its read-only relations.
 mod body;
+pub(crate) mod files;
+mod locations;
+pub(crate) use locations::Locations;
 pub(crate) mod browse;
 use browse::{BrowsePage, NavigationTrail};
 use std::sync::Arc;
@@ -27,15 +30,30 @@ pub struct Search {
     pub page: BrowsePage,
     pub stale: bool,
     pub query: QueryBar,
+    pub locations: Locations,
     pub results: Results,
     pub focus: SearchPanel,
     pub preview: Option<FilePreview>,
+    pub source_anchor: Option<SourceAnchor>,
     pub body: Body,
+    /// The preview retained when only one pane fits; changed by preview focus.
+    pub definition_tab: bool,
     /// A manual context scroll position; `None` follows the cursor.
     pub preview_scroll: Option<usize>,
 }
 
 impl Search {
+    pub fn input_focused(&self) -> bool {
+        self.focus == SearchPanel::Query
+            || (self.focus == SearchPanel::Files && self.results.files.edit.is_some())
+    }
+    pub fn screen(&self) -> &'static crate::screen::Screen {
+        if self.results.files.edit.is_some() && self.focus == SearchPanel::Files {
+            &screen::FILTER_SEARCH
+        } else {
+            &screen::SEARCH
+        }
+    }
     pub fn follow(
         &mut self,
         context: &mut ModeContext<'_>,
@@ -91,7 +109,7 @@ impl Search {
                 }
                 (Some(picker), Vec::new())
             }
-            SearchPanel::Results => {
+            SearchPanel::Files | SearchPanel::Results => {
                 let query = match &self.page {
                     BrowsePage::Definition(symbol) => Some(vvv_engine::NavigationQuery {
                         origin: vvv_engine::NavigationOrigin::Symbol {
@@ -159,13 +177,18 @@ impl Search {
                 } else {
                     self.trail.commit(browse::NavigationEntry::capture(self));
                     self.page = BrowsePage::Definition(target.clone());
+                    self.results.category = Category::Declarations;
+                    self.results.location = None;
+                    self.results.files = files::FileNavigator::default();
                     self.results.replace(vec![preview.declaration.clone()]);
                     self.results.cursor = Cursor::default();
                     self.preview = None;
                     self.preview_scroll = None;
                     self.body.install(query, reply);
                     self.preview = self.body.preview.clone();
+                    self.sync_source();
                     self.focus = SearchPanel::Body;
+                    self.definition_tab = true;
                 }
                 self.stale = false;
                 context.status.clear();
@@ -239,10 +262,17 @@ impl Search {
         let generation = context.next_generation();
         match self.query.parse() {
             Ok(query) => {
+                if query.symbol().is_some() {
+                    self.results.set_category(Category::Declarations);
+                }
                 context.status.busy = true;
                 context.status.clear();
                 self.results.query = Some(query.clone());
-                vec![Effect::Search { generation, query }]
+                vec![Effect::Search {
+                    generation,
+                    query,
+                    scope: self.locations.scope(),
+                }]
             }
             Err(e) => {
                 self.stale = false;
@@ -264,7 +294,14 @@ impl Search {
         let Some(m) = self.results.current().cloned() else {
             return context.fail("put the cursor on a declaration to enter its scope");
         };
-        let Some(query) = self.results.subject_at(&m) else {
+        let declaration = if m.role == Role::Declaration {
+            Some(&m)
+        } else if self.body.pending().is_none() {
+            self.body.declaration()
+        } else {
+            None
+        };
+        let Some(query) = declaration.and_then(|d| self.results.subject_at(d)) else {
             return context.fail("put the cursor on a declaration to enter its scope");
         };
         context.status.busy = true;
@@ -282,6 +319,7 @@ impl Search {
         match target {
             MenuTarget::Symbol => {
                 self.query.set_filter(Filter::Symbol, value.as_deref());
+                self.results.set_category(Category::Declarations);
                 Navigation::Effects(self.search(context))
             }
             MenuTarget::Language => {
@@ -295,6 +333,36 @@ impl Search {
                     .unwrap_or_default();
                 self.choose_relation(relation, context)
             }
+            MenuTarget::Category => {
+                let anchored = self.results.is_anchored();
+                let category = value
+                    .as_deref()
+                    .and_then(Category::from_key)
+                    .unwrap_or_default();
+                self.results.leave();
+                self.results.set_category(category);
+                let had_kind = category != Category::Declarations
+                    && self.query.filter(Filter::Symbol).is_some();
+                if had_kind {
+                    self.query.set_filter(Filter::Symbol, None);
+                }
+                if anchored || had_kind {
+                    Navigation::Effects(self.search(context))
+                } else {
+                    Navigation::Selection
+                }
+            }
+            MenuTarget::Location => match self.locations.select(value.as_deref()) {
+                Ok(()) => {
+                    self.results.set_location(self.locations.selected.clone());
+                    if self.results.is_anchored() && self.results.relation.is_references() {
+                        Navigation::Selection
+                    } else {
+                        Navigation::Effects(self.search(context))
+                    }
+                }
+                Err(error) => Navigation::Effects(context.fail(&error.to_string())),
+            },
         }
     }
     pub fn choose_relation(
@@ -355,32 +423,80 @@ impl Search {
         }])
     }
     pub fn focus_by(&mut self, by: i32) {
+        self.results.files.edit = None;
         self.focus = self.focus.step(by);
-        if self.focus == SearchPanel::Body && !self.results.has_body() {
+        while !self.panel_available(self.focus) {
             self.focus = self.focus.step(by);
         }
+        self.sync_preview_tab();
     }
     pub fn focus_nth(&mut self, n: u8) {
+        self.results.files.edit = None;
         if let Some(p) = SearchPanel::nth(n)
-            && (p != SearchPanel::Body || self.results.has_body())
+            && self.panel_available(p)
         {
             self.focus = p;
+            self.sync_preview_tab();
+        }
+    }
+    fn panel_available(&self, panel: SearchPanel) -> bool {
+        match panel {
+            SearchPanel::Files => self.results.has_file_list(),
+            SearchPanel::Body => self.results.has_body(),
+            _ => true,
+        }
+    }
+    fn sync_preview_tab(&mut self) {
+        match self.focus {
+            SearchPanel::Body => self.definition_tab = true,
+            SearchPanel::Context => self.definition_tab = false,
+            _ => {}
         }
     }
     pub fn moved(&mut self, by: i32) {
+        if self.focus == SearchPanel::Files {
+            self.file_by(by);
+            return;
+        }
+        self.results.remember_current();
+        self.results.files.reveal();
         let len = self.results.len();
         let previous = self.results.cursor.index;
-        self.results.cursor.move_by(by, len);
+        if self.focus == SearchPanel::Results && self.results.has_file_list() {
+            let groups = self.results.file_groups();
+            let mut start = 0;
+            if let Some(file) = groups.iter().find(|file| {
+                let contains = previous >= start && previous < start + file.matches.len();
+                if !contains {
+                    start += file.matches.len();
+                }
+                contains
+            }) {
+                let next = (previous as i64 + i64::from(by))
+                    .clamp(start as i64, (start + file.matches.len() - 1) as i64);
+                self.results.cursor.index = next as usize;
+            }
+        } else {
+            self.results.cursor.move_by(by, len);
+        }
         if previous != self.results.cursor.index {
             self.selection_changed();
         }
     }
+    pub fn file_by(&mut self, by: i32) {
+        self.results.files.reveal();
+        if self.results.move_file(by) {
+            self.selection_changed();
+        }
+    }
     pub fn selection_changed(&mut self) {
+        self.results.remember_current();
+        self.results.files.reveal();
         self.trail.cancel();
-        self.preview_scroll = None;
+        self.sync_source();
         self.body
             .select(self.results.current(), self.results.revision);
-        if self.focus == SearchPanel::Body && !self.results.has_body() {
+        if !self.panel_available(self.focus) {
             self.focus = SearchPanel::Results;
         }
     }
@@ -389,8 +505,35 @@ impl Search {
             self.body
                 .declaration()
                 .map(|d| (d.path.clone(), d.start.line))
+        } else if self.focus == SearchPanel::Context {
+            self.displayed_source()
+                .map(|anchor| (anchor.path, anchor.line))
+                .or_else(|| self.results.current_site())
         } else {
             self.results.current_site()
+        }
+    }
+    /// Keep the displayed source coherent until another file's preview arrives.
+    pub fn displayed_source(&self) -> Option<SourceAnchor> {
+        let selected = self.results.source_anchor()?;
+        let preview = self.preview.as_ref()?;
+        if selected.path == preview.path {
+            Some(selected)
+        } else {
+            self.source_anchor
+                .as_ref()
+                .filter(|anchor| anchor.path == preview.path)
+                .cloned()
+        }
+    }
+    fn sync_source(&mut self) {
+        if let Some(anchor) = self.results.source_anchor()
+            && self.preview.as_ref().is_some_and(|p| p.path == anchor.path)
+        {
+            if self.source_anchor.as_ref() != Some(&anchor) {
+                self.preview_scroll = None;
+            }
+            self.source_anchor = Some(anchor);
         }
     }
     pub fn scrolled(&mut self, by: i32) {
@@ -407,9 +550,8 @@ impl Search {
     }
     /// The line the context centres on when following the cursor.
     pub fn preview_anchor(&self) -> usize {
-        self.results
-            .current()
-            .map_or(0, |m| (m.start.line as usize).saturating_sub(5))
+        self.displayed_source()
+            .map_or(0, |anchor| (anchor.line as usize).saturating_sub(5))
     }
     pub fn preview_effect(&self) -> Vec<Effect> {
         let mut effects = Vec::new();
@@ -444,8 +586,43 @@ impl Search {
         }
     }
     pub fn back(&mut self, context: &mut ModeContext<'_>) -> Vec<Effect> {
+        if self.results.files.edit.is_some() {
+            let (selected, focus) = self
+                .results
+                .files
+                .cancel()
+                .expect("editing the file filter");
+            let viewport = self.results.files.viewport;
+            let match_viewports = self.results.files.match_viewports.clone();
+            self.results.restore_selection(selected);
+            self.selection_changed();
+            self.results.files.viewport = viewport;
+            self.results.files.match_viewports = match_viewports;
+            self.focus = focus;
+            self.sync_preview_tab();
+            return self.preview_effect();
+        }
+        match self.focus {
+            SearchPanel::Files => {
+                self.focus = SearchPanel::Query;
+                return Vec::new();
+            }
+            SearchPanel::Results if self.results.has_file_list() => {
+                self.focus = SearchPanel::Files;
+                return Vec::new();
+            }
+            SearchPanel::Context | SearchPanel::Body => {
+                self.focus = SearchPanel::Results;
+                return Vec::new();
+            }
+            _ => {}
+        }
         if self.results.is_anchored() {
+            let changed_location = self.results.location != self.results.searched_location;
             self.results.leave();
+            if changed_location {
+                return self.search(context);
+            }
             self.selection_changed();
             context.status.clear();
             self.preview_effect()
@@ -454,8 +631,129 @@ impl Search {
             Vec::new()
         }
     }
+    pub fn pointer(
+        &mut self,
+        pointer: files::Pointer,
+        context: &mut ModeContext<'_>,
+    ) -> Vec<Effect> {
+        use files::PointerIntent;
+        if pointer.revision != self.results.revision {
+            return Vec::new();
+        }
+        match pointer.intent {
+            PointerIntent::Scroll {
+                panel,
+                offset,
+                rows,
+                height,
+                by,
+            } => {
+                match panel {
+                    SearchPanel::Files => {
+                        self.results.files.viewport.offset = offset;
+                        self.results.files.viewport.scroll(by, rows, height);
+                    }
+                    SearchPanel::Results => {
+                        if let Some(path) = self.results.current().map(|m| m.path.clone()) {
+                            let viewport =
+                                self.results.files.match_viewports.entry(path).or_default();
+                            viewport.offset = offset;
+                            viewport.scroll(by, rows, height);
+                        }
+                    }
+                    SearchPanel::Context | SearchPanel::Body => {
+                        let focus = self.focus;
+                        self.focus = panel;
+                        self.scrolled(by);
+                        self.focus = focus;
+                    }
+                    _ => {}
+                }
+                return Vec::new();
+            }
+            PointerIntent::Filter => return self.update(Action::FilterFiles, context),
+            PointerIntent::File(path) => {
+                let groups = self.results.file_groups();
+                let Some(index) = groups.iter().position(|group| *group.path == path) else {
+                    return Vec::new();
+                };
+                let id = self
+                    .results
+                    .files
+                    .selected(&groups[index])
+                    .map(|m| m.id.clone());
+                self.results.restore_selection(id);
+                self.focus = SearchPanel::Files;
+                self.selection_changed();
+            }
+            PointerIntent::Match(id) => {
+                if !self.results.listed().iter().any(|m| m.id == id) {
+                    return Vec::new();
+                }
+                self.results.files.edit = None;
+                self.results.restore_selection(Some(id));
+                self.focus = SearchPanel::Results;
+                self.selection_changed();
+            }
+            PointerIntent::Focus(panel) => {
+                if !self.panel_available(panel) {
+                    return Vec::new();
+                }
+                if panel != SearchPanel::Files {
+                    self.results.files.edit = None;
+                }
+                self.focus = panel;
+                self.sync_preview_tab();
+            }
+        }
+        self.preview_effect()
+    }
+
     pub fn update(&mut self, action: Action, context: &mut ModeContext<'_>) -> Vec<Effect> {
+        if self.results.files.edit.is_some() && self.focus == SearchPanel::Files {
+            match action {
+                Action::Input(_) | Action::Backspace | Action::Clear => {
+                    let selected = self.results.current().map(|m| m.id.clone()).or_else(|| {
+                        self.results
+                            .files
+                            .edit
+                            .as_ref()
+                            .and_then(|e| e.selected.clone())
+                    });
+                    match action {
+                        Action::Input(c) => self.results.files.filter.push(c),
+                        Action::Backspace => {
+                            self.results.files.filter.pop();
+                        }
+                        Action::Clear => self.results.files.filter.clear(),
+                        _ => unreachable!(),
+                    }
+                    self.results.restore_selection(selected);
+                    self.selection_changed();
+                    return self.preview_effect();
+                }
+                Action::Enter => {
+                    self.results.files.edit = None;
+                    self.focus = SearchPanel::Results;
+                    return Vec::new();
+                }
+                _ => {}
+            }
+        }
         match action {
+            Action::FilterFiles if self.results.has_file_list() => {
+                self.trail.cancel();
+                self.results.remember_current();
+                let selected = self.results.current().map(|m| m.id.clone());
+                self.results.files.begin(selected, self.focus);
+                self.focus = SearchPanel::Files;
+            }
+            Action::ClearFileFilter => {
+                let selected = self.results.current().map(|m| m.id.clone());
+                self.results.files.filter.clear();
+                self.results.restore_selection(selected);
+                self.selection_changed();
+            }
             Action::Refresh => return self.search(context),
             Action::BrowseBack => return self.travel(false, context),
             Action::BrowseForward => return self.travel(true, context),
@@ -463,6 +761,18 @@ impl Search {
             Action::FocusPrev => self.focus_by(-1),
             Action::FocusNth(n) => self.focus_nth(n),
             Action::Move(n) => self.moved(n),
+            Action::File(n) => self.file_by(n),
+            Action::PreviewTab => {
+                if !self.results.has_body() {
+                    return Vec::new();
+                }
+                self.definition_tab = !self.definition_tab;
+                self.focus = if self.definition_tab {
+                    SearchPanel::Body
+                } else {
+                    SearchPanel::Context
+                };
+            }
             Action::Top => return self.jump(true),
             Action::Bottom => return self.jump(false),
             Action::Scroll(n) if self.scroll_focused() => {
@@ -488,6 +798,10 @@ impl Search {
                         self.focus = SearchPanel::Results;
                         Vec::new()
                     }
+                    SearchPanel::Files => {
+                        self.focus = SearchPanel::Results;
+                        Vec::new()
+                    }
                     SearchPanel::Results => self.enter_subject(context),
                     SearchPanel::Context | SearchPanel::Body => Vec::new(),
                 };
@@ -503,6 +817,7 @@ impl Search {
             .is_some_and(|(path, _)| path == preview.path)
         {
             self.preview = Some(preview);
+            self.sync_source();
         }
     }
     pub fn searched(
@@ -513,6 +828,8 @@ impl Search {
     ) {
         context.status.busy = false;
         self.stale = false;
+        self.locations.observe(&matches);
+        self.results.searched_location = self.locations.selected.clone();
         self.results.replace(matches);
         self.selection_changed();
         if skipped.is_empty() {
@@ -542,17 +859,33 @@ impl Search {
     }
 }
 
+/// The site and hit belonging to the source text currently displayed.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct SourceAnchor {
+    pub path: RelPath,
+    pub line: u32,
+    pub hit: Option<vvv_engine::Span>,
+    pub lines: Option<(usize, usize)>,
+}
+
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub enum SearchPanel {
     #[default]
     Query,
+    Files,
     Results,
     Context,
     Body,
 }
 
 impl Panels for SearchPanel {
-    const ALL: &'static [Self] = &[Self::Query, Self::Results, Self::Context, Self::Body];
+    const ALL: &'static [Self] = &[
+        Self::Query,
+        Self::Files,
+        Self::Results,
+        Self::Context,
+        Self::Body,
+    ];
 }
 
 /// What the hub shows about the declaration it was narrowed to.
@@ -638,8 +971,8 @@ impl Relation {
     }
 }
 
-/// Search results in the engine's order — declarations first — with the
-/// cursor. A row can be *entered* as the search's subject: the rows then
+/// Retained search results with a cursor in fuzzy-ranked file order. A row
+/// can be *entered* as the search's subject: the rows then
 /// become that declaration's judged occurrences instead of its spellings.
 #[derive(Debug, Clone, Default)]
 pub struct Results {
@@ -647,6 +980,10 @@ pub struct Results {
     revision: u64,
     pub query: Option<Query>,
     pub matches: Arc<Vec<Match>>,
+    pub files: files::FileNavigator,
+    pub category: Category,
+    pub location: Option<RelPath>,
+    pub searched_location: Option<RelPath>,
     /// The declaration the rows were narrowed to, when a row was entered:
     /// name, kind and file, exactly what `references` disambiguates by.
     pub subject: Option<ReferencesQuery>,
@@ -683,28 +1020,145 @@ impl Results {
         {
             return usize::MAX / 128;
         }
-        bytes.estimate()
+        bytes.estimate() + self.files.retained_bytes()
     }
 
     pub fn replace(&mut self, matches: Vec<Match>) {
+        let selected = self.current().map(|m| m.id.clone());
         self.revision += 1;
         self.matches = Arc::new(matches);
+        self.files.retain(&self.matches);
         self.subject = None;
+        self.relation = Relation::References;
         self.references = None;
         self.clear_lenses();
-        self.cursor.clamp(self.matches.len());
+        self.restore_selection(selected);
+    }
+
+    pub fn set_category(&mut self, category: Category) {
+        let selected = self.current().map(|m| m.id.clone());
+        self.category = category;
+        self.revision += 1;
+        self.restore_selection(selected);
+    }
+
+    fn restore_selection(&mut self, selected: Option<vvv_engine::MatchId>) {
+        let groups = self.file_groups();
+        let fallback = groups
+            .iter()
+            .find(|g| {
+                self.files
+                    .active
+                    .as_ref()
+                    .is_some_and(|path| path == g.path)
+            })
+            .or_else(|| groups.first())
+            .and_then(|f| self.files.selected(f))
+            .map(|m| m.id.clone());
+        let matches: Vec<_> = groups
+            .iter()
+            .flat_map(|f| f.matches.iter().copied())
+            .collect();
+        let index = selected
+            .and_then(|id| matches.iter().position(|m| m.id == id))
+            .or_else(|| fallback.and_then(|id| matches.iter().position(|m| m.id == id)))
+            .unwrap_or(0);
+        let len = matches.len();
+        self.cursor.index = index;
+        self.cursor.clamp(len);
+    }
+
+    pub fn set_location(&mut self, location: Option<RelPath>) {
+        let selected = self.current().map(|m| m.id.clone());
+        self.location = location;
+        self.revision += 1;
+        self.restore_selection(selected);
+    }
+
+    /// File order in the navigator; the underlying engine matches retain their IDs.
+    pub fn listed(&self) -> Vec<&Match> {
+        self.file_groups()
+            .into_iter()
+            .flat_map(|f| f.matches)
+            .collect()
+    }
+
+    /// Occurrences eligible for navigation, before the local file filter.
+    pub fn eligible(&self) -> Vec<&Match> {
+        let mut matches: Vec<_> = if self.is_anchored() {
+            self.reference_matches().into_iter().map(|o| &o.m).collect()
+        } else {
+            self.matches
+                .iter()
+                .filter(|m| self.category.includes(m.role))
+                .collect()
+        };
+        if !self.is_anchored() {
+            matches.sort_by(|a, b| {
+                a.path
+                    .cmp(&b.path)
+                    .then(a.start.cmp(&b.start))
+                    .then(a.span.start.cmp(&b.span.start))
+            });
+        }
+        matches
+    }
+
+    pub fn has_file_list(&self) -> bool {
+        !self.is_anchored() || self.relation.is_references()
+    }
+
+    pub fn file_groups(&self) -> Vec<files::FileGroup<'_>> {
+        self.files.groups(self.eligible())
+    }
+
+    pub fn remember_current(&mut self) {
+        if let Some((path, id)) = self.current().map(|m| (m.path.clone(), m.id.clone())) {
+            self.files.remember(path, id);
+        }
+    }
+
+    pub fn move_file(&mut self, by: i32) -> bool {
+        self.remember_current();
+        let path = self.current().map(|m| &m.path);
+        let groups = self.file_groups();
+        if groups.is_empty() {
+            return false;
+        }
+        let current = groups
+            .iter()
+            .position(|g| Some(g.path) == path)
+            .unwrap_or(0);
+        let index = (current as i64 + i64::from(by)).clamp(0, groups.len() as i64 - 1) as usize;
+        let file = &groups[index];
+        let selected = self.files.selected(file).unwrap();
+        let next = groups[..index]
+            .iter()
+            .map(|g| g.matches.len())
+            .sum::<usize>()
+            + file
+                .matches
+                .iter()
+                .position(|m| m.id == selected.id)
+                .unwrap();
+        if self.cursor.index == next {
+            return false;
+        }
+        self.cursor.index = next;
+        true
     }
 
     /// The engine's answer for a declaration entered: the subject is read
     /// off the answer and the rows become its references. Nothing changes
     /// on screen until this arrives, so the pane never blanks mid-request.
     pub fn entered(&mut self, references: References) {
+        let selected = self.current().map(|m| m.id.clone());
         self.revision += 1;
         self.subject = Self::subject_of(&references);
         self.relation = Relation::References;
         self.references = Some(Arc::new(references));
         self.clear_lenses();
-        self.cursor = Cursor::default();
+        self.restore_selection(selected);
     }
 
     /// The subject's consumer modules.
@@ -750,20 +1204,23 @@ impl Results {
         Some(query)
     }
 
-    /// Show another relation for the same subject; the cursor starts over.
+    /// Show another relation, retaining the selected occurrence or file when visible.
     pub fn set_relation(&mut self, relation: Relation) {
+        let selected = self.current().map(|m| m.id.clone());
         self.revision += 1;
         self.relation = relation;
-        self.cursor = Cursor::default();
+        self.restore_selection(selected);
     }
 
     /// Leave the subject: the rows are the search's spellings again.
     pub fn leave(&mut self) {
+        let selected = self.current().map(|m| m.id.clone());
         self.revision += 1;
         self.subject = None;
+        self.relation = Relation::References;
         self.references = None;
         self.clear_lenses();
-        self.cursor.clamp(self.matches.len());
+        self.restore_selection(selected);
     }
 
     pub fn is_anchored(&self) -> bool {
@@ -777,45 +1234,57 @@ impl Results {
     }
 
     /// The occurrences the current relation keeps, in engine order.
-    fn shown(&self) -> Vec<&Occurrence> {
+    fn reference_matches(&self) -> Vec<&Occurrence> {
         if !self.relation.is_references() {
             return Vec::new();
         }
         let Some(r) = &self.references else {
             return Vec::new();
         };
-        match self.relation.confidence() {
-            Some(confidence) => r
-                .occurrences
-                .iter()
-                .filter(|o| o.confidence == confidence)
-                .collect(),
-            None => r.occurrences.iter().collect(),
-        }
+        let confidence = self.relation.confidence();
+        let mut shown: Vec<_> = r
+            .occurrences
+            .iter()
+            .filter(|o| confidence.is_none_or(|c| c == o.confidence))
+            .filter(|o| {
+                self.location
+                    .as_ref()
+                    .is_none_or(|p| o.m.path.starts_with(p))
+            })
+            .collect();
+        let rank = |c| match c {
+            Confidence::Resolved => 0,
+            Confidence::Unresolved => 1,
+            Confidence::Other => 2,
+        };
+        shown.sort_by(|a, b| {
+            rank(a.confidence)
+                .cmp(&rank(b.confidence))
+                .then(a.m.path.cmp(&b.m.path))
+                .then(a.m.start.cmp(&b.m.start))
+        });
+        shown
     }
 
     /// How many rows the cursor walks: the search's matches, or the
     /// subject's rows once anchored.
     pub fn len(&self) -> usize {
-        if !self.is_anchored() {
-            return self.matches.len();
+        if self.has_file_list() {
+            return self.listed().len();
         }
         if self.relation.is_impact() {
             self.impact.as_ref().map_or(0, |i| i.consumers.len())
         } else {
-            self.shown().len()
+            0
         }
     }
 
     pub fn current(&self) -> Option<&Match> {
         let i = self.cursor.index;
-        if !self.is_anchored() {
-            return self.matches.get(i);
+        if self.has_file_list() {
+            return self.listed().get(i).copied();
         }
-        if self.relation.is_impact() {
-            return None;
-        }
-        self.shown().get(i).map(|o| &o.m)
+        None
     }
 
     /// The module under the cursor, in the impact view.
@@ -844,7 +1313,18 @@ impl Results {
         }
     }
 
-    /// Reserve space for the whole result set, independent of cursor and loading.
+    pub fn source_anchor(&self) -> Option<SourceAnchor> {
+        let (path, line) = self.current_site()?;
+        let current = self.current().filter(|m| m.path == path);
+        Some(SourceAnchor {
+            path,
+            line,
+            hit: current.map(|m| m.span),
+            lines: current.map(|m| (m.start.line as usize, m.end.line as usize)),
+        })
+    }
+
+    /// Whether definition focus is available, independent of cursor and loading.
     pub fn has_body(&self) -> bool {
         !self.matches.is_empty() || !self.anchored_declarations().is_empty()
     }
@@ -918,4 +1398,58 @@ impl Results {
 pub(crate) enum Navigation {
     Selection,
     Effects(Vec<Effect>),
+}
+
+/// Search roles are filters on spellings, never evidence of a resolved reference.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub enum Category {
+    #[default]
+    All,
+    Declarations,
+    Imports,
+    Uses,
+}
+
+impl Category {
+    pub const ALL: &'static [Self] = &[Self::All, Self::Declarations, Self::Imports, Self::Uses];
+
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::All => "All",
+            Self::Declarations => "Declarations",
+            Self::Imports => "Imports",
+            Self::Uses => "Uses",
+        }
+    }
+
+    pub fn count_label(self, count: usize) -> &'static str {
+        match (self, count) {
+            (Self::Declarations, 1) => "Declaration",
+            (Self::Imports, 1) => "Import",
+            (Self::Uses, 1) => "Use",
+            _ => self.label(),
+        }
+    }
+
+    pub fn key(self) -> &'static str {
+        match self {
+            Self::All => "all",
+            Self::Declarations => "declarations",
+            Self::Imports => "imports",
+            Self::Uses => "uses",
+        }
+    }
+
+    pub fn from_key(key: &str) -> Option<Self> {
+        Self::ALL.iter().copied().find(|c| c.key() == key)
+    }
+
+    pub fn includes(self, role: Role) -> bool {
+        match self {
+            Self::All => true,
+            Self::Declarations => role == Role::Declaration,
+            Self::Imports => role == Role::Import,
+            Self::Uses => role == Role::Use,
+        }
+    }
 }
