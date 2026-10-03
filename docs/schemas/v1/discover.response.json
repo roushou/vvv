@@ -99,7 +99,7 @@
         },
         "max_files": {
           "default": 64,
-          "description": "Maximum source files examined for incoming same-spelling references.",
+          "description": "Maximum source files examined for incoming written-name and named-alias references.",
           "format": "uint",
           "maximum": 1024,
           "minimum": 1,
@@ -1104,7 +1104,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:discover:response:0fec98b40ca44e57e7e5b69a19fce4b4dbdc8fb64fd78541d26b5efc61a882b1",
+  "$id": "urn:vvv:schema:1:discover:response:8ab3d0abe4c04e71b3f3bbfd649e3d2ba074efbcd268ef45b79e080a976ca929",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [

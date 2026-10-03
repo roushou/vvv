@@ -484,7 +484,7 @@
         },
         "max_files": {
           "default": 64,
-          "description": "Maximum source files examined for incoming same-spelling references.",
+          "description": "Maximum source files examined for incoming written-name and named-alias references.",
           "format": "uint",
           "maximum": 1024,
           "minimum": 1,
@@ -619,6 +619,12 @@
           "format": "uint",
           "minimum": 0,
           "type": "integer"
+        },
+        "unresolved_imports": {
+          "default": 0,
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
         }
       },
       "required": [
@@ -628,7 +634,8 @@
         "file_limit",
         "ambiguous",
         "unavailable",
-        "no_container"
+        "no_container",
+        "unresolved_imports"
       ],
       "type": "object"
     },
@@ -714,7 +721,7 @@
           "$ref": "#/$defs/ContextOmissions"
         },
         "references_by_name": {
-          "description": "Incoming scanning covers this spelling only, not every possible alias.",
+          "description": "Incoming scanning follows written names and resolvable named import aliases, without runtime inference.",
           "type": "boolean"
         },
         "snapshot": {
@@ -778,12 +785,19 @@
           "format": "uint",
           "minimum": 0,
           "type": "integer"
+        },
+        "unresolved_imports": {
+          "default": 0,
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
         }
       },
       "required": [
         "ambiguous",
         "unavailable",
-        "no_container"
+        "no_container",
+        "unresolved_imports"
       ],
       "type": "object"
     },
@@ -2815,6 +2829,9 @@
         },
         {
           "$ref": "#/$defs/context"
+        },
+        {
+          "$ref": "#/$defs/Relationships"
         }
       ]
     },
@@ -3905,6 +3922,12 @@
         },
         "kind": {
           "$ref": "#/$defs/RelationshipKind"
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
         },
         "scope": {
           "$ref": "#/$defs/SearchScope"
@@ -5337,7 +5360,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:session:reply:c30d826de035b7df1fbc1809113fd14e03cfbe42e936d75e77b33ba84ce0328e",
+  "$id": "urn:vvv:schema:1:session:reply:465de5b1331ed1128138444468fc3918435d03d70b62ee86557376b65e1c4512",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "The reply to a [`Call`]: its `id`, then the usual envelope.",
   "oneOf": [

@@ -2265,3 +2265,155 @@ async fn typescript_scope_owners_compose_navigation_selection_context_and_calls(
     );
     client.close().await;
 }
+
+#[cfg(any(feature = "rust", feature = "typescript"))]
+impl Client {
+    async fn incoming_pages(&self, tool: &'static str, arguments: Value) -> Vec<Value> {
+        let first = self.call(tool, arguments).await;
+        assert_eq!(first["status"], "ok", "{first}");
+        let mut pages = vec![first];
+        loop {
+            assert!(pages.len() < 100, "reference discovery did not finish");
+            let cursor = pages.last().unwrap()["result"]["next_cursor"].clone();
+            if !cursor.is_string() {
+                break;
+            }
+            let arguments = json!({"cursor":cursor,"page":{"max_items":1,"max_bytes":8192},"work":{"max_lookups":1,"max_files":1}});
+            let page = self.call("vvv_continue", arguments.clone()).await;
+            let retry = self.call("vvv_continue", arguments).await;
+            assert_eq!(page, retry);
+            assert_eq!(page["status"], "ok", "{page}");
+            pages.push(page);
+        }
+        pages
+    }
+}
+
+#[cfg(feature = "rust")]
+#[tokio::test]
+async fn incoming_rust_aliases_are_shared_by_context_and_resumable_relationships() {
+    let fixture = Fixture::new();
+    let source = "pub fn work() {}\nmod inner {\n use super::work as execute;\n fn caller() { execute(); }\n}\nfn local() { use crate::work as local_work; local_work(); }\n";
+    std::fs::write(fixture.root.join("src/lib.rs"), source).unwrap();
+    let client = Client::new(&fixture.root).await;
+    let origin = json!({"kind":"position","path":"src/lib.rs","position":{"line":0,"column":7}});
+    let context = client.incoming_pages("vvv_context", json!({"origin":origin,"references":true,"detail":"signature","page":{"max_items":1,"max_bytes":8192},"work":{"max_lookups":1,"max_files":1}})).await;
+    let texts = context
+        .iter()
+        .flat_map(|page| page["result"]["items"].as_array().unwrap())
+        .filter_map(|item| item["text"].as_str())
+        .collect::<Vec<_>>();
+    assert!(
+        texts.iter().any(|text| text.contains("fn caller()")),
+        "{context:?}"
+    );
+    assert!(
+        texts.iter().any(|text| text.contains("fn local()")),
+        "{context:?}"
+    );
+    let relationships = client.incoming_pages("vvv_relationships", json!({"origin":origin,"kind":"callers","scope":{"paths":["src"]},"budget":{"max_items":1,"max_lookups":1,"max_files":1,"max_bytes":8192}})).await;
+    let sites = relationships
+        .iter()
+        .flat_map(|page| page["result"]["items"].as_array().unwrap())
+        .collect::<Vec<_>>();
+    for alias in ["execute", "local_work"] {
+        assert!(
+            sites
+                .iter()
+                .any(|site| site["spelling"] == alias && site["outcome"] == "confirmed"),
+            "{relationships:?}"
+        );
+    }
+    assert_eq!(
+        relationships.last().unwrap()["result"]["coverage"]["scan_complete"],
+        true
+    );
+    let stale = client
+        .call(
+            "vvv_relationships",
+            json!({"origin":origin,"kind":"references","budget":{"max_items":1,"max_bytes":8192}}),
+        )
+        .await;
+    std::fs::write(
+        fixture.root.join("src/lib.rs"),
+        format!("{source}\n// changed"),
+    )
+    .unwrap();
+    let stale = client
+        .call(
+            "vvv_continue",
+            json!({"cursor":stale["result"]["next_cursor"]}),
+        )
+        .await;
+    assert_eq!(stale["code"], "stale");
+    client.close().await;
+}
+
+#[cfg(feature = "typescript")]
+#[tokio::test]
+async fn incoming_typescript_and_tsx_aliases_resume_reexports_and_respect_shadowing() {
+    let fixture = Fixture::new();
+    std::fs::write(
+        fixture.root.join("package.json"),
+        "{\"name\":\"incoming-probe\",\"version\":\"1.0.0\"}",
+    )
+    .unwrap();
+    for (path, source) in [
+        ("origin.ts", "export function work() {}\n"),
+        ("bridge.ts", "export { work as task } from './origin';\n"),
+        (
+            "consumer.ts",
+            "import { task as execute } from './bridge';\nexport function caller() { execute(); }\nexport function shadow() { const execute = () => 1; execute(); }\n",
+        ),
+        (
+            "view.tsx",
+            "import { task as renderTask } from './bridge';\nexport function view() { renderTask(); return <main/>; }\n",
+        ),
+    ] {
+        std::fs::write(fixture.root.join("src").join(path), source).unwrap();
+    }
+    let client = Client::new(&fixture.root).await;
+    let origin =
+        json!({"kind":"position","path":"src/origin.ts","position":{"line":0,"column":16}});
+    let context = client.incoming_pages("vvv_context", json!({"origin":origin,"references":true,"detail":"signature","page":{"max_items":1,"max_bytes":8192},"work":{"max_lookups":1,"max_files":1}})).await;
+    let texts = context
+        .iter()
+        .flat_map(|page| page["result"]["items"].as_array().unwrap())
+        .filter_map(|item| item["text"].as_str())
+        .collect::<Vec<_>>();
+    assert!(
+        texts.iter().any(|text| text.contains("function caller()")),
+        "{context:?}"
+    );
+    assert!(
+        texts.iter().any(|text| text.contains("function view()")),
+        "{context:?}"
+    );
+    assert!(
+        !texts.iter().any(|text| text.contains("function shadow()")),
+        "{context:?}"
+    );
+    let relationships = client.incoming_pages("vvv_relationships", json!({"origin":origin,"kind":"callers","scope":{"paths":["src"]},"budget":{"max_items":1,"max_lookups":1,"max_files":1,"max_bytes":8192}})).await;
+    let sites = relationships
+        .iter()
+        .flat_map(|page| page["result"]["items"].as_array().unwrap())
+        .collect::<Vec<_>>();
+    for alias in ["execute", "renderTask"] {
+        assert!(
+            sites
+                .iter()
+                .any(|site| site["spelling"] == alias && site["outcome"] == "confirmed"),
+            "{relationships:?}"
+        );
+    }
+    assert!(
+        !sites
+            .iter()
+            .any(|site| site["start"]["line"] == 2 && site["outcome"] == "confirmed")
+    );
+    assert_eq!(
+        relationships.last().unwrap()["result"]["coverage"]["scan_complete"],
+        true
+    );
+    client.close().await;
+}

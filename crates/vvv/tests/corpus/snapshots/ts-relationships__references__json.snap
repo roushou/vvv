@@ -8,7 +8,7 @@ exit 0
   "status": "ok",
   "schema": 1,
   "result": {
-    "snapshot": "a2644efafbb41d4f00f0a8d525d4dd37d3f42546b4c0cc14bf9fe2df783f7df6",
+    "snapshot": "3e450dada9d2b1a05e8be36f235e83aec3557be80e1083fe674595f10b0cd998",
     "subject": {
       "outcome": "resolved",
       "target": {
@@ -491,6 +491,129 @@ exit 0
         "call": "member",
         "outcome": "unavailable",
         "reason": "unsupported_context"
+      },
+      {
+        "site": {
+          "path": "src/view.tsx",
+          "content": "9f7f9b4dfe1efaaad4193efe5a6ef9e206c37557f68a48c02ac5f60857e7bd22",
+          "span": {
+            "start": 17,
+            "end": 27
+          }
+        },
+        "start": {
+          "line": 0,
+          "column": 17
+        },
+        "spelling": "renderTask",
+        "caller": null,
+        "call": null,
+        "outcome": "confirmed",
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/origin.ts",
+            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
+            "span": {
+              "start": 0,
+              "end": 25
+            }
+          },
+          "name_span": {
+            "start": 16,
+            "end": 20
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "",
+              "path": [
+                "src",
+                "bridge.ts",
+                "task"
+              ]
+            },
+            {
+              "package": "",
+              "path": [
+                "src",
+                "origin.ts",
+                "work"
+              ]
+            }
+          ]
+        }
+      },
+      {
+        "site": {
+          "path": "src/view.tsx",
+          "content": "9f7f9b4dfe1efaaad4193efe5a6ef9e206c37557f68a48c02ac5f60857e7bd22",
+          "span": {
+            "start": 72,
+            "end": 82
+          }
+        },
+        "start": {
+          "line": 1,
+          "column": 25
+        },
+        "spelling": "renderTask",
+        "caller": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/view.tsx",
+            "content": "9f7f9b4dfe1efaaad4193efe5a6ef9e206c37557f68a48c02ac5f60857e7bd22",
+            "span": {
+              "start": 47,
+              "end": 103
+            }
+          },
+          "name_span": {
+            "start": 63,
+            "end": 67
+          },
+          "kind": "function"
+        },
+        "call": "direct",
+        "outcome": "confirmed",
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/origin.ts",
+            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
+            "span": {
+              "start": 0,
+              "end": 25
+            }
+          },
+          "name_span": {
+            "start": 16,
+            "end": 20
+          },
+          "kind": "function"
+        },
+        "evidence": {
+          "addresses": [
+            {
+              "package": "",
+              "path": [
+                "src",
+                "bridge.ts",
+                "task"
+              ]
+            },
+            {
+              "package": "",
+              "path": [
+                "src",
+                "origin.ts",
+                "work"
+              ]
+            }
+          ]
+        }
       }
     ],
     "coverage": {
@@ -502,9 +625,9 @@ exit 0
         "unsupported_bindings",
         "unenumerated_aliases"
       ],
-      "files_scanned": 3,
+      "files_scanned": 4,
       "files_remaining": 0,
-      "lookups": 10,
+      "lookups": 13,
       "omitted_items": 0,
       "stopped_by": null,
       "unsupported_files": 0,

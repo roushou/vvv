@@ -57,6 +57,7 @@ pub(super) struct ImportBindings<'a> {
     modules: BTreeMap<Address, Vec<RelPath>>,
     imports: HashMap<(RelPath, Span), Targets>,
     active: HashSet<(RelPath, Span)>,
+    steps: usize,
 }
 impl<'a> ImportBindings<'a> {
     pub(super) fn new(ns: &'a Namespace) -> Self {
@@ -66,6 +67,7 @@ impl<'a> ImportBindings<'a> {
             modules: BTreeMap::new(),
             imports: HashMap::new(),
             active: HashSet::new(),
+            steps: 0,
         }
     }
     pub(super) fn inputs(self) -> (Vec<SourceVersion>, Vec<ModuleInput>) {
@@ -84,12 +86,20 @@ impl<'a> ImportBindings<'a> {
         self.inputs
             .insert(source.path().into(), source.file().content_id());
     }
+    fn check(&mut self) -> Result<(), EngineError> {
+        self.ns.check_read()?;
+        self.steps += 1;
+        if self.steps > 1024 {
+            return Err(EngineError::NavigationLimit);
+        }
+        Ok(())
+    }
     pub(super) fn import(
         &mut self,
         source: &SourceFacts,
         import: &ImportRef,
     ) -> Result<Targets, EngineError> {
-        self.ns.check_read()?;
+        self.check()?;
         let key = (RelPath::from(source.path()), import.span);
         if let Some(held) = self.imports.get(&key) {
             return Ok(held.clone());
@@ -118,7 +128,7 @@ impl<'a> ImportBindings<'a> {
         source: &SourceFacts,
         path: &ModulePath,
     ) -> Result<Targets, EngineError> {
-        self.ns.check_read()?;
+        self.check()?;
         self.observe(source);
         if path.syntax() == PathSyntax::Scoped
             && path.head == PathHead::Named
@@ -195,7 +205,7 @@ impl<'a> ImportBindings<'a> {
         address: Address,
         depth: usize,
     ) -> Result<Targets, EngineError> {
-        self.ns.check_read()?;
+        self.check()?;
         if depth >= 128 {
             return Err(EngineError::NavigationLimit);
         }
@@ -212,7 +222,7 @@ impl<'a> ImportBindings<'a> {
                 sources.iter().map(|source| source.path().into()).collect(),
             );
             for source in sources {
-                self.ns.check_read()?;
+                self.check()?;
                 self.observe(&source);
                 let facts = source.facts()?;
                 if facts.named_modules {

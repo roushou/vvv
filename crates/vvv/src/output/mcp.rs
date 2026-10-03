@@ -97,7 +97,7 @@ impl ToolKind {
                 "Search source structure or symbol names. Use scope.paths for file/directory prefixes and scope.packages for owning package names or IDs. Returns bounded pages with stable IDs and a continuation cursor."
             }
             Self::Relationships => {
-                "Find callers, callees, or references through named imports. Confirmed sites carry targets and evidence; unresolved incoming sites are only possibilities. Inspect coverage for scan limits. No receiver-type, indirect-call, or macro-expansion inference. Narrow scope or increase budgets to inspect more sites."
+                "Find callers, callees, or references through named imports. Confirmed sites carry targets and evidence; unresolved incoming sites are only possibilities. Inspect coverage for scan limits. No receiver-type, indirect-call, or macro-expansion inference. Follow next_cursor with vvv_continue, including on empty pages."
             }
             Self::Navigate => {
                 "Resolve an exact source position, occurrence, or symbol to compact locations and evidence. Inspect resolved, ambiguous, or unavailable outcomes. Fetch source bodies with vvv_context."
@@ -106,7 +106,7 @@ impl ToolKind {
                 "Retrieve exact declaration excerpts and related declarations. Use detail: signature for attached docs and headers, or body (default) for full declarations. Enclosing locations are metadata unless include_enclosing is set. Follow next_cursor even on empty pages. expansion continues a truncated excerpt; body_expansion retrieves the full declaration from its start."
             }
             Self::Continue => {
-                "Continue a retained search or context query in this session. Retryable; edits require restarting the original query."
+                "Continue a retained search, context, or relationship query in this session. Retryable; edits require restarting the original query."
             }
             Self::Expand => {
                 "Read the next exact UTF-8 excerpt chunk. Append text until done; this does not advance relationship traversal."

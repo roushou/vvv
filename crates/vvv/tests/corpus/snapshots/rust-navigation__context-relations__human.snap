@@ -17,3 +17,4 @@ pub struct Engine {
 Confirmed reference  src/consumer.rs:14:1
 impl App { pub fn method(engine: Engine) -> Engine { engine } }
 --- stderr ---
+1 import bindings could not be resolved during reference discovery

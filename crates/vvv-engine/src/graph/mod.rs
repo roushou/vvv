@@ -881,13 +881,25 @@ impl Graph {
         scope: &crate::SearchScope,
     ) -> Result<Vec<Candidate>, EngineError> {
         let mut files = Vec::new();
-        for file in self.files(Some(language)) {
+        let group = self
+            .languages
+            .get(language)
+            .map(|plugin| plugin.reference_group());
+        for file in self.files(None) {
+            if self
+                .languages
+                .get(&file.language())
+                .map(|plugin| plugin.reference_group())
+                != group
+            {
+                continue;
+            }
             self.check_read()?;
             if !scope.includes_path(file.path()) {
                 continue;
             }
             if !scope.packages.is_empty() {
-                let project = self.project_build(language);
+                let project = self.project_build(&file.language());
                 if !scope.includes_package(
                     project
                         .as_ref()

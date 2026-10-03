@@ -13,6 +13,8 @@ work [confirmed] src/consumer.ts:5:9
 execute [confirmed] src/consumer.ts:8:47
 execute [confirmed] src/consumer.ts:9:49
 work [unresolved] src/consumer.ts:10:57
+renderTask [confirmed] src/view.tsx:1:18
+renderTask [confirmed] src/view.tsx:2:26
 --- stderr ---
-8 sites; 3 files scanned; 10 lookups
+10 sites; 4 files scanned; 13 lookups
 Unresolved sites are possible relationships, not confirmed calls. Receiver types, indirect targets, and macro expansion are not inferred.

@@ -8,7 +8,7 @@ exit 0
   "status": "ok",
   "schema": 1,
   "result": {
-    "snapshot": "5e20d083ca818ca6ff67db7f3de5b17259b9aa45e04695b66604d9e451b4e6db",
+    "snapshot": "fd9bf857d10b5db70b8d1c82c17dba78ad981f92b830df33ae4476ef93fab427",
     "outcome": "resolved",
     "items": [
       {
@@ -125,6 +125,47 @@ exit 0
           "column": 4
         },
         "text": "engine: Engine",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/consumer.rs",
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "span": {
+              "start": 97,
+              "end": 113
+            }
+          },
+          "name_span": {
+            "start": 97,
+            "end": 104
+          },
+          "kind": "field"
+        },
+        "relation": "reference",
+        "via": {
+          "path": "src/consumer.rs",
+          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+          "span": {
+            "start": 106,
+            "end": 113
+          }
+        },
+        "excerpt": {
+          "path": "src/consumer.rs",
+          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+          "span": {
+            "start": 97,
+            "end": 113
+          }
+        },
+        "start": {
+          "line": 5,
+          "column": 4
+        },
+        "text": "runtime: Runtime",
         "complete": true
       },
       {
@@ -381,7 +422,8 @@ exit 0
       "file_limit": 0,
       "ambiguous": 1,
       "unavailable": 0,
-      "no_container": 5
+      "no_container": 7,
+      "unresolved_imports": 1
     },
     "references_by_name": true
   }

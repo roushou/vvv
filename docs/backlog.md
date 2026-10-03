@@ -90,14 +90,16 @@ result caching or changing the interactive preview protocol.
 
 ## Context and agent interface coverage
 
-Context incoming scans are bounded and same-spelling only. Alias-complete
-references and structural test identification need dedicated evidence and protocol
-contracts. Broader signature extraction for initialized Rust bindings, non-callable TypeScript
+Incoming discovery follows named import aliases but does not enumerate wildcard or
+namespace-member aliases, runtime assignments, or generated bindings. Structural
+test identification needs dedicated evidence and protocol contracts. Broader signature extraction for initialized Rust bindings, non-callable TypeScript
 initializers, and other unsupported declaration forms
 needs grammar-specific contracts. Relationship queries classify call
 expressions and follow named imports, but receiver-dependent targets, wildcard and
-namespace alias enumeration, anonymous caller identities, and resumable relationship
-scans remain open.
+namespace alias enumeration, anonymous caller identities remain open.
+Whole-workspace incoming scans can spend substantial time probing imports unrelated
+to the selected target. Reduce that work while preserving named-alias discovery,
+complete ambiguous candidate sets, and validation of consulted sources.
 Session output budgets do not impose execution deadlines. MCP cancellation is
 cooperative; parser invocations and individual filesystem operations are not preempted. Measure whole-workspace validation latency for
 paged queries on large repositories before narrowing their invalidation scope.

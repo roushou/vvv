@@ -78,12 +78,19 @@
           "format": "uint",
           "minimum": 0,
           "type": "integer"
+        },
+        "unresolved_imports": {
+          "default": 0,
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
         }
       },
       "required": [
         "ambiguous",
         "unavailable",
-        "no_container"
+        "no_container",
+        "unresolved_imports"
       ],
       "type": "object"
     },
@@ -317,7 +324,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:context_page:result:a29f2eeb49569ef71b65ae14f3e85b1fc95fe8e6ed8c39bbd06be4cf71f78406",
+  "$id": "urn:vvv:schema:1:context_page:result:7d6c976d119c5392087596c159f8d56692b72755691fd30f06a7d9a3cf03f17d",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "oneOf": [
     {

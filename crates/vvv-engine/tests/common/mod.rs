@@ -27,6 +27,7 @@ use vvv_core::{
 pub struct Fake {
     semantics: &'static Semantics,
     id: &'static str,
+    reference_group: Option<&'static str>,
     extensions: &'static [&'static str],
     surgery: PathSurgery,
     layout: PathLayout,
@@ -40,6 +41,7 @@ impl Fake {
         Self {
             semantics: &SEMANTICS,
             id,
+            reference_group: None,
             extensions,
             surgery: PathSurgery::default(),
             layout: PathLayout::default(),
@@ -52,6 +54,11 @@ impl Fake {
     /// The default fake: language `fake`, extension `.p`.
     pub fn default() -> Self {
         Self::new("fake", &["p"])
+    }
+
+    pub fn with_reference_group(mut self, group: &'static str) -> Self {
+        self.reference_group = Some(group);
+        self
     }
 
     pub fn with_regrouped(mut self, result: Regrouped) -> Self {
@@ -118,6 +125,10 @@ const SEMANTICS: Semantics = Semantics {
 impl Language for Fake {
     fn id(&self) -> LanguageId {
         LanguageId::from(self.id)
+    }
+
+    fn reference_group(&self) -> LanguageId {
+        LanguageId::new(self.reference_group.unwrap_or(self.id))
     }
 
     fn extensions(&self) -> &'static [&'static str] {

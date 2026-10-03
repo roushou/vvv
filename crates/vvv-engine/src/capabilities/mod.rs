@@ -60,6 +60,7 @@ pub(crate) mod schema;
 pub(crate) mod excerpts;
 pub(crate) mod pagination;
 
+pub(crate) mod incoming;
 pub(crate) mod relationships;
 
 pub(crate) mod plans;

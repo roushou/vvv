@@ -246,7 +246,8 @@ a seed and directly referenced declarations. The enclosing declaration is a
 versioned location by default; its body is an explicit `include_enclosing` opt-in.
 Paged checkpoints retain this policy so an owner body cannot reappear through a
 later relationship after it was omitted by policy. Optional
-incoming scans inspect a bounded number of files and confirm same-spelling uses
+incoming scans inspect a bounded number of files and confirm original-name and
+named-import-alias uses
 through navigation; test-path evidence stays explicitly weaker than test coverage.
 Navigation can record its consulted source/manifest versions for this compound
 capability, which revalidates the whole set before returning. Result fitting counts
@@ -266,8 +267,16 @@ and explicit local import bindings, so named aliases and re-exports can resolve
 without a language server. Receiver types, indirect targets, and unenumerated aliases
 remain explicit limitations. The capability captures and revalidates a fresh
 `QuerySnapshot`, reports work/coverage limits, and publishes through `relationships`
-and the thin MCP `vvv_relationships` tool. No relationship state or source inference
-lives in an interface, and this query does not change mutation resolution.
+and the thin MCP `vvv_relationships` tool. `capabilities/incoming.rs` owns per-file named-alias discovery shared by one-shot
+context, context pages, and relationship pages. It retains import probe progress,
+resolved local spellings, site spans, and the next site position. Each use still
+resolves independently; a spelling alone never confirms an edge. Plugins declare
+`Language::reference_group`; TypeScript and TSX share a group without language names
+in the engine. Relationship checkpoints retain file position, alias discovery, and
+a pending undelivered site, and use the existing immutable cursor store. No complete
+source or graph is retained, and byte fitting never drops a pending site. No
+relationship state or source inference lives in an interface, and this query does
+not change mutation resolution.
 
 `DiscoveryQuery` describes the build's commands, languages, and budgets without a
 tree walk. `Call` retains wire data in `protocol`; its execution lives in
@@ -969,7 +978,7 @@ and position) so the numbers a preview prints are the numbers `--select` reads.
 ## Retained query checkpoints
 
 `query_store.rs` owns immutable typed checkpoints shared by clones of an engine.
-Search and context execution remains with their capability owners;
+Search, context, and relationship execution remains with their capability owners;
 `capabilities/pagination.rs` owns shared delivery budgets and continuation dispatch,
 and `capabilities/excerpts.rs` owns exact source expansion. Query and excerpt tokens
 reference one query root and expire or are evicted together. Failed publication

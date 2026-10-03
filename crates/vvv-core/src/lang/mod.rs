@@ -138,6 +138,11 @@ impl Grammar {
 
 pub trait Language: Send + Sync {
     fn id(&self) -> LanguageId;
+    /// Plugins in the same group can resolve references to each other's source files.
+    /// Incoming discovery scans this group; it still confirms every target by navigation.
+    fn reference_group(&self) -> LanguageId {
+        self.id()
+    }
 
     /// File extensions (without the dot) this language claims.
     fn extensions(&self) -> &'static [&'static str];

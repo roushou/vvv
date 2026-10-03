@@ -10,3 +10,11 @@ pub fn caller() {
     fn nested() { crate::origin::work(); }
 }
 pub fn uncertain(receiver: Unknown) { receiver.work(); }
+pub fn local_import() {
+    use crate::origin::work as local_work;
+    local_work();
+}
+mod helpers {
+    use crate::origin::work as scoped_work;
+    pub fn aliased() { scoped_work(); }
+}

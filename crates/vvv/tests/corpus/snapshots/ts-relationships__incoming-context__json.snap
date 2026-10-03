@@ -1,0 +1,226 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "1062c57253709fa448ea138e73bd31e1b133104ee9c973bbd716ad0ac6aa9bf6",
+    "outcome": "resolved",
+    "items": [
+      {
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/origin.ts",
+            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
+            "span": {
+              "start": 0,
+              "end": 25
+            }
+          },
+          "name_span": {
+            "start": 16,
+            "end": 20
+          },
+          "kind": "function"
+        },
+        "relation": "definition",
+        "via": null,
+        "excerpt": {
+          "path": "src/origin.ts",
+          "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
+          "span": {
+            "start": 0,
+            "end": 25
+          }
+        },
+        "start": {
+          "line": 0,
+          "column": 0
+        },
+        "text": "export function work() {}",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/consumer.ts",
+            "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+            "span": {
+              "start": 77,
+              "end": 136
+            }
+          },
+          "name_span": {
+            "start": 93,
+            "end": 99
+          },
+          "kind": "function"
+        },
+        "relation": "reference",
+        "via": {
+          "path": "src/consumer.ts",
+          "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+          "span": {
+            "start": 108,
+            "end": 115
+          }
+        },
+        "excerpt": {
+          "path": "src/consumer.ts",
+          "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+          "span": {
+            "start": 77,
+            "end": 136
+          }
+        },
+        "start": {
+          "line": 2,
+          "column": 0
+        },
+        "text": "export function caller() {\n    execute();\n    api.work();\n}",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/consumer.ts",
+            "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+            "span": {
+              "start": 239,
+              "end": 259
+            }
+          },
+          "name_span": {
+            "start": 239,
+            "end": 241
+          },
+          "kind": "variable"
+        },
+        "relation": "reference",
+        "via": {
+          "path": "src/consumer.ts",
+          "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+          "span": {
+            "start": 250,
+            "end": 257
+          }
+        },
+        "excerpt": {
+          "path": "src/consumer.ts",
+          "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+          "span": {
+            "start": 239,
+            "end": 259
+          }
+        },
+        "start": {
+          "line": 7,
+          "column": 35
+        },
+        "text": "cb = () => execute()",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/consumer.ts",
+            "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+            "span": {
+              "start": 291,
+              "end": 323
+            }
+          },
+          "name_span": {
+            "start": 300,
+            "end": 306
+          },
+          "kind": "function"
+        },
+        "relation": "reference",
+        "via": {
+          "path": "src/consumer.ts",
+          "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+          "span": {
+            "start": 311,
+            "end": 318
+          }
+        },
+        "excerpt": {
+          "path": "src/consumer.ts",
+          "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
+          "span": {
+            "start": 291,
+            "end": 323
+          }
+        },
+        "start": {
+          "line": 8,
+          "column": 28
+        },
+        "text": "function nested() { execute(); }",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "typescript",
+          "declaration": {
+            "path": "src/view.tsx",
+            "content": "9f7f9b4dfe1efaaad4193efe5a6ef9e206c37557f68a48c02ac5f60857e7bd22",
+            "span": {
+              "start": 47,
+              "end": 103
+            }
+          },
+          "name_span": {
+            "start": 63,
+            "end": 67
+          },
+          "kind": "function"
+        },
+        "relation": "reference",
+        "via": {
+          "path": "src/view.tsx",
+          "content": "9f7f9b4dfe1efaaad4193efe5a6ef9e206c37557f68a48c02ac5f60857e7bd22",
+          "span": {
+            "start": 72,
+            "end": 82
+          }
+        },
+        "excerpt": {
+          "path": "src/view.tsx",
+          "content": "9f7f9b4dfe1efaaad4193efe5a6ef9e206c37557f68a48c02ac5f60857e7bd22",
+          "span": {
+            "start": 47,
+            "end": 103
+          }
+        },
+        "start": {
+          "line": 1,
+          "column": 0
+        },
+        "text": "export function view() { renderTask(); return <main/>; }",
+        "complete": true
+      }
+    ],
+    "omissions": {
+      "item_limit": 0,
+      "byte_limit": 0,
+      "lookup_limit": 0,
+      "file_limit": 0,
+      "ambiguous": 0,
+      "unavailable": 1,
+      "no_container": 4,
+      "unresolved_imports": 0
+    },
+    "references_by_name": true
+  }
+}
+--- stderr ---

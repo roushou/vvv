@@ -8,7 +8,7 @@ The wire types are exported by `vvv-engine`. Shared types live in `protocol/`;
 capability-specific requests and answers live with their implementations and are
 exported at the crate root. See [architecture.md](architecture.md) for Rust import
 paths. A Rust client needs only `vvv-engine`. This page specifies serialization. Field order is not significant. Optional fields follow the per-command contracts
-below; continuation and expansion handles use null to signal completion.
+below; completion handles are null or absent as specified for each command.
 
 ## Envelope
 
@@ -188,7 +188,11 @@ Budget fields default independently:
 | `max_files`   | 64      | 1–1024        |
 
 The result contains `snapshot`, `outcome`, `items`, `omissions`, and
-`references_by_name`. Outcomes are `resolved`, `ambiguous` (with complete
+`references_by_name`. This flag records syntactic incoming discovery when requested:
+it scans the original spelling and resolvable named-import aliases, including renamed
+re-exports. It does not assert exhaustive alias or runtime coverage. Both import
+probes and site confirmation consume the lookup budget. `omissions.unresolved_imports`
+counts import probes that could not resolve, including probes that reach the navigation traversal limit, independently of unavailable sites. Outcomes are `resolved`, `ambiguous` (with complete
 `candidates: [{id, target}]`), or `unavailable` (with a navigation `reason`). An
 ambiguous candidate set exceeding the byte limit returns `output_limit`; the
 engine does not discard candidates or pick one to satisfy a budget.
@@ -279,7 +283,7 @@ false). Page and work objects default field by field and reject unknown fields:
 | `work` | `max_lookups` | 64      | 1–512        |
 | `work` | `max_files`   | 64      | 1–1024       |
 
-`continue` accepts optional `work` for context cursors; search cursors reject it.
+`continue` accepts optional `work` for context and relationship cursors; search cursors reject it.
 `expand.max_bytes` is required, with the same byte range. The smaller of the
 command's byte budget and `Call.max_output_bytes` is applied before generating a
 result. Counts include the entire compact result JSON: metadata, escaping, and
@@ -294,7 +298,7 @@ cannot fit returns `output_limit`; no match is skipped or truncated.
 
 Context results contain `kind: "context"`, `snapshot`, the existing context
 `outcome`, `items`, `references_by_name`, `work: {lookups, files}`,
-`unresolved: {ambiguous, unavailable, no_container}`, `traversal_complete`, and
+`unresolved: {ambiguous, unavailable, no_container, unresolved_imports}`, `traversal_complete`, and
 `next_cursor`. Each item has the existing `ContextItem` fields plus `expansion`,
 an independent excerpt cursor or null. Signature items also carry `body_expansion`,
 an independent cursor starting at the full declaration's beginning, including when
@@ -1642,7 +1646,7 @@ sites whose nearest named callable is the selected declaration. Nested functions
 and anonymous callable bodies are not attributed to the outer callable.
 
 The result contains `snapshot`, `subject` (the complete compact resolution outcome),
-`kind`, `scope`, `items`, and `coverage`. Unavailable or ambiguous subjects produce
+`kind`, `scope`, `items`, `coverage`, and optional `next_cursor`. Unavailable or ambiguous subjects produce
 no sites and retain their resolution reason or full selectable candidate set.
 
 Each item has:
@@ -1659,7 +1663,10 @@ Each item has:
   does not prove the invoked function. In `references`, a confirmed target denotes
   the referenced binding, without asserting runtime invocation.
 
-Incoming candidates use the subject's name and local import spellings whose bindings
+Incoming files belong to the subject plugin's declared reference group. By default
+plugins have separate groups; TypeScript and TSX share one. Candidate scopes filter
+source files using their own package layout. This grouping is a scan policy, not
+resolution evidence. Incoming candidates use the subject's name and local import spellings whose bindings
 resolve to it or include it among ambiguous candidates. Import probes and site
 resolution both count toward `lookups`. Resolution confirms or rejects each site independently,
 including renamed named imports and re-export chains. Resolved different targets
@@ -1671,10 +1678,10 @@ members, and assignment-based aliases are not exhaustively enumerated.
 
 `coverage` reports `files_scanned`, `files_remaining`, `lookups`, `omitted_items`,
 `unsupported_files`, `unresolved_imports`, `scan_complete`, and `stopped_by` (`files`, `lookups`, `items`,
-`bytes`, or null). A file counts as scanned when entered; a work limit may stop
-within it, so zero `files_remaining` alone does not establish completion.
-`omitted_items` counts whole discovered sites removed to meet the byte budget,
-not unseen relationships. `scan_complete` means the candidate scan finished
+`bytes`, or null). Work counters apply to the current page; an active file is
+charged at most once per page. `files_remaining` includes a partially scanned file.
+`unsupported_files` is cumulative across the traversal. `omitted_items` is zero:
+undelivered sites are retained instead of removed to satisfy the byte budget. `scan_complete` means the candidate scan finished
 without limits or unsupported call-fact providers, not that a runtime call graph
 is complete. `limitations` explicitly includes `receiver_types`, `indirect_targets`,
 `macro_expansion`, `anonymous_callers`, `unsupported_bindings`, and
@@ -1685,8 +1692,8 @@ are 1,024–1,048,576; item bounds 1–1,024; lookup bounds 1–16,384; file bou
 The byte count covers the entire compact JSON result. An indivisible first site or
 subject that cannot fit produces `output_limit`; ambiguous candidate sets are never
 partially delivered. The `Call.max_output_bytes` limit also constrains this query's
-byte budget. There are no relationship continuation handles; narrow `scope` or
-increase budgets to repeat a query.
+byte budget. Unfinished scans retain continuation handles within the same engine
+session; standalone CLI invocations cannot resume them.
 
 A fresh workspace snapshot captures source contents, manifests, and inventory and
 is revalidated before publication. Observed edits fail with a stale error. Snapshot
@@ -1698,3 +1705,18 @@ than collapsing multiple calls to one target.
 
 The MCP mapping is `vvv_relationships` → `relationships`, with the same arguments,
 result schema, and shared call budgeting as other read-only tools.
+
+Unfinished relationship results include `next_cursor`; complete results omit it.
+Pass this cursor to `continue` with `page` and optional `work` budgets. A relationship
+continuation returns the relationship result shape with the same subject,
+`kind` (`callers`, `callees`, or `references`), scope, and snapshot identity. The default continuation limits are 20 items, 16,384 bytes, 64
+lookups, and 64 files; continuation uses the shared `PageBudget`/`WorkBudget` bounds.
+File/import/site positions and a pending undelivered relationship survive page limits.
+Import probes are not repeated after successful progress. Empty pages can carry a
+cursor when the work budget ends during discovery. Retry checkpoints are immutable,
+and publication revalidates the complete query snapshot. Indivisible candidate sets
+are never trimmed: an item or subject that cannot fit returns `output_limit`, with
+site evidence when available. Read cancellation does not consume a cursor. Retention
+limits, expiry, engine revision changes, and stale-input rules match search/context
+queries. Cursors require the same retained engine/session; they cannot continue in
+a new CLI process.

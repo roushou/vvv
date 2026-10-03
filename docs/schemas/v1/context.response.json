@@ -159,6 +159,12 @@
           "format": "uint",
           "minimum": 0,
           "type": "integer"
+        },
+        "unresolved_imports": {
+          "default": 0,
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
         }
       },
       "required": [
@@ -168,7 +174,8 @@
         "file_limit",
         "ambiguous",
         "unavailable",
-        "no_container"
+        "no_container",
+        "unresolved_imports"
       ],
       "type": "object"
     },
@@ -254,7 +261,7 @@
           "$ref": "#/$defs/ContextOmissions"
         },
         "references_by_name": {
-          "description": "Incoming scanning covers this spelling only, not every possible alias.",
+          "description": "Incoming scanning follows written names and resolvable named import aliases, without runtime inference.",
           "type": "boolean"
         },
         "snapshot": {
@@ -1073,7 +1080,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:context:response:e0b2d62f9b713a935307cf0736d646ab140afa46b99a19d84a05d4bacb328bd0",
+  "$id": "urn:vvv:schema:1:context:response:062f44449b6ac365ec7a038cd40aba23595dc0f737627ad21df812f1850b4965",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [

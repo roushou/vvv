@@ -1,0 +1,267 @@
+---
+source: crates/vvv/tests/corpus.rs
+expression: "corpus.run(args, true)"
+---
+exit 0
+--- stdout ---
+{
+  "status": "ok",
+  "schema": 1,
+  "result": {
+    "snapshot": "dc553a105c2248abec28fe1025757b5819000c7893eed17eb9196f2d02850e04",
+    "outcome": "resolved",
+    "items": [
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/origin.rs",
+            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
+            "span": {
+              "start": 0,
+              "end": 16
+            }
+          },
+          "name_span": {
+            "start": 7,
+            "end": 11
+          },
+          "kind": "function"
+        },
+        "relation": "definition",
+        "via": null,
+        "excerpt": {
+          "path": "src/origin.rs",
+          "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
+          "span": {
+            "start": 0,
+            "end": 16
+          }
+        },
+        "start": {
+          "line": 0,
+          "column": 0
+        },
+        "text": "pub fn work() {}",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/consumer.rs",
+            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
+            "span": {
+              "start": 62,
+              "end": 256
+            }
+          },
+          "name_span": {
+            "start": 69,
+            "end": 75
+          },
+          "kind": "function"
+        },
+        "relation": "reference",
+        "via": {
+          "path": "src/consumer.rs",
+          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
+          "span": {
+            "start": 84,
+            "end": 91
+          }
+        },
+        "excerpt": {
+          "path": "src/consumer.rs",
+          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
+          "span": {
+            "start": 62,
+            "end": 256
+          }
+        },
+        "start": {
+          "line": 2,
+          "column": 0
+        },
+        "text": "pub fn caller() {\n    execute();\n    crate::origin::work();\n    let callback = execute;\n    callback();\n    other();\n    let deferred = || execute();\n    fn nested() { crate::origin::work(); }\n}",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/consumer.rs",
+            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
+            "span": {
+              "start": 216,
+              "end": 254
+            }
+          },
+          "name_span": {
+            "start": 219,
+            "end": 225
+          },
+          "kind": "function"
+        },
+        "relation": "reference",
+        "via": {
+          "path": "src/consumer.rs",
+          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
+          "span": {
+            "start": 245,
+            "end": 249
+          }
+        },
+        "excerpt": {
+          "path": "src/consumer.rs",
+          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
+          "span": {
+            "start": 216,
+            "end": 254
+          }
+        },
+        "start": {
+          "line": 9,
+          "column": 4
+        },
+        "text": "fn nested() { crate::origin::work(); }",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/consumer.rs",
+            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
+            "span": {
+              "start": 314,
+              "end": 400
+            }
+          },
+          "name_span": {
+            "start": 321,
+            "end": 333
+          },
+          "kind": "function"
+        },
+        "relation": "reference",
+        "via": {
+          "path": "src/consumer.rs",
+          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
+          "span": {
+            "start": 361,
+            "end": 365
+          }
+        },
+        "excerpt": {
+          "path": "src/consumer.rs",
+          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
+          "span": {
+            "start": 314,
+            "end": 400
+          }
+        },
+        "start": {
+          "line": 12,
+          "column": 0
+        },
+        "text": "pub fn local_import() {\n    use crate::origin::work as local_work;\n    local_work();\n}",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/consumer.rs",
+            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
+            "span": {
+              "start": 401,
+              "end": 500
+            }
+          },
+          "name_span": {
+            "start": 405,
+            "end": 412
+          },
+          "kind": "module"
+        },
+        "relation": "reference",
+        "via": {
+          "path": "src/consumer.rs",
+          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
+          "span": {
+            "start": 438,
+            "end": 442
+          }
+        },
+        "excerpt": {
+          "path": "src/consumer.rs",
+          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
+          "span": {
+            "start": 401,
+            "end": 500
+          }
+        },
+        "start": {
+          "line": 16,
+          "column": 0
+        },
+        "text": "mod helpers {\n    use crate::origin::work as scoped_work;\n    pub fn aliased() { scoped_work(); }\n}",
+        "complete": true
+      },
+      {
+        "target": {
+          "language": "rust",
+          "declaration": {
+            "path": "src/consumer.rs",
+            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
+            "span": {
+              "start": 463,
+              "end": 498
+            }
+          },
+          "name_span": {
+            "start": 470,
+            "end": 477
+          },
+          "kind": "function"
+        },
+        "relation": "reference",
+        "via": {
+          "path": "src/consumer.rs",
+          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
+          "span": {
+            "start": 482,
+            "end": 493
+          }
+        },
+        "excerpt": {
+          "path": "src/consumer.rs",
+          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
+          "span": {
+            "start": 463,
+            "end": 498
+          }
+        },
+        "start": {
+          "line": 18,
+          "column": 4
+        },
+        "text": "pub fn aliased() { scoped_work(); }",
+        "complete": true
+      }
+    ],
+    "omissions": {
+      "item_limit": 0,
+      "byte_limit": 0,
+      "lookup_limit": 0,
+      "file_limit": 0,
+      "ambiguous": 1,
+      "unavailable": 1,
+      "no_container": 3,
+      "unresolved_imports": 0
+    },
+    "references_by_name": true
+  }
+}
+--- stderr ---

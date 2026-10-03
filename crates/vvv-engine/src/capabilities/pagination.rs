@@ -84,18 +84,21 @@ impl WorkBudget {
 pub enum PageReply {
     Search(SearchPage),
     Context(ContextPage),
+    Relationships(super::relationships::Relationships),
 }
 impl PageReply {
     pub fn next_cursor(&self) -> Option<&Cursor> {
         match self {
             Self::Search(p) => p.next_cursor.as_ref(),
             Self::Context(p) => p.next_cursor.as_ref(),
+            Self::Relationships(p) => p.next_cursor.as_ref(),
         }
     }
     pub fn snapshot(&self) -> &SnapshotId {
         match self {
             Self::Search(p) => &p.snapshot,
             Self::Context(p) => &p.snapshot,
+            Self::Relationships(p) => &p.snapshot,
         }
     }
 }
@@ -136,6 +139,20 @@ impl ContinueQuery {
                 self.page,
                 self.work.unwrap_or_default(),
             ),
+            Checkpoint::Relationships(state) => {
+                let work = self.work.unwrap_or_default();
+                state.page(
+                    engine,
+                    &mut graph,
+                    &mut session,
+                    super::relationships::RelationshipBudget {
+                        max_items: self.page.max_items,
+                        max_bytes: self.page.max_bytes,
+                        max_lookups: work.max_lookups,
+                        max_files: work.max_files,
+                    },
+                )
+            }
             Checkpoint::Excerpt(_) => Err(EngineError::InvalidCursor),
         };
         session.finish(engine, result)
@@ -243,6 +260,7 @@ impl crate::report::Document {
         match reply {
             PageReply::Search(page) => Self::search_page(page),
             PageReply::Context(page) => Self::context_page(page),
+            PageReply::Relationships(page) => Self::relationships(page),
         }
     }
 }

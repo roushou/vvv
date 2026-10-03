@@ -127,12 +127,19 @@
           "format": "uint",
           "minimum": 0,
           "type": "integer"
+        },
+        "unresolved_imports": {
+          "default": 0,
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
         }
       },
       "required": [
         "ambiguous",
         "unavailable",
-        "no_container"
+        "no_container",
+        "unresolved_imports"
       ],
       "type": "object"
     },
@@ -1095,7 +1102,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:context_page:response:870f84cd6489ebc9a567da5c3593b0fb5d03cbae98b7c6ce66590acadeb902c0",
+  "$id": "urn:vvv:schema:1:context_page:response:879e6e113e83bdfb4c2c5dd1b6cc7907b0494e9fd26b50d70cac7e0346434488",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [

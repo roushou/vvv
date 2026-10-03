@@ -100,7 +100,7 @@
         },
         "max_files": {
           "default": 64,
-          "description": "Maximum source files examined for incoming same-spelling references.",
+          "description": "Maximum source files examined for incoming written-name and named-alias references.",
           "format": "uint",
           "maximum": 1024,
           "minimum": 1,
@@ -156,7 +156,7 @@
         },
         "references": {
           "default": false,
-          "description": "Include incoming references with this exact spelling, validated by navigation.",
+          "description": "Include incoming written-name and named-import-alias references, validated by navigation.",
           "type": "boolean"
         },
         "selection": {
@@ -1160,7 +1160,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:session:call:b077ab5f843f5c11640b0ef7d247a489e914a10a8fd93dfd51f049e3a9ccb4b9",
+  "$id": "urn:vvv:schema:1:session:call:8c9a2b0af1b7662d6963e0a52ad7234c658cf2b2a123f7e797a329de09f074f3",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "A request on a session's wire (`vvv serve`): the request with whatever\n`id` the caller chose, echoed on the [`Reply`].",
   "oneOf": [

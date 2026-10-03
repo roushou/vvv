@@ -16,6 +16,7 @@ use ast_grep_core::tree_sitter::LanguageExt;
 #[derive(Clone)]
 pub struct AstGrepLanguage<L> {
     id: LanguageId,
+    reference_group: LanguageId,
     extensions: &'static [&'static str],
     semantics: &'static Semantics,
     searcher: AstGrepSearcher<L>,
@@ -44,6 +45,7 @@ impl<L: LanguageExt> AstGrepLanguage<L> {
         semantics: &'static Semantics,
     ) -> Self {
         Self {
+            reference_group: id.clone(),
             id,
             extensions,
             semantics,
@@ -69,6 +71,12 @@ impl<L: LanguageExt> AstGrepLanguage<L> {
         self
     }
 
+    /// Share incoming-reference discovery with another compatible parser plugin.
+    pub fn with_reference_group(mut self, group: LanguageId) -> Self {
+        self.reference_group = group;
+        self
+    }
+
     pub fn searcher(&self) -> &AstGrepSearcher<L> {
         &self.searcher
     }
@@ -77,6 +85,10 @@ impl<L: LanguageExt> AstGrepLanguage<L> {
 impl<L: LanguageExt + Send + Sync + 'static> Language for AstGrepLanguage<L> {
     fn id(&self) -> LanguageId {
         self.id.clone()
+    }
+
+    fn reference_group(&self) -> LanguageId {
+        self.reference_group.clone()
     }
 
     fn extensions(&self) -> &'static [&'static str] {

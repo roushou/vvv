@@ -10,6 +10,8 @@ work [confirmed] src/consumer.rs:5:20
 execute [confirmed] src/consumer.rs:9:23
 work [confirmed] src/consumer.rs:10:34
 work [unresolved] src/consumer.rs:12:48
+local_work [confirmed] src/consumer.rs:15:5
+scoped_work [confirmed] src/consumer.rs:19:24
 --- stderr ---
-5 sites; 6 files scanned; 9 lookups
+7 sites; 6 files scanned; 13 lookups
 Unresolved sites are possible relationships, not confirmed calls. Receiver types, indirect targets, and macro expansion are not inferred.

@@ -7,5 +7,5 @@ exit 0
 work src/origin.rs:1:1 [e13ad7d38ae1]
 --- stderr ---
 0 sites; 2 files scanned; 1 lookup
-Candidate scan incomplete; narrow the scope or increase the budget
+Candidate scan incomplete; session clients can continue, or narrow the scope or increase the budget
 Unresolved sites are possible relationships, not confirmed calls. Receiver types, indirect targets, and macro expansion are not inferred.

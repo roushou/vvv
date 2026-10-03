@@ -8,14 +8,14 @@ exit 0
   "status": "ok",
   "schema": 1,
   "result": {
-    "snapshot": "5ea98723cc1e8a0ae4e9c80f883d79dd4ca8753720ac66222b5985fa9c212d2c",
+    "snapshot": "94ad4fbcbaad98deba82c0fde6edd02e269e123ebfce521781b8f845dab5113d",
     "subject": {
       "outcome": "resolved",
       "target": {
         "language": "rust",
         "declaration": {
           "path": "src/consumer.rs",
-          "content": "996c56180914a31496d84757815f9b5faa895e496de8da2672f61fd44d14c4f0",
+          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
           "span": {
             "start": 62,
             "end": 256
@@ -40,7 +40,7 @@ exit 0
         "language": "rust",
         "declaration": {
           "path": "src/consumer.rs",
-          "content": "996c56180914a31496d84757815f9b5faa895e496de8da2672f61fd44d14c4f0",
+          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
           "span": {
             "start": 62,
             "end": 256
@@ -62,7 +62,7 @@ exit 0
       {
         "site": {
           "path": "src/consumer.rs",
-          "content": "996c56180914a31496d84757815f9b5faa895e496de8da2672f61fd44d14c4f0",
+          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
           "span": {
             "start": 84,
             "end": 91
@@ -77,7 +77,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/consumer.rs",
-            "content": "996c56180914a31496d84757815f9b5faa895e496de8da2672f61fd44d14c4f0",
+            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
             "span": {
               "start": 62,
               "end": 256
@@ -136,7 +136,7 @@ exit 0
       {
         "site": {
           "path": "src/consumer.rs",
-          "content": "996c56180914a31496d84757815f9b5faa895e496de8da2672f61fd44d14c4f0",
+          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
           "span": {
             "start": 114,
             "end": 118
@@ -151,7 +151,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/consumer.rs",
-            "content": "996c56180914a31496d84757815f9b5faa895e496de8da2672f61fd44d14c4f0",
+            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
             "span": {
               "start": 62,
               "end": 256
@@ -196,7 +196,7 @@ exit 0
       {
         "site": {
           "path": "src/consumer.rs",
-          "content": "996c56180914a31496d84757815f9b5faa895e496de8da2672f61fd44d14c4f0",
+          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
           "span": {
             "start": 154,
             "end": 162
@@ -211,7 +211,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/consumer.rs",
-            "content": "996c56180914a31496d84757815f9b5faa895e496de8da2672f61fd44d14c4f0",
+            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
             "span": {
               "start": 62,
               "end": 256
@@ -229,7 +229,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/consumer.rs",
-            "content": "996c56180914a31496d84757815f9b5faa895e496de8da2672f61fd44d14c4f0",
+            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
             "span": {
               "start": 126,
               "end": 149
@@ -245,7 +245,7 @@ exit 0
       {
         "site": {
           "path": "src/consumer.rs",
-          "content": "996c56180914a31496d84757815f9b5faa895e496de8da2672f61fd44d14c4f0",
+          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
           "span": {
             "start": 170,
             "end": 175
@@ -260,7 +260,7 @@ exit 0
           "language": "rust",
           "declaration": {
             "path": "src/consumer.rs",
-            "content": "996c56180914a31496d84757815f9b5faa895e496de8da2672f61fd44d14c4f0",
+            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
             "span": {
               "start": 62,
               "end": 256

@@ -13,6 +13,8 @@ Confirmed reference  src/bindings.rs:5:1
 fn annotated() { let engine: Engine; }
 Confirmed reference  src/consumer.rs:5:5
 engine: Engine
+Confirmed reference  src/consumer.rs:6:5
+runtime: Runtime
 Confirmed reference  src/consumer.rs:9:1
 pub fn roundtrip(engine: Engine) -> Engine { engine }
 Confirmed reference  src/consumer.rs:12:1
@@ -30,4 +32,5 @@ fn destructured(value: Engine, (left, right): (u8, u8)) { consume(value); }
 Confirmed reference in a test path  src/test/check.rs:2:1
 fn related(value: Engine) {}
 --- stderr ---
-Omitted: 0 item limit, 0 byte limit, 0 lookup limit, 0 file limit, 1 ambiguous, 0 unavailable, 5 without a declaration
+Omitted: 0 item limit, 0 byte limit, 0 lookup limit, 0 file limit, 1 ambiguous, 0 unavailable, 7 without a declaration
+1 import bindings could not be resolved during reference discovery

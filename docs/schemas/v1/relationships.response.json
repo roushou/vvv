@@ -887,6 +887,12 @@
         "kind": {
           "$ref": "#/$defs/RelationshipKind"
         },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
         "scope": {
           "$ref": "#/$defs/SearchScope"
         },
@@ -1257,7 +1263,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:relationships:response:7da427884cd0ad434c4b0728334ab7859e59c4b0de8861316502b65d6d448d77",
+  "$id": "urn:vvv:schema:1:relationships:response:b022ba319712ca4119e7825b89a8b275f3618d6f093d417132fa60a9d503660b",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "Top-level envelope of every `--json` response.",
   "oneOf": [

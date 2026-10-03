@@ -19,6 +19,14 @@
       ],
       "type": "object"
     },
+    "CallKind": {
+      "enum": [
+        "direct",
+        "member",
+        "indirect"
+      ],
+      "type": "string"
+    },
     "Capture": {
       "description": "One meta-variable binding.",
       "properties": {
@@ -127,12 +135,19 @@
           "format": "uint",
           "minimum": 0,
           "type": "integer"
+        },
+        "unresolved_imports": {
+          "default": 0,
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
         }
       },
       "required": [
         "ambiguous",
         "unavailable",
-        "no_container"
+        "no_container",
+        "unresolved_imports"
       ],
       "type": "object"
     },
@@ -152,6 +167,34 @@
       "required": [
         "lookups",
         "files"
+      ],
+      "type": "object"
+    },
+    "DefinitionLocation": {
+      "description": "Enough information to select, open, or request context for a declaration.",
+      "properties": {
+        "evidence": {
+          "$ref": "#/$defs/ResolutionEvidence"
+        },
+        "id": {
+          "$ref": "#/$defs/MatchId"
+        },
+        "name": {
+          "type": "string"
+        },
+        "start": {
+          "$ref": "#/$defs/Position"
+        },
+        "target": {
+          "$ref": "#/$defs/SymbolRef"
+        }
+      },
+      "required": [
+        "target",
+        "id",
+        "name",
+        "start",
+        "evidence"
       ],
       "type": "object"
     },
@@ -276,6 +319,21 @@
       ],
       "type": "object"
     },
+    "ProviderVersion": {
+      "properties": {
+        "provider": {
+          "type": "string"
+        },
+        "revision": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "provider",
+        "revision"
+      ],
+      "type": "object"
+    },
     "Query": {
       "properties": {
         "kind": {
@@ -327,6 +385,369 @@
     "RelPath": {
       "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
       "type": "string"
+    },
+    "Relationship": {
+      "oneOf": [
+        {
+          "properties": {
+            "evidence": {
+              "$ref": "#/$defs/ResolutionEvidence"
+            },
+            "outcome": {
+              "const": "confirmed",
+              "type": "string"
+            },
+            "target": {
+              "$ref": "#/$defs/SymbolRef"
+            }
+          },
+          "required": [
+            "outcome",
+            "target",
+            "evidence"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "candidates": {
+              "items": {
+                "$ref": "#/$defs/DefinitionLocation"
+              },
+              "type": "array"
+            },
+            "outcome": {
+              "const": "ambiguous",
+              "type": "string"
+            }
+          },
+          "required": [
+            "outcome",
+            "candidates"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "outcome": {
+              "const": "unavailable",
+              "type": "string"
+            },
+            "reason": {
+              "$ref": "#/$defs/UnavailableReason"
+            }
+          },
+          "required": [
+            "outcome",
+            "reason"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "A call to a local/parameter/value binding does not identify the invoked function.",
+          "properties": {
+            "binding": {
+              "anyOf": [
+                {
+                  "$ref": "#/$defs/SymbolRef"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "outcome": {
+              "const": "indirect",
+              "type": "string"
+            }
+          },
+          "required": [
+            "outcome",
+            "binding"
+          ],
+          "type": "object"
+        }
+      ],
+      "properties": {
+        "call": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CallKind"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "None denotes a non-call reference, including imports and value references."
+        },
+        "caller": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/SymbolRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Owner of a call site; absent for non-call references and anonymous callables."
+        },
+        "site": {
+          "$ref": "#/$defs/SourceAnchor",
+          "description": "Exact identifier (or unsupported callee expression) providing the evidence."
+        },
+        "spelling": {
+          "type": "string"
+        },
+        "start": {
+          "$ref": "#/$defs/Position"
+        }
+      },
+      "required": [
+        "site",
+        "start",
+        "spelling",
+        "caller",
+        "call"
+      ],
+      "type": "object"
+    },
+    "RelationshipCoverage": {
+      "properties": {
+        "files_remaining": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "files_scanned": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "limitations": {
+          "description": "Known gaps remain even when the candidate scan finishes.",
+          "items": {
+            "$ref": "#/$defs/RelationshipLimitation"
+          },
+          "type": "array"
+        },
+        "lookups": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "omitted_items": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "scan_complete": {
+          "description": "Completion of the candidate scan, not proof of a complete runtime call graph.",
+          "type": "boolean"
+        },
+        "stopped_by": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/RelationshipLimit"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unresolved_imports": {
+          "description": "Import bindings that could not be resolved while discovering alias spellings.",
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "unsupported_files": {
+          "description": "Files whose plugin does not provide syntactic call facts.",
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "limitations",
+        "files_scanned",
+        "files_remaining",
+        "lookups",
+        "omitted_items",
+        "stopped_by",
+        "unsupported_files",
+        "unresolved_imports",
+        "scan_complete"
+      ],
+      "type": "object"
+    },
+    "RelationshipKind": {
+      "enum": [
+        "callers",
+        "callees",
+        "references"
+      ],
+      "type": "string"
+    },
+    "RelationshipLimit": {
+      "enum": [
+        "files",
+        "lookups",
+        "items",
+        "bytes"
+      ],
+      "type": "string"
+    },
+    "RelationshipLimitation": {
+      "enum": [
+        "receiver_types",
+        "indirect_targets",
+        "macro_expansion",
+        "anonymous_callers",
+        "unsupported_bindings",
+        "unenumerated_aliases"
+      ],
+      "type": "string"
+    },
+    "Relationships": {
+      "properties": {
+        "coverage": {
+          "$ref": "#/$defs/RelationshipCoverage"
+        },
+        "items": {
+          "items": {
+            "$ref": "#/$defs/Relationship"
+          },
+          "type": "array"
+        },
+        "kind": {
+          "$ref": "#/$defs/RelationshipKind"
+        },
+        "next_cursor": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "scope": {
+          "$ref": "#/$defs/SearchScope"
+        },
+        "snapshot": {
+          "$ref": "#/$defs/SnapshotId"
+        },
+        "subject": {
+          "$ref": "#/$defs/ResolutionOutcome"
+        }
+      },
+      "required": [
+        "snapshot",
+        "subject",
+        "kind",
+        "scope",
+        "items",
+        "coverage"
+      ],
+      "type": "object"
+    },
+    "ResolutionEvidence": {
+      "properties": {
+        "addresses": {
+          "description": "The binding's address followed by each re-export address, in order.",
+          "items": {
+            "$ref": "#/$defs/Address"
+          },
+          "type": "array"
+        },
+        "semantic": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ProviderVersion"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "addresses"
+      ],
+      "type": "object"
+    },
+    "ResolutionOutcome": {
+      "oneOf": [
+        {
+          "description": "Enough information to select, open, or request context for a declaration.",
+          "properties": {
+            "container": {
+              "$ref": "#/$defs/SymbolRef"
+            },
+            "evidence": {
+              "$ref": "#/$defs/ResolutionEvidence"
+            },
+            "id": {
+              "$ref": "#/$defs/MatchId"
+            },
+            "name": {
+              "type": "string"
+            },
+            "outcome": {
+              "const": "resolved",
+              "type": "string"
+            },
+            "start": {
+              "$ref": "#/$defs/Position"
+            },
+            "target": {
+              "$ref": "#/$defs/SymbolRef"
+            }
+          },
+          "required": [
+            "outcome",
+            "target",
+            "id",
+            "name",
+            "start",
+            "evidence",
+            "container"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "candidates": {
+              "items": {
+                "$ref": "#/$defs/DefinitionLocation"
+              },
+              "type": "array"
+            },
+            "outcome": {
+              "const": "ambiguous",
+              "type": "string"
+            }
+          },
+          "required": [
+            "outcome",
+            "candidates"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "outcome": {
+              "const": "unavailable",
+              "type": "string"
+            },
+            "reason": {
+              "$ref": "#/$defs/UnavailableReason"
+            }
+          },
+          "required": [
+            "outcome",
+            "reason"
+          ],
+          "type": "object"
+        }
+      ]
     },
     "Role": {
       "description": "What position a match occupies in its file: the declaration itself, a\ntoken inside an import statement, or any other use. Views lead with\ndeclarations and dim imports; the engine orders results by it.",
@@ -770,7 +1191,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:continue:result:227b54ddea453ff903d7b3c6072dd0c4febe8c9d5c164727cd24381f9626e977",
+  "$id": "urn:vvv:schema:1:continue:result:cc255a7a221575cf263b9b1611efc47b652cfcb2ebf47d9de0239d3d7752c4a7",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "anyOf": [
     {
@@ -778,6 +1199,9 @@
     },
     {
       "$ref": "#/$defs/context"
+    },
+    {
+      "$ref": "#/$defs/Relationships"
     }
   ],
   "title": "continue result"

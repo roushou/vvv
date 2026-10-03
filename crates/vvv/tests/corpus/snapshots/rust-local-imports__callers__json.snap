@@ -8,7 +8,7 @@ exit 0
   "status": "ok",
   "schema": 1,
   "result": {
-    "snapshot": "9aa040190d69234e4f462f724fb733877547294d005a77144dd9a55cbcdcecd2",
+    "snapshot": "25e11f32dbcda3fdc9741c5214725ea701136fd06d6e54b2b2a712f803496771",
     "subject": {
       "outcome": "resolved",
       "target": {
@@ -1291,14 +1291,15 @@ exit 0
         "unenumerated_aliases"
       ],
       "files_scanned": 2,
-      "files_remaining": 0,
-      "lookups": 30,
-      "omitted_items": 3,
+      "files_remaining": 1,
+      "lookups": 28,
+      "omitted_items": 0,
       "stopped_by": "bytes",
       "unsupported_files": 0,
       "unresolved_imports": 3,
       "scan_complete": false
-    }
+    },
+    "next_cursor": "<cursor>"
   }
 }
 --- stderr ---

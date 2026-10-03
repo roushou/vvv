@@ -110,6 +110,12 @@
           "format": "uint",
           "minimum": 0,
           "type": "integer"
+        },
+        "unresolved_imports": {
+          "default": 0,
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
         }
       },
       "required": [
@@ -119,7 +125,8 @@
         "file_limit",
         "ambiguous",
         "unavailable",
-        "no_container"
+        "no_container",
+        "unresolved_imports"
       ],
       "type": "object"
     },
@@ -308,7 +315,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:context:result:b0583ab47fa2169ba708319e6111ea6944c193bea783877a487b1490ee32cd6f",
+  "$id": "urn:vvv:schema:1:context:result:5483700fad3bfb9d08aa6fbbb7bdb8cc40e32f03dbb88a93373f0a3e7b4e355f",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "oneOf": [
     {
@@ -381,7 +388,7 @@
       "$ref": "#/$defs/ContextOmissions"
     },
     "references_by_name": {
-      "description": "Incoming scanning covers this spelling only, not every possible alias.",
+      "description": "Incoming scanning follows written names and resolvable named import aliases, without runtime inference.",
       "type": "boolean"
     },
     "snapshot": {

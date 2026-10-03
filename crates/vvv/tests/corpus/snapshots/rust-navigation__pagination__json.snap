@@ -1076,7 +1076,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "unresolved": {
         "ambiguous": 0,
         "no_container": 0,
-        "unavailable": 0
+        "unavailable": 0,
+        "unresolved_imports": 0
       },
       "work": {
         "files": 0,
@@ -1141,7 +1142,31 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "unresolved": {
         "ambiguous": 1,
         "no_container": 1,
-        "unavailable": 0
+        "unavailable": 0,
+        "unresolved_imports": 0
+      },
+      "work": {
+        "files": 2,
+        "lookups": 4
+      }
+    },
+    "schema": 1,
+    "status": "ok"
+  },
+  {
+    "result": {
+      "items": [],
+      "kind": "context",
+      "next_cursor": "cursor-13",
+      "outcome": "resolved",
+      "references_by_name": true,
+      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
+      "traversal_complete": false,
+      "unresolved": {
+        "ambiguous": 0,
+        "no_container": 2,
+        "unavailable": 0,
+        "unresolved_imports": 0
       },
       "work": {
         "files": 2,
@@ -1202,6 +1227,72 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
             "path": "src/consumer.rs",
             "span": {
+              "end": 113,
+              "start": 97
+            }
+          },
+          "expansion": null,
+          "relation": "reference",
+          "start": {
+            "column": 4,
+            "line": 5
+          },
+          "target": {
+            "declaration": {
+              "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+              "path": "src/consumer.rs",
+              "span": {
+                "end": 113,
+                "start": 97
+              }
+            },
+            "kind": "field",
+            "language": "rust",
+            "name_span": {
+              "end": 104,
+              "start": 97
+            }
+          },
+          "text": "runtime: Runtime",
+          "via": {
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "path": "src/consumer.rs",
+            "span": {
+              "end": 113,
+              "start": 106
+            }
+          }
+        }
+      ],
+      "kind": "context",
+      "next_cursor": "cursor-14",
+      "outcome": "resolved",
+      "references_by_name": true,
+      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
+      "traversal_complete": false,
+      "unresolved": {
+        "ambiguous": 0,
+        "no_container": 2,
+        "unavailable": 0,
+        "unresolved_imports": 0
+      },
+      "work": {
+        "files": 1,
+        "lookups": 4
+      }
+    },
+    "schema": 1,
+    "status": "ok"
+  },
+  {
+    "result": {
+      "items": [
+        {
+          "complete": true,
+          "excerpt": {
+            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
+            "path": "src/consumer.rs",
+            "span": {
               "end": 171,
               "start": 118
             }
@@ -1240,29 +1331,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         }
       ],
       "kind": "context",
-      "next_cursor": "cursor-13",
-      "outcome": "resolved",
-      "references_by_name": true,
-      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
-      "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 2,
-        "unavailable": 0
-      },
-      "work": {
-        "files": 2,
-        "lookups": 4
-      }
-    },
-    "schema": 1,
-    "status": "ok"
-  },
-  {
-    "result": {
-      "items": [],
-      "kind": "context",
-      "next_cursor": "cursor-14",
+      "next_cursor": "cursor-15",
       "outcome": "resolved",
       "references_by_name": true,
       "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
@@ -1270,7 +1339,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "unresolved": {
         "ambiguous": 0,
         "no_container": 0,
-        "unavailable": 0
+        "unavailable": 0,
+        "unresolved_imports": 0
       },
       "work": {
         "files": 1,
@@ -1369,28 +1439,6 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         }
       ],
       "kind": "context",
-      "next_cursor": "cursor-15",
-      "outcome": "resolved",
-      "references_by_name": true,
-      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
-      "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 0,
-        "unavailable": 0
-      },
-      "work": {
-        "files": 1,
-        "lookups": 3
-      }
-    },
-    "schema": 1,
-    "status": "ok"
-  },
-  {
-    "result": {
-      "items": [],
-      "kind": "context",
       "next_cursor": "cursor-16",
       "outcome": "resolved",
       "references_by_name": true,
@@ -1399,11 +1447,12 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "unresolved": {
         "ambiguous": 0,
         "no_container": 0,
-        "unavailable": 0
+        "unavailable": 0,
+        "unresolved_imports": 0
       },
       "work": {
-        "files": 2,
-        "lookups": 1
+        "files": 1,
+        "lookups": 4
       }
     },
     "schema": 1,
@@ -1421,11 +1470,12 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "unresolved": {
         "ambiguous": 0,
         "no_container": 0,
-        "unavailable": 0
+        "unavailable": 0,
+        "unresolved_imports": 0
       },
       "work": {
         "files": 2,
-        "lookups": 0
+        "lookups": 1
       }
     },
     "schema": 1,
@@ -1442,8 +1492,32 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "traversal_complete": false,
       "unresolved": {
         "ambiguous": 0,
+        "no_container": 0,
+        "unavailable": 0,
+        "unresolved_imports": 1
+      },
+      "work": {
+        "files": 2,
+        "lookups": 1
+      }
+    },
+    "schema": 1,
+    "status": "ok"
+  },
+  {
+    "result": {
+      "items": [],
+      "kind": "context",
+      "next_cursor": "cursor-19",
+      "outcome": "resolved",
+      "references_by_name": true,
+      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
+      "traversal_complete": false,
+      "unresolved": {
+        "ambiguous": 0,
         "no_container": 1,
-        "unavailable": 0
+        "unavailable": 0,
+        "unresolved_imports": 0
       },
       "work": {
         "files": 1,
@@ -1542,28 +1616,6 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         }
       ],
       "kind": "context",
-      "next_cursor": "cursor-19",
-      "outcome": "resolved",
-      "references_by_name": true,
-      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
-      "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 0,
-        "unavailable": 0
-      },
-      "work": {
-        "files": 1,
-        "lookups": 2
-      }
-    },
-    "schema": 1,
-    "status": "ok"
-  },
-  {
-    "result": {
-      "items": [],
-      "kind": "context",
       "next_cursor": "cursor-20",
       "outcome": "resolved",
       "references_by_name": true,
@@ -1572,11 +1624,12 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "unresolved": {
         "ambiguous": 0,
         "no_container": 0,
-        "unavailable": 0
+        "unavailable": 0,
+        "unresolved_imports": 0
       },
       "work": {
-        "files": 2,
-        "lookups": 0
+        "files": 1,
+        "lookups": 2
       }
     },
     "schema": 1,
@@ -1594,11 +1647,12 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "unresolved": {
         "ambiguous": 0,
         "no_container": 0,
-        "unavailable": 0
+        "unavailable": 0,
+        "unresolved_imports": 0
       },
       "work": {
         "files": 2,
-        "lookups": 4
+        "lookups": 0
       }
     },
     "schema": 1,
@@ -1616,7 +1670,31 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "unresolved": {
         "ambiguous": 0,
         "no_container": 0,
-        "unavailable": 0
+        "unavailable": 0,
+        "unresolved_imports": 0
+      },
+      "work": {
+        "files": 2,
+        "lookups": 4
+      }
+    },
+    "schema": 1,
+    "status": "ok"
+  },
+  {
+    "result": {
+      "items": [],
+      "kind": "context",
+      "next_cursor": "cursor-23",
+      "outcome": "resolved",
+      "references_by_name": true,
+      "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
+      "traversal_complete": false,
+      "unresolved": {
+        "ambiguous": 0,
+        "no_container": 0,
+        "unavailable": 0,
+        "unresolved_imports": 0
       },
       "work": {
         "files": 2,
@@ -1681,7 +1759,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "unresolved": {
         "ambiguous": 0,
         "no_container": 1,
-        "unavailable": 0
+        "unavailable": 0,
+        "unresolved_imports": 0
       },
       "work": {
         "files": 2,

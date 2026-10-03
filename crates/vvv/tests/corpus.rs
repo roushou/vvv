@@ -668,6 +668,16 @@ impl Corpus {
         // two characters; the snapshots are taken with `/`.
         let text = |bytes: Vec<u8>| {
             let text = String::from_utf8(bytes).unwrap();
+            // Session handles are opaque; a CLI process cannot retain them for another invocation.
+            let text = if json {
+                serde_json::from_str::<serde_json::Value>(&text)
+                    .ok()
+                    .and_then(|value| value["result"]["next_cursor"].as_str().map(str::to_owned))
+                    .map_or(text.clone(), |cursor| text.replace(&cursor, "<cursor>"))
+            } else {
+                text
+            };
+
             // Platform support is checked by MCP/engine tests; keep this corpus portable.
             let text = if json && args[0] == "discover" {
                 text.replace(
@@ -2471,6 +2481,50 @@ impl PageTranscript {
         });
     }
 
+    fn relationships(corpus: Corpus, path: &str, line: u32, column: u32) {
+        let (_, engine) = corpus.engine();
+        let origin =
+            vvv_engine::NavigationQuery::at(path, vvv_engine::Position::new(line, column)).origin;
+        let mut query = vvv_engine::RelationshipsQuery::new(
+            origin.clone(),
+            vvv_engine::RelationshipKind::References,
+        );
+        query.budget.max_bytes = 65536;
+        let expected = query.execute(&engine).unwrap();
+        assert!(expected.next_cursor.is_none());
+        let mut transcript = Self {
+            replies: vec![],
+            cursors: BTreeMap::new(),
+        };
+        let first = transcript.call(&engine, serde_json::json!({"command":"relationships","origin":origin,"kind":"references","budget":{"max_items":1,"max_lookups":1,"max_files":1,"max_bytes":8192}}));
+        assert_eq!(first["status"], "ok", "{first}");
+        let mut sites = first["result"]["items"].as_array().unwrap().clone();
+        let mut cursor = first["result"]["next_cursor"].clone();
+        let mut pages = 0;
+        while cursor.is_string() {
+            pages += 1;
+            assert!(pages < 100);
+            let reply = transcript.call(&engine, serde_json::json!({"command":"continue","cursor":cursor,"page":{"max_items":1,"max_bytes":8192},"work":{"max_lookups":1,"max_files":1}}));
+            assert_eq!(reply["status"], "ok", "{reply}");
+            sites.extend(reply["result"]["items"].as_array().unwrap().clone());
+            cursor = reply["result"]["next_cursor"].clone();
+        }
+        let sites = sites
+            .into_iter()
+            .map(|site| serde_json::from_value::<vvv_engine::Relationship>(site).unwrap())
+            .collect::<Vec<_>>();
+        assert_eq!(sites, expected.items);
+        let mut settings = insta::Settings::clone_current();
+        settings.set_snapshot_path("corpus/snapshots");
+        settings.set_prepend_module_to_snapshot(false);
+        settings.bind(|| {
+            insta::assert_snapshot!(
+                format!("{}__incoming-pages__json", corpus.name),
+                serde_json::to_string_pretty(&transcript.replies).unwrap()
+            )
+        });
+    }
+
     fn corpus(corpus: Corpus, path: &str, line: u32, column: u32) {
         let (_, engine) = corpus.engine();
         let mut transcript = Self {
@@ -2571,6 +2625,18 @@ fn rust_relationships_golden() {
         name: "rust-relationships",
         cases: &[
             (
+                "incoming-context",
+                &[
+                    "context",
+                    "src/origin.rs:1:8",
+                    "--references",
+                    "--max-bytes",
+                    "32768",
+                    "--max-lookups",
+                    "128",
+                ],
+            ),
+            (
                 "ambiguous-call",
                 &[
                     "relationships",
@@ -2634,6 +2700,18 @@ fn ts_relationships_golden() {
     golden(&Corpus {
         name: "ts-relationships",
         cases: &[
+            (
+                "incoming-context",
+                &[
+                    "context",
+                    "src/origin.ts:1:17",
+                    "--references",
+                    "--max-bytes",
+                    "32768",
+                    "--max-lookups",
+                    "128",
+                ],
+            ),
             (
                 "callers",
                 &[
@@ -3490,4 +3568,34 @@ fn rust_pattern_references() {
         ],
         mutations: Vec::new,
     });
+}
+
+#[cfg(feature = "rust")]
+#[test]
+fn rust_incoming_relationship_pages_equal_the_complete_scan() {
+    PageTranscript::relationships(
+        Corpus {
+            name: "rust-relationships",
+            cases: &[],
+            mutations: Vec::new,
+        },
+        "src/origin.rs",
+        0,
+        7,
+    );
+}
+
+#[cfg(feature = "typescript")]
+#[test]
+fn typescript_incoming_relationship_pages_equal_the_complete_scan() {
+    PageTranscript::relationships(
+        Corpus {
+            name: "ts-relationships",
+            cases: &[],
+            mutations: Vec::new,
+        },
+        "src/origin.ts",
+        0,
+        16,
+    );
 }

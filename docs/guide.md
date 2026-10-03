@@ -529,10 +529,12 @@ to read the **whole declaration from its beginning**. An item's `expansion` hand
 instead continues a signature shortened by the output budget. Both handles are
 independent and preserve exact source ranges and versions.
 
-`--references` also scans same-spelling occurrences and includes an enclosing
-declaration only when navigation confirms that it refers to the selected target.
+`--references` scans the original spelling plus named import aliases and renamed
+re-exports whose bindings resolve to the selected target. Each use is independently
+confirmed by navigation before its enclosing declaration is included. Rust scoped
+named imports participate. TypeScript and TSX files are scanned together.
 A confirmed reference under a `test` or `tests` path component is labeled as such;
-this is evidence of a related test location, not proof of test coverage. Aliases,
+this is evidence of a related test location, not proof of test coverage. Unenumerated aliases,
 unresolved references, and dynamic calls are not a complete caller graph.
 
 The defaults are 16,384 compact JSON result bytes, 12 items, 64 additional
@@ -769,14 +771,14 @@ Validation uses the plan's original ten-minute expiry and does not extend it.
 
 ## Paging results in an agent session
 
-For a large search or context request, keep `vvv serve` open and ask for pages:
+For a large search, context, or relationship request, keep `vvv serve` open and ask for pages:
 
 ```json
 {"command":"search_page","query":{"pattern":"Engine"},"page":{"max_items":20,"max_bytes":8192}}
 {"command":"continue","cursor":"<next_cursor>","page":{"max_items":20,"max_bytes":8192}}
 ```
 
-Copy `result.next_cursor` into the next request until it is null. Matches retain
+Copy `result.next_cursor` into the next request until it is absent or null. Matches retain
 their IDs and original one-based ordinals. A match too large for a page produces
 `output_limit` with the required size rather than a shortened match.
 
@@ -1388,9 +1390,11 @@ named function. Rust and TypeScript call expressions are supported; constructors
 macro expansion, inferred receiver types, and indirect target analysis are outside
 this contract.
 
-Incoming scans examine the selected name plus aliases whose import bindings
+Incoming scans examine compatible parser plugins (including TypeScript and TSX),
+the selected name, and aliases whose import bindings
 resolve to it (or include it among ambiguous targets). Unresolved import probes
-are counted in `coverage.unresolved_imports`. This finds renamed named imports without treating every same-spelled token as
+are counted in `coverage.unresolved_imports` (or context
+`omissions.unresolved_imports` / page `unresolved.unresolved_imports`). This finds renamed named imports without treating every same-spelled token as
 a confirmed relationship. It does not enumerate every alias: renamed members reached
 through namespace or wildcard imports and aliases assigned through variables may
 be missed. Unresolved incoming sites are possibilities, not assertions that the
@@ -1401,8 +1405,13 @@ They do not restrict where a referenced definition may resolve. Increase
 `--max-files`, `--max-lookups`, `--max-items`, or `--max-bytes` when needed; defaults
 are 128 files, 1,024 lookups, 64 sites, and 16,384 compact JSON result bytes. Inspect
 `coverage` in `--json` output: `scan_complete` describes the candidate scan only,
-while `limitations` records the remaining analysis gaps. These queries do not
-return continuation cursors; rerun with a narrower scope or larger budget.
+while `limitations` records the remaining analysis gaps. An unfinished scan returns
+`next_cursor`. In `serve`, MCP, or a retained library engine, pass it to
+`continue`/`vvv_continue` until absent, including after empty pages. Continuation
+uses `page` and `work` budgets and preserves the original subject, kind, scope,
+alias discovery, and undelivered sites. Retries are non-consuming; changed source,
+manifests, or inventory require restarting. A standalone CLI invocation ends its
+session, so increase budgets or narrow its scope, or keep `serve` open to continue.
 
 MCP exposes this as `vvv_relationships`, with `kind` set to `callers`, `callees`, or
 `references`. Returned targets and source anchors can be passed to `vvv_navigate`

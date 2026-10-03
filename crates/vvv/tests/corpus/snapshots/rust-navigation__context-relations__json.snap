@@ -8,7 +8,7 @@ exit 0
   "status": "ok",
   "schema": 1,
   "result": {
-    "snapshot": "1f03973729293043b462b4d90abcb4755385f5c031774a8ae8f03fe87fdcb533",
+    "snapshot": "7823aca7bdac12d9c8ee93bf39fe9bc5cfec750b08cdf99a3c4a0eb0937acc11",
     "outcome": "resolved",
     "items": [
       {
@@ -135,7 +135,8 @@ exit 0
       "file_limit": 0,
       "ambiguous": 0,
       "unavailable": 0,
-      "no_container": 0
+      "no_container": 0,
+      "unresolved_imports": 1
     },
     "references_by_name": true
   }

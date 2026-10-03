@@ -25,6 +25,6 @@ work [confirmed] src/lib.rs:96:5
 work [confirmed] src/lib.rs:101:16
 work [confirmed] src/lib.rs:106:5
 --- stderr ---
-19 sites; 2 files scanned; 30 lookups
-Candidate scan incomplete; narrow the scope or increase the budget
+19 sites; 2 files scanned; 28 lookups
+Candidate scan incomplete; session clients can continue, or narrow the scope or increase the budget
 Unresolved sites are possible relationships, not confirmed calls. Receiver types, indirect targets, and macro expansion are not inferred.

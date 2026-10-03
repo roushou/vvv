@@ -572,7 +572,7 @@
       "type": "string"
     }
   },
-  "$id": "urn:vvv:schema:1:relationships:result:29254ae082f38d4195394024eecefdb5d37e9d32940ec7a18f51c33fbb146f1c",
+  "$id": "urn:vvv:schema:1:relationships:result:34849f7e8cd7c8cc375e5b4ff8dd3df84095f2934537b9ea4de061817d9b917c",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {
     "coverage": {
@@ -586,6 +586,12 @@
     },
     "kind": {
       "$ref": "#/$defs/RelationshipKind"
+    },
+    "next_cursor": {
+      "type": [
+        "string",
+        "null"
+      ]
     },
     "scope": {
       "$ref": "#/$defs/SearchScope"

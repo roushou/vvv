@@ -14,6 +14,12 @@ execute [confirmed] src/consumer.rs:6:20
 execute [confirmed] src/consumer.rs:9:23
 work [confirmed] src/consumer.rs:10:34
 work [unresolved] src/consumer.rs:12:48
+work [confirmed] src/consumer.rs:14:24
+local_work [confirmed] src/consumer.rs:14:32
+local_work [confirmed] src/consumer.rs:15:5
+work [confirmed] src/consumer.rs:18:24
+scoped_work [confirmed] src/consumer.rs:18:32
+scoped_work [confirmed] src/consumer.rs:19:24
 --- stderr ---
-9 sites; 6 files scanned; 17 lookups
+15 sites; 6 files scanned; 25 lookups
 Unresolved sites are possible relationships, not confirmed calls. Receiver types, indirect targets, and macro expansion are not inferred.

@@ -157,9 +157,14 @@ fn limits_and_scopes_are_explicit_and_output_is_bounded() {
     query.budget.max_bytes = 1024;
     match query.execute(&f.engine) {
         Ok(reply) => assert!(serde_json::to_vec(&reply).unwrap().len() <= 1024),
-        Err(EngineError::OutputLimit {
-            max_bytes: 1024, ..
-        }) => {}
+        Err(
+            EngineError::OutputLimit {
+                max_bytes: 1024, ..
+            }
+            | EngineError::PageOutputLimit {
+                max_bytes: 1024, ..
+            },
+        ) => {}
         other => panic!("{other:?}"),
     }
 }
@@ -273,7 +278,7 @@ fn edits_during_scanning_and_cancellation_do_not_publish_results() {
 }
 
 #[test]
-fn byte_fitting_omits_whole_sites_and_records_the_omission() {
+fn byte_fitting_retains_whole_sites_for_continuation() {
     let f = Fixture::new();
     let full = f
         .query(RelationshipKind::Callers)
@@ -285,28 +290,37 @@ fn byte_fitting_omits_whole_sites_and_records_the_omission() {
     let fitted = query.execute(&f.engine).unwrap();
     assert!(serde_json::to_vec(&fitted).unwrap().len() <= limit);
     assert_eq!(fitted.coverage.stopped_by, Some(RelationshipLimit::Bytes));
-    assert!(fitted.coverage.omitted_items > 0);
+    assert_eq!(fitted.coverage.omitted_items, 0);
     assert_eq!(fitted.items, full.items[..fitted.items.len()]);
-    assert_eq!(
-        fitted.items.len() + fitted.coverage.omitted_items,
-        full.items.len()
-    );
+    let vvv_engine::PageReply::Relationships(rest) = (vvv_engine::ContinueQuery {
+        cursor: fitted.next_cursor.unwrap(),
+        page: vvv_engine::PageBudget::default(),
+        work: None,
+    })
+    .execute(&f.engine)
+    .unwrap() else {
+        panic!()
+    };
+    let mut items = fitted.items;
+    items.extend(rest.items);
+    assert_eq!(items, full.items);
 }
 
 #[test]
 fn ambiguous_incoming_sites_keep_all_candidates() {
     use vvv_core::Language;
-    let source = "def work\ndef work\nwork";
+    let source = "def work\ndef work\nwork\nwork\nwork";
     let fake = Fake::default();
     let mut facts = fake.facts(source).unwrap();
-    let start = source.rfind("work").unwrap();
     facts.calls_supported = true;
-    facts.calls.push(CallSite {
-        span: Span::new(start, start + 4),
-        callee: Span::new(start, start + 4),
-        kind: CallKind::Direct,
-        owner: None,
-    });
+    for (start, _) in source.match_indices("work").skip(2) {
+        facts.calls.push(CallSite {
+            span: Span::new(start, start + 4),
+            callee: Span::new(start, start + 4),
+            kind: CallKind::Direct,
+            owner: None,
+        });
+    }
     let engine = Engine::new(
         Workspace::new(
             "/ws",
@@ -329,4 +343,233 @@ fn ambiguous_incoming_sites_keep_all_candidates() {
     };
     assert_eq!(candidates.len(), 2);
     assert_ne!(candidates[0].id, candidates[1].id);
+    let mut query = RelationshipsQuery::new(
+        NavigationQuery::at("a.p", Position::new(0, 4)).origin,
+        RelationshipKind::Callers,
+    );
+    query.budget.max_items = 1;
+    let first = query.execute(&engine).unwrap();
+    let cursor = first.next_cursor.clone().unwrap();
+    let limited = vvv_engine::ContinueQuery {
+        cursor: cursor.clone(),
+        page: vvv_engine::PageBudget {
+            max_items: 1,
+            max_bytes: 1024,
+        },
+        work: None,
+    }
+    .execute(&engine);
+    assert!(matches!(limited, Err(EngineError::PageOutputLimit { .. })));
+    let mut sites = first.items;
+    let mut next = Some(cursor);
+    while let Some(cursor) = next {
+        let vvv_engine::PageReply::Relationships(page) = (vvv_engine::ContinueQuery {
+            cursor,
+            page: vvv_engine::PageBudget::default(),
+            work: None,
+        })
+        .execute(&engine)
+        .unwrap() else {
+            panic!()
+        };
+        sites.extend(page.items);
+        next = page.next_cursor;
+    }
+    assert_eq!(sites, reply.items);
+}
+
+#[test]
+fn relationship_pages_preserve_alias_progress_sites_and_retry_identity() {
+    use vvv_engine::{ContinueQuery, PageBudget, PageReply, WorkBudget};
+    for kind in [
+        RelationshipKind::Callers,
+        RelationshipKind::Callees,
+        RelationshipKind::References,
+    ] {
+        for (items, lookups, bytes) in [(1, 1, 8192), (2, 2, 2048)] {
+            let fixture = Fixture::new();
+            let expected = fixture.query(kind).execute(&fixture.engine).unwrap();
+            let mut query = fixture.query(kind);
+            query.budget.max_items = items;
+            query.budget.max_lookups = lookups;
+            query.budget.max_bytes = bytes;
+            let first = query.execute(&fixture.engine).unwrap();
+            let mut found = first.items.clone();
+            let mut next = first.next_cursor;
+            let mut total_lookups = first.coverage.lookups;
+            let mut pages = 0;
+            while let Some(cursor) = next {
+                pages += 1;
+                assert!(pages < 50);
+                let request = ContinueQuery {
+                    cursor,
+                    page: PageBudget {
+                        max_items: items,
+                        max_bytes: bytes,
+                    },
+                    work: Some(WorkBudget {
+                        max_lookups: lookups,
+                        max_files: 1,
+                    }),
+                };
+                let reply = request.clone().execute(&fixture.engine).unwrap();
+                let retry = request.execute(&fixture.engine).unwrap();
+                assert_eq!(
+                    serde_json::to_value(&reply).unwrap(),
+                    serde_json::to_value(&retry).unwrap()
+                );
+                let PageReply::Relationships(page) = reply else {
+                    panic!("wrong page kind")
+                };
+                assert!(serde_json::to_vec(&page).unwrap().len() <= bytes);
+                assert!(page.coverage.lookups <= lookups);
+                total_lookups += page.coverage.lookups;
+                found.extend(page.items);
+                next = page.next_cursor;
+                if next.is_none() {
+                    assert!(page.coverage.scan_complete);
+                }
+            }
+            assert_eq!(found, expected.items);
+            assert_eq!(total_lookups, expected.coverage.lookups);
+        }
+    }
+}
+
+#[test]
+fn incoming_context_follows_the_same_aliases_and_resumes_import_discovery() {
+    use vvv_engine::{
+        ContextPageQuery, ContextQuery, ContextRelation, ContinueQuery, PageBudget, PageReply,
+        WorkBudget,
+    };
+    let fixture = Fixture::new();
+    let origin = fixture.query(RelationshipKind::References).origin;
+    let mut query = ContextQuery::new(origin.clone());
+    query.references = true;
+    let expected = query.execute(&fixture.engine).unwrap();
+    assert!(
+        expected.items.iter().any(
+            |item| item.relation == ContextRelation::Reference && item.text.contains("alias()")
+        )
+    );
+    let first = ContextPageQuery {
+        origin,
+        selection: Default::default(),
+        detail: Default::default(),
+        references: true,
+        include_enclosing: false,
+        page: PageBudget {
+            max_items: 1,
+            max_bytes: 8192,
+        },
+        work: WorkBudget {
+            max_lookups: 1,
+            max_files: 1,
+        },
+    }
+    .execute(&fixture.engine)
+    .unwrap();
+    let mut items = first
+        .items
+        .into_iter()
+        .map(|item| item.item)
+        .collect::<Vec<_>>();
+    let mut next = first.next_cursor;
+    let mut pages = 0;
+    while let Some(cursor) = next {
+        pages += 1;
+        assert!(pages < 50);
+        let PageReply::Context(page) = (ContinueQuery {
+            cursor,
+            page: PageBudget {
+                max_items: 1,
+                max_bytes: 8192,
+            },
+            work: Some(WorkBudget {
+                max_lookups: 1,
+                max_files: 1,
+            }),
+        })
+        .execute(&fixture.engine)
+        .unwrap() else {
+            panic!()
+        };
+        items.extend(page.items.into_iter().map(|item| item.item));
+        next = page.next_cursor;
+    }
+    assert_eq!(items, expected.items);
+}
+
+#[test]
+fn relationship_continuations_reject_stale_sources_and_cancel_without_consuming_cursor() {
+    use vvv_engine::{Call, ContinueQuery, PageBudget, ReadCancellation, Request, WorkBudget};
+    let fixture = Fixture::new();
+    let mut query = fixture.query(RelationshipKind::References);
+    query.budget.max_items = 1;
+    let first = query.execute(&fixture.engine).unwrap();
+    let request = ContinueQuery {
+        cursor: first.next_cursor.unwrap(),
+        page: PageBudget::default(),
+        work: Some(WorkBudget::default()),
+    };
+    let cancellation = ReadCancellation::default();
+    cancellation.cancel();
+    let reply = Call {
+        id: None,
+        request: Request::Continue(request.clone()),
+        max_output_bytes: None,
+    }
+    .execute_with_cancellation(&fixture.engine, &cancellation);
+    assert!(
+        serde_json::to_value(reply)
+            .unwrap()
+            .to_string()
+            .contains("cancelled")
+    );
+    request.clone().execute(&fixture.engine).unwrap();
+    fixture
+        .vfs
+        .write(Path::new("/ws/a.p"), &(fixture.source + "changed"))
+        .unwrap();
+    assert!(matches!(
+        request.execute(&fixture.engine),
+        Err(EngineError::StaleQuery)
+    ));
+}
+
+#[test]
+fn incoming_discovery_scans_declared_reference_groups_without_naming_languages() {
+    let vfs = Arc::new(
+        MemoryVfs::new()
+            .with_file("/ws/package", "ws")
+            .with_file("/ws/a.p", "def work")
+            .with_file("/ws/b.q", "use a.p/work\ndef caller work")
+            .with_file("/ws/unrelated.r", "def work\ndef unrelated work"),
+    );
+    let engine = Engine::new(
+        Workspace::new("/ws", vfs),
+        Languages::new()
+            .with(Fake::new("first", &["p"]).with_reference_group("family"))
+            .with(Fake::new("second", &["q"]).with_reference_group("family"))
+            .with(Fake::new("unrelated", &["r"])),
+    );
+    let query = RelationshipsQuery::new(
+        NavigationQuery::at("a.p", Position::new(0, 4)).origin,
+        RelationshipKind::References,
+    );
+    let result = query.execute(&engine).unwrap();
+    assert_eq!(result.coverage.files_scanned, 2);
+    assert!(
+        result
+            .items
+            .iter()
+            .any(|item| item.site.path.as_path() == Path::new("b.q")
+                && matches!(item.resolution, RelationshipResolution::Confirmed { .. }))
+    );
+    assert!(
+        !result
+            .items
+            .iter()
+            .any(|item| item.site.path.as_path() == Path::new("unrelated.r"))
+    );
 }

@@ -555,11 +555,35 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "unresolved": {
         "ambiguous": 0,
         "no_container": 0,
-        "unavailable": 0
+        "unavailable": 0,
+        "unresolved_imports": 0
       },
       "work": {
         "files": 0,
         "lookups": 0
+      }
+    },
+    "schema": 1,
+    "status": "ok"
+  },
+  {
+    "result": {
+      "items": [],
+      "kind": "context",
+      "next_cursor": "cursor-7",
+      "outcome": "resolved",
+      "references_by_name": true,
+      "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
+      "traversal_complete": false,
+      "unresolved": {
+        "ambiguous": 0,
+        "no_container": 2,
+        "unavailable": 0,
+        "unresolved_imports": 0
+      },
+      "work": {
+        "files": 2,
+        "lookups": 4
       }
     },
     "schema": 1,
@@ -612,41 +636,20 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         }
       ],
       "kind": "context",
-      "next_cursor": "cursor-7",
-      "outcome": "resolved",
-      "references_by_name": true,
-      "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
-      "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 1,
-        "unavailable": 0
-      },
-      "work": {
-        "files": 2,
-        "lookups": 4
-      }
-    },
-    "schema": 1,
-    "status": "ok"
-  },
-  {
-    "result": {
-      "items": [],
-      "kind": "context",
       "next_cursor": "cursor-8",
       "outcome": "resolved",
       "references_by_name": true,
       "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
       "traversal_complete": false,
       "unresolved": {
-        "ambiguous": 1,
+        "ambiguous": 0,
         "no_container": 0,
-        "unavailable": 1
+        "unavailable": 0,
+        "unresolved_imports": 0
       },
       "work": {
-        "files": 2,
-        "lookups": 3
+        "files": 1,
+        "lookups": 4
       }
     },
     "schema": 1,
@@ -662,13 +665,235 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
       "traversal_complete": false,
       "unresolved": {
+        "ambiguous": 1,
+        "no_container": 1,
+        "unavailable": 0,
+        "unresolved_imports": 0
+      },
+      "work": {
+        "files": 1,
+        "lookups": 4
+      }
+    },
+    "schema": 1,
+    "status": "ok"
+  },
+  {
+    "result": {
+      "items": [
+        {
+          "complete": true,
+          "excerpt": {
+            "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
+            "path": "src/bindings.ts",
+            "span": {
+              "end": 394,
+              "start": 369
+            }
+          },
+          "expansion": null,
+          "relation": "reference",
+          "start": {
+            "column": 0,
+            "line": 11
+          },
+          "target": {
+            "declaration": {
+              "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
+              "path": "src/bindings.ts",
+              "span": {
+                "end": 394,
+                "start": 369
+              }
+            },
+            "kind": "type-alias",
+            "language": "typescript",
+            "name_span": {
+              "end": 381,
+              "start": 374
+            }
+          },
+          "text": "type Forward = Forwarded;",
+          "via": {
+            "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
+            "path": "src/bindings.ts",
+            "span": {
+              "end": 393,
+              "start": 384
+            }
+          }
+        }
+      ],
+      "kind": "context",
+      "next_cursor": "cursor-10",
+      "outcome": "resolved",
+      "references_by_name": true,
+      "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
+      "traversal_complete": false,
+      "unresolved": {
         "ambiguous": 0,
-        "no_container": 2,
-        "unavailable": 0
+        "no_container": 0,
+        "unavailable": 0,
+        "unresolved_imports": 2
       },
       "work": {
         "files": 2,
-        "lookups": 2
+        "lookups": 4
+      }
+    },
+    "schema": 1,
+    "status": "ok"
+  },
+  {
+    "result": {
+      "items": [
+        {
+          "complete": true,
+          "excerpt": {
+            "content": "5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af",
+            "path": "src/consumer.ts",
+            "span": {
+              "end": 133,
+              "start": 114
+            }
+          },
+          "expansion": null,
+          "relation": "reference",
+          "start": {
+            "column": 0,
+            "line": 3
+          },
+          "target": {
+            "declaration": {
+              "content": "5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af",
+              "path": "src/consumer.ts",
+              "span": {
+                "end": 133,
+                "start": 114
+              }
+            },
+            "kind": "type-alias",
+            "language": "typescript",
+            "name_span": {
+              "end": 122,
+              "start": 119
+            }
+          },
+          "text": "type App = Runtime;",
+          "via": {
+            "content": "5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af",
+            "path": "src/consumer.ts",
+            "span": {
+              "end": 132,
+              "start": 125
+            }
+          }
+        }
+      ],
+      "kind": "context",
+      "next_cursor": "cursor-11",
+      "outcome": "resolved",
+      "references_by_name": true,
+      "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
+      "traversal_complete": false,
+      "unresolved": {
+        "ambiguous": 0,
+        "no_container": 1,
+        "unavailable": 1,
+        "unresolved_imports": 0
+      },
+      "work": {
+        "files": 1,
+        "lookups": 4
+      }
+    },
+    "schema": 1,
+    "status": "ok"
+  },
+  {
+    "result": {
+      "items": [
+        {
+          "complete": true,
+          "excerpt": {
+            "content": "5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af",
+            "path": "src/consumer.ts",
+            "span": {
+              "end": 279,
+              "start": 265
+            }
+          },
+          "expansion": null,
+          "relation": "reference",
+          "start": {
+            "column": 16,
+            "line": 7
+          },
+          "target": {
+            "declaration": {
+              "content": "5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af",
+              "path": "src/consumer.ts",
+              "span": {
+                "end": 279,
+                "start": 265
+              }
+            },
+            "kind": "field",
+            "language": "typescript",
+            "name_span": {
+              "end": 270,
+              "start": 265
+            }
+          },
+          "text": "value: Runtime",
+          "via": {
+            "content": "5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af",
+            "path": "src/consumer.ts",
+            "span": {
+              "end": 279,
+              "start": 272
+            }
+          }
+        }
+      ],
+      "kind": "context",
+      "next_cursor": "cursor-12",
+      "outcome": "resolved",
+      "references_by_name": true,
+      "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
+      "traversal_complete": false,
+      "unresolved": {
+        "ambiguous": 0,
+        "no_container": 0,
+        "unavailable": 0,
+        "unresolved_imports": 0
+      },
+      "work": {
+        "files": 2,
+        "lookups": 4
+      }
+    },
+    "schema": 1,
+    "status": "ok"
+  },
+  {
+    "result": {
+      "items": [],
+      "kind": "context",
+      "next_cursor": "cursor-13",
+      "outcome": "resolved",
+      "references_by_name": true,
+      "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
+      "traversal_complete": false,
+      "unresolved": {
+        "ambiguous": 0,
+        "no_container": 2,
+        "unavailable": 0,
+        "unresolved_imports": 0
+      },
+      "work": {
+        "files": 2,
+        "lookups": 4
       }
     },
     "schema": 1,
@@ -721,7 +946,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         }
       ],
       "kind": "context",
-      "next_cursor": "cursor-10",
+      "next_cursor": "cursor-14",
       "outcome": "resolved",
       "references_by_name": true,
       "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
@@ -729,11 +954,12 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "unresolved": {
         "ambiguous": 0,
         "no_container": 0,
-        "unavailable": 0
+        "unavailable": 0,
+        "unresolved_imports": 0
       },
       "work": {
         "files": 2,
-        "lookups": 4
+        "lookups": 3
       }
     },
     "schema": 1,
@@ -751,7 +977,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "unresolved": {
         "ambiguous": 0,
         "no_container": 0,
-        "unavailable": 0
+        "unavailable": 0,
+        "unresolved_imports": 0
       },
       "work": {
         "files": 2,

@@ -47,6 +47,7 @@ impl Default for Tsx {
             grammar::GRAMMAR,
             &grammar::SEMANTICS,
         )
+        .with_reference_group(TypeScript::ID)
         .with_navigation_syntax(crate::syntax::NavigationSyntax::TypeScript)
         .with_layout(TsLayout)
         .with_surgery(TsSurgery)

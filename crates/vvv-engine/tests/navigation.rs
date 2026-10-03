@@ -616,6 +616,43 @@ fn cross_file_alias_cycles_remain_unavailable_without_hanging() {
 }
 
 #[test]
+fn branching_import_cycles_have_a_total_work_bound_and_do_not_block_incoming_scans() {
+    let f = Fixture::new(&[
+        ("root.p", "def Foo"),
+        ("use.p", "use cycle0.p::alias as local\nlocal::Other"),
+    ]);
+    for index in 0..12 {
+        let next = (index + 1) % 12;
+        f.vfs
+            .write(
+                &Path::new("/ws").join(format!("cycle{index}.p")),
+                &format!(
+                    "pub use cycle{next}.p::alias as alias\npub use cycle{next}.p::alias as alias"
+                ),
+            )
+            .unwrap();
+    }
+    assert!(matches!(
+        NavigationQuery::at("use.p", Position::new(1, 7)).execute(&f.engine),
+        Err(vvv_engine::EngineError::NavigationLimit)
+    ));
+    let mut query = vvv_engine::RelationshipsQuery::new(
+        NavigationQuery::at("root.p", Position::new(0, 4)).origin,
+        vvv_engine::RelationshipKind::References,
+    );
+    query.scope.paths = vec!["use.p".into()];
+    let reply = query.execute(&f.engine).unwrap();
+    assert_eq!(reply.coverage.unresolved_imports, 1);
+    assert!(reply.items.is_empty());
+    assert!(reply.next_cursor.is_none());
+    let mut context =
+        vvv_engine::ContextQuery::new(NavigationQuery::at("root.p", Position::new(0, 4)).origin);
+    context.references = true;
+    let reply = context.execute(&f.engine).unwrap();
+    assert!(reply.omissions.unresolved_imports > 0);
+}
+
+#[test]
 fn navigation_revalidates_an_alias_provider_inside_a_trusted_graph() {
     let mut f = Fixture::new(&[
         ("a.p", "pub def Foo"),

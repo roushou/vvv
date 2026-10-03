@@ -1,4 +1,5 @@
 //! Bounded, evidence-bearing context for one exact symbol. No semantic service required.
+use super::incoming::{DiscoveryWork, IncomingReferences};
 use crate::graph::Graph;
 use crate::{
     ContentId, Engine, EngineError, NavigationOrigin, NavigationOutcome, NavigationQuery,
@@ -86,7 +87,7 @@ pub struct ContextBudget {
     pub max_items: usize,
     #[cfg_attr(feature = "schema", schemars(range(min = 1, max = Self::MAX_LOOKUPS)))]
     pub max_lookups: usize,
-    /// Maximum source files examined for incoming same-spelling references.
+    /// Maximum source files examined for incoming written-name and named-alias references.
     #[cfg_attr(feature = "schema", schemars(range(min = 1, max = Self::MAX_FILES)))]
     pub max_files: usize,
 }
@@ -140,7 +141,7 @@ pub struct ContextQuery {
     pub selection: Selection,
     #[serde(default)]
     pub budget: ContextBudget,
-    /// Include incoming references with this exact spelling, validated by navigation.
+    /// Include incoming written-name and named-import-alias references, validated by navigation.
     #[serde(default)]
     pub references: bool,
     /// Include the enclosing declaration at the requested detail as a separate item.
@@ -254,7 +255,8 @@ impl ContextQuery {
                     }
                 }
                 if self.references {
-                    let files = graph.files(Some(&target.language));
+                    let files = graph
+                        .relationship_files(&target.language, &crate::SearchScope::default())?;
                     context.omissions.file_limit =
                         files.len().saturating_sub(self.budget.max_files);
                     for file in files.into_iter().take(self.budget.max_files) {
@@ -262,12 +264,30 @@ impl ContextQuery {
                             path: file.path().into(),
                             content: file.file().content_id(),
                         });
-                        for (span, _) in file.facts()?.tokens_named(&name) {
-                            if file.path() == target.declaration.path.as_path()
-                                && span == target.name_span
-                            {
-                                continue;
-                            }
+                        let mut incoming = IncomingReferences::new(&file, &name, false)?;
+                        let mut discovery = DiscoveryWork {
+                            lookups,
+                            max_lookups: self.budget.max_lookups,
+                            unresolved_imports: 0,
+                        };
+                        let ready = incoming.prepare(
+                            graph,
+                            &file,
+                            &target,
+                            &mut discovery,
+                            &mut observed,
+                        )?;
+                        lookups = discovery.lookups;
+                        context.omissions.unresolved_imports += discovery.unresolved_imports;
+                        if !ready {
+                            context.omissions.lookup_limit += 1;
+                            break;
+                        }
+                        for (_, _, span) in file.facts()?.tokens().filter(|(name, _, span)| {
+                            incoming.names().contains(*name)
+                                && !(file.path() == target.declaration.path.as_path()
+                                    && *span == target.name_span)
+                        }) {
                             if lookups == self.budget.max_lookups {
                                 context.omissions.lookup_limit += 1;
                                 continue;
@@ -326,7 +346,7 @@ pub struct ContextReply {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub enclosing: Option<SymbolRef>,
     pub omissions: ContextOmissions,
-    /// Incoming scanning covers this spelling only, not every possible alias.
+    /// Incoming scanning follows written names and resolvable named import aliases, without runtime inference.
     pub references_by_name: bool,
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -379,6 +399,8 @@ pub struct ContextOmissions {
     pub ambiguous: usize,
     pub unavailable: usize,
     pub no_container: usize,
+    #[serde(default)]
+    pub unresolved_imports: usize,
 }
 impl ContextOmissions {
     fn resolution(&mut self, outcome: &NavigationOutcome) {
@@ -526,8 +548,28 @@ impl crate::report::Document {
             }
         }
         let omissions = &reply.omissions;
-        if *omissions != ContextOmissions::default() {
+        if [
+            omissions.item_limit,
+            omissions.byte_limit,
+            omissions.lookup_limit,
+            omissions.file_limit,
+            omissions.ambiguous,
+            omissions.unavailable,
+            omissions.no_container,
+        ]
+        .iter()
+        .any(|count| *count != 0)
+        {
             doc.notes([Line::single(Role::Dim, format!("Omitted: {} item limit, {} byte limit, {} lookup limit, {} file limit, {} ambiguous, {} unavailable, {} without a declaration", omissions.item_limit, omissions.byte_limit, omissions.lookup_limit, omissions.file_limit, omissions.ambiguous, omissions.unavailable, omissions.no_container))]);
+        }
+        if omissions.unresolved_imports > 0 {
+            doc.notes([Line::single(
+                Role::Dim,
+                format!(
+                    "{} import bindings could not be resolved during reference discovery",
+                    omissions.unresolved_imports
+                ),
+            )]);
         }
         doc
     }
@@ -590,6 +632,8 @@ pub struct ContextUnresolved {
     pub ambiguous: usize,
     pub unavailable: usize,
     pub no_container: usize,
+    #[serde(default)]
+    pub unresolved_imports: usize,
 }
 impl ContextUnresolved {
     fn resolution(&mut self, outcome: &NavigationOutcome) {
@@ -623,7 +667,7 @@ pub(crate) struct ContextSession {
     initial: usize,
     outgoing: usize,
     file: usize,
-    token: usize,
+    incoming: Option<IncomingReferences>,
     seen: Vec<SymbolRef>,
     pending: Option<ContextPending>,
 }
@@ -730,7 +774,7 @@ impl ContextSeed {
                     .collect();
                 if query.references {
                     seed.incoming = graph
-                        .files(Some(&target.language))
+                        .relationship_files(&target.language, &crate::SearchScope::default())?
                         .iter()
                         .map(|f| f.path().into())
                         .collect();
@@ -787,23 +831,50 @@ impl ContextSession {
                     *charged_file = Some(self.file);
                 }
                 let file = graph.file(&seed.incoming[self.file])?;
-                let tokens: Vec<_> = file.facts()?.tokens_named(&seed.name).collect();
                 let original = seed.target.as_ref().expect("resolved context");
-                if self.token == tokens.len() {
+                if self.incoming.is_none() {
+                    self.incoming = Some(IncomingReferences::new(&file, &seed.name, false)?);
+                }
+                let incoming = self.incoming.as_mut().expect("current file discovery");
+                let mut discovery = DiscoveryWork {
+                    lookups: page.work.lookups,
+                    max_lookups: budget.max_lookups,
+                    unresolved_imports: 0,
+                };
+                let ready =
+                    incoming.prepare(graph, &file, original, &mut discovery, &mut vec![])?;
+                page.work.lookups = discovery.lookups;
+                page.unresolved.unresolved_imports += discovery.unresolved_imports;
+                if !ready {
+                    break;
+                }
+                if incoming.sites.is_none() {
+                    incoming.sites = Some(
+                        file.facts()?
+                            .tokens()
+                            .filter(|(name, _, span)| {
+                                incoming.names().contains(*name)
+                                    && !(file.path() == original.declaration.path.as_path()
+                                        && *span == original.name_span)
+                            })
+                            .map(|(_, _, span)| span)
+                            .collect(),
+                    );
+                }
+                let Some(&span) = incoming
+                    .sites
+                    .as_ref()
+                    .expect("discovered sites")
+                    .get(incoming.site)
+                else {
                     self.file += 1;
-                    self.token = 0;
+                    self.incoming = None;
                     continue;
-                }
-                let (span, _) = tokens[self.token];
-                if file.path() == original.declaration.path.as_path() && span == original.name_span
-                {
-                    self.token += 1;
-                    continue;
-                }
+                };
                 if page.work.lookups == budget.max_lookups {
                     break;
                 }
-                self.token += 1;
+                incoming.site += 1;
                 page.work.lookups += 1;
                 let anchor = SourceAnchor {
                     path: file.path().into(),
@@ -976,6 +1047,7 @@ impl crate::report::Document {
                 ambiguous: page.unresolved.ambiguous,
                 unavailable: page.unresolved.unavailable,
                 no_container: page.unresolved.no_container,
+                unresolved_imports: page.unresolved.unresolved_imports,
                 ..Default::default()
             },
             references_by_name: page.references_by_name,

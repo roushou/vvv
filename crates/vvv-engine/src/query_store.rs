@@ -2,6 +2,7 @@
 use crate::capabilities::{
     context::{ContextSeed, ContextSession},
     excerpts::Excerpt,
+    relationships::{RelationshipSeed, RelationshipSession},
     search::SearchSession,
 };
 use crate::graph::query_snapshot::QuerySnapshot;
@@ -35,11 +36,13 @@ impl Default for QueryLimits {
 pub(crate) enum QueryData {
     Search(Search),
     Context(ContextSeed),
+    Relationships(RelationshipSeed),
 }
 #[derive(Debug, Clone, Serialize)]
 pub(crate) enum Checkpoint {
     Search(SearchSession),
     Context(ContextSession),
+    Relationships(RelationshipSession),
     Excerpt(Excerpt),
 }
 impl Checkpoint {
