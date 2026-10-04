@@ -1,4 +1,4 @@
-//! What a search answers with: a [`RawMatch`] tied to its file as a
+//! What a search answers with: a [`vvv_core::RawMatch`] tied to its file as a
 //! [`Match`] with a stable [`MatchId`], and, for a rename, each occurrence
 //! judged against the declaration meant.
 
@@ -8,9 +8,7 @@ use std::fmt;
 use vvv_core::RelPath;
 
 use serde::{Deserialize, Serialize};
-use vvv_core::{Address, CaptureValue, LanguageId, Position, RawMatch, Role, Span, Symbol};
-
-use crate::SourceFile;
+use vvv_core::{Address, CaptureValue, LanguageId, Position, Role, Span, Symbol};
 
 /// How sure a rename is that an occurrence refers to its target declaration.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
@@ -185,31 +183,6 @@ pub struct Match {
 }
 
 impl Match {
-    pub fn locate(raw: RawMatch, file: &SourceFile, language: LanguageId) -> Self {
-        let source = file.source();
-        let start = source.position(raw.span.start);
-        let path = RelPath::from(file.path());
-        Self {
-            content: Some(file.content_id()),
-            id: MatchId::derive(&path, raw.span, &raw.text),
-            path,
-            language,
-            span: raw.span,
-            start,
-            end: source.position(raw.span.end),
-            line: source
-                .line(start.line as usize)
-                .unwrap_or_default()
-                .to_owned(),
-            kind: raw.kind,
-            text: raw.text,
-            captures: raw.captures,
-            symbol: raw.symbol,
-            role: raw.role,
-            address: None,
-        }
-    }
-
     /// Compare source-derived search data, excluding the resolved address
     /// that the graph may attach after searching.
     pub(crate) fn same_source_match(&self, other: &Self) -> bool {

@@ -21,9 +21,9 @@ pub use planned::Planned;
 pub use receipt::Receipt;
 pub(crate) use transaction::Transaction;
 
-use crate::{VfsError, Workspace};
-use vvv_core::ChangeSet;
-use vvv_core::RelPath;
+use crate::protocol::Diff;
+use crate::{FileChange, VfsError, Workspace};
+use vvv_core::{ChangeSet, Edit, RelPath};
 
 #[derive(Debug, thiserror::Error)]
 pub enum ApplyError {
@@ -61,10 +61,6 @@ impl Plan {
         }
     }
 
-    pub fn change_set(&self) -> &ChangeSet {
-        &self.change_set
-    }
-
     pub fn is_empty(&self) -> bool {
         self.change_set.is_empty()
     }
@@ -73,6 +69,15 @@ impl Plan {
         Ok(Preview {
             files: self.stage(workspace)?,
         })
+    }
+
+    /// A single plan's preview carries edits in that plan's source coordinates.
+    pub(crate) fn file_changes(&self, preview: &Preview) -> Vec<FileChange> {
+        preview
+            .files
+            .iter()
+            .map(|file| file.file_change(self.change_set.edits_for(&file.path).to_vec()))
+            .collect()
     }
 
     pub fn apply(self, workspace: &Workspace) -> Result<Receipt, crate::EngineError> {
@@ -125,6 +130,17 @@ pub struct Preview {
     pub files: Vec<FilePreview>,
 }
 
+impl Preview {
+    /// A combined preview has whole-file diffs. Its steps own their edits,
+    /// each in the coordinates of the source before that step.
+    pub(crate) fn file_changes(&self) -> Vec<FileChange> {
+        self.files
+            .iter()
+            .map(|file| file.file_change(Vec::new()))
+            .collect()
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct FilePreview {
     /// Path before the plan runs.
@@ -133,6 +149,22 @@ pub struct FilePreview {
     pub moved_to: Option<RelPath>,
     pub before: String,
     pub after: String,
+}
+
+impl FilePreview {
+    fn file_change(&self, edits: Vec<Edit>) -> FileChange {
+        FileChange {
+            path: self.path.clone(),
+            moved_to: self.moved_to.clone(),
+            edits,
+            diff: Diff::between(
+                &self.path,
+                self.moved_to.as_deref().unwrap_or(&self.path),
+                &self.before,
+                &self.after,
+            ),
+        }
+    }
 }
 
 #[cfg(test)]

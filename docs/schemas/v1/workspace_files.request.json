@@ -1,0 +1,22 @@
+{
+  "$defs": {
+    "WorkspaceFilesQuery": {
+      "description": "The workspace's visible files, independent of registered languages.",
+      "type": "object"
+    }
+  },
+  "$id": "urn:vvv:schema:1:workspace_files:request:7f4b365bffe2466c973fa5769bb8456be062eeb4b9063136dceafaf2d14245ef",
+  "$ref": "#/$defs/WorkspaceFilesQuery",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "command": {
+      "const": "workspace_files",
+      "type": "string"
+    }
+  },
+  "required": [
+    "command"
+  ],
+  "title": "workspace_files request",
+  "type": "object"
+}

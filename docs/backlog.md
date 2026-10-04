@@ -36,18 +36,13 @@ map them to `EngineError` and `Failure` at the boundary. Cover a language with
 Layout but no Surgery using the shared Fake, and specify any public variant or
 wire-code changes.
 
-## Source and preview ownership
+## Namespace capability ownership
 
-[Match::locate](../crates/vvv-engine/src/protocol/search.rs) takes a `SourceFile`
-and derives coordinates inside a wire module; `Candidate` owns the file and
-language needed for this construction.
-[FileChange::all](../crates/vvv-engine/src/protocol/result.rs) depends on `Plan`
-and `FilePreview`; its construction belongs with those lifecycle types.
 [Namespace](../crates/vvv-engine/src/graph/namespace.rs) relies on Graph checking
 for a Layout and then re-fetches it with `expect`. Its constructor should retain
 the required capability explicitly. The checked caller prevents a demonstrated
 panic, but the type does not encode that precondition. Preserve behavior and wire
-shapes when transferring these responsibilities.
+shapes when encoding this capability requirement.
 
 ## Composition and default ownership
 

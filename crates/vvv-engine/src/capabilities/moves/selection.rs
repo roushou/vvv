@@ -106,7 +106,7 @@ impl SymbolMoveCandidate {
         );
         raw.symbol = Some(symbol.clone());
         raw.role = Role::Declaration;
-        let declaration = Match::locate(raw, source.file(), source.language());
+        let declaration = source.locate(raw);
         let facts = source.facts()?;
         let evidence = facts
             .declaration_pieces

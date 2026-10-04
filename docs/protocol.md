@@ -10,6 +10,11 @@ exported at the crate root. See [architecture.md](architecture.md) for Rust impo
 paths. A Rust client needs only `vvv-engine`. This page specifies serialization. Field order is not significant. Optional fields follow the per-command contracts
 below; completion handles are null or absent as specified for each command.
 
+Workspace paths use `RelPath` strings with `/` separators. Input normalizes the
+host's separator: on Windows, `src\lib.rs` becomes `src/lib.rs`; on Unix, a
+backslash is a literal filename character and is preserved. Deserialization and
+Rust constructors use the same policy; output uses the stored spelling.
+
 ## Envelope
 
 ```json

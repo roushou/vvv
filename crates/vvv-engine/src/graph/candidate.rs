@@ -5,9 +5,9 @@ use std::path::Path;
 use std::sync::{Arc, OnceLock, RwLock};
 
 use super::{Declared, Fragment, Namespace, Scope};
-use crate::{Match, Placed, SourceFile};
+use crate::{Match, MatchId, Placed, RelPath, SourceFile};
 
-use vvv_core::{Facts, Language, LanguageId, Project, Query, SearchError};
+use vvv_core::{Facts, Language, LanguageId, Project, Query, RawMatch, SearchError};
 
 use crate::EngineError;
 
@@ -181,7 +181,7 @@ impl Candidate {
             .file()
             .find(self.source.language.as_ref(), query)
             .map_err(|source| self.failed(source))?;
-        Ok(self.locate(raw))
+        Ok(raw.into_iter().map(|raw| self.locate(raw)).collect())
     }
 
     /// Retained or client-supplied matches must still describe this snapshot
@@ -216,16 +216,37 @@ impl Candidate {
         Ok(facts
             .tokens_named(name)
             .map(|(span, kind)| {
-                let raw = vvv_core::RawMatch::plain(span, kind, &self.text()[span.start..span.end]);
-                Match::locate(raw, &self.source.file, self.source.language.id())
+                let raw = RawMatch::plain(span, kind, &self.text()[span.start..span.end]);
+                self.locate(raw)
             })
             .collect())
     }
 
-    fn locate(&self, raw: Vec<vvv_core::RawMatch>) -> Vec<Match> {
-        raw.into_iter()
-            .map(|r| Match::locate(r, &self.source.file, self.source.language.id()))
-            .collect()
+    /// Tie a match with validated source ranges to this candidate's snapshot.
+    pub(crate) fn locate(&self, raw: RawMatch) -> Match {
+        let file = self.file();
+        let source = file.source();
+        let start = source.position(raw.span.start);
+        let path = RelPath::from(file.path());
+        Match {
+            content: Some(file.content_id()),
+            id: MatchId::derive(&path, raw.span, &raw.text),
+            path,
+            language: self.language(),
+            span: raw.span,
+            start,
+            end: source.position(raw.span.end),
+            line: source
+                .line(start.line as usize)
+                .unwrap_or_default()
+                .to_owned(),
+            kind: raw.kind,
+            text: raw.text,
+            captures: raw.captures,
+            symbol: raw.symbol,
+            role: raw.role,
+            address: None,
+        }
     }
 
     fn failed(&self, source: SearchError) -> EngineError {

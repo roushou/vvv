@@ -117,15 +117,17 @@ impl fmt::Debug for Name {
 /// It reads as a [`Path`] (an OS path is made from one at the edge, where a
 /// file is actually read), but it cannot spell a separator the host's way:
 /// `Display`, serde and the stored bytes are always `/`.
-#[derive(Clone, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Clone, Default, PartialEq, Eq, Hash, PartialOrd, Ord, Serialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
 #[serde(transparent)]
 pub struct RelPath(String);
 
 impl RelPath {
     /// Whatever the host spells a path with, a workspace path is `/`.
+    /// Constructors and deserialization normalize host separators alike;
+    /// literal backslashes in Unix filenames are preserved.
     pub fn new(path: &Path) -> Self {
-        Self(Self::separators(path.display().to_string()))
+        Self::from(path.display().to_string())
     }
 
     pub fn as_str(&self) -> &str {
@@ -234,13 +236,19 @@ impl From<&RelPath> for RelPath {
 
 impl From<&str> for RelPath {
     fn from(path: &str) -> Self {
-        Self(RelPath::separators(path.to_owned()))
+        Self::from(path.to_owned())
     }
 }
 
 impl From<String> for RelPath {
     fn from(path: String) -> Self {
         Self(RelPath::separators(path))
+    }
+}
+
+impl<'de> Deserialize<'de> for RelPath {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        String::deserialize(deserializer).map(Self::from)
     }
 }
 
@@ -614,6 +622,47 @@ mod tests {
         let native = PathBuf::from("a").join("b.rs");
         assert_eq!(RelPath::new(&native).as_str(), "a/b.rs");
         assert_eq!(RelPath::from(&native).to_string(), "a/b.rs");
+    }
+
+    #[test]
+    fn workspace_path_wire_round_trip_uses_the_constructor_policy() {
+        let native = PathBuf::from("src").join("café").join("lib.rs");
+        let native_text = native.to_str().unwrap();
+        let wire = serde_json::to_string(native_text).unwrap();
+        let decoded: RelPath = serde_json::from_str(&wire).unwrap();
+        assert_eq!(decoded, RelPath::new(&native));
+        assert_eq!(decoded.as_str(), "src/café/lib.rs");
+        assert_eq!(decoded.as_path(), native.as_path());
+        assert_eq!(
+            serde_json::to_string(&decoded).unwrap(),
+            serde_json::to_string("src/café/lib.rs").unwrap()
+        );
+        let again: RelPath =
+            serde_json::from_str(&serde_json::to_string(&decoded).unwrap()).unwrap();
+        assert_eq!(again, decoded);
+    }
+
+    #[cfg(windows)]
+    #[test]
+    fn workspace_paths_normalize_mixed_windows_separators_on_input() {
+        let text = r"src\nested/café\lib.rs";
+        let decoded: RelPath = serde_json::from_str(&serde_json::to_string(text).unwrap()).unwrap();
+        assert_eq!(decoded, RelPath::from(text));
+        assert_eq!(decoded.as_str(), "src/nested/café/lib.rs");
+        assert_eq!(decoded.short(), "café/lib.rs");
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn workspace_paths_preserve_literal_backslashes_in_unix_filenames() {
+        let native = Path::new(r"src/name\part.rs");
+        let decoded: RelPath =
+            serde_json::from_str(&serde_json::to_string(native.to_str().unwrap()).unwrap())
+                .unwrap();
+        assert_eq!(decoded, RelPath::new(native));
+        assert_eq!(decoded.as_path(), native);
+        assert_eq!(decoded.as_str(), r"src/name\part.rs");
+        assert_eq!(decoded.short(), r"src/name\part.rs");
     }
 
     #[test]

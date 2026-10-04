@@ -362,6 +362,12 @@ mutation types are `vvv_engine::Rename`, `vvv_engine::RenameIntent`,
 owning modules; `protocol` provides no aliases for them. Data and serialization
 code do not access `Workspace`.
 
+`Candidate` constructs located `Match` values from its source snapshot and
+language. `Plan` constructs `FileChange` values with its edits; a combined
+`Preview` constructs whole-file changes without combining edits from different
+step coordinates. These constructors live with their source and lifecycle
+owners; the wire types remain independent of those owners.
+
 Query types are available at both crate-root and `protocol::` public paths,
 while the six mutation types above are root-only. This public-path inconsistency
 is tracked in [backlog.md](backlog.md#api-path-unification); Rust import paths are
@@ -947,6 +953,10 @@ touched source. Insertions at a replacement's start precede that replacement;
 coincident insertions retain their insertion order. `ChangeSet::apply_to` checks
 source bounds and UTF-8 boundaries and returns a typed error before storage is
 touched. These checks also apply to language facts used for previews and move side edits.
+
+`RelPath` constructors and deserialization share one normalization policy:
+host separators become `/`, while literal backslashes in Unix filenames remain
+filename characters. Serialization uses that stored spelling.
 
 Rewrite expands captures from the candidate that supplied the matches. `RewriteOf`
 revalidates selected retained matches and captures against a candidate before using

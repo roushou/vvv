@@ -59,9 +59,14 @@ impl<T: Mutation> Planned<T> {
         let mut bound = change.bind()?;
         let change_set = std::mem::take(&mut bound.change_set);
         let plan = Plan::new(change_set);
-        let preview = plan.preview(workspace)?.files;
-        let files = FileChange::all(Some(&plan), &preview);
-        Ok(Self::new(intent, result(bound, files), vec![plan], preview))
+        let preview = plan.preview(workspace)?;
+        let files = plan.file_changes(&preview);
+        Ok(Self::new(
+            intent,
+            result(bound, files),
+            vec![plan],
+            preview.files,
+        ))
     }
 
     pub(crate) fn new(

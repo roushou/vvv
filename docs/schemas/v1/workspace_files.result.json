@@ -1,0 +1,23 @@
+{
+  "$defs": {
+    "RelPath": {
+      "description": "A file's path inside the workspace, spelled the way the project does: `/`\non every platform.\n\nA workspace path is a project path — like a `mod` path or a\n`crate::a::b` address — not a path of the machine, so it carries its own\nspelling and is what goes on the wire, into a row, or into a diagnostic.\nIt reads as a [`Path`] (an OS path is made from one at the edge, where a\nfile is actually read), but it cannot spell a separator the host's way:\n`Display`, serde and the stored bytes are always `/`.",
+      "type": "string"
+    }
+  },
+  "$id": "urn:vvv:schema:1:workspace_files:result:82c1866a377174dc0bea166f6e0b3d1af1134024e25156eb8179415342c81506",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "properties": {
+    "paths": {
+      "items": {
+        "$ref": "#/$defs/RelPath"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "paths"
+  ],
+  "title": "workspace_files result",
+  "type": "object"
+}

@@ -1328,7 +1328,7 @@ impl Navigation<'_, '_> {
         );
         raw.symbol = Some(symbol.clone());
         raw.role = Role::Declaration;
-        Ok(Match::locate(raw, file.file(), file.language()))
+        Ok(file.locate(raw))
     }
 
     fn resolved(

@@ -32,6 +32,7 @@
         "impact",
         "dead",
         "imports",
+        "workspace_files",
         "file",
         "rewrite",
         "rename",
@@ -77,7 +78,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:schema:request:9a02fef3e8e3123f167b3fa93914e002324abb9e0cb5062d8b69edff7aaab0ce",
+  "$id": "urn:vvv:schema:1:schema:request:cb20b064a74d1247daab3b47f4be8299b5ea8aa62890b0cac4c5bdc4f170ad91",
   "$ref": "#/$defs/SchemaQuery",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "properties": {

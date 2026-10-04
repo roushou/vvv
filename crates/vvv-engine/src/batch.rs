@@ -3,6 +3,7 @@
 //! all are applied in order as one transaction with one receipt — one
 //! preview, one apply, one undo.
 
+use crate::plan::Preview;
 use crate::protocol::vocabulary::IntentLine;
 use crate::report::{Block, Document, MoveCounts};
 use serde::{Deserialize, Serialize};
@@ -108,7 +109,8 @@ impl BatchIntent {
                 .collect::<Result<_, VfsError>>()?,
             None => Vec::new(),
         };
-        let files = FileChange::all(None, &preview);
+        let preview = Preview { files: preview };
+        let files = preview.file_changes();
         Ok(Planned::new(
             Intent::Batch(self.clone()),
             Batch {
@@ -118,7 +120,7 @@ impl BatchIntent {
                 files,
             },
             steps,
-            preview,
+            preview.files,
         ))
     }
 }

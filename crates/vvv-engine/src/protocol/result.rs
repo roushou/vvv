@@ -11,7 +11,6 @@ use super::{Intent, Notice};
 use crate::batch::Batch;
 use crate::capabilities::moves::{Move, MoveSymbol};
 use crate::capabilities::rename::Rename;
-use crate::plan::{FilePreview, Plan};
 use crate::rewrite::Rewrite;
 
 /// The lifecycle of a mutation result, with a history id exactly when applied.
@@ -158,28 +157,6 @@ pub struct FileChange {
     pub moved_to: Option<RelPath>,
     pub edits: Vec<Edit>,
     pub diff: Diff,
-}
-
-impl FileChange {
-    /// One entry per previewed file, with the plan's edits for it when a
-    /// single plan made them (a batch's belong to its steps).
-    pub(crate) fn all(plan: Option<&Plan>, preview: &[FilePreview]) -> Vec<Self> {
-        preview
-            .iter()
-            .map(|file| FileChange {
-                path: file.path.clone(),
-                moved_to: file.moved_to.clone(),
-                edits: plan
-                    .map_or_else(Vec::new, |p| p.change_set().edits_for(&file.path).to_vec()),
-                diff: Diff::between(
-                    &file.path,
-                    file.moved_to.as_deref().unwrap_or(&file.path),
-                    &file.before,
-                    &file.after,
-                ),
-            })
-            .collect()
-    }
 }
 
 /// The closed set of mutation payloads an executable plan can carry.

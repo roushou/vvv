@@ -4,6 +4,10 @@ This guide covers how each command decides what to touch, what the marks in the 
 mean, and where the edges are. For the full list of flags, `vvv <command> --help` is
 always current.
 
+Workspace paths are shown with `/` separators. Windows path input accepts `\`
+as well; on Unix, literal backslashes in filenames are preserved. JSON requests
+use the same path policy as the CLI.
+
 ## Reading the output
 
 Every command draws from the same small set of marks, so once you know them you can

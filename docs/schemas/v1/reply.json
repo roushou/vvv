@@ -112,6 +112,9 @@
           "$ref": "#/$defs/ImportsReport"
         },
         {
+          "$ref": "#/$defs/WorkspaceFiles"
+        },
+        {
           "$ref": "#/$defs/File"
         },
         {
@@ -5214,6 +5217,20 @@
       ],
       "type": "object"
     },
+    "WorkspaceFiles": {
+      "properties": {
+        "paths": {
+          "items": {
+            "$ref": "#/$defs/RelPath"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "paths"
+      ],
+      "type": "object"
+    },
     "context": {
       "oneOf": [
         {
@@ -5360,7 +5377,7 @@
       "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:session:reply:465de5b1331ed1128138444468fc3918435d03d70b62ee86557376b65e1c4512",
+  "$id": "urn:vvv:schema:1:session:reply:efd13674ca624d368b750786a02dd331f443fb4743b5fc72232f547d2ced023e",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "The reply to a [`Call`]: its `id`, then the usual envelope.",
   "oneOf": [

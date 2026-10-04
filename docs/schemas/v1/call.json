@@ -72,6 +72,7 @@
         "impact",
         "dead",
         "imports",
+        "workspace_files",
         "file",
         "rewrite",
         "rename",
@@ -1158,9 +1159,13 @@
         }
       },
       "type": "object"
+    },
+    "WorkspaceFilesQuery": {
+      "description": "The workspace's visible files, independent of registered languages.",
+      "type": "object"
     }
   },
-  "$id": "urn:vvv:schema:1:session:call:8c9a2b0af1b7662d6963e0a52ad7234c658cf2b2a123f7e797a329de09f074f3",
+  "$id": "urn:vvv:schema:1:session:call:d72a5f1e5be36912d63da1838fe85de8b35e738e4b26db432431dcfc71c247d6",
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "description": "A request on a session's wire (`vvv serve`): the request with whatever\n`id` the caller chose, echoed on the [`Reply`].",
   "oneOf": [
@@ -1778,6 +1783,19 @@
       "properties": {
         "command": {
           "const": "imports",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "type": "object"
+    },
+    {
+      "$ref": "#/$defs/WorkspaceFilesQuery",
+      "properties": {
+        "command": {
+          "const": "workspace_files",
           "type": "string"
         }
       },
