@@ -193,7 +193,7 @@ mod tests {
             .unwrap();
         assert!(matches!(change.merge(other), Err(ApplyError::Stale { .. })));
         let (cs, fingerprints) = change.bind().unwrap().change_set.into_parts();
-        assert_eq!(cs.apply_to(Path::new("a.p"), "old"), "kept");
+        assert_eq!(cs.apply_to(Path::new("a.p"), "old").unwrap(), "kept");
         assert_eq!(cs.paths().collect::<Vec<_>>(), [Path::new("a.p")]);
         assert_eq!(fingerprints.len(), 1);
     }

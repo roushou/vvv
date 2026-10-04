@@ -8,4 +8,4 @@ mod span;
 pub use line_index::LineIndex;
 pub use position::Position;
 pub use source_text::SourceText;
-pub use span::Span;
+pub use span::{Span, SpanError};

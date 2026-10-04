@@ -1,5 +1,6 @@
 mod common;
 use common::Fake;
+use common::fixture::EngineFixture;
 use std::path::Path;
 use std::sync::Arc;
 use vvv_engine::{
@@ -37,13 +38,17 @@ impl Fixture {
 
 #[test]
 fn imports_resolve_the_exact_occurrence_despite_duplicate_names() {
-    let f = Fixture::new(&[
-        ("a.p", "def Engine"),
-        ("other.p", "def Engine"),
-        ("use.p", "use a.p/Engine\nEngine"),
-    ]);
-    for (line, column) in [(0, 8), (1, 0)] {
-        let reply = f.at("use.p", line, column);
+    for source in ["use a.p/$0Engine\nEngine", "use a.p/Engine\n$0Engine"] {
+        let f = EngineFixture::marked(&[
+            ("package", "ws"),
+            ("a.p", "def Engine"),
+            ("other.p", "def Engine"),
+            ("use.p", source),
+        ])
+        .retaining(Retention::session());
+        let reply = NavigationQuery::at("use.p", f.cursor("use.p"))
+            .execute(&f.engine)
+            .unwrap();
         let NavigationOutcome::Resolved {
             target,
             preview,

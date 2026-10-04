@@ -236,6 +236,7 @@ impl RewriteMode {
         self.applying = true;
         context.status.busy = true;
         vec![Effect::Commit {
+            generation: *context.generation,
             intent: Intent::Rewrite(intent.selecting(Selection::Ids(self.ticks.clone()))),
         }]
     }

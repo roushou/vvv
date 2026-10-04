@@ -34,7 +34,7 @@ pub mod text;
 
 pub use calls::{CallKind, CallRule, CallSite, CalleeRule};
 pub use edit::{ChangeSet, Edit, EditConflict};
-pub use facts::{Facts, Token};
+pub use facts::{Facts, FactsError, Token};
 pub use highlight::{Highlight, HighlightKind, HighlightRule};
 pub use import::{
     ImportBinding, ImportGrammar, ImportGroup, ImportNesting, ImportRef, ImportRule, ReExportRule,
@@ -61,4 +61,4 @@ pub use symbol::{
     CompanionOwnership, CompanionPiece, DeclarationPieces, Modifier, ModifierAt, Symbol,
     SymbolKind, SymbolRule, UnknownSymbolKind,
 };
-pub use text::{Position, SourceText, Span};
+pub use text::{Position, SourceText, Span, SpanError};

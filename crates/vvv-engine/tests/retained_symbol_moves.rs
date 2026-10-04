@@ -310,7 +310,12 @@ fn invalid_owned_piece_evidence_is_a_conflict_before_writes() {
     );
     assert!(matches!(
         MoveSymbolIntent::new("foo", "a.p", "b.p").plan(&engine),
-        Err(EngineError::InvalidSymbolMoveEvidence)
+        Err(EngineError::Search {
+            source: vvv_core::SearchError::Facts(vvv_core::FactsError::Span(
+                vvv_core::SpanError::OutOfBounds { .. }
+            )),
+            ..
+        })
     ));
     assert!(Ledger::new(&engine).history().unwrap().entries.is_empty());
 }

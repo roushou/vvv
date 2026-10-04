@@ -28,6 +28,8 @@ use vvv_core::RelPath;
 #[derive(Debug, thiserror::Error)]
 pub enum ApplyError {
     #[error(transparent)]
+    Edit(#[from] vvv_core::EditConflict),
+    #[error(transparent)]
     Vfs(#[from] VfsError),
     #[error("{} changed since the plan was made", path.display())]
     Stale { path: RelPath },
@@ -106,7 +108,7 @@ impl Plan {
                         path: path.clone().into(),
                     });
                 }
-                let after = self.change_set.apply_to(path, &before);
+                let after = self.change_set.apply_to(path, &before)?;
                 Ok(FilePreview {
                     path: path.clone().into(),
                     moved_to: self.change_set.destination(path).map(Into::into),

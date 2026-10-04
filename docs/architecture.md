@@ -693,11 +693,12 @@ how results look. Two renderers implement it, and they share only `Diagnose`:
 a glob re-export, an alias, an inline test module; a TypeScript project with relative
 imports and `export … from` — and every command run over them through the binary,
 JSON and human, each output an `insta` snapshot under `tests/corpus/snapshots/`. The
-same file loads each corpus into a `MemoryVfs` and checks, for every mutation, that
-what is applied is what was previewed (each previewed file with its edits made, at
-the path the preview said, and nothing else touched), that an apply undone leaves
-every file as it was, and that a batch of two applied equals the second applied after
-the first, one undo reverting both.
+same file exposes each command case as a native, filterable test. It loads each
+corpus into a `MemoryVfs` and checks, for every mutation, that applying the captured
+plan produces the complete previewed tree, including removed source paths, and
+that undo restores the original tree. Named composition pairs must equal sequential
+application, with one undo reverting both; an operation error fails the property.
+See [Testing](testing.md) for focused commands and reusable fixtures.
 
 ### `vvv-tui` — the picker
 
@@ -786,11 +787,15 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
   The inbox is drained again between operations so a slow read cannot force
   already superseded previews from its original batch to execute.
   Definition successes and failures carry a ticket and query, checked against the
-  search mode's current selection before settling the pane. `Commit` plans and applies in one step.
+  search mode's current selection before settling the pane. The worker retains one
+  executable `Review`; `Commit` consumes its generation and applies that exact plan.
+  Display events carry no executable edits. A newer plan, failed planning, or an
+  editor invalidation discards the old review. A mismatched or consumed generation
+  returns `stale`; commit metadata cannot substitute a different operation.
 - `tui.rs` — `Tui` and the only I/O: terminal setup, the event loop with
   debounced searches and plans, the editor hand-off, teardown. It supplies the frame
   timestamp used by `HistoryView`; views do not read the clock.
-- `fixtures.rs` + `tests.rs` — `update` with plain assertions; every mode rendered into
+- `fixtures.rs` + `tests_*.rs` (included by `tests.rs`) — `update` with plain assertions; every mode rendered into
   ratatui's `TestBackend` and snapshotted with `insta` (`INSTA_UPDATE=always cargo test
   -p vvv-tui` to accept).
 
@@ -933,6 +938,15 @@ snapshots of the same file. Binding carries those observed fingerprints into `Pl
 it never substitutes a fresh read for the source used to compute an edit. Preview and
 apply compare the current contents with the observed snapshots before writing.
 Relocation side edits use the snapshots handed to the surgery.
+
+`SourceFile::facts` and `SourceFile::find` validate every plugin range against that
+snapshot before execution or reporting reads coordinates. `Span` deserialization
+rejects reversed bounds; `Facts` rejects invalid token table references;
+`ChangeSet` rejects unordered or overlapping serialized edits and moves without a
+touched source. Insertions at a replacement's start precede that replacement;
+coincident insertions retain their insertion order. `ChangeSet::apply_to` checks
+source bounds and UTF-8 boundaries and returns a typed error before storage is
+touched. These checks also apply to language facts used for previews and move side edits.
 
 Rewrite expands captures from the candidate that supplied the matches. `RewriteOf`
 revalidates selected retained matches and captures against a candidate before using

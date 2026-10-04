@@ -112,12 +112,12 @@ impl FileQuery {
         }
         let (highlights, symbols, identifiers) = match engine.languages().for_path(path) {
             Some(language) => {
-                let facts = language
-                    .facts(file.text())
-                    .map_err(|source| EngineError::Search {
-                        path: path.into(),
-                        source,
-                    })?;
+                let facts =
+                    file.facts(language.as_ref())
+                        .map_err(|source| EngineError::Search {
+                            path: path.into(),
+                            source,
+                        })?;
                 let identifiers = facts
                     .tokens()
                     .map(|(_, _, span)| crate::SourceAnchor {

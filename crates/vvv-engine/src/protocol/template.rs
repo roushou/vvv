@@ -19,6 +19,8 @@ pub struct Template {
 
 #[derive(Debug, thiserror::Error, PartialEq, Eq)]
 pub enum TemplateError {
+    #[error(transparent)]
+    Span(#[from] vvv_core::SpanError),
     #[error("template refers to `${0}` but the match has no such capture")]
     UnknownVariable(String),
 }
@@ -51,7 +53,9 @@ impl Template {
                     Some(CaptureValue::Single(c)) => out.push_str(&c.text),
                     Some(CaptureValue::Multiple(items)) => {
                         if let (Some(first), Some(last)) = (items.first(), items.last()) {
-                            out.push_str(source.slice(first.span.union(&last.span)));
+                            first.span.validate()?;
+                            last.span.validate()?;
+                            out.push_str(source.get(first.span.union(&last.span))?);
                         }
                     }
                     None => return Err(TemplateError::UnknownVariable(name.to_owned())),

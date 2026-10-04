@@ -356,6 +356,7 @@ impl MoveMode {
                 self.applying = true;
                 context.status.busy = true;
                 vec![Effect::Commit {
+                    generation: *context.generation,
                     intent: plan.intent.clone(),
                 }]
             }

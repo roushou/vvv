@@ -39,12 +39,9 @@ impl SourceFacts {
     pub(super) fn path(&self) -> &Path {
         self.file.path()
     }
-    pub(super) fn text(&self) -> &str {
-        self.file.text()
-    }
     pub(super) fn facts(&self) -> Result<&Facts, EngineError> {
         self.facts
-            .get_or_init(|| self.language.facts(self.text()))
+            .get_or_init(|| self.file.facts(self.language.as_ref()))
             .as_ref()
             .map_err(|source| EngineError::Search {
                 path: self.path().into(),
@@ -181,9 +178,8 @@ impl Candidate {
     /// Matches of `query` in this file, located.
     pub fn find(&self, query: &Query) -> Result<Vec<Match>, EngineError> {
         let raw = self
-            .source
-            .language
-            .find(self.text(), query)
+            .file()
+            .find(self.source.language.as_ref(), query)
             .map_err(|source| self.failed(source))?;
         Ok(self.locate(raw))
     }

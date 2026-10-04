@@ -7,7 +7,7 @@ use std::thread;
 
 use vvv_engine::report::Document;
 use vvv_engine::{
-    Answer, Engine, EngineError, FileQuery, Intent, Ledger, MutationAnswer, SearchQuery,
+    Answer, Apply, Engine, EngineError, FileQuery, Intent, Ledger, MutationAnswer, SearchQuery,
 };
 
 use super::action::{Effect, Event, Planned};
@@ -26,6 +26,7 @@ impl Worker {
                 engine,
                 outbox,
                 last_definition: None,
+                review: None,
             };
             while let Ok(effect) = inbox.recv() {
                 let mut pending = Pending::default();
@@ -94,6 +95,14 @@ struct Runner {
     engine: Engine,
     outbox: Sender<Event>,
     last_definition: Option<(u64, vvv_engine::NavigationQuery)>,
+    review: Option<Review>,
+}
+
+/// The executable plan stays on the worker; events carry its display data only.
+struct Review {
+    generation: u64,
+    intent: Intent,
+    plan: vvv_engine::Planned<MutationAnswer>,
 }
 
 /// Why an effect produced no answer: the engine refused, or the picker was
@@ -126,6 +135,7 @@ impl Runner {
     fn run(&mut self, effect: Effect) {
         if matches!(effect, Effect::Touched) {
             self.last_definition = None;
+            self.review = None;
             self.engine.touched();
             return;
         }
@@ -166,7 +176,7 @@ impl Runner {
             // A plan that cannot be made is an answer, not a failure.
             Effect::Plan {
                 generation, intent, ..
-            } => match self.plan(intent) {
+            } => match self.plan(generation, intent) {
                 Ok(planned) => Event::Planned {
                     generation,
                     planned,
@@ -187,40 +197,48 @@ impl Runner {
         let _ = self.outbox.send(event);
     }
 
-    fn plan(&self, intent: Intent) -> Result<Planned, Failure> {
-        let engine = &self.engine;
-        let answer = engine
+    fn plan(&mut self, generation: u64, intent: Intent) -> Result<Planned, Failure> {
+        self.review = None;
+        let plan = self
+            .engine
             .run(intent.clone().into_request(false))?
-            .into_preview()?
-            .into_inner();
-        Ok(match answer {
+            .into_preview()?;
+        let display = match &*plan {
             MutationAnswer::Rename(r) => Planned::Rename {
-                files: r.files,
-                declarations: r.declarations,
-                occurrences: r.occurrences,
+                files: r.files.clone(),
+                declarations: r.declarations.clone(),
+                occurrences: r.occurrences.clone(),
             },
             MutationAnswer::Move(mv) => Planned::Move {
-                files: mv.files,
-                intent,
-                respellings: mv.respellings,
-                notices: mv.notices,
+                files: mv.files.clone(),
+                intent: intent.clone(),
+                respellings: mv.respellings.clone(),
+                notices: mv.notices.clone(),
             },
             MutationAnswer::MoveSymbol(mv) => Planned::Move {
-                files: mv.files,
-                intent,
-                respellings: mv.respellings,
-                notices: mv.notices,
+                files: mv.files.clone(),
+                intent: intent.clone(),
+                respellings: mv.respellings.clone(),
+                notices: mv.notices.clone(),
             },
-            MutationAnswer::Rewrite(rw) => Planned::Rewrite { files: rw.files },
+            MutationAnswer::Rewrite(rw) => Planned::Rewrite {
+                files: rw.files.clone(),
+            },
             MutationAnswer::Batch(_) => {
                 return Err(Failure::Unsupported(
                     "the picker plans one command at a time; use `vvv batch`",
                 ));
             }
-        })
+        };
+        self.review = Some(Review {
+            generation,
+            intent,
+            plan,
+        });
+        Ok(display)
     }
 
-    fn execute(&self, effect: Effect) -> Result<Event, Failure> {
+    fn execute(&mut self, effect: Effect) -> Result<Event, Failure> {
         Ok(match effect {
             Effect::WorkspaceFiles { generation } => Event::WorkspaceFiles {
                 generation,
@@ -267,15 +285,23 @@ impl Runner {
                     path,
                 }
             }
-            Effect::Commit { intent } => {
-                let engine = &self.engine;
-                let applied = engine
-                    .run(intent.clone().into_request(true))?
-                    .into_applied()?;
+            Effect::Commit { generation, .. } => {
+                if self
+                    .review
+                    .as_ref()
+                    .is_none_or(|review| review.generation != generation)
+                {
+                    return Err(EngineError::StalePlan.into());
+                }
+                let review = self.review.take().expect("review generation checked");
+                let applied = Apply(review.plan).apply(&self.engine)?;
                 let id = applied.history_id();
                 let answer: Answer = applied.into_inner().into();
-                let report = Document::of(&answer);
-                Event::Applied { id, intent, report }
+                Event::Applied {
+                    id,
+                    intent: review.intent,
+                    report: Document::of(&answer),
+                }
             }
             Effect::History => Event::History(Ledger::new(&self.engine).history()?.entries),
             Effect::Undo => Event::Undone(Ledger::new(&self.engine).undo()?.undone),
@@ -298,6 +324,100 @@ mod tests {
     use std::sync::Arc;
     use vvv_engine::{BatchIntent, Languages, MemoryVfs, Workspace};
 
+    struct Fixture {
+        runner: Runner,
+        inbox: Receiver<Event>,
+        intent: Intent,
+    }
+
+    impl Fixture {
+        fn new() -> Self {
+            let (outbox, inbox) = mpsc::channel();
+            Self {
+                runner: Runner {
+                    engine: Engine::new(
+                        Workspace::new("/ws", Arc::new(MemoryVfs::new())),
+                        Languages::new(),
+                    ),
+                    outbox,
+                    last_definition: None,
+                    review: None,
+                },
+                inbox,
+                intent: Intent::Rewrite(vvv_engine::RewriteIntent::new(
+                    vvv_engine::Query::pattern("absent"),
+                    "replacement",
+                )),
+            }
+        }
+
+        fn plan(&mut self, generation: u64) {
+            self.runner.run(Effect::Plan {
+                generation,
+                intent: self.intent.clone(),
+                debounce: false,
+            });
+            assert!(
+                matches!(self.inbox.recv().unwrap(), Event::Planned { generation: actual, .. } if actual == generation)
+            );
+        }
+
+        fn commit(&mut self, generation: u64) -> Event {
+            self.runner.run(Effect::Commit {
+                generation,
+                intent: self.intent.clone(),
+            });
+            self.inbox.recv().unwrap()
+        }
+    }
+
+    #[test]
+    fn obsolete_generations_cannot_apply_or_consume_the_latest_review() {
+        let mut fixture = Fixture::new();
+        fixture.plan(7);
+        fixture.plan(8);
+        assert!(matches!(fixture.commit(7), Event::Failed { problem, .. }
+            if problem.failure.code == vvv_engine::ErrorCode::Stale));
+        assert!(
+            Ledger::new(&fixture.runner.engine)
+                .history()
+                .unwrap()
+                .entries
+                .is_empty()
+        );
+        assert!(matches!(fixture.commit(8), Event::Applied { id: 1, .. }));
+    }
+
+    #[test]
+    fn failed_replanning_and_external_changes_discard_the_executable_review() {
+        for touched in [false, true] {
+            let mut fixture = Fixture::new();
+            fixture.plan(7);
+            if touched {
+                fixture.runner.run(Effect::Touched);
+            } else {
+                fixture.runner.run(Effect::Plan {
+                    generation: 8,
+                    intent: Intent::Batch(BatchIntent::new([])),
+                    debounce: false,
+                });
+                assert!(matches!(
+                    fixture.inbox.recv().unwrap(),
+                    Event::PlanFailed { generation: 8, .. }
+                ));
+            }
+            assert!(matches!(fixture.commit(7), Event::Failed { problem, .. }
+                if problem.failure.code == vvv_engine::ErrorCode::Stale));
+            assert!(
+                Ledger::new(&fixture.runner.engine)
+                    .history()
+                    .unwrap()
+                    .entries
+                    .is_empty()
+            );
+        }
+    }
+
     #[test]
     fn a_batch_plan_is_rejected_as_a_user_visible_outcome() {
         let (outbox, inbox) = mpsc::channel();
@@ -308,6 +428,7 @@ mod tests {
             ),
             outbox,
             last_definition: None,
+            review: None,
         };
         runner.run(Effect::Plan {
             generation: 7,
@@ -329,8 +450,24 @@ mod tests {
             ),
             outbox,
             last_definition: None,
+            review: None,
         };
+        let reviewed = Intent::Rewrite(vvv_engine::RewriteIntent::new(
+            vvv_engine::Query::pattern("absent"),
+            "replacement",
+        ));
+        runner.run(Effect::Plan {
+            generation: 7,
+            intent: reviewed.clone(),
+            debounce: false,
+        });
+        assert!(matches!(
+            inbox.recv().unwrap(),
+            Event::Planned { generation: 7, .. }
+        ));
+        // Commit metadata cannot substitute another operation for the reviewed plan.
         runner.run(Effect::Commit {
+            generation: 7,
             intent: Intent::Batch(BatchIntent::new([])),
         });
         assert!(matches!(
@@ -340,6 +477,18 @@ mod tests {
         assert_eq!(
             Ledger::new(&runner.engine).history().unwrap().entries[0].id,
             1
+        );
+        assert_eq!(
+            Ledger::new(&runner.engine).history().unwrap().entries[0].intent,
+            reviewed
+        );
+        runner.run(Effect::Commit {
+            generation: 7,
+            intent: reviewed,
+        });
+        assert!(
+            matches!(inbox.recv().unwrap(), Event::Failed { problem, .. }
+            if problem.failure.code == vvv_engine::ErrorCode::Stale)
         );
     }
 }

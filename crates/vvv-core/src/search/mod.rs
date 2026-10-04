@@ -13,6 +13,10 @@ use crate::text::Span;
 
 #[derive(Debug, Clone, thiserror::Error)]
 pub enum SearchError {
+    #[error(transparent)]
+    Facts(#[from] crate::FactsError),
+    #[error(transparent)]
+    Span(#[from] crate::SpanError),
     #[error("invalid pattern: {0}")]
     Pattern(String),
     #[error("invalid node kind: {0}")]
@@ -71,6 +75,24 @@ pub struct RawMatch {
 }
 
 impl RawMatch {
+    /// Validate plugin coordinates before the engine locates or edits them.
+    pub fn validate_in(&self, source: &str) -> Result<(), crate::SpanError> {
+        self.span.validate_in(source)?;
+        if let Some(symbol) = &self.symbol {
+            symbol.validate_in(source)?;
+        }
+        for value in self.captures.values() {
+            match value {
+                CaptureValue::Single(capture) => capture.span.validate_in(source)?,
+                CaptureValue::Multiple(captures) => {
+                    for capture in captures {
+                        capture.span.validate_in(source)?;
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
     /// A match with no captures and no symbol, from a span and its text.
     pub fn plain(span: Span, kind: impl Into<String>, text: impl Into<String>) -> Self {
         Self {

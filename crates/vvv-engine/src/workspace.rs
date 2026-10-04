@@ -116,6 +116,27 @@ pub struct SourceFile {
 }
 
 impl SourceFile {
+    /// Bind plugin facts to this source before any caller reads their coordinates.
+    pub(crate) fn facts(
+        &self,
+        language: &dyn vvv_core::Language,
+    ) -> Result<vvv_core::Facts, vvv_core::SearchError> {
+        let facts = language.facts(self.text())?;
+        facts.validate_in(self.text())?;
+        Ok(facts)
+    }
+
+    pub(crate) fn find(
+        &self,
+        language: &dyn vvv_core::Language,
+        query: &vvv_core::Query,
+    ) -> Result<Vec<vvv_core::RawMatch>, vvv_core::SearchError> {
+        let matches = language.find(self.text(), query)?;
+        for matched in &matches {
+            matched.validate_in(self.text())?;
+        }
+        Ok(matches)
+    }
     pub fn new(path: impl Into<PathBuf>, text: impl Into<SourceText>) -> Self {
         Self {
             path: path.into(),

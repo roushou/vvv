@@ -177,7 +177,12 @@ docs/          architecture, guide, protocol, report
   (`GRAMMAR`, `SEMANTICS`), `layout.rs`, `surgery.rs`, a type alias over
   `AstGrepLanguage`. Never a hand-written `Language` impl.
 - New engine test → use `tests/common/mod.rs`'s `Fake` language; extend it rather than
-  writing another fake.
+  writing another fake. Use `common::fixture::EngineFixture` for storage and the
+  engine; use its `$0` markers for cursor positions and `source_tree()` for complete
+  source-tree assertions. Use `FaultFixture` for injected storage failures.
+- Mutation properties → apply the captured plan, compare the complete tree
+  (including removed paths), and declare named composition pairs. An error in a
+  declared pair fails the property; never skip it.
 - New test → compare paths by component, never by a `display()` string; a message that
   embeds a path is asserted with `\` normalized to `/`. CI runs Windows, where a joined
   path spells its separator as `\`; `Path`'s `PartialEq` is component-wise, so

@@ -208,12 +208,12 @@ impl MoveIntent {
                     Some(candidate) => candidate.file().clone(),
                     None => workspace.load(&path)?,
                 };
-                let facts = language
-                    .facts(file.text())
-                    .map_err(|source| EngineError::Search {
-                        path: path.clone().into(),
-                        source,
-                    })?;
+                let facts =
+                    file.facts(language.as_ref())
+                        .map_err(|source| EngineError::Search {
+                            path: path.clone().into(),
+                            source,
+                        })?;
                 Ok((file, facts))
             })
             .collect::<Result<_, EngineError>>()?;

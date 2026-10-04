@@ -1,6 +1,6 @@
 use std::sync::OnceLock;
 
-use super::{LineIndex, Position, Span};
+use super::{LineIndex, Position, Span, SpanError};
 
 /// Immutable file contents together with a line index, built the first time
 /// a line is asked for: most files a search loads are never located in.
@@ -30,8 +30,18 @@ impl SourceText {
         self.text.is_empty()
     }
 
+    /// Slice a trusted range. Use [`Self::get`] for unchecked external coordinates.
+    ///
+    /// # Panics
+    /// Panics when the range is reversed, outside the source, or splits UTF-8.
     pub fn slice(&self, span: Span) -> &str {
         &self.text[span.start..span.end]
+    }
+
+    /// Read a range received from a plugin or client without unchecked indexing.
+    pub fn get(&self, span: Span) -> Result<&str, SpanError> {
+        span.validate_in(&self.text)?;
+        Ok(self.slice(span))
     }
 
     pub fn position(&self, offset: usize) -> Position {

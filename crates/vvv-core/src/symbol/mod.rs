@@ -34,6 +34,15 @@ pub struct Symbol {
 }
 
 impl Symbol {
+    pub fn validate_in(&self, source: &str) -> Result<(), crate::SpanError> {
+        for span in [self.name_span, self.span, self.extent] {
+            span.validate_in(source)?;
+        }
+        if let Some(modifier) = &self.visibility {
+            modifier.span.validate_in(source)?;
+        }
+        Ok(())
+    }
     /// A symbol whose extent is its node and which has no modifier.
     pub fn plain(kind: SymbolKind, name: impl Into<String>, name_span: Span, span: Span) -> Self {
         Self {

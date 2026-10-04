@@ -1489,6 +1489,9 @@ invalid, empty or applying. Enter applies only when the preview is ready. Ctrl+U
 an operation input clears its text and preview. Checkbox changes in rename and
 rewrite request a new preview for the exact selected IDs; older replies cannot
 restore a discarded preview. Inputs and checkboxes stay fixed during apply.
+Enter consumes the exact plan that produced the displayed preview. If a touched
+file changed after review, apply returns `stale`; rebuild and review the new preview
+before applying again. Commit never replans automatically.
 
 **Rename** starts with an empty new-name field. Its verdict panes are
 `? Unverified`, `✓ Safe` and `✗ Other`. Each site has a checkbox (`▪`

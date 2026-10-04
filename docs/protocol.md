@@ -1188,7 +1188,7 @@ happened in words and `hint` (when present) what to try, and neither is for pars
 | `exists`           | the destination already exists                                                    |
 | `not_found`        | a file, or the file declaring a name, could not be found                          |
 | `unmovable`        | the layout refuses the move: a root, across packages, into itself                 |
-| `conflict`         | two edits of one plan overlap, or a file is moved twice                           |
+| `conflict`         | invalid plugin ranges, overlapping edits, or a file moved twice                   |
 | `stale`            | a source anchor, navigation input/provider revision, plan, or undo source changed |
 | `no_history`       | nothing to undo, or a history file that cannot be read                            |
 | `io`               | reading or writing the tree failed                                                |

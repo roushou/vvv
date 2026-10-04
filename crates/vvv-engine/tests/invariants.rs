@@ -9,6 +9,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Duration;
 
 use common::Fake;
+use common::fixture::EngineFixture as Fixture;
 use vvv_core::Address;
 use vvv_engine::report::{Detailed, Document, Options, View};
 use vvv_engine::{
@@ -16,33 +17,6 @@ use vvv_engine::{
     Languages, MemoryVfs, MoveIntent, MutationAnswer, ReferencesQuery, RenameIntent, Retention,
     Vfs, WhereQuery, Workspace,
 };
-
-struct Fixture {
-    vfs: Arc<MemoryVfs>,
-    engine: Engine,
-}
-
-impl Fixture {
-    fn new(files: &[(&str, &str)]) -> Self {
-        let vfs = Arc::new(files.iter().fold(MemoryVfs::new(), |vfs, (path, text)| {
-            vfs.with_file(Path::new("/ws").join(path), *text)
-        }));
-        let engine = Engine::new(
-            Workspace::new("/ws", vfs.clone()),
-            Languages::new().with(Fake::default()),
-        );
-        Self { vfs, engine }
-    }
-
-    fn retaining(mut self, retention: Retention) -> Self {
-        self.engine = self.engine.with_retention(retention);
-        self
-    }
-
-    fn read(&self, path: &str) -> String {
-        self.vfs.read(&Path::new("/ws").join(path)).unwrap()
-    }
-}
 
 #[test]
 fn apply_refuses_a_plan_whose_source_changed() {
@@ -669,6 +643,7 @@ fn apply_restores_a_file_after_a_partial_write_failure() {
 #[test]
 fn apply_restores_every_file_including_the_partially_failed_write() {
     let fixture = common::FaultFixture::new(&[("a.p", "foo"), ("b.p", "foo")]);
+    let before = fixture.source_tree();
     let planned = vvv_engine::RewriteIntent::new(vvv_engine::Query::pattern("foo"), "bar")
         .plan(&fixture.engine)
         .unwrap();
@@ -682,8 +657,7 @@ fn apply_restores_every_file_including_the_partially_failed_write() {
         Apply(planned).apply(&fixture.engine),
         Err(EngineError::Apply(_))
     ));
-    assert_eq!(fixture.read("a.p"), "foo");
-    assert_eq!(fixture.read("b.p"), "foo");
+    assert_eq!(fixture.source_tree(), before);
 }
 
 #[test]

@@ -197,6 +197,10 @@ impl EngineError {
                 _ => ErrorCode::Io,
             },
             Self::Query(_) => ErrorCode::BadQuery,
+            Self::Search {
+                source: SearchError::Facts(_) | SearchError::Span(_),
+                ..
+            } => ErrorCode::Conflict,
             Self::Search { .. } => ErrorCode::BadPattern,
             Self::Selection(_) => ErrorCode::BadSelection,
             Self::Template { .. } => ErrorCode::BadTemplate,
@@ -214,6 +218,7 @@ impl EngineError {
                 _ => ErrorCode::Unmovable,
             },
             Self::Apply(e) => match e {
+                ApplyError::Edit(_) => ErrorCode::Conflict,
                 ApplyError::DestinationExists { .. } => ErrorCode::Exists,
                 ApplyError::Stale { .. } | ApplyError::Modified { .. } => ErrorCode::Stale,
                 _ => ErrorCode::Io,

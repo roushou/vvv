@@ -15,6 +15,8 @@
 
 #![allow(dead_code)]
 
+pub mod fixture;
+
 use std::path::{Path, PathBuf};
 
 use vvv_core::{
@@ -25,6 +27,7 @@ use vvv_core::{
 };
 
 pub struct Fake {
+    matches: Option<Vec<RawMatch>>,
     semantics: &'static Semantics,
     id: &'static str,
     reference_group: Option<&'static str>,
@@ -39,6 +42,7 @@ pub struct Fake {
 impl Fake {
     pub fn new(id: &'static str, extensions: &'static [&'static str]) -> Self {
         Self {
+            matches: None,
             semantics: &SEMANTICS,
             id,
             reference_group: None,
@@ -54,6 +58,12 @@ impl Fake {
     /// The default fake: language `fake`, extension `.p`.
     pub fn default() -> Self {
         Self::new("fake", &["p"])
+    }
+
+    /// Supply malformed or synthetic matches without introducing another plugin fake.
+    pub fn with_matches(mut self, matches: Vec<RawMatch>) -> Self {
+        self.matches = Some(matches);
+        self
     }
 
     pub fn with_reference_group(mut self, group: &'static str) -> Self {
@@ -136,6 +146,9 @@ impl Language for Fake {
     }
 
     fn find(&self, source: &str, query: &Query) -> Result<Vec<RawMatch>, SearchError> {
+        if let Some(matches) = &self.matches {
+            return Ok(matches.clone());
+        }
         if query.is_symbolic() {
             return Ok(self
                 .symbols(source)?
@@ -982,6 +995,18 @@ impl FaultFixture {
 
     pub fn read(&self, path: &str) -> String {
         self.vfs.base.read(&Path::new("/ws").join(path)).unwrap()
+    }
+
+    /// Read the backing storage without triggering injected faults.
+    pub fn source_tree(&self) -> std::collections::BTreeMap<PathBuf, String> {
+        self.files()
+            .into_iter()
+            .filter(|path| !path.starts_with("/ws/.vvv"))
+            .map(|path| {
+                let text = self.vfs.base.read(&path).unwrap();
+                (path, text)
+            })
+            .collect()
     }
 
     pub fn arm(&self, operation: FaultOperation, path: &str, skip: usize, action: FaultAction) {

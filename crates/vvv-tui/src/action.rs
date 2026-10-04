@@ -129,9 +129,10 @@ pub enum Effect {
         intent: Intent,
         debounce: bool,
     },
-    /// Plan and write in one step, so the fingerprint check runs against
-    /// the tree the user just looked at.
+    /// Consume the reviewed generation held by the worker. The intent is
+    /// display/retry metadata; it never rebuilds the executable plan.
     Commit {
+        generation: u64,
         intent: Intent,
     },
     History,

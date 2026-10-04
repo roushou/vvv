@@ -83,7 +83,7 @@ impl<'a> RegroupCase<'a> {
         for e in out.edits {
             cs.insert("f.rs", e).unwrap();
         }
-        cs.apply_to(Path::new("f.rs"), src)
+        cs.apply_to(Path::new("f.rs"), src).unwrap()
     }
 }
 
