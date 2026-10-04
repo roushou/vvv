@@ -13,6 +13,7 @@ use crate::{EngineError, LanguageId, Workspace};
 pub struct Engine {
     workspace: Workspace,
     languages: LanguageRegistry,
+    pub(crate) file_previews: Arc<Mutex<crate::capabilities::file::FileCache>>,
     retention: Retention,
     /// What a per-call graph is built with; a session's graph holds its own.
     oracle: Option<Arc<dyn Oracle>>,
@@ -47,6 +48,7 @@ impl Engine {
         Self {
             workspace,
             languages,
+            file_previews: Arc::new(Mutex::new(crate::capabilities::file::FileCache::default())),
             retention: Retention::default(),
             oracle: None,
             graph: Arc::new(Mutex::new(graph)),
@@ -174,9 +176,9 @@ impl Engine {
                 crate::Request::Imports(query) => Execution::Completed(crate::Answer::Imports(
                     query.execute_in(&mut *self.graph()?, self.workspace())?,
                 )),
-                crate::Request::File(query) => Execution::Completed(crate::Answer::File(
-                    query.execute_in(self.workspace(), self.languages())?,
-                )),
+                crate::Request::File(query) => {
+                    Execution::Completed(crate::Answer::File(query.execute_in(self)?))
+                }
                 crate::Request::Rename { intent, apply } => {
                     let planned = {
                         let mut graph = self.graph()?;

@@ -1259,6 +1259,11 @@ When selecting another file, the source pane keeps its previous text, location,
 highlight, and scroll position while the replacement loads. An `updating` hint
 marks this interval; the text and its location switch together when the selected
 file arrives. Replies for files no longer selected cannot replace the pane.
+Revisiting a file reuses its parsed preview when a fresh read confirms unchanged
+contents. The cache is bounded; large or evicted files parse again. Returning from
+the editor marks displayed source as stale. Refresh (`Ctrl+R`) and search results
+identifying changed contents reload the selected source, even if its path did not
+change.
 
 The declaration's outer indentation is removed; indentation within its body is
 preserved and stays fixed while scrolling. Code uses a fixed left inset.

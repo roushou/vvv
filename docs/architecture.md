@@ -145,6 +145,14 @@ execution bodies. It acquires the graph only for source-tree questions and
 planning. History, undo, retained-plan apply, and file preview do not refresh the
 tree. The engine owns orchestration, not capability behavior.
 
+The file capability retains up to 32 parsed previews within a conservative 64 MiB
+payload budget, shared by engine clones. Every file request first reads current
+contents and checks their complete digest; graph trust, timestamps, and explicit
+invalidation are never substitutes for that read. Changed contents replace the
+cached version, least-recently-used files are evicted, and oversized previews are
+returned without retention. The cache stores successful plain file results only,
+with no parser nodes, navigation decisions, or errors.
+
 Typed clients call `SearchQuery::execute(&Engine)`, the other queries' `execute`,
 mutation intents' and `RewriteOf`'s `plan`, `Apply<T>::apply`, or
 `Ledger::new(&Engine).history()` / `.undo()`. These keep concrete outputs such as
@@ -753,6 +761,8 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
 - `worker.rs` — the engine on its own thread; effects in, events out; bursts of
   searches or plans are coalesced. Interleaved context/definition preview bursts
   keep the newest request of each kind; explicit queries and mutations are barriers.
+  The inbox is drained again between operations so a slow read cannot force
+  already superseded previews from its original batch to execute.
   Definition successes and failures carry a ticket and query, checked against the
   search mode's current selection before settling the pane. `Commit` plans and applies in one step.
 - `tui.rs` — `Tui` and the only I/O: terminal setup, the event loop with
@@ -783,9 +793,19 @@ and result revisions before accepting selection. Wheel scrolling preserves focus
 and selection. The terminal session owns mouse capture and suspends it for the editor. Local fuzzy filtering ranks retained file groups and preserves
 stable match identities without changing query execution or mutation selection.
 Reference files group all visible confidences together; verdicts remain engine data.
+Each result page memoizes file grouping and occurrence order by immutable answer
+identity, category, relation, and location. Fuzzy edits rerank those file groups
+without regrouping occurrences. Cursor movement and views reuse the projection;
+its offsets refer to retained answers rather than copying matches, and its payload
+is charged to the navigation trail's bounds. Rendering styles only visible list
+rows while pointer geometry retains stable identities for the full viewport.
+Source previews index syntax ranges for visible-window lookup while preserving
+the original priority of overlapping and multiline highlights.
 Source preview anchors retain the displayed file's location and hit while a new
 file loads; its text, anchor, and scroll position change together on an accepted
 preview. Pending file selection never relabels retained text as the destination.
+Refresh, editor return, and newly observed match content identities mark the source
+for replacement even when the selected path stays the same.
 Wide previews reserve fixed source and definition regions independent of selection,
 loading, and empty results. Single-preview layouts reveal source or definition
 according to focus and the retained preview choice; selecting a result does not

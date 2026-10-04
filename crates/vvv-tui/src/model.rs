@@ -443,6 +443,7 @@ impl Model {
                 effects
             }
             Event::SourcesChanged => {
+                self.search.preview_dirty = true;
                 self.next_generation();
                 self.search.trail.cancel();
                 self.search.body.reticket(self.search.body.next_ticket());
@@ -1101,6 +1102,9 @@ impl Status {
 pub struct FilePreview {
     file: std::sync::Arc<vvv_engine::File>,
     line_starts: std::sync::Arc<Vec<usize>>,
+    content: vvv_engine::ContentId,
+    /// Original highlight indices in start order, with prefix maximum ends.
+    highlight_index: std::sync::Arc<Vec<(usize, usize)>>,
 }
 
 impl FilePreview {
@@ -1108,9 +1112,21 @@ impl FilePreview {
         let line_starts = std::iter::once(0)
             .chain(file.text.match_indices('\n').map(|(i, _)| i + 1))
             .collect();
+        let mut highlights: Vec<_> = (0..file.highlights.len()).collect();
+        highlights.sort_by_key(|&index| file.highlights[index].span.start);
+        let mut maximum = 0;
+        let highlight_index = highlights
+            .into_iter()
+            .map(|index| {
+                maximum = maximum.max(file.highlights[index].span.end);
+                (index, maximum)
+            })
+            .collect();
         Self {
+            content: vvv_engine::ContentId::of(&file.text),
             file: std::sync::Arc::new(file),
             line_starts: std::sync::Arc::new(line_starts),
+            highlight_index: std::sync::Arc::new(highlight_index),
         }
     }
 
@@ -1123,6 +1139,8 @@ impl FilePreview {
         bytes
             .estimate()
             .saturating_add(self.line_starts.len() * std::mem::size_of::<usize>())
+            .saturating_add(128)
+            .saturating_add(self.highlight_index.len() * std::mem::size_of::<(usize, usize)>())
     }
 
     pub fn line_count(&self) -> usize {
@@ -1152,6 +1170,37 @@ impl FilePreview {
 
     pub fn text(&self) -> &str {
         &self.file.text
+    }
+
+    pub fn content_id(&self) -> &vvv_engine::ContentId {
+        &self.content
+    }
+
+    /// Intersecting syntax spans in their original priority order, including
+    /// overlapping or multiline highlights that start before this window.
+    pub fn highlights_in(&self, start: usize, end: usize) -> Vec<&vvv_engine::Highlight> {
+        if start >= end {
+            return Vec::new();
+        }
+        let first = self
+            .highlight_index
+            .partition_point(|&(_, maximum)| maximum <= start);
+        let last = self
+            .highlight_index
+            .partition_point(|&(index, _)| self.highlights[index].span.start < end);
+        if first >= last {
+            return Vec::new();
+        }
+        let mut indices: Vec<_> = self.highlight_index[first..last]
+            .iter()
+            .filter(|&&(index, _)| self.highlights[index].span.end > start)
+            .map(|&(index, _)| index)
+            .collect();
+        indices.sort_unstable();
+        indices
+            .into_iter()
+            .map(|index| &self.highlights[index])
+            .collect()
     }
 }
 

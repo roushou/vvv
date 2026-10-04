@@ -1753,6 +1753,104 @@ fn single_preview_choice_survives_file_match_filter_query_and_resize_navigation(
 }
 
 #[test]
+fn source_highlight_windows_preserve_multiline_overlap_priority_and_unordered_input() {
+    use vvv_engine::{Highlight, HighlightKind, Span};
+    let highlights = vec![
+        Highlight {
+            span: Span::new(8, 12),
+            kind: HighlightKind::Type,
+        },
+        Highlight {
+            span: Span::new(0, 16),
+            kind: HighlightKind::Keyword,
+        },
+        Highlight {
+            span: Span::new(2, 6),
+            kind: HighlightKind::Type,
+        },
+        Highlight {
+            span: Span::new(14, 17),
+            kind: HighlightKind::Keyword,
+        },
+    ];
+    let preview = crate::model::FilePreview::new(vvv_engine::File {
+        path: "source.rs".into(),
+        text: "one\ntwo\nthree\nfour".into(),
+        highlights: highlights.clone(),
+        symbols: vec![],
+        identifiers: vec![],
+    });
+    for start in 0..18 {
+        for end in start..18 {
+            let expected: Vec<_> = highlights
+                .iter()
+                .filter(|h| start < end && h.span.start < end && h.span.end > start)
+                .collect();
+            assert_eq!(
+                preview.highlights_in(start, end),
+                expected,
+                "window {start}..{end}"
+            );
+        }
+    }
+}
+
+#[test]
+fn refresh_and_changed_search_contents_reload_the_selected_source_without_blanking() {
+    let mut m = searched();
+    m.on_event(Event::Viewport {
+        width: 120,
+        height: 30,
+    });
+    let old = m.search.preview.clone().unwrap();
+    m.on_event(Event::SourcesChanged);
+    insta::assert_snapshot!(
+        "source_refresh_needed",
+        FrameFixture::new(&m).render_size(120, 30)
+    );
+    let effects = m.on_key(ctrl('r'));
+    let generation = generation_of(&effects);
+    let new_text = "pub trait ChangedLanguage {}";
+    let mut matches = fx::search().matches;
+    matches[0].content = Some(vvv_engine::ContentId::of(new_text));
+    let effects = m.on_event(Event::Searched {
+        generation,
+        matches,
+        skipped: vec![],
+    });
+    assert!(
+        effects
+            .iter()
+            .any(|e| matches!(e, Effect::Preview { path } if path == &old.path))
+    );
+    assert_eq!(m.search.preview.as_ref(), Some(&old));
+    assert!(
+        m.search.displayed_source().is_some(),
+        "refresh retains the previous source until the reply"
+    );
+    insta::assert_snapshot!(
+        "source_refresh_pending",
+        FrameFixture::new(&m).render_size(120, 30)
+    );
+    m.on_event(preview(old.path.as_str(), &[new_text]));
+    assert_eq!(m.search.preview.as_ref().unwrap().text(), new_text);
+    assert!(!m.search.preview_dirty);
+    // A subsequent ordinary search can discover an external edit too.
+    let mut matches = fx::search().matches;
+    matches[0].content = Some(vvv_engine::ContentId::of("a newer source version"));
+    let effects = m.on_event(Event::Searched {
+        generation: m.generation,
+        matches,
+        skipped: vec![],
+    });
+    assert!(
+        effects
+            .iter()
+            .any(|e| matches!(e, Effect::Preview { path } if path == &old.path))
+    );
+}
+
+#[test]
 fn source_preview_keeps_its_displayed_file_until_the_latest_selection_arrives() {
     let mut m = model();
     typed(&mut m, "Engine");

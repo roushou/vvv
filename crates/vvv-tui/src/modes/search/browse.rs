@@ -21,6 +21,7 @@ pub struct NavigationEntry {
     results: Results,
     focus: SearchPanel,
     preview: Option<FilePreview>,
+    preview_dirty: bool,
     source_anchor: Option<SourceAnchor>,
     body: Body,
     definition_tab: bool,
@@ -51,6 +52,7 @@ impl NavigationEntry {
             results: search.results.clone(),
             focus: search.focus,
             preview: search.preview.clone(),
+            preview_dirty: search.preview_dirty,
             source_anchor: search.source_anchor.clone(),
             body: search.body.clone(),
             definition_tab: search.definition_tab,
@@ -67,6 +69,7 @@ impl NavigationEntry {
         search.results = self.results;
         search.focus = self.focus;
         search.preview = self.preview;
+        search.preview_dirty = self.preview_dirty;
         search.source_anchor = self.source_anchor;
         search.body = self.body;
         search.definition_tab = self.definition_tab;

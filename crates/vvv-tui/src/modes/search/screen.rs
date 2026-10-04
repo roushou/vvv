@@ -893,9 +893,10 @@ impl<'a> SearchView<'a> {
             );
         }
         let width = area.width.saturating_sub(10).max(1) as usize;
-        let unfiltered = super::files::FileNavigator::default();
-        let needed = unfiltered
-            .groups(self.search.results.eligible())
+        let needed = self
+            .search
+            .results
+            .unfiltered_file_groups()
             .iter()
             .map(|group| Fit(group.path.as_str(), width).wrapped().len())
             .sum::<usize>()
@@ -1208,14 +1209,23 @@ impl<'a> SearchView<'a> {
         let editing = s.results.files.edit.is_some();
         let filtering = editing || !s.results.files.filter.is_empty();
         let path_width = width.saturating_sub(8).max(1);
+        let geometry = self.list_geometry(SearchPanel::Files, area);
+        let visible_rows = geometry.offset..geometry.offset + geometry.content.height as usize;
         let mut rows = Vec::new();
         let mut cursor = None;
+        let mut display_row = 0;
         for (i, group) in groups.iter().enumerate() {
             let chosen = active == Some(i);
             let mut offset = 0;
             let wrapped = Fit(group.path.as_str(), path_width).wrapped();
             let last = wrapped.len().saturating_sub(1);
             for (row, text) in wrapped.into_iter().enumerate() {
+                let shown = visible_rows.contains(&display_row);
+                display_row += 1;
+                if !shown {
+                    offset += text.chars().count();
+                    continue;
+                }
                 let mut spans = vec![Span::styled(
                     if chosen && row == 0 { "> " } else { "  " },
                     if chosen {
@@ -1259,20 +1269,19 @@ impl<'a> SearchView<'a> {
                 } else {
                     line
                 });
-            }
-            if chosen {
-                cursor = Some(rows.len().saturating_sub(1));
+                if chosen && row == last {
+                    cursor = Some(rows.len() - 1);
+                }
             }
         }
-        let eligible = s.results.eligible();
-        let total_files = Files::among(eligible.iter().map(|m| m.path.as_path()));
+        let eligible = s.results.eligible_count();
+        let total_files = s.results.eligible_file_count();
         let visible: usize = groups.iter().map(|g| g.matches.len()).sum();
-        let geometry = self.list_geometry(SearchPanel::Files, area);
         let count = if s.results.files.filter.trim().is_empty() {
             format!(
                 "{}/{} · {}{}",
                 active.map_or(0, |i| i + 1),
-                total_files.count(),
+                total_files,
                 Plural(visible, "hit"),
                 geometry.indicator()
             )
@@ -1281,8 +1290,8 @@ impl<'a> SearchView<'a> {
                 "{}/{} of {} · {visible}/{}{}",
                 active.map_or(0, |i| i + 1),
                 groups.len(),
-                total_files.count(),
-                Plural(eligible.len(), "hit"),
+                total_files,
+                Plural(eligible, "hit"),
                 geometry.indicator()
             )
         };
@@ -1312,8 +1321,8 @@ impl<'a> SearchView<'a> {
         .rows(rows)
         .cursor(cursor)
         .emphasized(s.focus == SearchPanel::Files)
-        .list_offset(geometry.offset)
-        .empty(if eligible.is_empty() {
+        .list_offset(0)
+        .empty(if eligible == 0 {
             "no result files"
         } else if editing {
             "no matching files · Ctrl+U clear"
@@ -1334,7 +1343,7 @@ impl<'a> SearchView<'a> {
         let active = groups
             .iter()
             .position(|g| selected.is_some_and(|m| m.path == *g.path));
-        let eligible = s.results.eligible();
+        let eligible = s.results.eligible_count();
         let visible: usize = groups.iter().map(|g| g.matches.len()).sum();
         let file_matches = active.map_or(&[][..], |i| groups[i].matches.as_slice());
         let line_width = file_matches
@@ -1347,9 +1356,13 @@ impl<'a> SearchView<'a> {
         let position = file_matches
             .iter()
             .position(|m| selected.is_some_and(|current| current.id == m.id));
+        let geometry = self.list_geometry(SearchPanel::Results, area);
+        let file_start = active.map_or(0, |i| groups[..i].iter().map(|g| g.matches.len()).sum());
         let rows = file_matches
             .iter()
             .enumerate()
+            .skip(geometry.offset)
+            .take(geometry.content.height as usize)
             .map(|(i, m)| {
                 let mut spans = vec![
                     Span::styled(
@@ -1362,11 +1375,7 @@ impl<'a> SearchView<'a> {
                     ),
                     Span::styled(format!("{:>line_width$}  ", m.start.line + 1), t.dim),
                 ];
-                let occurrence = s.results.references.as_ref().and_then(|r| {
-                    r.occurrences
-                        .iter()
-                        .find(|o| o.m.id == m.id && o.m.path == m.path)
-                });
+                let occurrence = s.results.occurrence_at(file_start + i);
                 if let Some(o) = occurrence {
                     spans.push(t.glyph(Mark::from(o.confidence)));
                 }
@@ -1386,7 +1395,6 @@ impl<'a> SearchView<'a> {
                 Line::from(spans)
             })
             .collect();
-        let geometry = self.list_geometry(SearchPanel::Results, area);
         let title = if let Some(subject) = &s.results.subject {
             format!("3 Matches · {}", subject.name)
         } else {
@@ -1408,10 +1416,10 @@ impl<'a> SearchView<'a> {
         )))
         .footer(self.categories(width))
         .rows(rows)
-        .cursor(position)
+        .cursor(position.and_then(|i| i.checked_sub(geometry.offset)))
         .emphasized(s.focus == SearchPanel::Results)
-        .list_offset(geometry.offset)
-        .empty(if eligible.is_empty() && self.busy {
+        .list_offset(0)
+        .empty(if eligible == 0 && self.busy {
             "searching…"
         } else if visible == 0 && !s.results.files.filter.is_empty() {
             "no matching files · F edit / clear"
@@ -1494,11 +1502,15 @@ impl<'a> SearchView<'a> {
         } else if let Some((path, line)) = &site {
             panel = panel.location(format!("{}:{}", path, line + 1));
         }
-        if displayed
-            .as_ref()
-            .is_some_and(|anchor| site.as_ref().is_some_and(|(path, _)| *path != anchor.path))
-        {
-            panel = panel.footer(Line::from(Span::styled(" updating ", t.warning)));
+        if displayed.as_ref().is_some_and(|anchor| {
+            s.preview_dirty || site.as_ref().is_some_and(|(path, _)| *path != anchor.path)
+        }) {
+            let status = if s.stale && s.preview_dirty && !self.busy {
+                " stale · ctrl+r refresh "
+            } else {
+                " updating "
+            };
+            panel = panel.footer(Line::from(Span::styled(status, t.warning)));
         }
         // Source rows fill the space below pane metadata.
         let inner_height = panel.content_height(area);

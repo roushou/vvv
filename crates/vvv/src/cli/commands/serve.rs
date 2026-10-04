@@ -58,6 +58,51 @@ impl Session {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    #[ignore = "diagnostic workload; run with --release --ignored --nocapture"]
+    fn source_preview_performance() {
+        use std::hint::black_box;
+        use std::sync::Arc;
+        use std::time::Instant;
+        use vvv_engine::{FileQuery, MemoryVfs, Query, SearchQuery, Workspace};
+        let source = (0..5_000)
+            .map(|i| format!("fn function_{i}() {{ let engine = Engine::new(); engine.run(); }}\n"))
+            .collect::<String>();
+        let vfs = Arc::new(MemoryVfs::new().with_file("/ws/source.rs", &source));
+        let engine = Engine::new(Workspace::new("/ws", vfs), vvv_rs::Builtins::registry())
+            .with_retention(Retention::session());
+        let measure = |label: &str, operation: &mut dyn FnMut()| {
+            let mut samples = Vec::new();
+            for _ in 0..10 {
+                let start = Instant::now();
+                operation();
+                samples.push(start.elapsed());
+            }
+            samples.sort();
+            println!(
+                "{label}: median {:.3} ms, max {:.3} ms",
+                samples[5].as_secs_f64() * 1000.0,
+                samples[9].as_secs_f64() * 1000.0
+            );
+        };
+        measure("5k functions: source preview", &mut || {
+            black_box(
+                FileQuery {
+                    path: "source.rs".into(),
+                }
+                .execute(&engine)
+                .unwrap(),
+            );
+        });
+        measure("5k functions: retained search", &mut || {
+            black_box(
+                SearchQuery::from(Query::pattern("Engine"))
+                    .execute(&engine)
+                    .unwrap(),
+            );
+        });
+    }
     use vvv_engine::{Languages, MemoryVfs, Workspace};
 
     fn engine() -> Engine {

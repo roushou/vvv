@@ -50,17 +50,25 @@ impl FileQuery {
     /// Answer with the concrete result of this query.
     pub fn execute(self, engine: &crate::Engine) -> Result<File, EngineError> {
         let _operation = engine.operation();
-        self.execute_in(engine.workspace(), engine.languages())
+        self.execute_in(engine)
     }
 
-    pub(crate) fn execute_in(
-        self,
-        workspace: &crate::Workspace,
-        languages: &vvv_core::LanguageRegistry,
-    ) -> Result<File, EngineError> {
+    pub(crate) fn execute_in(self, engine: &crate::Engine) -> Result<File, EngineError> {
         let path = self.path.as_path();
-        let file = workspace.load(path)?;
-        let (highlights, symbols, identifiers) = match languages.for_path(path) {
+        // Always read current contents, even within a session's trusted walk.
+        // Cached parser output proves nothing about the filesystem by itself.
+        let file = engine.workspace().load(path)?;
+        let content = file.content_id();
+        let normalized = RelPath::from(file.path());
+        if let Some(cached) = engine
+            .file_previews
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .get(&normalized, &content)
+        {
+            return Ok(cached);
+        }
+        let (highlights, symbols, identifiers) = match engine.languages().for_path(path) {
             Some(language) => {
                 let facts = language
                     .facts(file.text())
@@ -80,12 +88,164 @@ impl FileQuery {
             }
             None => (Vec::new(), Vec::new(), Vec::new()),
         };
-        Ok(File {
-            path: file.path().into(),
+        let preview = File {
+            path: normalized,
             text: file.text().to_owned(),
             highlights,
             symbols,
             identifiers,
-        })
+        };
+        engine
+            .file_previews
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .insert(&preview, content);
+        Ok(preview)
+    }
+}
+
+/// Parsed file snapshots, independent of graph trust. Keys require a fresh read
+/// and a complete content digest; edits and deletes cannot hit an old snapshot.
+pub(crate) struct FileCache {
+    entries: std::collections::VecDeque<CachedFile>,
+    bytes: usize,
+    max_bytes: usize,
+    max_entries: usize,
+}
+
+struct CachedFile {
+    file: File,
+    content: crate::ContentId,
+    bytes: usize,
+}
+
+impl Default for FileCache {
+    fn default() -> Self {
+        Self {
+            entries: std::collections::VecDeque::new(),
+            bytes: 0,
+            max_bytes: 64 * 1024 * 1024,
+            max_entries: 32,
+        }
+    }
+}
+
+impl FileCache {
+    fn get(&mut self, path: &RelPath, content: &crate::ContentId) -> Option<File> {
+        let index = self
+            .entries
+            .iter()
+            .position(|entry| &entry.file.path == path)?;
+        let entry = self.entries.remove(index)?;
+        if &entry.content != content {
+            self.bytes -= entry.bytes;
+            return None;
+        }
+        let file = entry.file.clone();
+        self.entries.push_back(entry);
+        Some(file)
+    }
+
+    fn insert(&mut self, file: &File, content: crate::ContentId) {
+        if let Some(index) = self
+            .entries
+            .iter()
+            .position(|entry| entry.file.path == file.path)
+            && let Some(entry) = self.entries.remove(index)
+        {
+            self.bytes -= entry.bytes;
+        }
+        let mut charge = FileCharge::default();
+        if serde_json::to_writer(&mut charge, file).is_err() {
+            return;
+        }
+        let bytes = charge.0.saturating_mul(4).saturating_add(256);
+        if bytes > self.max_bytes || self.max_entries == 0 {
+            return;
+        }
+        while self.bytes.saturating_add(bytes) > self.max_bytes
+            || self.entries.len() >= self.max_entries
+        {
+            let Some(entry) = self.entries.pop_front() else {
+                break;
+            };
+            self.bytes -= entry.bytes;
+        }
+        self.bytes += bytes;
+        self.entries.push_back(CachedFile {
+            file: file.clone(),
+            content,
+            bytes,
+        });
+    }
+}
+
+/// Conservative serialized-payload accounting without allocating another copy.
+#[derive(Default)]
+struct FileCharge(usize);
+
+impl std::io::Write for FileCharge {
+    fn write(&mut self, bytes: &[u8]) -> std::io::Result<usize> {
+        self.0 = self.0.saturating_add(bytes.len());
+        Ok(bytes.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> {
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn cache_evicts_least_recent_files_and_skips_oversized_text_and_metadata() {
+        let mut cache = FileCache {
+            max_bytes: 4_096,
+            max_entries: 2,
+            ..FileCache::default()
+        };
+        let file = |path: &str, text: &str| File {
+            path: path.into(),
+            text: text.into(),
+            highlights: vec![],
+            symbols: vec![],
+            identifiers: vec![],
+        };
+        let content = crate::ContentId::of("small");
+        cache.insert(&file("a.p", "small"), content.clone());
+        cache.insert(&file("b.p", "small"), content.clone());
+        assert!(cache.get(&"a.p".into(), &content).is_some());
+        cache.insert(&file("c.p", "small"), content.clone());
+        assert!(cache.get(&"b.p".into(), &content).is_none());
+        assert!(cache.get(&"a.p".into(), &content).is_some());
+        let large = file("large.p", &"x".repeat(4_096));
+        cache.insert(&large, crate::ContentId::of(&large.text));
+        assert!(
+            cache
+                .get(&large.path, &crate::ContentId::of(&large.text))
+                .is_none()
+        );
+        let mut metadata = file("metadata.p", "small");
+        metadata.identifiers = (0..100)
+            .map(|_| crate::SourceAnchor {
+                path: metadata.path.clone(),
+                content: content.clone(),
+                span: Span::new(0, 1),
+            })
+            .collect();
+        cache.insert(&metadata, content.clone());
+        assert!(cache.get(&metadata.path, &content).is_none());
+        assert!(cache.get(&"a.p".into(), &content).is_some());
+        assert!(cache.get(&"c.p".into(), &content).is_some());
+        cache.max_entries = 32;
+        for i in 0..32 {
+            cache.insert(&file(&format!("{i}.p"), &"x".repeat(100)), content.clone());
+            assert!(cache.bytes <= cache.max_bytes);
+        }
+        assert!(
+            cache.entries.len() < cache.max_entries,
+            "the byte budget also evicts"
+        );
     }
 }

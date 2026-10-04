@@ -107,3 +107,53 @@ fn unclaimed_file_previews_omit_empty_syntax_data() {
         serde_json::json!({"path":"notes.txt", "text":"plain text"})
     );
 }
+
+#[test]
+fn repeated_previews_reuse_parsing_but_read_external_edits_and_deletions_even_with_trust() {
+    use std::path::Path;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::time::Duration;
+    use vvv_engine::{ContentId, Retention, Vfs};
+    let parses = Arc::new(AtomicUsize::new(0));
+    let vfs = Arc::new(MemoryVfs::new().with_file("/ws/a.p", "def Original"));
+    let engine = Engine::new(
+        Workspace::new("/ws", vfs.clone()),
+        Languages::new().with(common::Counting::new(parses.clone())),
+    )
+    .with_retention(Retention::session().trusting(Duration::from_secs(3_600)));
+    let read = || FileQuery { path: "a.p".into() }.execute(&engine).unwrap();
+    let original = read();
+    let Answer::File(repeated) = engine
+        .clone()
+        .run(Request::File(FileQuery { path: "a.p".into() }))
+        .unwrap()
+        .into_answer()
+    else {
+        panic!("expected file");
+    };
+    assert_eq!(repeated, original);
+    assert_eq!(parses.load(Ordering::SeqCst), 1);
+    vfs.write(Path::new("/ws/a.p"), "def Replacement").unwrap();
+    let changed = read();
+    assert_eq!(changed.text, "def Replacement");
+    assert_eq!(changed.symbols[0].name, "Replacement");
+    assert!(
+        changed
+            .identifiers
+            .iter()
+            .all(|a| a.content == ContentId::of(&changed.text))
+    );
+    assert_eq!(parses.load(Ordering::SeqCst), 2);
+    engine.touched();
+    assert_eq!(
+        read(),
+        changed,
+        "an unchanged file still reuses validated syntax"
+    );
+    assert_eq!(parses.load(Ordering::SeqCst), 2);
+    vfs.remove_file(Path::new("/ws/a.p")).unwrap();
+    assert!(FileQuery { path: "a.p".into() }.execute(&engine).is_err());
+    vfs.write(Path::new("/ws/a.p"), "def Restored").unwrap();
+    assert_eq!(read().symbols[0].name, "Restored");
+    assert_eq!(parses.load(Ordering::SeqCst), 3);
+}

@@ -293,11 +293,10 @@ impl Painter {
         let text = preview.text();
         // Cut points: every highlight boundary and hit boundary inside the line.
         let mut cuts: Vec<usize> = vec![start, end];
-        for h in &preview.highlights {
-            if h.span.end > start && h.span.start < end {
-                cuts.push(h.span.start.clamp(start, end));
-                cuts.push(h.span.end.clamp(start, end));
-            }
+        let highlights = preview.highlights_in(start, end);
+        for h in &highlights {
+            cuts.push(h.span.start.clamp(start, end));
+            cuts.push(h.span.end.clamp(start, end));
         }
         if let Some((hs, he)) = hit {
             cuts.push(hs.clamp(start, end));
@@ -314,8 +313,7 @@ impl Painter {
                 continue;
             }
             let piece = &text[a..b];
-            let mut style = preview
-                .highlights
+            let mut style = highlights
                 .iter()
                 .find(|h| h.span.start <= a && b <= h.span.end)
                 .map_or(Style::new(), |h| self.highlight(h.kind));

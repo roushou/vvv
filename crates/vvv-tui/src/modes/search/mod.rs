@@ -34,6 +34,7 @@ pub struct Search {
     pub results: Results,
     pub focus: SearchPanel,
     pub preview: Option<FilePreview>,
+    pub preview_dirty: bool,
     pub source_anchor: Option<SourceAnchor>,
     pub body: Body,
     /// The preview retained when only one pane fits; changed by preview focus.
@@ -186,6 +187,7 @@ impl Search {
                     self.preview_scroll = None;
                     self.body.install(query, reply);
                     self.preview = self.body.preview.clone();
+                    self.preview_dirty = false;
                     self.sync_source();
                     self.focus = SearchPanel::Body;
                     self.definition_tab = true;
@@ -517,7 +519,7 @@ impl Search {
     pub fn displayed_source(&self) -> Option<SourceAnchor> {
         let selected = self.results.source_anchor()?;
         let preview = self.preview.as_ref()?;
-        if selected.path == preview.path {
+        if selected.path == preview.path && !self.preview_dirty {
             Some(selected)
         } else {
             self.source_anchor
@@ -529,6 +531,7 @@ impl Search {
     fn sync_source(&mut self) {
         if let Some(anchor) = self.results.source_anchor()
             && self.preview.as_ref().is_some_and(|p| p.path == anchor.path)
+            && !self.preview_dirty
         {
             if self.source_anchor.as_ref() != Some(&anchor) {
                 self.preview_scroll = None;
@@ -560,7 +563,7 @@ impl Search {
         }
         let context = self.results.current_site().map(|(path, _)| path);
         if let Some(path) = &context
-            && self.preview.as_ref().map(|p| &p.path) != Some(path)
+            && (self.preview_dirty || self.preview.as_ref().map(|p| &p.path) != Some(path))
         {
             effects.push(Effect::Preview { path: path.clone() });
         }
@@ -754,7 +757,10 @@ impl Search {
                 self.results.restore_selection(selected);
                 self.selection_changed();
             }
-            Action::Refresh => return self.search(context),
+            Action::Refresh => {
+                self.preview_dirty = true;
+                return self.search(context);
+            }
             Action::BrowseBack => return self.travel(false, context),
             Action::BrowseForward => return self.travel(true, context),
             Action::FocusNext => self.focus_by(1),
@@ -817,6 +823,7 @@ impl Search {
             .is_some_and(|(path, _)| path == preview.path)
         {
             self.preview = Some(preview);
+            self.preview_dirty = false;
             self.sync_source();
         }
     }
@@ -831,6 +838,15 @@ impl Search {
         self.locations.observe(&matches);
         self.results.searched_location = self.locations.selected.clone();
         self.results.replace(matches);
+        if let (Some(selected), Some(preview)) = (self.results.current(), &self.preview)
+            && selected.path == preview.path
+            && selected
+                .content
+                .as_ref()
+                .is_some_and(|content| content != preview.content_id())
+        {
+            self.preview_dirty = true;
+        }
         self.selection_changed();
         if skipped.is_empty() {
             context.status.clear()
@@ -976,6 +992,7 @@ impl Relation {
 /// become that declaration's judged occurrences instead of its spellings.
 #[derive(Debug, Clone, Default)]
 pub struct Results {
+    navigation: std::cell::RefCell<Option<Arc<ResultNavigation>>>,
     /// Reference answers belong to this result set, including its source ranges.
     revision: u64,
     pub query: Option<Query>,
@@ -1020,7 +1037,13 @@ impl Results {
         {
             return usize::MAX / 128;
         }
-        bytes.estimate() + self.files.retained_bytes()
+        bytes.estimate()
+            + self.files.retained_bytes()
+            + self
+                .navigation
+                .borrow()
+                .as_ref()
+                .map_or(0, |n| n.retained_bytes())
     }
 
     pub fn replace(&mut self, matches: Vec<Match>) {
@@ -1077,31 +1100,21 @@ impl Results {
 
     /// File order in the navigator; the underlying engine matches retain their IDs.
     pub fn listed(&self) -> Vec<&Match> {
-        self.file_groups()
-            .into_iter()
-            .flat_map(|f| f.matches)
+        self.navigation()
+            .listed
+            .iter()
+            .map(|&slot| self.match_at(slot))
             .collect()
     }
 
     /// Occurrences eligible for navigation, before the local file filter.
     pub fn eligible(&self) -> Vec<&Match> {
-        let mut matches: Vec<_> = if self.is_anchored() {
-            self.reference_matches().into_iter().map(|o| &o.m).collect()
-        } else {
-            self.matches
-                .iter()
-                .filter(|m| self.category.includes(m.role))
-                .collect()
-        };
-        if !self.is_anchored() {
-            matches.sort_by(|a, b| {
-                a.path
-                    .cmp(&b.path)
-                    .then(a.start.cmp(&b.start))
-                    .then(a.span.start.cmp(&b.span.start))
-            });
-        }
-        matches
+        self.navigation()
+            .base
+            .eligible
+            .iter()
+            .map(|&slot| self.match_at(slot))
+            .collect()
     }
 
     pub fn has_file_list(&self) -> bool {
@@ -1109,7 +1122,55 @@ impl Results {
     }
 
     pub fn file_groups(&self) -> Vec<files::FileGroup<'_>> {
-        self.files.groups(self.eligible())
+        let navigation = self.navigation();
+        navigation
+            .visible
+            .iter()
+            .map(|(index, rank)| {
+                let group = &navigation.base.groups[*index];
+                files::FileGroup {
+                    path: &self.match_at(group[0]).path,
+                    matches: group.iter().map(|&slot| self.match_at(slot)).collect(),
+                    rank: rank.clone(),
+                }
+            })
+            .collect()
+    }
+
+    pub fn unfiltered_file_groups(&self) -> Vec<files::FileGroup<'_>> {
+        self.navigation()
+            .base
+            .groups
+            .iter()
+            .map(|group| files::FileGroup {
+                path: &self.match_at(group[0]).path,
+                matches: group.iter().map(|&slot| self.match_at(slot)).collect(),
+                rank: files::PathMatch::default(),
+            })
+            .collect()
+    }
+
+    pub fn eligible_file_count(&self) -> usize {
+        self.navigation().base.groups.len()
+    }
+
+    pub fn eligible_count(&self) -> usize {
+        self.navigation().base.eligible.len()
+    }
+
+    fn match_at(&self, slot: MatchSlot) -> &Match {
+        match slot {
+            MatchSlot::Search(index) => &self.matches[index],
+            MatchSlot::Reference(index) => &self.references.as_ref().unwrap().occurrences[index].m,
+        }
+    }
+
+    fn navigation(&self) -> Arc<ResultNavigation> {
+        let mut cached = self.navigation.borrow_mut();
+        if cached.as_ref().is_none_or(|n| !n.matches(self)) {
+            *cached = Some(Arc::new(ResultNavigation::new(self, cached.as_deref())));
+        }
+        Arc::clone(cached.as_ref().unwrap())
     }
 
     pub fn remember_current(&mut self) {
@@ -1234,7 +1295,7 @@ impl Results {
     }
 
     /// The occurrences the current relation keeps, in engine order.
-    fn reference_matches(&self) -> Vec<&Occurrence> {
+    fn reference_matches(&self) -> Vec<(usize, &Occurrence)> {
         if !self.relation.is_references() {
             return Vec::new();
         }
@@ -1245,8 +1306,9 @@ impl Results {
         let mut shown: Vec<_> = r
             .occurrences
             .iter()
-            .filter(|o| confidence.is_none_or(|c| c == o.confidence))
-            .filter(|o| {
+            .enumerate()
+            .filter(|(_, o)| confidence.is_none_or(|c| c == o.confidence))
+            .filter(|(_, o)| {
                 self.location
                     .as_ref()
                     .is_none_or(|p| o.m.path.starts_with(p))
@@ -1257,7 +1319,7 @@ impl Results {
             Confidence::Unresolved => 1,
             Confidence::Other => 2,
         };
-        shown.sort_by(|a, b| {
+        shown.sort_by(|(_, a), (_, b)| {
             rank(a.confidence)
                 .cmp(&rank(b.confidence))
                 .then(a.m.path.cmp(&b.m.path))
@@ -1270,7 +1332,7 @@ impl Results {
     /// subject's rows once anchored.
     pub fn len(&self) -> usize {
         if self.has_file_list() {
-            return self.listed().len();
+            return self.navigation().listed.len();
         }
         if self.relation.is_impact() {
             self.impact.as_ref().map_or(0, |i| i.consumers.len())
@@ -1282,9 +1344,21 @@ impl Results {
     pub fn current(&self) -> Option<&Match> {
         let i = self.cursor.index;
         if self.has_file_list() {
-            return self.listed().get(i).copied();
+            return self
+                .navigation()
+                .listed
+                .get(i)
+                .map(|&slot| self.match_at(slot));
         }
         None
+    }
+
+    /// Confidence metadata in the same indexed order as the match navigator.
+    pub fn occurrence_at(&self, index: usize) -> Option<&Occurrence> {
+        match *self.navigation().listed.get(index)? {
+            MatchSlot::Reference(index) => self.references.as_ref()?.occurrences.get(index),
+            MatchSlot::Search(_) => None,
+        }
     }
 
     /// The module under the cursor, in the impact view.
@@ -1390,6 +1464,286 @@ impl Results {
             symbol: None,
             declared_in: None,
         })
+    }
+}
+
+/// Stable offsets into immutable answers; the index never copies source matches.
+#[derive(Debug, Clone, Copy)]
+enum MatchSlot {
+    Search(usize),
+    Reference(usize),
+}
+
+/// Grouping changes with the answer and scope, independently of fuzzy ranking.
+#[derive(Debug)]
+struct ResultFiles {
+    matches: Arc<Vec<Match>>,
+    references: Option<Arc<References>>,
+    anchored: bool,
+    category: Category,
+    relation: Relation,
+    location: Option<RelPath>,
+    eligible: Vec<MatchSlot>,
+    groups: Vec<Vec<MatchSlot>>,
+}
+
+impl ResultFiles {
+    fn matches(&self, results: &Results) -> bool {
+        Arc::ptr_eq(&self.matches, &results.matches)
+            && match (&self.references, &results.references) {
+                (Some(a), Some(b)) => Arc::ptr_eq(a, b),
+                (None, None) => true,
+                _ => false,
+            }
+            && self.anchored == results.is_anchored()
+            && self.category == results.category
+            && self.relation == results.relation
+            && self.location == results.location
+    }
+
+    fn new(results: &Results) -> Self {
+        let mut eligible: Vec<_> = if results.is_anchored() {
+            results
+                .reference_matches()
+                .into_iter()
+                .map(|(index, _)| MatchSlot::Reference(index))
+                .collect()
+        } else {
+            results
+                .matches
+                .iter()
+                .enumerate()
+                .filter(|(_, m)| results.category.includes(m.role))
+                .map(|(index, _)| MatchSlot::Search(index))
+                .collect()
+        };
+        if !results.is_anchored() {
+            eligible.sort_by(|&a, &b| {
+                let (a, b) = (results.match_at(a), results.match_at(b));
+                a.path
+                    .cmp(&b.path)
+                    .then(a.start.cmp(&b.start))
+                    .then(a.span.start.cmp(&b.span.start))
+            });
+        }
+        let mut grouped = std::collections::BTreeMap::<&RelPath, Vec<MatchSlot>>::new();
+        for &slot in &eligible {
+            grouped
+                .entry(&results.match_at(slot).path)
+                .or_default()
+                .push(slot);
+        }
+        let groups = grouped
+            .into_values()
+            .map(|mut group| {
+                group.sort_by(|&a, &b| {
+                    let (a, b) = (results.match_at(a), results.match_at(b));
+                    a.start.cmp(&b.start).then(a.span.cmp(&b.span))
+                });
+                group
+            })
+            .collect();
+        Self {
+            matches: results.matches.clone(),
+            references: results.references.clone(),
+            anchored: results.is_anchored(),
+            category: results.category,
+            relation: results.relation,
+            location: results.location.clone(),
+            eligible,
+            groups,
+        }
+    }
+}
+
+/// One memoized navigation projection per retained page. Views and selection
+/// share the same order; only answer/scope/filter changes rebuild derived data.
+#[derive(Debug)]
+struct ResultNavigation {
+    base: Arc<ResultFiles>,
+    filter: String,
+    visible: Vec<(usize, files::PathMatch)>,
+    listed: Vec<MatchSlot>,
+}
+
+impl ResultNavigation {
+    fn matches(&self, results: &Results) -> bool {
+        self.base.matches(results) && self.filter == results.files.filter
+    }
+
+    fn new(results: &Results, previous: Option<&Self>) -> Self {
+        let base = previous
+            .filter(|n| n.base.matches(results))
+            .map_or_else(|| Arc::new(ResultFiles::new(results)), |n| n.base.clone());
+        let mut visible: Vec<_> = base
+            .groups
+            .iter()
+            .enumerate()
+            .filter_map(|(index, group)| {
+                files::PathMatch::find(
+                    results.match_at(group[0]).path.as_str(),
+                    &results.files.filter,
+                )
+                .map(|rank| (index, rank))
+            })
+            .collect();
+        visible.sort_by(|(a, ar), (b, br)| br.score.cmp(&ar.score).then(a.cmp(b)));
+        let listed = visible
+            .iter()
+            .flat_map(|(index, _)| base.groups[*index].iter().copied())
+            .collect();
+        Self {
+            base,
+            filter: results.files.filter.clone(),
+            visible,
+            listed,
+        }
+    }
+
+    fn retained_bytes(&self) -> usize {
+        (self.base.eligible.capacity()
+            + self.listed.capacity()
+            + self.base.groups.iter().map(Vec::capacity).sum::<usize>())
+            * std::mem::size_of::<MatchSlot>()
+            + self.base.groups.capacity() * std::mem::size_of::<Vec<MatchSlot>>()
+            + self.visible.capacity() * std::mem::size_of::<(usize, files::PathMatch)>()
+            + self
+                .visible
+                .iter()
+                .map(|(_, rank)| rank.positions.capacity() * std::mem::size_of::<usize>())
+                .sum::<usize>()
+            + self.filter.capacity()
+            + self
+                .base
+                .location
+                .as_ref()
+                .map_or(0, |path| path.as_str().len())
+    }
+}
+
+#[cfg(test)]
+mod navigation_tests {
+    use super::*;
+
+    #[test]
+    fn memoized_navigation_agrees_with_fresh_grouping_after_every_filter_and_answer_change() {
+        let fresh = |results: &Results| {
+            let eligible: Vec<_> = if results.is_anchored() {
+                results
+                    .references
+                    .as_ref()
+                    .unwrap()
+                    .occurrences
+                    .iter()
+                    .filter(|o| {
+                        results
+                            .relation
+                            .confidence()
+                            .is_none_or(|c| c == o.confidence)
+                    })
+                    .filter(|o| {
+                        results
+                            .location
+                            .as_ref()
+                            .is_none_or(|p| o.m.path.starts_with(p))
+                    })
+                    .map(|o| &o.m)
+                    .collect()
+            } else {
+                results
+                    .matches
+                    .iter()
+                    .filter(|m| results.category.includes(m.role))
+                    .collect()
+            };
+            let mut grouped = std::collections::BTreeMap::<&RelPath, Vec<&Match>>::new();
+            for m in eligible {
+                grouped.entry(&m.path).or_default().push(m);
+            }
+            let mut groups: Vec<_> = grouped
+                .into_iter()
+                .filter_map(|(path, mut matches)| {
+                    let rank = files::PathMatch::find(path.as_str(), &results.files.filter)?;
+                    matches.sort_by(|a, b| a.start.cmp(&b.start).then(a.span.cmp(&b.span)));
+                    Some((
+                        path.clone(),
+                        matches.iter().map(|m| m.id.clone()).collect::<Vec<_>>(),
+                        rank.score,
+                        rank.positions,
+                    ))
+                })
+                .collect();
+            groups.sort_by(|a, b| b.2.cmp(&a.2).then(a.0.cmp(&b.0)));
+            groups
+        };
+        for anchored in [false, true] {
+            let mut results = Results::default();
+            results.replace(crate::fixtures::search().matches);
+            if anchored {
+                results.entered(crate::fixtures::references());
+            }
+            for category in [
+                Category::All,
+                Category::Declarations,
+                Category::Imports,
+                Category::Uses,
+            ] {
+                results.set_category(category);
+                for relation in [
+                    Relation::References,
+                    Relation::Resolved,
+                    Relation::Unresolved,
+                    Relation::Other,
+                ] {
+                    results.set_relation(relation);
+                    for location in [
+                        None,
+                        Some(RelPath::from("src/lib.rs")),
+                        Some(RelPath::from("src/lang")),
+                    ] {
+                        results.set_location(location);
+                        for filter in ["", "lib", "lang", "zzzz", "src l"] {
+                            results.files.filter = filter.into();
+                            let expected = fresh(&results);
+                            let actual = results
+                                .file_groups()
+                                .into_iter()
+                                .map(|g| {
+                                    (
+                                        g.path.clone(),
+                                        g.matches.iter().map(|m| m.id.clone()).collect::<Vec<_>>(),
+                                        g.rank.score,
+                                        g.rank.positions,
+                                    )
+                                })
+                                .collect::<Vec<_>>();
+                            assert_eq!(
+                                actual, expected,
+                                "anchored={anchored}, category={category:?}, relation={relation:?}, filter={filter}"
+                            );
+                            let ids = expected.into_iter().flat_map(|g| g.1).collect::<Vec<_>>();
+                            assert_eq!(results.len(), ids.len());
+                            for (i, id) in ids.into_iter().enumerate() {
+                                results.cursor.index = i;
+                                assert_eq!(results.current().unwrap().id, id);
+                            }
+                        }
+                    }
+                }
+            }
+            let saved = results.clone();
+            results.replace(vec![crate::fixtures::m("new.rs", 0, 0, "New", "New()")]);
+            results.files.filter.clear();
+            assert_eq!(
+                results.current().unwrap().path.as_path(),
+                std::path::Path::new("new.rs")
+            );
+            assert_eq!(
+                saved.file_groups().len(),
+                fresh(&saved).len(),
+                "saved pages keep their own answer and projection"
+            );
+        }
     }
 }
 

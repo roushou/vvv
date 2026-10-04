@@ -26,6 +26,8 @@ mod worker;
 #[cfg(test)]
 mod fixtures;
 #[cfg(test)]
+mod performance;
+#[cfg(test)]
 mod tests;
 
 pub use error::Error;

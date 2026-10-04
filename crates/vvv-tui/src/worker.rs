@@ -32,10 +32,7 @@ impl Worker {
             while let Ok(effect) = inbox.recv() {
                 let mut pending = Pending::default();
                 pending.push(effect);
-                while let Ok(next) = inbox.try_recv() {
-                    pending.push(next);
-                }
-                for effect in pending.effects {
+                while let Some(effect) = pending.next(&inbox) {
                     runner.run(effect);
                 }
             }
@@ -62,6 +59,15 @@ struct Pending {
 }
 
 impl Pending {
+    /// Re-check the inbox between operations: a slow read must not make the
+    /// worker execute every superseded preview from its original batch.
+    fn next(&mut self, inbox: &Receiver<Effect>) -> Option<Effect> {
+        while let Ok(next) = inbox.try_recv() {
+            self.push(next);
+        }
+        (!self.effects.is_empty()).then(|| self.effects.remove(0))
+    }
+
     fn push(&mut self, next: Effect) {
         let preview = matches!(next, Effect::Definition { .. } | Effect::Preview { .. });
         if preview {
@@ -333,6 +339,45 @@ mod tests {
 #[cfg(test)]
 mod preview_tests {
     use super::*;
+    #[test]
+    fn previews_arriving_during_work_replace_pending_reads_before_the_next_operation() {
+        let (sender, inbox) = mpsc::channel();
+        let mut pending = Pending::default();
+        pending.push(Effect::Definition {
+            ticket: 1,
+            query: vvv_engine::NavigationQuery::at("old.rs", vvv_engine::Position::new(0, 0)),
+        });
+        pending.push(Effect::Preview {
+            path: "old.rs".into(),
+        });
+        assert!(matches!(
+            pending.next(&inbox),
+            Some(Effect::Definition { ticket: 1, .. })
+        ));
+        // While that operation runs, a burst chooses a newer file.
+        sender
+            .send(Effect::Definition {
+                ticket: 2,
+                query: vvv_engine::NavigationQuery::at(
+                    "latest.rs",
+                    vvv_engine::Position::new(0, 0),
+                ),
+            })
+            .unwrap();
+        sender
+            .send(Effect::Preview {
+                path: "latest.rs".into(),
+            })
+            .unwrap();
+        assert!(matches!(
+            pending.next(&inbox),
+            Some(Effect::Definition { ticket: 2, .. })
+        ));
+        assert!(
+            matches!(pending.next(&inbox), Some(Effect::Preview { path }) if path.as_str() == "latest.rs")
+        );
+        assert!(pending.next(&inbox).is_none());
+    }
     #[test]
     fn interleaved_preview_bursts_coalesce_but_explicit_queries_are_barriers() {
         let mut pending = Pending::default();

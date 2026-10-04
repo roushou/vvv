@@ -32,27 +32,6 @@ pub struct FileGroup<'a> {
 }
 
 impl FileNavigator {
-    pub fn groups<'a>(&self, matches: impl IntoIterator<Item = &'a Match>) -> Vec<FileGroup<'a>> {
-        let mut files: BTreeMap<&RelPath, Vec<&Match>> = BTreeMap::new();
-        for m in matches {
-            files.entry(&m.path).or_default().push(m);
-        }
-        let mut groups: Vec<_> = files
-            .into_iter()
-            .filter_map(|(path, mut matches)| {
-                let rank = PathMatch::find(path.as_str(), &self.filter)?;
-                matches.sort_by(|a, b| a.start.cmp(&b.start).then(a.span.cmp(&b.span)));
-                Some(FileGroup {
-                    path,
-                    matches,
-                    rank,
-                })
-            })
-            .collect();
-        groups.sort_by(|a, b| b.rank.score.cmp(&a.rank.score).then(a.path.cmp(b.path)));
-        groups
-    }
-
     pub fn remember(&mut self, path: RelPath, id: MatchId) {
         self.active = Some(path.clone());
         self.remembered.insert(path, id);
@@ -298,7 +277,7 @@ impl SearchFrame {
 
 /// Case-insensitive subsequences, scored at path boundaries and in the filename.
 /// Every whitespace-separated term must match. Positions index original characters.
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct PathMatch {
     pub score: i64,
     pub positions: Vec<usize>,
