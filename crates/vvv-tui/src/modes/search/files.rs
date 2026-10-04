@@ -9,6 +9,8 @@ pub struct FileNavigator {
     pub filter: String,
     pub edit: Option<FileEdit>,
     pub active: Option<RelPath>,
+    /// Selection hidden by restrictions, until the user deliberately moves.
+    pub preferred: Option<MatchId>,
     remembered: BTreeMap<RelPath, MatchId>,
     pub viewport: ListViewport,
     pub match_viewports: BTreeMap<RelPath, ListViewport>,
@@ -20,6 +22,7 @@ pub struct FileEdit {
     pub selected: Option<MatchId>,
     return_focus: SearchPanel,
     active: Option<RelPath>,
+    preferred: Option<MatchId>,
     remembered: BTreeMap<RelPath, MatchId>,
     pub viewport: ListViewport,
     pub match_viewports: BTreeMap<RelPath, ListViewport>,
@@ -59,6 +62,7 @@ impl FileNavigator {
                 selected,
                 return_focus,
                 active: self.active.clone(),
+                preferred: self.preferred.clone(),
                 remembered: self.remembered.clone(),
                 viewport: self.viewport,
                 match_viewports: self.match_viewports.clone(),
@@ -71,6 +75,7 @@ impl FileNavigator {
         self.filter = edit.filter;
         self.remembered = edit.remembered;
         self.active = edit.active;
+        self.preferred = edit.preferred;
         self.viewport = edit.viewport;
         self.match_viewports = edit.match_viewports;
         Some((edit.selected, edit.return_focus))
@@ -91,6 +96,7 @@ impl FileNavigator {
                 .sum::<usize>()
         };
         self.match_viewports.len() * 128
+            + usize::from(self.preferred.is_some()) * 64
             + self.filter.len()
             + self.active.as_ref().map_or(0, |p| p.as_str().len() + 32)
             + memory(&self.remembered)
@@ -102,6 +108,7 @@ impl FileNavigator {
                         .map(|path| path.as_str().len() + 64)
                         .sum::<usize>()
                     + 128
+                    + usize::from(e.preferred.is_some()) * 64
                     + e.active.as_ref().map_or(0, |p| p.as_str().len() + 32)
             })
     }

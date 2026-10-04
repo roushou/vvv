@@ -7,16 +7,16 @@ use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Widget;
 use vvv_engine::NoticeKind;
-use vvv_engine::protocol::FileChange;
 
 use super::{MoveMode, MovePanel, MoveRow};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
 use crate::model::{PanelKind, ReportView};
 use crate::render::Pane;
-use crate::render::{Fit, Header, Painter, Region};
+use crate::render::{Fit, Header, Painter, Region, ReviewItem, ReviewList};
 use crate::screen::{BoundScreen, Panel, Screen};
-use vvv_engine::protocol::vocabulary::Mark;
+use vvv_engine::protocol::display;
+use vvv_engine::protocol::vocabulary::{Mark, Plural};
 
 use Action as A;
 use Dispatch::Run;
@@ -84,6 +84,18 @@ const DESTINATION: Layer<Action> = Layer {
             legend: Legend {
                 bar: None,
                 help: "keys",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('u'))],
+            dispatch: Run(A::Clear),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "ctrl+u",
+                    word: "clear",
+                }),
+                help: "clear the input and its preview",
             },
         },
         Keybinding {
@@ -193,12 +205,17 @@ impl<'a> MoveView<'a> {
         let (top, body) = self.header().areas(area);
         let (left, right) = body.columns(self.split);
         let sizes = [
-            (self.mode.len(MovePanel::Respellings), 3u16),
-            (self.mode.len(MovePanel::Structural), 2),
-            (self.mode.len(MovePanel::Notices), 1),
+            self.mode.len(MovePanel::Respellings),
+            self.mode.len(MovePanel::Structural),
+            self.mode.len(MovePanel::Notices),
         ];
+        let active = match self.mode.list() {
+            MovePanel::Structural => 1,
+            MovePanel::Notices => 2,
+            _ => 0,
+        };
         let mut regions = vec![top];
-        regions.extend(left.rows(&sizes));
+        regions.extend(left.review_rows(&sizes, active));
         regions.push(right);
         regions
     }
@@ -220,169 +237,172 @@ impl<'a> MoveView<'a> {
     fn header(&self) -> Header<'a> {
         let (mv, t) = (self.mode, self.painter);
         let focused = mv.focus == MovePanel::To;
-        let what = match &mv.symbol {
-            Some(name) => format!("{name}  {}", mv.from.short()),
-            None => mv.from.short(),
-        };
+        let mut bottom = t.path_line(&format!(" {} ", mv.from));
+        if let Some(name) = &mv.symbol {
+            bottom
+                .spans
+                .insert(0, Span::styled(format!(" {name} ·"), t.symbol));
+        }
+        bottom.spans.push(Span::styled("·", t.dim));
+        bottom.spans.extend(t.review_state(mv.state()).spans);
         let mut header = Header::new(
             t,
             focused,
-            Line::from(vec![
-                Span::styled(" move ", t.title),
-                Span::styled(what, t.path),
-                Span::styled(" → ", t.import),
-                Span::raw(mv.to.clone()),
-                t.caret(focused),
-                Span::raw(" "),
-            ]),
-        );
-        let mut line = Vec::new();
-        match (&mv.plan, &mv.error) {
-            (Some(_), _) => {}
-            (None, Some(error)) => line.push(Span::styled(format!("✗ {error}"), t.error)),
-            (None, None) if mv.busy => line.push(Span::styled("…", t.dim)),
-            (None, None) => line.push(Span::styled("type a destination", t.dim)),
-        }
-        if !line.is_empty() {
-            header = header.line(Line::from(line));
+            Line::from(Span::styled(
+                if mv.symbol.is_some() {
+                    " 1 Move declaration "
+                } else {
+                    " 1 Move file "
+                },
+                t.title,
+            )),
+        )
+        .line(Line::from(vec![
+            Span::styled(" destination: ", t.dim),
+            Span::raw(mv.to.clone()),
+            t.caret(focused),
+        ]))
+        .bottom(bottom);
+        if let Some(plan) = &mv.plan {
+            header = header.right(Line::from(vec![
+                Span::styled(Plural(plan.files.len(), "file").to_string(), t.key),
+                Span::styled(
+                    format!(
+                        " · {} manual fix{}",
+                        plan.notices.len(),
+                        if plan.notices.len() == 1 { "" } else { "es" }
+                    ),
+                    if plan.notices.is_empty() {
+                        t.dim
+                    } else {
+                        t.warning
+                    },
+                ),
+            ]));
         }
         header
     }
 
-    fn respelling_rows(&self, width: usize) -> Vec<Line<'static>> {
-        let Some(plan) = &self.mode.plan else {
-            return Vec::new();
-        };
-        let view = self.view.view();
-        plan.respellings
-            .iter()
-            .map(|r| self.painter.line(&view.respelling(r, width).line))
-            .collect()
-    }
-
-    fn structural_rows(&self, width: usize) -> Vec<Line<'static>> {
-        let t = self.painter;
-        let Some(plan) = &self.mode.plan else {
-            return Vec::new();
-        };
-        plan.structural
-            .iter()
-            .map(|&i| {
-                Line::from(vec![
-                    t.glyph(Mark::Structure),
-                    Span::raw(Fit(&plan.structural_label(i), width.saturating_sub(2)).to_string()),
-                ])
-            })
-            .collect()
-    }
-
-    fn notice_rows(&self, width: usize) -> Vec<Line<'static>> {
-        let Some(plan) = &self.mode.plan else {
-            return Vec::new();
-        };
-        let view = self.view.view();
-        plan.notices
-            .iter()
-            .map(|n| self.painter.line(&view.notice(n, width).line))
-            .collect()
-    }
-
     fn list_panel(&self, panel: MovePanel, area: Rect, buf: &mut Buffer) {
         let (mv, t) = (self.mode, self.painter);
-        let width = area.width.saturating_sub(2) as usize;
-        let (mark, word, rows) = match panel {
-            MovePanel::Respellings => {
-                (Mark::Import, "paths rewritten", self.respelling_rows(width))
-            }
-            MovePanel::Structural => (
-                Mark::Structure,
-                Mark::Structure.word(),
-                self.structural_rows(width),
-            ),
-            MovePanel::Notices => (Mark::ByHand, Mark::ByHand.word(), self.notice_rows(width)),
-            MovePanel::To | MovePanel::Detail => return,
+        let (number, mark, label) = match panel {
+            MovePanel::Respellings => (2, Mark::Import, "Paths rewritten"),
+            MovePanel::Structural => (3, Mark::Structure, "Structure"),
+            MovePanel::Notices => (4, Mark::ByHand, "Manual fixes"),
+            _ => return,
         };
-        let n = rows.len();
-        let title = Line::from(vec![
-            t.glyph(mark),
-            Span::styled(format!("{word} {n}"), t.title),
-        ]);
-        let cursor = mv.cursor(panel).map(|c| c.index);
-        Pane::new(t, title, mv.focus == panel)
-            .rows(rows)
-            .cursor((n > 0).then_some(cursor.unwrap_or(0)))
-            .emphasized(mv.list() == panel)
-            .empty(if mv.busy { "…" } else { "∅" })
-            .render(area, buf);
-    }
-
-    /// A file's hunks, coloured by line kind.
-    fn hunks(&self, file: &FileChange) -> Vec<Line<'static>> {
-        file.diff
-            .lines()
-            .map(|line| self.painter.line(&line))
-            .collect()
+        let mut items = Vec::new();
+        if let Some(plan) = &mv.plan {
+            match panel {
+                MovePanel::Respellings => items.extend(plan.respellings.iter().map(|r| {
+                    ReviewItem {
+                        path: &r.path,
+                        line: Some(r.start.line + 1),
+                        mark,
+                        text: display::Line::new()
+                            .and(display::Role::Removed, r.from.clone())
+                            .and(display::Role::Plain, " → ")
+                            .and(display::Role::Added, r.to.clone()),
+                    }
+                })),
+                MovePanel::Structural => {
+                    items.extend(plan.structural.iter().map(|&i| ReviewItem {
+                        path: &plan.files[i].path,
+                        line: None,
+                        mark,
+                        text: display::Line::single(display::Role::Plain, plan.structural_label(i)),
+                    }))
+                }
+                MovePanel::Notices => items.extend(plan.notices.iter().map(|n| {
+                    let text = match &n.kind {
+                        NoticeKind::UnrewritableImport {
+                            import,
+                            replacement,
+                        } => format!("{import} → {replacement}"),
+                        NoticeKind::RedundantImport { import } => {
+                            format!("{import} · remove redundant import")
+                        }
+                        NoticeKind::Unreachable { item, from, needs } => {
+                            format!("{item} · needs {needs:?} from {from}")
+                        }
+                    };
+                    ReviewItem {
+                        path: &n.path,
+                        line: Some(n.start.line + 1),
+                        mark,
+                        text: display::Line::single(display::Role::Warning, text),
+                    }
+                })),
+                _ => {}
+            }
+        }
+        let count = items.len();
+        let cursor = mv.cursor(panel).map_or(0, |c| c.index);
+        ReviewList {
+            painter: t,
+            items,
+            numbered: self.view == ReportView::Detailed,
+            active: mv.list() == panel,
+        }
+        .pane(
+            area,
+            Line::from(vec![
+                Span::styled(format!("{number} "), t.key),
+                t.glyph(mark),
+                Span::styled(label, t.title),
+            ]),
+            mv.focus == panel,
+            cursor,
+        )
+        .right(Line::from(Span::styled(
+            format!("{}/{}", if count == 0 { 0 } else { cursor + 1 }, count),
+            t.dim,
+        )))
+        .empty(if mv.busy { "Updating preview" } else { "None" })
+        .render(area, buf);
     }
 
     fn detail(&self, area: Rect, buf: &mut Buffer) {
         let (mv, t) = (self.mode, self.painter);
-        let focused = mv.focus == MovePanel::Detail;
         let current = mv.current();
-        let title = current.as_ref().map_or_else(
-            || Line::from(Span::styled("detail", t.dim)),
-            |row| Line::from(Span::styled(row.path().short(), t.path)),
+        let label = match &current {
+            Some(MoveRow::Notice(_)) => "5 Manual fix",
+            Some(MoveRow::Structural(_)) => "5 Diff",
+            _ if mv.diff => "5 Diff",
+            _ => "5 Source",
+        };
+        let mut pane = Pane::new(
+            t,
+            Line::from(Span::styled(label, t.title)),
+            mv.focus == MovePanel::Detail,
         );
-        let inner_height = area.height.saturating_sub(2) as usize;
-        let inner_width = area.width.saturating_sub(2) as usize;
-        let mut rows: Vec<Line> = Vec::new();
+        if let Some(row) = &current {
+            pane = pane.location(format!("{}:{}", row.path(), row.line() + 1));
+        }
+        let mut prefix = Vec::new();
         match &current {
             Some(MoveRow::Respelling(r)) => {
-                rows.push(Line::from(vec![
-                    Span::styled("  ", t.dim),
-                    Span::styled(r.from.clone(), t.dim),
-                ]));
-                rows.push(Line::from(vec![
-                    t.glyph(Mark::Import),
-                    Span::styled(r.to.clone(), t.added),
-                ]));
-                rows.push(Line::default());
-                let head = rows.len();
-                if mv.diff {
-                    if let Some(file) = mv
-                        .plan
-                        .as_ref()
-                        .and_then(|p| p.files.iter().find(|f| f.path == r.path))
-                    {
-                        rows.extend(self.hunks(file).into_iter().skip(mv.detail_scroll));
-                    }
-                } else if let Some(preview) = &mv.preview
-                    && preview.path == r.path
-                {
-                    let height = inner_height.saturating_sub(head);
-                    let anchor = (r.start.line as usize).saturating_sub(height / 2);
-                    let first =
-                        (anchor + mv.detail_scroll).min(preview.line_count().saturating_sub(1));
-                    rows.extend(t.source_window(
-                        preview,
-                        first,
-                        height,
-                        inner_width,
-                        Some((r.span.start, r.span.end)),
-                        Some((r.start.line as usize, r.start.line as usize)),
-                    ));
+                for (value, style) in [(&r.from, t.removed), (&r.to, t.added)] {
+                    prefix.extend(
+                        Fit(value, area.width.saturating_sub(4) as usize)
+                            .wrapped()
+                            .into_iter()
+                            .map(|line| Line::from(Span::styled(format!(" {line}"), style))),
+                    );
                 }
             }
             Some(MoveRow::Structural(file)) => {
                 if let Some(to) = &file.moved_to {
-                    rows.push(Line::from(vec![
-                        t.glyph(Mark::Structure),
-                        Span::styled(file.path.short(), t.dim),
-                        Span::styled(" → ", t.import),
-                        Span::styled(to.short(), t.path),
-                    ]));
-                    rows.push(Line::default());
+                    prefix.extend(
+                        Fit(
+                            &format!("moves to {to}"),
+                            area.width.saturating_sub(4) as usize,
+                        )
+                        .wrapped()
+                        .into_iter()
+                        .map(|line| t.path_line(&format!(" {line}"))),
+                    );
                 }
-                rows.extend(self.hunks(file).into_iter().skip(mv.detail_scroll));
             }
             Some(MoveRow::Notice(n)) => {
                 let (what, todo) = match &n.kind {
@@ -391,25 +411,76 @@ impl<'a> MoveView<'a> {
                         replacement,
                     } => (
                         format!("{import} → {replacement}"),
-                        "inside a grouped import vvv cannot split here; write it by hand",
+                        "Split this grouped import by hand.",
                     ),
                     NoticeKind::RedundantImport { import } => (
                         import.clone(),
-                        "now names a declaration in this file; remove it from the group by hand",
+                        "Remove this redundant import from the group by hand.",
                     ),
                     NoticeKind::Unreachable { item, from, needs } => (
-                        format!("{item}  used from {from}, needs {needs:?}"),
-                        "widening past what vvv writes on its own; your call",
+                        format!("{item} used from {from}, needs {needs:?}"),
+                        "Review and widen visibility by hand.",
                     ),
                 };
-                rows.push(Line::from(vec![t.glyph(Mark::ByHand), Span::raw(what)]));
-                rows.push(Line::from(Span::styled(todo, t.dim)));
+                for (text, style) in [(what.as_str(), t.warning), (todo, t.dim)] {
+                    prefix.extend(
+                        Fit(text, area.width.saturating_sub(4) as usize)
+                            .wrapped_words()
+                            .into_iter()
+                            .map(|line| Line::from(Span::styled(format!(" {line}"), style))),
+                    );
+                }
             }
             None => {}
         }
-        Pane::new(t, title, focused)
-            .rows(rows)
-            .empty("")
+        pane = pane.prefix(prefix).footer(if mv.busy {
+            t.review_state(mv.state())
+        } else {
+            Line::from(Span::styled(
+                if matches!(current, Some(MoveRow::Notice(_))) {
+                    " manual fix · excluded "
+                } else {
+                    " included in apply "
+                },
+                t.dim,
+            ))
+        });
+        let height = pane.content_height(area);
+        let rows = match &current {
+            Some(MoveRow::Respelling(r)) if mv.diff => mv
+                .plan
+                .as_ref()
+                .and_then(|p| p.files.iter().find(|f| f.path == r.path))
+                .map(|file| t.diff_window(file, Some(r.start.line + 1), mv.detail_scroll, height))
+                .unwrap_or_default(),
+            Some(MoveRow::Respelling(r)) => mv
+                .preview
+                .as_ref()
+                .filter(|p| p.path == r.path)
+                .map(|preview| {
+                    let anchor = (r.start.line as usize).saturating_sub(height / 2);
+                    let first = anchor
+                        .saturating_add(mv.detail_scroll)
+                        .min(preview.line_count().saturating_sub(height.max(1)));
+                    t.source_window(
+                        preview,
+                        first,
+                        height,
+                        area.width.saturating_sub(2) as usize,
+                        Some((r.span.start, r.span.end)),
+                        Some((r.start.line as usize, r.start.line as usize)),
+                    )
+                })
+                .unwrap_or_default(),
+            Some(MoveRow::Structural(file)) => t.diff_window(file, None, mv.detail_scroll, height),
+            _ => Vec::new(),
+        };
+        pane.rows(rows)
+            .empty(if current.is_some() {
+                ""
+            } else {
+                "Choose a change to review"
+            })
             .render(area, buf);
     }
 }

@@ -274,6 +274,12 @@ fn moving() -> Model {
     let effects = m.update(Action::MoveFile);
     let generation = generation_of(&effects);
     let mv = fx::move_file();
+    if let Mode::Move(mode) = &mut m.mode {
+        mode.from = mv.intent.from.clone().into();
+        mode.to = vvv_engine::RelPath::from(mv.intent.to.as_path())
+            .as_str()
+            .to_owned();
+    }
     m.on_event(Event::Planned {
         generation,
         planned: Planned::Move {
@@ -869,6 +875,10 @@ fn rename_ticks_feed_the_commit_and_the_name_follows_typing() {
     let Mode::Rename(r) = &m.mode else { panic!() };
     assert_eq!(r.ticked(vvv_engine::Confidence::Unresolved), 1);
     let ticks = r.ticks.clone();
+    m.on_event(Event::Planned {
+        generation: m.generation,
+        planned: rename_plan(),
+    });
 
     let effects = m.update(Action::Enter);
     match &effects[..] {
@@ -983,6 +993,12 @@ fn rewrite_expands_the_template_live_and_commits_the_ticks() {
 
     m.update(Action::FocusNth(2));
     m.update(Action::Toggle);
+    m.on_event(Event::Planned {
+        generation: m.generation,
+        planned: Planned::Rewrite {
+            files: rewrite_files(),
+        },
+    });
     let effects = m.update(Action::Enter);
     match &effects[..] {
         [
@@ -2807,11 +2823,11 @@ fn context_picker_and_navigation_keys_use_the_displayed_source() {
     assert_eq!(m.action_for(key(KeyCode::Enter)), Some(Action::Follow));
     assert_eq!(
         m.action_for(KeyEvent::new(KeyCode::Left, KeyModifiers::ALT)),
-        Some(Action::BrowseBack)
+        None
     );
     assert_eq!(
         m.action_for(KeyEvent::new(KeyCode::Right, KeyModifiers::ALT)),
-        Some(Action::BrowseForward)
+        None
     );
     m.on_key(key(KeyCode::Enter));
     let Some(Overlay::Navigation(picker)) = &m.overlay else {
@@ -3171,7 +3187,7 @@ fn fuzzy_file_filter_is_local_cancellable_and_keeps_each_files_selected_match() 
     assert_eq!(m.search.results.file_groups().len(), 1);
     assert_eq!(m.search.results.len(), 2);
     let frame = FrameFixture::new(&m).render_size(120, 24);
-    assert!(frame.contains("Files · filter") && frame.contains("ctrl+f in:"));
+    assert!(frame.contains("Files · filter") && frame.contains("files: lib"));
     assert!(
         !frame.contains("F files")
             && !frame.contains("4 source")
@@ -3866,4 +3882,1074 @@ fn short_terminal_keeps_the_focused_list_browsable_and_geometry_in_bounds() {
             }
         }
     }
+}
+
+#[test]
+fn unified_filters_edit_clear_and_reset_without_discarding_the_query_or_preview_choice() {
+    use crate::modes::search::{Category, filters::Restriction};
+    let mut m = searched();
+    for panel in [
+        SearchPanel::Query,
+        SearchPanel::Files,
+        SearchPanel::Results,
+        SearchPanel::Context,
+        SearchPanel::Body,
+    ] {
+        m.search.focus = panel;
+        assert_eq!(
+            m.action_for(ctrl('g')),
+            Some(Action::OpenMenu(MenuTarget::Filters))
+        );
+    }
+    m.search.focus = SearchPanel::Results;
+    m.search.focus_nth(5);
+    m.search.query.set_filter(Filter::Lang, Some("rust"));
+    m.search.query.set_filter(Filter::Kind, Some("trait_item"));
+    m.search.results.set_category(Category::Declarations);
+    m.search.results.files.filter = "mod".into();
+    let id = m.search.results.current().unwrap().id.clone();
+    m.search.preview_scroll = Some(12);
+    m.update(Action::OpenMenu(MenuTarget::Filters));
+    insta::assert_snapshot!(
+        "unified_filters",
+        FrameFixture::new(&m).render_size(120, 24)
+    );
+    typed(&mut m, "Language");
+    m.update(Action::MenuChoose);
+    assert!(matches!(&m.overlay, Some(Overlay::Menu(menu)) if menu.target == MenuTarget::Language));
+    typed(&mut m, "zzzz");
+    m.on_key(ctrl('u'));
+    assert!(matches!(&m.overlay, Some(Overlay::Menu(menu)) if menu.filter.is_empty()));
+    assert_eq!(m.search.query.filter(Filter::Lang), Some("rust"));
+    let effects = m.on_key(ctrl('x'));
+    assert!(m.overlay.is_none());
+    assert!(m.search.query.filter(Filter::Lang).is_none());
+    m.on_event(Event::Searched {
+        generation: generation_of(&effects),
+        matches: fx::search().matches,
+        skipped: vec![],
+    });
+    assert_eq!(m.search.results.current().unwrap().id, id);
+    assert_eq!(m.search.preview_scroll, Some(12));
+    assert!(m.search.definition_tab);
+    m.update(Action::OpenMenu(MenuTarget::Filters));
+    typed(&mut m, "Reset");
+    let effects = m.update(Action::MenuChoose);
+    assert!(
+        Restriction::ALL
+            .iter()
+            .all(|r| r.value(&m.search).is_none())
+    );
+    assert_eq!(
+        m.search.query.parse().unwrap(),
+        vvv_engine::Query::pattern("Language")
+    );
+    m.on_event(Event::Searched {
+        generation: generation_of(&effects),
+        matches: fx::search().matches,
+        skipped: vec![],
+    });
+    assert_eq!(m.search.results.current().unwrap().id, id);
+    assert_eq!(m.search.preview_scroll, Some(12));
+    assert_eq!(m.search.focus, SearchPanel::Body);
+    assert!(m.search.definition_tab);
+}
+
+#[test]
+fn clearing_hidden_selection_restores_it_until_the_user_deliberately_navigates() {
+    let mut m = searched();
+    let original = m.search.results.current().unwrap().id.clone();
+    m.search.focus = SearchPanel::Results;
+    m.update(Action::OpenMenu(MenuTarget::Category));
+    typed(&mut m, "Imports");
+    m.update(Action::MenuChoose);
+    assert_ne!(m.search.results.current().unwrap().id, original);
+    m.update(Action::OpenMenu(MenuTarget::Category));
+    m.on_key(ctrl('x'));
+    assert_eq!(m.search.results.current().unwrap().id, original);
+    m.update(Action::OpenMenu(MenuTarget::Category));
+    typed(&mut m, "Imports");
+    m.update(Action::MenuChoose);
+    m.update(Action::File(1));
+    let deliberate = m.search.results.current().unwrap().id.clone();
+    m.update(Action::OpenMenu(MenuTarget::Category));
+    m.on_key(ctrl('x'));
+    assert_eq!(m.search.results.current().unwrap().id, deliberate);
+
+    let all = m.search.results.matches.as_ref().clone();
+    m.update(Action::OpenMenu(MenuTarget::Location));
+    typed(&mut m, "src/lang");
+    let effects = m.update(Action::MenuChoose);
+    m.on_event(Event::Searched {
+        generation: generation_of(&effects),
+        matches: all
+            .iter()
+            .filter(|hit| hit.path.starts_with(std::path::Path::new("src/lang")))
+            .cloned()
+            .collect(),
+        skipped: vec![],
+    });
+    assert_ne!(m.search.results.current().unwrap().id, deliberate);
+    m.update(Action::OpenMenu(MenuTarget::Location));
+    let effects = m.on_key(ctrl('x'));
+    m.on_event(Event::Searched {
+        generation: generation_of(&effects),
+        matches: all,
+        skipped: vec![],
+    });
+    assert_eq!(m.search.results.current().unwrap().id, deliberate);
+}
+
+#[test]
+fn picker_counts_are_loaded_search_hits_and_never_hide_zero_count_choices() {
+    let mut m = searched();
+    m.search
+        .results
+        .set_category(crate::modes::search::Category::Uses);
+    m.search.results.files.filter = "missing".into();
+    m.update(Action::OpenMenu(MenuTarget::Category));
+    let Some(Overlay::Menu(menu)) = &m.overlay else {
+        panic!()
+    };
+    assert_eq!(
+        menu.items.iter().map(|i| i.count).collect::<Vec<_>>(),
+        vec![Some(4), Some(1), Some(2), Some(1)]
+    );
+    insta::assert_snapshot!("filter_category_counts", FrameFixture::new(&m).render());
+    m.update(Action::OpenMenu(MenuTarget::Symbol));
+    let Some(Overlay::Menu(menu)) = &m.overlay else {
+        panic!()
+    };
+    assert_eq!(
+        menu.items
+            .iter()
+            .find(|i| i.value.as_deref() == Some("struct"))
+            .unwrap()
+            .count,
+        Some(0)
+    );
+    typed(&mut m, "struct");
+    assert!(
+        matches!(m.update(Action::MenuChoose).as_slice(), [Effect::Search { query, .. }] if query.symbol() == Some(vvv_engine::SymbolKind::Struct))
+    );
+    m.update(Action::OpenMenu(MenuTarget::Language));
+    let Some(Overlay::Menu(menu)) = &m.overlay else {
+        panic!()
+    };
+    assert!(
+        !menu.counted,
+        "pending search must not advertise old counts as current"
+    );
+    assert!(menu.items.iter().all(|i| i.count.is_none()));
+}
+
+#[test]
+fn empty_results_explain_restrictions_and_long_metadata_keeps_complete_paths() {
+    let mut m = searched();
+    m.search.focus = SearchPanel::Results;
+    m.update(Action::OpenMenu(MenuTarget::Category));
+    typed(&mut m, "Uses");
+    m.update(Action::MenuChoose);
+    m.search
+        .results
+        .replace(vec![fx::search().matches[0].clone()]);
+    let frame = FrameFixture::new(&m).render();
+    assert!(frame.contains("No uses in loaded results"));
+    insta::assert_snapshot!("filtered_category_empty", frame);
+    m.search
+        .locations
+        .select(Some("crates/very-long-package/src/语言/nested/modules"))
+        .unwrap();
+    m.search
+        .results
+        .set_location(m.search.locations.selected.clone());
+    m.search.query.set_filter(Filter::Symbol, Some("trait"));
+    m.search.query.set_filter(Filter::Lang, Some("rust"));
+    m.search.query.set_filter(Filter::Kind, Some("trait_item"));
+    m.search.results.files.filter = "lang mod".into();
+    m.search.results.replace(vec![]);
+    insta::assert_snapshot!(
+        "filtered_search_empty_narrow",
+        FrameFixture::new(&m).render_size(70, 24)
+    );
+    m.update(Action::OpenMenu(MenuTarget::Location));
+    typed(&mut m, "zzzz");
+    insta::assert_snapshot!(
+        "typed_location_path",
+        FrameFixture::new(&m).render_size(70, 24)
+    );
+    m.update(Action::OpenMenu(MenuTarget::Language));
+    typed(&mut m, "zzzz");
+    insta::assert_snapshot!("picker_no_choices", FrameFixture::new(&m).render());
+}
+
+#[test]
+fn filter_menu_only_offers_file_browsing_in_views_with_a_file_list() {
+    let mut m = searched();
+    m.search.results.entered(fx::references());
+    m.search.results.files.filter = "lib".into();
+    m.search.results.relation = Relation::Impact;
+    m.update(Action::OpenMenu(MenuTarget::Filters));
+    let Some(Overlay::Menu(menu)) = &m.overlay else {
+        panic!()
+    };
+    assert!(
+        !menu
+            .items
+            .iter()
+            .any(|item| item.value.as_deref() == Some("files"))
+    );
+    assert!(!FrameFixture::new(&m).render().contains("files: lib"));
+    typed(&mut m, "Reset");
+    m.update(Action::MenuChoose);
+    assert!(
+        m.search.results.files.filter.is_empty(),
+        "reset also clears filters retained from another view"
+    );
+}
+
+#[test]
+fn preview_find_is_local_cancellable_and_independent_in_each_pane() {
+    let mut m = searched();
+    m.on_event(Event::Viewport {
+        width: 120,
+        height: 30,
+    });
+    m.update(Action::FocusNth(4));
+    let query = m.search.query.text().to_owned();
+    let generation = m.generation;
+    let selected = m.search.results.current().unwrap().id.clone();
+    assert!(m.on_key(key(KeyCode::Char('/'))).is_empty());
+    assert!(m.search.input_focused());
+    assert_eq!(
+        m.action_for(key(KeyCode::Char('5'))),
+        Some(Action::Input('5'))
+    );
+    assert!(typed(&mut m, "fn").is_empty());
+    assert_eq!(m.search.inspection.hits.len(), 2);
+    assert_eq!(m.search.inspection.cursor, Some(0));
+    assert_eq!(m.search.preview_scroll, Some(64));
+    insta::assert_snapshot!(
+        "source_find_input",
+        FrameFixture::new(&m).render_size(120, 30)
+    );
+    m.on_key(key(KeyCode::Enter));
+    m.on_key(key(KeyCode::Char('n')));
+    assert_eq!(m.search.preview_scroll, Some(65));
+    assert!(matches!(
+        m.update(Action::Edit).as_slice(),
+        [Effect::Edit { line: 65, .. }]
+    ));
+    m.on_key(key(KeyCode::Char('N')));
+    assert_eq!(m.search.preview_scroll, Some(64));
+    let scroll = m.search.preview_scroll;
+    let horizontal = m.search.inspection.horizontal;
+    m.on_key(key(KeyCode::Char('/')));
+    typed(&mut m, "missing");
+    assert!(m.search.inspection.hits.is_empty());
+    m.on_key(key(KeyCode::Esc));
+    assert_eq!(m.search.inspection.term, "fn");
+    assert_eq!(m.search.preview_scroll, scroll);
+    assert_eq!(m.search.inspection.horizontal, horizontal);
+    m.update(Action::FocusNth(5));
+    m.on_key(key(KeyCode::Char('/')));
+    typed(&mut m, "Language");
+    m.on_key(key(KeyCode::Enter));
+    assert_eq!(m.search.body.inspection.hits.len(), 1);
+    assert_eq!(
+        m.search.body.inspection.horizontal, 0,
+        "visible hits keep columns stable"
+    );
+    assert_eq!(m.search.inspection.term, "fn");
+    assert_eq!(m.search.body.inspection.term, "Language");
+    insta::assert_snapshot!(
+        "definition_find",
+        FrameFixture::new(&m).render_size(120, 30)
+    );
+    assert_eq!(m.search.query.text(), query);
+    assert_eq!(m.generation, generation);
+    assert_eq!(m.search.results.current().unwrap().id, selected);
+}
+
+#[test]
+fn preview_line_jumps_validate_absolute_lines_and_editor_uses_the_inspected_site() {
+    let mut m = searched();
+    m.update(Action::FocusNth(5));
+    m.on_key(key(KeyCode::Char(':')));
+    typed(&mut m, "3");
+    m.on_key(key(KeyCode::Enter));
+    assert!(
+        m.search
+            .body
+            .inspection
+            .edit
+            .as_ref()
+            .unwrap()
+            .error
+            .is_some()
+    );
+    assert_eq!(m.search.body.scroll, 0);
+    insta::assert_snapshot!("definition_invalid_line", FrameFixture::new(&m).render());
+    m.on_key(ctrl('u'));
+    typed(&mut m, "66");
+    m.on_key(key(KeyCode::Enter));
+    assert!(m.search.body.inspection.edit.is_none());
+    assert_eq!(m.search.body.scroll, 2);
+    assert!(
+        matches!(m.update(Action::Edit).as_slice(), [Effect::Edit { path, line: 65 }] if path.as_path() == std::path::Path::new("src/lang/mod.rs"))
+    );
+    m.update(Action::FocusNth(4));
+    m.on_key(key(KeyCode::Char(':')));
+    typed(&mut m, "0");
+    m.on_key(key(KeyCode::Enter));
+    assert!(m.search.inspection.edit.is_some());
+    m.on_key(ctrl('u'));
+    typed(&mut m, "70");
+    m.on_key(key(KeyCode::Enter));
+    assert_eq!(m.search.preview_scroll, Some(69));
+    assert!(matches!(
+        m.update(Action::Edit).as_slice(),
+        [Effect::Edit { line: 69, .. }]
+    ));
+    m.on_key(key(KeyCode::Char(':')));
+    typed(&mut m, "abc");
+    m.on_key(key(KeyCode::Esc));
+    assert_eq!(m.search.preview_scroll, Some(69));
+}
+
+#[test]
+fn preview_expansion_restores_results_and_keeps_independent_positions_after_resize() {
+    let mut m = searched();
+    m.on_event(Event::Viewport {
+        width: 120,
+        height: 30,
+    });
+    let original = m.search_frame().panels;
+    let selected = m.search.results.current().unwrap().id.clone();
+    m.update(Action::FocusNth(4));
+    m.update(Action::Scroll(3));
+    let source_scroll = m.search.preview_scroll;
+    m.on_key(key(KeyCode::Char('z')));
+    assert_eq!(m.search.expanded, Some(SearchPanel::Context));
+    let expanded = m.search_frame();
+    assert!(expanded.panels[1].1.is_empty() && expanded.panels[2].1.is_empty());
+    assert_eq!(expanded.panels[3].1.width, 120);
+    insta::assert_snapshot!(
+        "source_expanded",
+        FrameFixture::new(&m).render_size(120, 30)
+    );
+    m.on_key(key(KeyCode::Char('p')));
+    assert_eq!(m.search.expanded, Some(SearchPanel::Body));
+    m.update(Action::Scroll(1));
+    assert_eq!(m.search.body.scroll, 1);
+    m.on_event(Event::Viewport {
+        width: 70,
+        height: 18,
+    });
+    insta::assert_snapshot!(
+        "definition_expanded_narrow",
+        FrameFixture::new(&m).render_size(70, 18)
+    );
+    m.on_key(key(KeyCode::Esc));
+    assert!(m.search.expanded.is_none());
+    assert_eq!(m.search.focus, SearchPanel::Body);
+    m.on_event(Event::Viewport {
+        width: 120,
+        height: 30,
+    });
+    assert_eq!(m.search_frame().panels, original);
+    assert_eq!(m.search.body.scroll, 1);
+    assert_eq!(m.search.preview_scroll, source_scroll);
+    assert_eq!(m.search.results.current().unwrap().id, selected);
+    m.on_key(key(KeyCode::Char('z')));
+    m.on_key(key(KeyCode::Char('3')));
+    assert_eq!(m.search.focus, SearchPanel::Results);
+    assert!(m.search.expanded.is_none());
+}
+
+#[test]
+fn horizontal_preview_navigation_preserves_focus_and_resets_on_new_displayed_files() {
+    let mut m = searched();
+    m.update(Action::FocusNth(4));
+    let selected = m.search.results.current().unwrap().id.clone();
+    m.on_key(key(KeyCode::Right));
+    assert_eq!(m.search.inspection.horizontal, 8);
+    assert_eq!(m.search.focus, SearchPanel::Context);
+    insta::assert_snapshot!("source_horizontal", FrameFixture::new(&m).render());
+    m.on_key(key(KeyCode::Left));
+    assert_eq!(m.search.inspection.horizontal, 0);
+    m.on_key(key(KeyCode::Char('l')));
+    m.on_key(key(KeyCode::Char('0')));
+    assert_eq!(m.search.inspection.horizontal, 0);
+    m.update(Action::FocusNth(5));
+    m.on_key(key(KeyCode::Right));
+    assert_eq!(m.search.body.inspection.horizontal, 8);
+    assert_eq!(m.search.inspection.horizontal, 0);
+    assert_eq!(m.search.results.current().unwrap().id, selected);
+    m.update(Action::FocusNth(3));
+    m.update(Action::File(1));
+    m.update(Action::FocusNth(4));
+    m.on_key(key(KeyCode::Right));
+    let old = m.search.inspection.horizontal;
+    m.on_event(preview("src/lib.rs", &["wrong reply"]));
+    assert_eq!(
+        m.search.inspection.horizontal, old,
+        "superseded replies cannot change inspection state"
+    );
+    m.on_event(preview("src/lang/registry.rs", &["use super::Language;"]));
+    assert_eq!(m.search.inspection.horizontal, 0);
+}
+
+#[test]
+fn navigation_history_restores_find_hits_horizontal_scroll_and_expansion() {
+    let mut m = searched();
+    m.update(Action::FocusNth(4));
+    m.on_key(key(KeyCode::Char('/')));
+    typed(&mut m, "fn");
+    m.on_key(key(KeyCode::Enter));
+    m.on_key(key(KeyCode::Right));
+    m.on_key(key(KeyCode::Char('z')));
+    let horizontal = m.search.inspection.horizontal;
+    let scroll = m.search.preview_scroll;
+    let entry = crate::modes::search::browse::NavigationEntry::capture(&m.search);
+    m.search.inspection = Default::default();
+    m.search.expanded = None;
+    m.search.preview_scroll = None;
+    entry.restore(&mut m.search);
+    assert_eq!(m.search.inspection.term, "fn");
+    assert_eq!(m.search.inspection.hits.len(), 2);
+    assert_eq!(m.search.inspection.horizontal, horizontal);
+    assert_eq!(m.search.preview_scroll, scroll);
+    assert_eq!(m.search.expanded, Some(SearchPanel::Context));
+}
+
+#[test]
+fn expanded_preview_preserves_manually_scrolled_file_and_match_lists() {
+    use ratatui::crossterm::event::MouseEventKind;
+    let mut m = searched();
+    m.large_file_results();
+    let frame = m.search_frame();
+    for list in frame.lists {
+        m.mouse(MouseEventKind::ScrollDown, list.content.x, list.content.y);
+    }
+    let file_offset = m.search.results.files.viewport.offset;
+    let path = m.search.results.current().unwrap().path.clone();
+    let match_offset = m.search.results.files.match_viewports[&path].offset;
+    assert!(file_offset > 0 && match_offset > 0);
+    m.update(Action::FocusNth(4));
+    m.update(Action::ExpandPreview);
+    m.on_event(Event::Viewport {
+        width: 80,
+        height: 20,
+    });
+    assert_eq!(m.search.results.files.viewport.offset, file_offset);
+    assert_eq!(
+        m.search.results.files.match_viewports[&path].offset,
+        match_offset
+    );
+    m.update(Action::Back);
+    assert_eq!(m.search.results.files.viewport.offset, file_offset);
+    assert_eq!(
+        m.search.results.files.match_viewports[&path].offset,
+        match_offset
+    );
+}
+
+#[test]
+fn inspection_prompts_allow_focus_navigation_and_ignore_hidden_source() {
+    let mut m = searched();
+    m.update(Action::FocusNth(4));
+    m.on_key(key(KeyCode::Char('/')));
+    typed(&mut m, "fn");
+    m.on_key(key(KeyCode::Tab));
+    assert_eq!(m.search.focus, SearchPanel::Body);
+    assert!(m.search.inspection.edit.is_none());
+    assert_eq!(m.search.inspection.term, "fn");
+    m.on_key(key(KeyCode::Char(':')));
+    typed(&mut m, "66");
+    m.on_key(key(KeyCode::BackTab));
+    assert_eq!(m.search.focus, SearchPanel::Context);
+    assert!(m.search.body.inspection.edit.is_none());
+    assert!(m.search.body.inspection.line.is_none());
+    m.search.results.matches = Default::default();
+    assert!(m.search.displayed_source().is_none());
+    m.update(Action::InspectFind);
+    assert!(m.search.inspection.edit.is_none());
+}
+
+#[test]
+fn split_keys_resize_in_opposite_directions_from_lists_and_previews() {
+    let mut m = searched();
+    for panel in [2, 3, 4, 5] {
+        m.update(Action::FocusNth(panel));
+        let split = m.split;
+        m.on_key(key(KeyCode::Char('<')));
+        assert_eq!(m.split, split - 5);
+        m.on_key(key(KeyCode::Char('>')));
+        assert_eq!(m.split, split);
+    }
+}
+
+#[test]
+fn review_selection_replans_exact_ids_and_blocks_apply_until_the_latest_preview() {
+    use crate::modes::review::ReviewState;
+    let mut m = renaming();
+    let effects = typed(&mut m, "Lang");
+    m.on_event(Event::Planned {
+        generation: generation_of(&effects),
+        planned: rename_plan(),
+    });
+    m.update(Action::FocusNth(3));
+    let old = m.generation;
+    let effects = m.update(Action::Toggle);
+    let generation = generation_of(&effects);
+    let Mode::Rename(r) = &m.mode else { panic!() };
+    let ticks = r.ticks.clone();
+    assert_eq!(ticks.len(), 2);
+    assert_eq!(r.state(), ReviewState::Planning);
+    assert!(effects.iter().any(|effect| matches!(effect, Effect::Plan { intent: Intent::Rename(intent), .. } if intent.selection == Selection::Ids(ticks.clone()))));
+    assert!(m.update(Action::Enter).is_empty());
+    m.on_event(Event::Planned {
+        generation: old,
+        planned: rename_plan(),
+    });
+    let Mode::Rename(r) = &m.mode else { panic!() };
+    assert_eq!(r.state(), ReviewState::Planning);
+    let mut planned = rename_plan();
+    if let Planned::Rename {
+        files, occurrences, ..
+    } = &mut planned
+    {
+        files.retain(|file| {
+            occurrences
+                .iter()
+                .any(|o| o.m.path == file.path && ticks.contains(&o.m.id))
+        });
+    }
+    m.on_event(Event::Planned {
+        generation,
+        planned,
+    });
+    let Mode::Rename(r) = &m.mode else { panic!() };
+    assert_eq!(r.state(), ReviewState::Ready);
+    assert_eq!(r.changes.len(), 2);
+    assert!(matches!(
+        m.update(Action::Enter).as_slice(),
+        [Effect::Commit {
+            intent: Intent::Rename(_)
+        }]
+    ));
+    let Mode::Rename(r) = &m.mode else { panic!() };
+    assert_eq!(r.state(), ReviewState::Applying);
+    let name = r.name.clone();
+    assert!(m.update(Action::Input('x')).is_empty());
+    assert!(m.update(Action::ToggleAll).is_empty());
+    let Mode::Rename(r) = &m.mode else { panic!() };
+    assert_eq!(r.name, name);
+    assert_eq!(r.ticks, ticks);
+    insta::assert_snapshot!("review_applying", FrameFixture::new(&m).render());
+}
+
+#[test]
+fn rewrite_preview_selection_and_clear_invalidate_pending_plans() {
+    use crate::modes::review::ReviewState;
+    let mut m = rewriting();
+    m.update(Action::FocusNth(2));
+    let effects = m.update(Action::Toggle);
+    let generation = generation_of(&effects);
+    let Mode::Rewrite(rw) = &m.mode else { panic!() };
+    let ticks = rw.ticks.clone();
+    assert!(effects.iter().any(|effect| matches!(effect, Effect::Plan { intent: Intent::Rewrite(intent), .. } if intent.selection == Selection::Ids(ticks.clone()))));
+    assert!(m.update(Action::Enter).is_empty());
+    m.update(Action::ToggleAll);
+    let zero = m.update(Action::ToggleAll);
+    assert!(zero.is_empty());
+    m.on_event(Event::Planned {
+        generation,
+        planned: Planned::Rewrite {
+            files: rewrite_files(),
+        },
+    });
+    let Mode::Rewrite(rw) = &m.mode else { panic!() };
+    assert!(rw.changes.is_empty() && rw.ticks.is_empty());
+    assert_eq!(rw.state(), ReviewState::Empty("select matches"));
+    insta::assert_snapshot!("review_excluded_rewrite", FrameFixture::new(&m).render());
+    m.update(Action::FocusNth(1));
+    m.on_key(ctrl('u'));
+    let Mode::Rewrite(rw) = &m.mode else { panic!() };
+    assert!(rw.template.is_empty());
+    assert_eq!(rw.state(), ReviewState::Input("type a template"));
+}
+
+#[test]
+fn failed_review_never_applies_the_previous_preview_and_clear_recovers_the_input() {
+    use crate::modes::review::ReviewState;
+    let mut m = renaming();
+    let effects = typed(&mut m, "Lang");
+    m.on_event(Event::Planned {
+        generation: generation_of(&effects),
+        planned: rename_plan(),
+    });
+    m.on_event(Event::PlanFailed {
+        generation: m.generation,
+        message: "name collides with an existing declaration".into(),
+    });
+    let Mode::Rename(r) = &m.mode else { panic!() };
+    assert!(r.changes.is_empty());
+    assert!(matches!(r.state(), ReviewState::Failed(_)));
+    assert!(m.update(Action::Enter).is_empty());
+    insta::assert_snapshot!("review_invalid_rename", FrameFixture::new(&m).render());
+    m.on_key(ctrl('u'));
+    let Mode::Rename(r) = &m.mode else { panic!() };
+    assert!(r.name.is_empty() && r.error.is_none());
+    assert_eq!(r.state(), ReviewState::Input("type a new name"));
+    assert!(m.status.message.is_none());
+    let mut m = moving();
+    m.on_key(ctrl('u'));
+    let Mode::Move(mv) = &m.mode else { panic!() };
+    assert!(mv.to.is_empty() && mv.plan.is_none());
+    assert_eq!(mv.state(), ReviewState::Input("type a destination"));
+}
+
+#[test]
+fn review_details_follow_the_last_list_and_ignore_superseded_source_replies() {
+    let mut m = renaming();
+    m.update(Action::FocusNth(3));
+    m.update(Action::Move(2));
+    let Mode::Rename(r) = &m.mode else { panic!() };
+    let id = r.current().unwrap().m.id.clone();
+    m.update(Action::FocusNth(5));
+    let Mode::Rename(r) = &m.mode else { panic!() };
+    assert_eq!(r.current().unwrap().m.id, id);
+    assert_eq!(r.list(), RenamePanel::Sure);
+    m.on_event(preview("src/other.rs", &["first", "second"]));
+    m.update(Action::Scroll(1));
+    m.on_event(preview("unselected.rs", &["wrong reply"]));
+    let Mode::Rename(r) = &m.mode else { panic!() };
+    assert_eq!(
+        r.preview.as_ref().unwrap().path.as_path(),
+        std::path::Path::new("src/other.rs")
+    );
+    assert_eq!(r.detail_scroll, 1);
+    let mut m = moving();
+    m.update(Action::FocusNth(4));
+    let Mode::Move(mv) = &m.mode else { panic!() };
+    let site = mv.site();
+    m.update(Action::FocusNth(5));
+    let Mode::Move(mv) = &m.mode else { panic!() };
+    assert_eq!(mv.list(), MovePanel::Notices);
+    assert_eq!(mv.site(), site);
+    insta::assert_snapshot!(
+        "review_manual_narrow",
+        FrameFixture::new(&m).render_size(70, 14)
+    );
+}
+
+#[test]
+fn text_home_and_end_scroll_review_content_without_changing_its_selected_site() {
+    for mut m in [renaming(), moving(), rewriting()] {
+        let detail = if matches!(m.mode, Mode::Rewrite(_)) {
+            3
+        } else {
+            5
+        };
+        m.update(Action::FocusNth(detail));
+        let site = match &m.mode {
+            Mode::Rename(r) => r.site(),
+            Mode::Move(mv) => mv.site(),
+            Mode::Rewrite(rw) => rw.site(),
+            _ => unreachable!(),
+        };
+        m.on_key(key(KeyCode::End));
+        let current = match &m.mode {
+            Mode::Rename(r) => r.site(),
+            Mode::Move(mv) => mv.site(),
+            Mode::Rewrite(rw) => rw.site(),
+            _ => unreachable!(),
+        };
+        assert_eq!(current, site);
+        FrameFixture::new(&m).render(); // Rendering the saturated end offset must not overflow.
+        m.on_key(key(KeyCode::Home));
+        let scroll = match &m.mode {
+            Mode::Rename(r) => r.detail_scroll,
+            Mode::Move(mv) => mv.detail_scroll,
+            Mode::Rewrite(rw) => rw.detail_scroll,
+            _ => unreachable!(),
+        };
+        assert_eq!(scroll, 0);
+    }
+    let mut m = searched();
+    let mut newest = history_entry(2);
+    newest.files = 2;
+    newest.paths = vec![
+        "crates/世界/src/very_long_directory/original.rs".into(),
+        "crates/世界/src/very_long_directory/other.rs".into(),
+    ];
+    newest.moves = vec![(
+        newest.paths[0].clone(),
+        "crates/世界/src/renamed_directory/renamed.rs".into(),
+    )];
+    m.on_event(Event::History(vec![history_entry(1), newest]));
+    m.on_key(key(KeyCode::Char('2')));
+    assert_eq!(
+        m.action_for(key(KeyCode::Char('d'))),
+        Some(Action::Scroll(20))
+    );
+    m.on_key(key(KeyCode::End));
+    let Mode::History(h) = &m.mode else { panic!() };
+    assert_eq!(h.current().unwrap().id, 2);
+    assert_eq!(h.files_scroll, usize::MAX);
+    m.on_key(key(KeyCode::Home));
+    insta::assert_snapshot!(
+        "review_history_paths",
+        FrameFixture::new(&m).render_size(90, 20)
+    );
+    m.update(Action::FocusNth(1));
+    m.update(Action::Move(-1));
+    assert!(m.update(Action::Undo).is_empty());
+    assert!(m.overlay.is_none());
+    let rendered = FrameFixture::new(&m).render();
+    assert!(rendered.contains("cannot undo") && rendered.contains("newest entry only"));
+}
+
+#[test]
+fn rename_input_during_initial_judgment_still_loads_engine_defaults() {
+    let mut m = searched();
+    let first = m.update(Action::Rename);
+    let old = generation_of(&first);
+    let typing = m.update(Action::Input('L'));
+    assert!(
+        matches!(typing.as_slice(), [Effect::Plan { intent: Intent::Rename(intent), .. }] if intent.to == "L" && intent.selection == Selection::All)
+    );
+    let clearing = m.update(Action::Clear);
+    let generation = generation_of(&clearing);
+    assert!(
+        matches!(clearing.as_slice(), [Effect::Plan { intent: Intent::Rename(intent), .. }] if intent.to == "Language" && intent.selection == Selection::All)
+    );
+    m.on_event(Event::Planned {
+        generation: old,
+        planned: rename_plan(),
+    });
+    let Mode::Rename(r) = &m.mode else { panic!() };
+    assert!(r.busy && !r.judged);
+    m.on_event(Event::Planned {
+        generation,
+        planned: rename_plan(),
+    });
+    let Mode::Rename(r) = &m.mode else { panic!() };
+    assert!(r.judged && !r.busy && r.name.is_empty());
+    assert_eq!(r.ticks.len(), 3);
+    let typing = m.update(Action::Input('L'));
+    assert!(
+        matches!(typing.as_slice(), [Effect::Plan { intent: Intent::Rename(intent), .. }] if matches!(&intent.selection, Selection::Ids(ids) if ids.len() == 3))
+    );
+}
+
+#[test]
+fn places_return_to_completed_searches_without_recording_each_keystroke() {
+    let mut m = searched();
+    m.on_event(Event::Viewport {
+        width: 90,
+        height: 20,
+    });
+    m.search.focus = SearchPanel::Context;
+    m.search.preview_scroll = Some(13);
+    m.search.results.files.filter = "lang".into();
+    let original = m.search.results.current().unwrap().id.clone();
+    let original_preview = m.search.preview.clone();
+    m.search.focus = SearchPanel::Query;
+    m.update(Action::Clear);
+    typed(&mut m, "Beta");
+    m.on_event(Event::Searched {
+        generation: m.generation,
+        matches: fx::search().matches,
+        skipped: vec![],
+    });
+    assert_eq!(m.search.trail.position(), (2, 2));
+    m.update(Action::Clear);
+    typed(&mut m, "Gamma");
+    m.on_event(Event::Searched {
+        generation: m.generation,
+        matches: fx::search().matches,
+        skipped: vec![],
+    });
+    assert_eq!(m.search.trail.position(), (3, 3));
+    m.update(Action::Places);
+    m.update(Action::Top);
+    let effects = m.update(Action::Enter);
+    assert_eq!(m.search.trail.position(), (1, 3));
+    assert_eq!(m.search.query.text(), "Language");
+    assert_eq!(m.search.results.files.filter, "lang");
+    assert_eq!(m.search.results.current().unwrap().id, original);
+    assert_eq!(m.search.preview_scroll, Some(13));
+    assert_eq!(
+        m.search.preview.as_ref().unwrap().text(),
+        original_preview.as_ref().unwrap().text()
+    );
+    assert!(m.search.stale);
+    assert!(
+        effects
+            .iter()
+            .filter(|e| matches!(e, Effect::Follow { .. }))
+            .count()
+            <= 1
+    );
+    assert_eq!(
+        m.action_for(KeyEvent::new(KeyCode::Left, KeyModifiers::ALT)),
+        None
+    );
+    assert_eq!(
+        m.action_for(KeyEvent::new(KeyCode::Right, KeyModifiers::ALT)),
+        Some(Action::BrowseForward)
+    );
+    insta::assert_snapshot!("places_returned", FrameFixture::new(&m).render());
+}
+
+#[test]
+fn places_and_context_help_cancel_without_losing_the_picker_or_browsing_position() {
+    let mut m = searched();
+    m.search.focus = SearchPanel::Files;
+    let selected = m.search.results.current().unwrap().id.clone();
+    m.update(Action::Places);
+    m.update(Action::PlacesTab);
+    typed(&mut m, "Language");
+    m.on_key(KeyEvent::new(KeyCode::F(1), KeyModifiers::NONE));
+    assert!(matches!(m.overlay, Some(Overlay::Help { .. })));
+    insta::assert_snapshot!(
+        "places_help_narrow",
+        FrameFixture::new(&m).render_size(50, 18)
+    );
+    m.on_event(Event::Viewport {
+        width: 50,
+        height: 18,
+    });
+    m.on_key(key(KeyCode::End));
+    let Some(Overlay::Help { scroll: end, .. }) = &m.overlay else {
+        panic!();
+    };
+    let end = *end;
+    assert!(end > 0);
+    m.on_key(key(KeyCode::PageUp));
+    let Some(Overlay::Help { scroll, .. }) = &m.overlay else {
+        panic!();
+    };
+    assert!(*scroll < end);
+    m.on_key(KeyEvent::new(KeyCode::F(1), KeyModifiers::NONE));
+    let Some(Overlay::Places(picker)) = &m.overlay else {
+        panic!("help restores Places");
+    };
+    assert!(picker.recent);
+    assert_eq!(picker.filter, "Language");
+    assert_eq!(m.search.results.current().unwrap().id, selected);
+    m.update(Action::Back);
+    assert_eq!(m.search.focus, SearchPanel::Files);
+    assert_eq!(m.search.results.current().unwrap().id, selected);
+    assert_eq!(m.search.trail.position(), (1, 1));
+}
+
+#[test]
+fn recent_searches_restore_all_restrictions_and_reject_superseded_answers() {
+    use crate::modes::search::recall::SearchRecipe;
+    let mut m = searched();
+    let recipe = SearchRecipe {
+        query: "Engine lang:rust".into(),
+        location: Some("crates/vvv".into()),
+        category: "uses".into(),
+        files: "srv".into(),
+    };
+    m.search.recent.remember(recipe.clone());
+    let old_generation = m.generation;
+    m.update(Action::Places);
+    m.update(Action::PlacesTab);
+    typed(&mut m, "Engine");
+    insta::assert_snapshot!(
+        "places_recent_narrow",
+        FrameFixture::new(&m).render_size(50, 18)
+    );
+    let effects = m.update(Action::Enter);
+    let [
+        Effect::Search {
+            query,
+            scope,
+            generation,
+        },
+    ] = effects.as_slice()
+    else {
+        panic!("recent search executes afresh");
+    };
+    assert!(*generation > old_generation);
+    assert_eq!(query.language().unwrap().as_str(), "rust");
+    assert_eq!(scope.paths, vec![vvv_engine::RelPath::from("crates/vvv")]);
+    assert_eq!(m.search.query.text(), recipe.query);
+    assert_eq!(
+        m.search.results.category,
+        crate::modes::search::Category::Uses
+    );
+    assert_eq!(m.search.results.files.filter, "srv");
+    m.on_event(Event::Searched {
+        generation: old_generation,
+        matches: vec![],
+        skipped: vec![],
+    });
+    assert!(!m.search.results.matches.is_empty());
+    assert!(m.status.busy);
+    m.on_event(Event::Searched {
+        generation: *generation,
+        matches: vec![],
+        skipped: vec![],
+    });
+    assert!(!m.status.busy);
+    assert!(m.search.results.matches.is_empty());
+    assert_eq!(m.search.recent.entries()[0], recipe);
+}
+
+#[test]
+fn forgetting_a_recent_search_survives_picker_reopening_and_preference_round_trip() {
+    use crate::preferences::Preferences;
+    let mut m = searched();
+    m.update(Action::Places);
+    m.update(Action::PlacesTab);
+    m.update(Action::ForgetSearch);
+    let Some(Overlay::Places(p)) = &m.overlay else {
+        panic!();
+    };
+    assert!(p.visible().is_empty());
+    m.update(Action::Back);
+    m.update(Action::Places);
+    m.update(Action::PlacesTab);
+    let Some(Overlay::Places(p)) = &m.overlay else {
+        panic!();
+    };
+    assert!(p.visible().is_empty());
+    let bytes = Preferences::capture(&m).encode();
+    let mut restored = model();
+    Preferences::decode(&bytes, &m.root)
+        .unwrap()
+        .restore(&mut restored);
+    assert!(restored.search.recent.entries().is_empty());
+    m.update(Action::Back);
+    m.update(Action::Refresh);
+    m.on_event(Event::Searched {
+        generation: m.generation,
+        matches: fx::search().matches,
+        skipped: vec![],
+    });
+    assert_eq!(
+        m.search.recent.entries().len(),
+        1,
+        "explicit search records the recipe again"
+    );
+}
+
+#[test]
+fn workspace_preferences_restore_only_layout_and_available_recipes() {
+    use crate::preferences::Preferences;
+    let mut m = searched();
+    m.split = 65;
+    m.view = ReportView::Detailed;
+    m.search.definition_tab = true;
+    m.search.locations.select(Some("crates/vvv")).unwrap();
+    m.search.results.files.filter = "lang".into();
+    let bytes = Preferences::capture(&m).encode();
+    assert!(Preferences::decode(&bytes, "different-workspace").is_none());
+    assert!(Preferences::decode(b"invalid json", &m.root).is_none());
+    let mut json: serde_json::Value = serde_json::from_slice(&bytes).unwrap();
+    json["recent"]["entries"].as_array_mut().unwrap().push(serde_json::json!({ "query": "bad symbol:nope", "location": "../outside", "category": "all", "files": "" }));
+    let mut restored = model();
+    Preferences::decode(&serde_json::to_vec(&json).unwrap(), &m.root)
+        .unwrap()
+        .restore(&mut restored);
+    assert_eq!(restored.split, 65);
+    assert_eq!(restored.view, ReportView::Detailed);
+    assert!(restored.search.definition_tab);
+    assert!(restored.search.query.is_empty());
+    assert!(restored.search.locations.selected.is_none());
+    assert!(restored.search.results.files.filter.is_empty());
+    assert!(restored.search.recent.entries().iter().all(|r| r.valid()));
+    assert!(
+        restored
+            .search
+            .locations
+            .choices()
+            .contains(&"crates/vvv".into())
+    );
+    restored.update(Action::Places);
+    assert_eq!(restored.action_for(ctrl('l')), Some(Action::ResetLayout));
+    restored.on_key(ctrl('l'));
+    assert_eq!(restored.split, 50);
+    assert_eq!(restored.view, ReportView::Compact);
+    assert!(!restored.search.definition_tab);
+    assert!(!restored.search.recent.entries().is_empty());
+    json["split"] = 99.into();
+    assert!(Preferences::decode(&serde_json::to_vec(&json).unwrap(), &m.root).is_none());
+}
+
+#[test]
+fn help_excludes_shadowed_and_unavailable_keys_and_works_from_query_focus() {
+    let mut m = searched();
+    let rows = m
+        .screen()
+        .sections(m.focus(), |w| m.holds(w))
+        .into_iter()
+        .flat_map(|(_, rows)| rows)
+        .collect::<Vec<_>>();
+    assert!(
+        !rows
+            .iter()
+            .any(|r| r.binding.dispatch == crate::keymap::Dispatch::Run(Action::BrowseBack))
+    );
+    assert!(
+        !rows
+            .iter()
+            .any(|r| r.binding.dispatch == crate::keymap::Dispatch::Run(Action::FilterFiles))
+    );
+    m.on_key(KeyEvent::new(KeyCode::F(1), KeyModifiers::NONE));
+    assert!(matches!(m.overlay, Some(Overlay::Help { .. })));
+    m.on_key(KeyEvent::new(KeyCode::F(1), KeyModifiers::NONE));
+    assert!(m.overlay.is_none());
+    assert_eq!(m.search.focus, SearchPanel::Query);
+    m.on_event(Event::History(vec![history_entry(1)]));
+    m.update(Action::FocusNth(2));
+    let rows = m
+        .screen()
+        .sections(m.focus(), |w| m.holds(w))
+        .into_iter()
+        .flat_map(|(_, rows)| rows)
+        .collect::<Vec<_>>();
+    let page = rows
+        .iter()
+        .find(|r| r.binding.dispatch == crate::keymap::Dispatch::Run(Action::Scroll(20)))
+        .unwrap();
+    assert!(!page.labels.split_whitespace().any(|k| k == "u"));
+    assert!(page.labels.contains("pgup"));
+}
+
+#[test]
+fn places_trail_keeps_complete_paths_in_a_short_terminal() {
+    let mut m = searched();
+    m.search
+        .locations
+        .select(Some(
+            "crates/vvv/src/very/long/path/with/multiple/components",
+        ))
+        .unwrap();
+    m.search.remember_page(false);
+    m.update(Action::Places);
+    insta::assert_snapshot!(
+        "places_trail_narrow",
+        FrameFixture::new(&m).render_size(50, 12)
+    );
+    m.update(Action::PlacesTab);
+    m.update(Action::Clear);
+    typed(&mut m, "components Language");
+    let Some(Overlay::Places(p)) = &m.overlay else {
+        panic!();
+    };
+    assert_eq!(p.visible().len(), 1);
+    m.update(Action::Top);
+    m.update(Action::Bottom);
+    insta::assert_snapshot!(
+        "places_long_recipe",
+        FrameFixture::new(&m).render_size(50, 12)
+    );
 }

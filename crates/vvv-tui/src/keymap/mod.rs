@@ -76,6 +76,7 @@ pub struct Keybinding<A> {
 
 impl<A: Copy> Keybinding<A> {
     /// Every key of the row as a label, for the help.
+    #[cfg(test)]
     pub fn labels(&self) -> String {
         let mut keys: Vec<String> = self.triggers.iter().map(|t| t.label()).collect();
         keys.dedup();
@@ -97,6 +98,8 @@ pub enum When {
     SearchListAnchored,
     /// Result files are displayed and focus is outside an input.
     FileList,
+    BrowseBack,
+    BrowseForward,
 }
 
 /// A named set of bindings.
@@ -111,6 +114,7 @@ pub struct Layer<A: 'static> {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Row<'a, A> {
     pub labels: String,
+    pub partial: bool,
     pub legend: Legend,
     pub binding: &'a Keybinding<A>,
 }
@@ -128,6 +132,7 @@ impl<A: Copy> Layer<A> {
 
     /// The bindings gathered into display rows: a run that shares a legend
     /// collapses into one, its keys joined.
+    #[cfg(test)]
     pub fn rows(&self) -> Vec<Row<'static, A>> {
         let mut rows: Vec<Row<'static, A>> = Vec::new();
         for binding in self.bindings {
@@ -141,6 +146,7 @@ impl<A: Copy> Layer<A> {
                 }
                 _ => rows.push(Row {
                     labels: binding.labels(),
+                    partial: false,
                     legend: binding.legend,
                     binding,
                 }),

@@ -7,12 +7,12 @@ use ratatui::widgets::Widget;
 use vvv_engine::{Answer, Confidence, Impact};
 
 use super::files::{ListGeometry, PointerIntent, SearchFrame};
-use super::query::Filter;
+use super::filters::Restriction;
 use super::{Category, Relation, Search, SearchPanel};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
 use crate::model::{MenuTarget, PanelKind, ReportView};
-use crate::render::Pane;
+use crate::render::{CodeWindow, Pane};
 use crate::render::{Fit, Header, Painter, Region};
 use crate::screen::{BoundScreen, Panel, Screen};
 use vvv_engine::protocol::vocabulary::{Files, Mark, Plural};
@@ -25,6 +25,24 @@ use Dispatch::Run;
 const MODE: Layer<Action> = Layer {
     name: "Search",
     bindings: &[
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('o'))],
+            dispatch: Run(A::Places),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "open browsing trail and recent searches",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('g'))],
+            dispatch: Run(A::OpenMenu(MenuTarget::Filters)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "edit or clear filters; reset restrictions while keeping the query",
+            },
+        },
         Keybinding {
             triggers: &[Trigger::Key(Key::char('F'))],
             dispatch: Run(A::FilterFiles),
@@ -76,7 +94,7 @@ const MODE: Layer<Action> = Layer {
         Keybinding {
             triggers: &[Trigger::Key(Key::alt_left())],
             dispatch: Run(A::BrowseBack),
-            when: When::Always,
+            when: When::BrowseBack,
             legend: Legend {
                 bar: None,
                 help: "previous browsing location",
@@ -85,7 +103,7 @@ const MODE: Layer<Action> = Layer {
         Keybinding {
             triggers: &[Trigger::Key(Key::alt_right())],
             dispatch: Run(A::BrowseForward),
-            when: When::Always,
+            when: When::BrowseForward,
             legend: Legend {
                 bar: None,
                 help: "next browsing location",
@@ -260,12 +278,21 @@ const MODE: Layer<Action> = Layer {
             },
         },
         Keybinding {
-            triggers: &[Trigger::Key(Key::char('<')), Trigger::Key(Key::char('>'))],
+            triggers: &[Trigger::Key(Key::char('<'))],
             dispatch: Run(A::Resize(-5)),
             when: When::SearchList,
             legend: Legend {
                 bar: None,
                 help: "resize",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('>'))],
+            dispatch: Run(A::Resize(5)),
+            when: When::SearchList,
+            legend: Legend {
+                bar: None,
+                help: "grow the result column",
             },
         },
         Keybinding {
@@ -425,18 +452,6 @@ const CONTEXT: Layer<Action> = Layer {
     name: "Search",
     bindings: &[
         Keybinding {
-            triggers: &[Trigger::Key(Key::char('p'))],
-            dispatch: Run(A::PreviewTab),
-            when: When::Always,
-            legend: Legend {
-                bar: Some(Bar {
-                    keys: "p",
-                    word: "preview",
-                }),
-                help: "toggle source / definition focus; reveal the hidden preview",
-            },
-        },
-        Keybinding {
             triggers: &[Trigger::Key(Key::enter()), Trigger::Key(Key::char('o'))],
             dispatch: Run(A::Follow),
             when: When::Always,
@@ -449,23 +464,118 @@ const CONTEXT: Layer<Action> = Layer {
             },
         },
         Keybinding {
-            triggers: &[
-                Trigger::Key(Key::esc()),
-                Trigger::Key(Key::left()),
-                Trigger::Key(Key::char('h')),
-            ],
-            dispatch: Run(A::FocusNth(3)),
+            triggers: &[Trigger::Key(Key::char('/'))],
+            dispatch: Run(A::InspectFind),
             when: When::Always,
             legend: Legend {
                 bar: Some(Bar {
-                    keys: "←",
-                    word: "results",
+                    keys: "/",
+                    word: "find",
                 }),
-                help: "the results",
+                help: "find literal text in this preview",
             },
         },
         Keybinding {
-            triggers: &[Trigger::Key(Key::char('/')), Trigger::Key(Key::char('i'))],
+            triggers: &[Trigger::Key(Key::char(':'))],
+            dispatch: Run(A::InspectLine),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: ":",
+                    word: "line",
+                }),
+                help: "go to an absolute file line in this preview",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('n'))],
+            dispatch: Run(A::InspectNext(1)),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "n",
+                    word: "hit",
+                }),
+                help: "next / previous preview find hit; wraps",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('N'))],
+            dispatch: Run(A::InspectNext(-1)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "previous preview find hit; wraps",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::right()), Trigger::Key(Key::char('l'))],
+            dispatch: Run(A::InspectHorizontal(8)),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "→",
+                    word: "columns",
+                }),
+                help: "scroll right by eight terminal columns",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::left()), Trigger::Key(Key::char('h'))],
+            dispatch: Run(A::InspectHorizontal(-8)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "scroll left by eight terminal columns",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('0'))],
+            dispatch: Run(A::InspectStart),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "restore the first code column",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('z'))],
+            dispatch: Run(A::ExpandPreview),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "z",
+                    word: "",
+                }),
+                help: "expand / restore this preview",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('p'))],
+            dispatch: Run(A::PreviewTab),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "p",
+                    word: "preview",
+                }),
+                help: "toggle source / definition focus; reveal the hidden preview",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::esc())],
+            dispatch: Run(A::Back),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "esc",
+                    word: "",
+                }),
+                help: "restore an expanded preview, otherwise return to results",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('i'))],
             dispatch: Run(A::FocusNth(1)),
             when: When::Always,
             legend: Legend {
@@ -474,15 +584,24 @@ const CONTEXT: Layer<Action> = Layer {
             },
         },
         Keybinding {
-            triggers: &[Trigger::Key(Key::char('<')), Trigger::Key(Key::char('>'))],
+            triggers: &[Trigger::Key(Key::char('<'))],
             dispatch: Run(A::Resize(-5)),
             when: When::Always,
             legend: Legend {
                 bar: Some(Bar {
-                    keys: "< >",
+                    keys: "<",
                     word: "resize",
                 }),
                 help: "resize the split",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('>'))],
+            dispatch: Run(A::Resize(5)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "grow the result column",
             },
         },
         Keybinding {
@@ -667,6 +786,90 @@ const FILE_FILTER: Layer<Action> = Layer {
     ],
 };
 
+const INSPECTION_INPUT: Layer<Action> = Layer {
+    name: "Preview inspection",
+    bindings: &[
+        Keybinding {
+            triggers: &[Trigger::Key(Key::enter())],
+            dispatch: Run(A::Enter),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "⏎",
+                    word: "accept",
+                }),
+                help: "keep find text or go to line",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::esc())],
+            dispatch: Run(A::Back),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "esc",
+                    word: "cancel",
+                }),
+                help: "restore previous find and position",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::backspace())],
+            dispatch: Run(A::Backspace),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "erase a character",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('u'))],
+            dispatch: Run(A::Clear),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "ctrl+u",
+                    word: "clear",
+                }),
+                help: "clear inspection text",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Text],
+            dispatch: Dispatch::Type,
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "literal find text or an absolute file line",
+            },
+        },
+    ],
+};
+const INSPECTION_PANEL: Panel = Panel {
+    layer: INSPECTION_INPUT,
+    kind: Some(PanelKind::Input),
+};
+pub(crate) static INSPECT_SOURCE: Screen = Screen {
+    layer: MODE,
+    panels: &[
+        QUERY_PANEL,
+        FILES_PANEL,
+        RESULTS_PANEL,
+        INSPECTION_PANEL,
+        CONTEXT_PANEL,
+    ],
+};
+pub(crate) static INSPECT_BODY: Screen = Screen {
+    layer: MODE,
+    panels: &[
+        QUERY_PANEL,
+        FILES_PANEL,
+        RESULTS_PANEL,
+        CONTEXT_PANEL,
+        INSPECTION_PANEL,
+    ],
+};
+
 pub(crate) static FILTER_SEARCH: Screen = Screen {
     layer: MODE,
     panels: &[
@@ -842,8 +1045,12 @@ impl<'a> SearchView<'a> {
         area: Rect,
         declaration: &vvv_engine::Match,
     ) -> usize {
-        let (_, body) = self.header().areas(Region::new(area));
-        let (_, right) = body.columns(self.split);
+        let (_, body) = self.header(area.width).areas(Region::new(area));
+        let right = if self.search.expanded == Some(SearchPanel::Body) {
+            body
+        } else {
+            body.columns(self.split).1
+        };
         Pane::new(self.painter, Line::from("definition"), false)
             .location(format!(
                 "{}:{}",
@@ -876,6 +1083,9 @@ impl<'a> SearchView<'a> {
     }
 
     fn navigator_areas(&self, area: Rect) -> (Rect, Rect) {
+        if area.is_empty() {
+            return (Rect::default(), Rect::default());
+        }
         if !self.search.results.has_file_list() {
             return (Rect::default(), area);
         }
@@ -916,7 +1126,24 @@ impl<'a> SearchView<'a> {
     }
 
     fn base_layout(&self, area: Region) -> Vec<Region> {
-        let (top, body) = self.header().areas(area);
+        let (top, body) = self.header(area.rect().width).areas(area);
+        if let Some(panel) = self.search.expanded {
+            return if panel == SearchPanel::Body {
+                vec![
+                    top,
+                    Region::new(Rect::default()),
+                    Region::new(Rect::default()),
+                    body,
+                ]
+            } else {
+                vec![
+                    top,
+                    Region::new(Rect::default()),
+                    body,
+                    Region::new(Rect::default()),
+                ]
+            };
+        }
         let (left, right) = body.columns(self.split);
         if area.rect().width < 110 || right.rect().height < 14 {
             if self.search.focus == SearchPanel::Body
@@ -932,7 +1159,7 @@ impl<'a> SearchView<'a> {
         }
     }
     fn draw_query(&self, area: Rect, buf: &mut Buffer) {
-        self.header().render(area, buf);
+        self.header(area.width).render(area, buf);
     }
     fn draw_files(&self, area: Rect, buf: &mut Buffer) {
         if !area.is_empty() {
@@ -974,13 +1201,19 @@ impl<'a> SearchView<'a> {
                     .as_ref()
                     .filter(|selected| selected.span != symbol.span)
                     .map(|selected| selected.name_span);
-                rows = t.code_window(
+                rows = CodeWindow {
                     preview,
-                    symbol.span,
-                    first..lines.end.min(first.saturating_add(height)),
-                    area.width.saturating_sub(2) as usize,
-                    hit,
-                );
+                    painter: t,
+                    visible: first..lines.end.min(first.saturating_add(height)),
+                    width: area.width.saturating_sub(2) as usize,
+                    declaration: Some(symbol.span),
+                    origin: hit,
+                    marked: None,
+                    horizontal: s.body.inspection.horizontal,
+                    hits: &s.body.inspection.hits,
+                    active: s.body.inspection.active(),
+                }
+                .rows();
             }
         }
         let status = if s.body.pending().is_some() {
@@ -990,21 +1223,29 @@ impl<'a> SearchView<'a> {
         } else {
             ""
         };
-        let pane = if status.is_empty() {
-            pane
-        } else {
-            pane.footer(Line::from(Span::styled(format!(" {status} "), t.warning)))
-        };
+        let position = declaration
+            .and_then(|d| s.body.lines(d))
+            .map(|lines| {
+                let first = lines.start + s.body.scroll.min(lines.len().saturating_sub(1));
+                format!("{}–{}", first + 1, (first + rows.len()).min(lines.end))
+            })
+            .unwrap_or_default();
+        let pane = pane
+            .right(Line::from(Span::styled(position, t.dim)))
+            .footer(self.inspection_footer(
+                &s.body.inspection,
+                status,
+                area.width.saturating_sub(4) as usize,
+            ));
         pane.rows(rows).empty(empty).render(area, buf);
     }
-    fn header(&self) -> Header<'a> {
+    fn header(&self, width: u16) -> Header<'a> {
         let (s, t) = (self.search, self.painter);
         let focused = s.focus == SearchPanel::Query;
-        let input = s.input_focused();
-        let right = if s.stale {
-            "stale · ctrl+r refresh"
-        } else if self.busy {
+        let right = if self.busy {
             "searching"
+        } else if s.stale {
+            "stale"
         } else if matches!(s.page, super::browse::BrowsePage::Definition(_)) {
             "definition"
         } else {
@@ -1015,39 +1256,128 @@ impl<'a> SearchView<'a> {
         } else {
             Span::raw("")
         };
-        Header::new(
-            t,
-            focused,
-            Line::from(vec![
-                Span::styled(" vvv ", t.title),
-                Span::styled(format!("{} ", self.root), t.dim),
-            ]),
-        )
-        .right(Line::from(Span::styled(
-            format!("1 query · {right}"),
-            t.dim,
-        )))
-        .bottom(Line::from(Span::styled(
-            format!(
-                " {} in: {}  ·  {} kind: {}  ·  {} lang: {} ",
-                if input { "ctrl+f" } else { "f" },
-                s.locations
-                    .selected
-                    .as_ref()
-                    .map_or("workspace", |p| p.as_str()),
-                if input { "ctrl+s" } else { "s" },
-                s.query.filter(Filter::Symbol).unwrap_or("any"),
-                if input { "ctrl+l" } else { "L" },
-                s.query.filter(Filter::Lang).unwrap_or("any")
-            ),
-            t.dim,
-        )))
-        .line(Line::from(vec![
-            Span::styled("> ", t.key),
-            Span::raw(s.query.text().to_owned()),
-            t.caret(focused),
-            placeholder,
-        ]))
+        let right = if width >= 70 {
+            format!("1 query · {right} · ctrl+g filters · ctrl+o places")
+        } else if width >= 45 {
+            format!("1 query · {right} · ctrl+o places")
+        } else {
+            "1 query · ctrl+o places".into()
+        };
+        let available =
+            width.saturating_sub(Line::from(right.as_str()).width() as u16 + 12) as usize;
+        let root = if Line::from(self.root).width() <= available {
+            self.root
+        } else {
+            self.root.rsplit(['/', '\\']).next().unwrap_or(self.root)
+        };
+        let mut title = vec![Span::styled(" vvv ", t.title)];
+        if Line::from(root).width() <= available {
+            title.push(Span::styled(format!("{root} "), t.dim));
+        }
+        Header::new(t, focused, Line::from(title))
+            .right(Line::from(Span::styled(right, t.dim)))
+            .bottom(self.restrictions())
+            .line(Line::from(vec![
+                Span::styled("> ", t.key),
+                Span::raw(s.query.text().to_owned()),
+                t.caret(focused),
+                placeholder,
+            ]))
+    }
+
+    fn restrictions(&self) -> Line<'static> {
+        let mut spans = vec![Span::raw(" ")];
+        let (position, total) = self.search.trail.position();
+        if total > 1 {
+            spans.push(Span::styled(
+                format!("{position}/{total}"),
+                self.painter.key,
+            ));
+            if self.search.trail.can_travel(false) {
+                spans.push(Span::styled(" alt+← back", self.painter.dim));
+            }
+            if self.search.trail.can_travel(true) {
+                spans.push(Span::styled(" alt+→ forward", self.painter.dim));
+            }
+        }
+        let context_spans = spans.len();
+        for r in Restriction::ALL {
+            if *r == Restriction::Files && !self.search.results.has_file_list() {
+                continue;
+            }
+            if self.search.results.is_anchored()
+                && !matches!(r, Restriction::Location | Restriction::Files)
+            {
+                continue;
+            }
+            if let Some(value) = r.value(self.search) {
+                if spans.len() > 1 {
+                    spans.push(Span::styled(" · ", self.painter.dim));
+                }
+                spans.push(Span::styled(format!("{}: ", r.key()), self.painter.dim));
+                spans.push(Span::styled(value, self.painter.key));
+            }
+        }
+        if spans.len() == context_spans {
+            if spans.len() > 1 {
+                spans.push(Span::styled(" · ", self.painter.dim));
+            }
+            spans.push(Span::styled(
+                if self.search.results.is_anchored() {
+                    format!("workspace · {}", self.search.results.relation.label())
+                } else {
+                    "workspace · all results".into()
+                },
+                self.painter.dim,
+            ));
+        }
+        spans.push(Span::raw(" "));
+        Line::from(spans)
+    }
+
+    fn empty_reason(&self) -> String {
+        let s = self.search;
+        if self.busy {
+            return "searching…".into();
+        }
+        if s.results.eligible_count() > 0 && !s.results.files.filter.trim().is_empty() {
+            return "No files pass the file filter.\nCtrl+G clear files · F edit".into();
+        }
+        if s.results.is_anchored() {
+            return "No occurrences in this view.\nCtrl+F location · R relation".into();
+        }
+        if s.results.category != Category::All
+            && s.results
+                .matches
+                .iter()
+                .any(|m| s.locations.includes(&m.path))
+        {
+            return format!(
+                "No {} in loaded results.\nCtrl+T category · Ctrl+G reset filters",
+                s.results.category.label().to_lowercase()
+            );
+        }
+        if s.query.is_empty() {
+            return "Type a name or pattern to search.\nCtrl+G filters".into();
+        }
+        let restrictions: Vec<_> = Restriction::ALL
+            .iter()
+            .filter(|r| r.value(s).is_some())
+            .collect();
+        if restrictions.is_empty() {
+            "No matches for this query.\n1 edit query · Ctrl+G filters".into()
+        } else {
+            "No matches with active filters.\nCtrl+G change / reset filters".into()
+        }
+    }
+
+    fn empty_rows(&self, width: usize, height: usize) -> Vec<Line<'static>> {
+        self.empty_reason()
+            .lines()
+            .flat_map(|line| Fit(line, width.saturating_sub(2)).wrapped())
+            .take(height)
+            .map(|row| Line::from(vec![Span::raw(" "), Span::styled(row, self.painter.dim)]))
+            .collect()
     }
 
     fn results(&self, area: Rect, buf: &mut Buffer) {
@@ -1358,7 +1688,7 @@ impl<'a> SearchView<'a> {
             .position(|m| selected.is_some_and(|current| current.id == m.id));
         let geometry = self.list_geometry(SearchPanel::Results, area);
         let file_start = active.map_or(0, |i| groups[..i].iter().map(|g| g.matches.len()).sum());
-        let rows = file_matches
+        let mut rows: Vec<Line<'static>> = file_matches
             .iter()
             .enumerate()
             .skip(geometry.offset)
@@ -1400,6 +1730,9 @@ impl<'a> SearchView<'a> {
         } else {
             "3 Matches · j/k".into()
         };
+        if rows.is_empty() {
+            rows = self.empty_rows(width, geometry.content.height as usize);
+        }
         Pane::new(
             t,
             Line::from(Span::styled(title, t.title)),
@@ -1430,6 +1763,84 @@ impl<'a> SearchView<'a> {
         if area.height > 1 {
             buf[(area.x, area.y)].set_symbol("├");
             buf[(area.right().saturating_sub(1), area.y)].set_symbol("┤");
+        }
+    }
+
+    fn inspection_footer(
+        &self,
+        inspection: &super::inspection::Inspection,
+        status: &str,
+        width: usize,
+    ) -> Line<'static> {
+        use super::inspection::InspectionKind;
+        let t = self.painter;
+        if let Some(edit) = &inspection.edit {
+            let prefix = if edit.kind == InspectionKind::Find {
+                "/"
+            } else {
+                "line: "
+            };
+            let suffix = if let Some(error) = &edit.error {
+                format!(" · {error}")
+            } else if edit.kind == InspectionKind::Find {
+                format!(
+                    " · {}/{}",
+                    inspection.cursor.map_or(0, |i| i + 1),
+                    inspection.hits.len()
+                )
+            } else {
+                " · Enter go".into()
+            };
+            let budget =
+                width.saturating_sub(Span::raw(prefix).width() + Span::raw(&suffix).width() + 3);
+            let mut used = 0;
+            let text: String = edit
+                .text
+                .chars()
+                .rev()
+                .take_while(|c| {
+                    used += Span::raw(c.to_string()).width();
+                    used <= budget
+                })
+                .collect::<String>()
+                .chars()
+                .rev()
+                .collect();
+            return Line::from(vec![
+                Span::raw(" "),
+                Span::styled(prefix, t.key),
+                Span::raw(text),
+                t.caret(true),
+                Span::styled(suffix, if edit.error.is_some() { t.error } else { t.dim }),
+                Span::raw(" "),
+            ]);
+        }
+        let mut parts = Vec::new();
+        if !inspection.term.is_empty() {
+            parts.push(format!(
+                "/{} · {}/{}",
+                inspection.term,
+                inspection.cursor.map_or(0, |i| i + 1),
+                inspection.hits.len()
+            ));
+        }
+        if inspection.horizontal > 0 {
+            parts.push(format!("col {}", inspection.horizontal + 1));
+        }
+        if self.search.expanded.is_some() {
+            parts.push("z restore".into());
+        }
+        if !status.is_empty() {
+            parts.push(status.into());
+        }
+        let text = parts.join(" · ");
+        if text.is_empty() {
+            Line::default()
+        } else {
+            Line::from(Span::styled(
+                format!(" {} ", Fit(&text, width.saturating_sub(2))),
+                if status.is_empty() { t.key } else { t.warning },
+            ))
         }
     }
 
@@ -1502,16 +1913,22 @@ impl<'a> SearchView<'a> {
         } else if let Some((path, line)) = &site {
             panel = panel.location(format!("{}:{}", path, line + 1));
         }
-        if displayed.as_ref().is_some_and(|anchor| {
+        let status = if displayed.as_ref().is_some_and(|anchor| {
             s.preview_dirty || site.as_ref().is_some_and(|(path, _)| *path != anchor.path)
         }) {
-            let status = if s.stale && s.preview_dirty && !self.busy {
-                " stale · ctrl+r refresh "
+            if s.stale && s.preview_dirty && !self.busy {
+                "stale · ctrl+r refresh"
             } else {
-                " updating "
-            };
-            panel = panel.footer(Line::from(Span::styled(status, t.warning)));
-        }
+                "updating"
+            }
+        } else {
+            ""
+        };
+        panel = panel.footer(self.inspection_footer(
+            &s.inspection,
+            status,
+            area.width.saturating_sub(4) as usize,
+        ));
         // Source rows fill the space below pane metadata.
         let inner_height = panel.content_height(area);
         let inner_width = area.width.saturating_sub(2) as usize;
@@ -1522,14 +1939,30 @@ impl<'a> SearchView<'a> {
                 .unwrap_or_else(|| s.preview_anchor())
                 .min(preview.line_count().saturating_sub(1));
             let highlight = anchor.hit.map(|span| (span.start, span.end));
-            rows.extend(t.source_window(
-                preview,
-                first,
-                height,
-                inner_width,
-                highlight,
-                anchor.lines,
-            ));
+            rows.extend(
+                CodeWindow {
+                    preview,
+                    painter: t,
+                    visible: first..first.saturating_add(height),
+                    width: inner_width,
+                    declaration: None,
+                    origin: highlight.map(|(start, end)| vvv_engine::Span::new(start, end)),
+                    marked: anchor.lines,
+                    horizontal: s.inspection.horizontal,
+                    hits: &s.inspection.hits,
+                    active: s.inspection.active(),
+                }
+                .rows(),
+            );
+            panel = panel.right(Line::from(Span::styled(
+                format!(
+                    "{}–{}/{}",
+                    first + 1,
+                    first + rows.len(),
+                    preview.line_count()
+                ),
+                t.dim,
+            )));
         }
         panel.rows(rows).render(area, buf);
     }

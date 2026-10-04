@@ -3,6 +3,7 @@ pub(crate) mod screen;
 use crate::action::{Action, Effect};
 use crate::model::{Cursor, Panels};
 use crate::modes::context::ModeContext;
+use crate::modes::review::ReviewState;
 use std::collections::BTreeSet;
 use std::path::Path;
 use vvv_engine::protocol::FileChange;
@@ -26,6 +27,7 @@ pub struct RewriteMode {
     pub detail_scroll: usize,
     pub error: Option<String>,
     pub busy: bool,
+    pub applying: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -40,6 +42,24 @@ impl Panels for RewritePanel {
 }
 
 impl RewriteMode {
+    pub fn state(&self) -> ReviewState<'_> {
+        if self.applying {
+            ReviewState::Applying
+        } else if self.busy {
+            ReviewState::Planning
+        } else if let Some(error) = &self.error {
+            ReviewState::Failed(error)
+        } else if self.template.trim().is_empty() {
+            ReviewState::Input("type a template")
+        } else if self.ticks.is_empty() {
+            ReviewState::Empty("select matches")
+        } else if self.changes.is_empty() {
+            ReviewState::Empty("no changes")
+        } else {
+            ReviewState::Ready
+        }
+    }
+
     pub fn new(query: Query, matches: Vec<Match>) -> Self {
         let ticks = matches.iter().map(|m| m.id.clone()).collect();
         Self {
@@ -53,6 +73,7 @@ impl RewriteMode {
             detail_scroll: 0,
             error: None,
             busy: false,
+            applying: false,
         }
     }
 
@@ -95,12 +116,32 @@ impl RewriteMode {
     }
 
     pub fn update(&mut self, action: Action, context: &mut ModeContext<'_>) -> Vec<Effect> {
+        if self.applying
+            && matches!(
+                action,
+                Action::Input(_)
+                    | Action::Backspace
+                    | Action::Clear
+                    | Action::Toggle
+                    | Action::ToggleAll
+            )
+        {
+            return Vec::new();
+        }
         match action {
             Action::FocusNext => self.focus_by(1),
             Action::FocusPrev => self.focus_by(-1),
             Action::FocusNth(n) => self.focus_nth(n),
             Action::Move(n) => self.moved(n),
+            Action::Top if self.scroll_focused() => {
+                self.detail_scroll = 0;
+                return Vec::new();
+            }
             Action::Top => self.moved(i32::MIN / 2),
+            Action::Bottom if self.scroll_focused() => {
+                self.detail_scroll = usize::MAX;
+                return Vec::new();
+            }
             Action::Bottom => self.moved(i32::MAX / 2),
             Action::Scroll(n) if self.scroll_focused() => {
                 self.scrolled(n);
@@ -108,18 +149,26 @@ impl RewriteMode {
             }
             Action::Scroll(n) => self.moved(n),
             Action::Input(c) => {
+                context.status.clear();
                 self.input(Some(c));
                 let generation = context.next_generation();
                 return self.plan(generation);
             }
             Action::Backspace => {
+                context.status.clear();
                 self.input(None);
                 let generation = context.next_generation();
                 return self.plan(generation);
             }
+            Action::Clear => {
+                context.status.clear();
+                self.template.clear();
+                let generation = context.next_generation();
+                return self.plan(generation);
+            }
             Action::Enter => return self.commit(context),
-            Action::Toggle => return self.toggled(false),
-            Action::ToggleAll => return self.toggled(true),
+            Action::Toggle => return self.toggled(false, context),
+            Action::ToggleAll => return self.toggled(true, context),
             _ => return Vec::new(),
         }
         Vec::new()
@@ -138,15 +187,21 @@ impl RewriteMode {
         self.detail_scroll = 0;
     }
     pub fn scrolled(&mut self, by: i32) {
-        self.detail_scroll = (self.detail_scroll as i32 + by).max(0) as usize;
+        self.detail_scroll = self.detail_scroll.saturating_add_signed(by as isize);
     }
     pub fn plan(&mut self, generation: u64) -> Vec<Effect> {
+        if self.ticks.is_empty() {
+            self.changes.clear();
+            self.error = None;
+            self.busy = false;
+            return Vec::new();
+        }
         match self.intent() {
             Some(intent) => {
                 self.busy = true;
                 vec![Effect::Plan {
                     generation,
-                    intent: Intent::Rewrite(intent),
+                    intent: Intent::Rewrite(intent.selecting(Selection::Ids(self.ticks.clone()))),
                     debounce: true,
                 }]
             }
@@ -154,12 +209,19 @@ impl RewriteMode {
                 self.changes.clear();
                 self.error = None;
                 self.busy = false;
+                self.applying = false;
                 Vec::new()
             }
         }
     }
     pub fn commit(&mut self, context: &mut ModeContext<'_>) -> Vec<Effect> {
-        if self.busy || self.changes.is_empty() {
+        if self.busy {
+            return Vec::new();
+        }
+        if let Some(error) = &self.error {
+            return context.fail(error);
+        }
+        if self.changes.is_empty() {
             return context.fail("type a template first");
         }
         if self.ticks.is_empty() {
@@ -169,6 +231,7 @@ impl RewriteMode {
             return Vec::new();
         };
         self.busy = true;
+        self.applying = true;
         context.status.busy = true;
         vec![Effect::Commit {
             intent: Intent::Rewrite(intent.selecting(Selection::Ids(self.ticks.clone()))),
@@ -178,17 +241,18 @@ impl RewriteMode {
         self.changes = files;
         self.error = None;
         self.busy = false;
+        self.applying = false;
         Vec::new()
     }
-    pub fn toggled(&mut self, all: bool) -> Vec<Effect> {
+    pub fn toggled(&mut self, all: bool, context: &mut ModeContext<'_>) -> Vec<Effect> {
         if all {
             self.toggle_all();
         } else {
             self.toggle();
             self.moved(1);
-            return Vec::new();
         }
-        Vec::new()
+        let generation = context.next_generation();
+        self.plan(generation)
     }
     pub fn from_results(results: &crate::modes::search::Results) -> Result<Self, &'static str> {
         let Some(query) = results.query.clone() else {
@@ -215,11 +279,13 @@ impl RewriteMode {
     }
     pub fn plan_failed(&mut self, message: String) {
         self.busy = false;
+        self.applying = false;
         self.changes.clear();
         self.error = Some(message);
     }
     pub fn failed(&mut self) {
         self.busy = false;
+        self.applying = false;
     }
     pub fn input(&mut self, c: Option<char>) {
         crate::input::TextInput::new(&mut self.template).edit(c);

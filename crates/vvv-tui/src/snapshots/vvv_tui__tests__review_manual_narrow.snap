@@ -1,0 +1,18 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: "FrameFixture::new(&m).render_size(70, 14)"
+---
+┌ 1 Move file ───────────────────────────── 4 files · 2 manual fixes ┐
+│ destination: src/net/parse.rs                                      │
+└ ./src/util/parse.rs · ready to apply ──────────────────────────────┘
+ 2 → Paths rewritten ───────── 1/2 ┌ 5 Manual fix · src/net.rs:3 ────┐
+ 3 ± Structure ─────────────── 1/2 │ crate::util::parse::Config →    │
+┌ 4 ! Manual fixes ────────── 1/2 ┐│ crate::net::parse::Config       │
+│  src/net.rs                     ││ Split this grouped import by    │
+│> ! 3 crate::util::parse::Config…││ hand.                           │
+│  src/lib.rs                     ││                                 │
+│  ! 2 net · needs Everyone from …││                                 │
+│                                 ││                                 │
+│                                 ││                                 │
+└─────────────────────────────────┘└ manual fix · excluded ──────────┘
+ move ⏎ apply 4 files  esc back  j/k scroll  d/u page         f1 help

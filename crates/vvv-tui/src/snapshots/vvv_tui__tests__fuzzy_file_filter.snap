@@ -2,10 +2,10 @@
 source: crates/vvv-tui/src/tests.rs
 expression: frame
 ---
-┌ vvv ~/dev/nx ────────────────────────────────────────────────────────────────────────────────────── 1 query · search ┐
+┌ vvv ~/dev/nx ───────────────────────────────────────────────────── 1 query · search · ctrl+g filters · ctrl+o places ┐
 │> Language                                                                                                            │
-└ ctrl+f in: workspace  ·  ctrl+s kind: any  ·  ctrl+l lang: any ──────────────────────────────────────────────────────┘
-┌ 2 Files · filter ─────────────────── 1/1 of 3 · 2/4 hits ┐┌ source · src/lang/mod.rs:64 ─────────────────────────────┐
+└ files: lib ──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌ 2 Files · filter ─────────────────── 1/1 of 3 · 2/4 hits ┐┌ source · src/lang/mod.rs:64 ─────────────────── 59–68/70 ┐
 │ files: lib▏                                              ││   59 │ // line 59                                        │
 │> src/lib.rs                                            2 ││   60 │ // line 60                                        │
 │                                                          ││   61 │ // line 61                                        │
@@ -17,7 +17,7 @@ expression: frame
 │                                                          ││   67 │ }                                                 │
 │                                                          ││   68 │ // line 68                                        │
 │                                                          │└ updating ────────────────────────────────────────────────┘
-│                                                          │┌ definition · src/lang/mod.rs:64 ─────────────────────────┐
+│                                                          │┌ definition · src/lang/mod.rs:64 ────────────────── 64–67 ┐
 │                                                          ││ pub trait Language: Send + Sync {                        │
 │                                                          ││     fn name(&self) -> &str;                              │
 │                                                          ││     fn extensions(&self) -> &[&str];                     │
@@ -25,4 +25,4 @@ expression: frame
 │                                                          ││                                                          │
 │                                                          ││                                                          │
 └ [All 4] Declaration 1 Imports 2 Use 1 ───────────────────┘└ updating ────────────────────────────────────────────────┘
- search ↑/↓ files  ⏎ keep filter  esc cancel  ctrl+u clear
+ search ↑/↓ files  ⏎ keep filter  esc cancel  ctrl+u clear                                                      f1 help

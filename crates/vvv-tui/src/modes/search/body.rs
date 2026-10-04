@@ -13,6 +13,7 @@ use crate::model::FilePreview;
 pub struct Body {
     pub preview: Option<FilePreview>,
     pub scroll: usize,
+    pub inspection: super::inspection::Inspection,
     /// The declaration paired with the displayed source. A pending selection
     /// must not replace this metadata before its file arrives.
     shown: Option<Match>,
@@ -137,6 +138,12 @@ impl Body {
                 if !same {
                     self.scroll = 0;
                 }
+                if let Some(d) = &self.shown
+                    && let Some(symbol) = self.symbol(d)
+                    && let Some(preview) = &self.preview
+                {
+                    self.inspection.sync(preview, symbol.span);
+                }
                 // Reveal a newly selected variant. Ordinary same-target replies
                 // leave the user's scroll untouched.
                 if changed_selection
@@ -164,6 +171,7 @@ impl Body {
                 self.shown = None;
                 self.container = None;
                 self.scroll = 0;
+                self.inspection = Default::default();
                 self.message = Some(match other {
                     Ok(NavigationReply {
                         outcome: NavigationOutcome::Ambiguous { .. },

@@ -24,9 +24,9 @@ impl<'a> StatusBar<'a> {
     fn hints(&self) -> Vec<(String, String)> {
         let m = self.model;
         m.screen()
-            .rows(m.focus())
+            .sections(m.focus(), |when| m.holds(when))
             .into_iter()
-            .filter(|row| m.holds(row.binding.when))
+            .flat_map(|(_, rows)| rows)
             .filter_map(|row| row.legend.bar.map(|bar| (row, bar)))
             .map(|(row, bar)| {
                 // An empty word means the meaning depends on the state.
@@ -35,10 +35,17 @@ impl<'a> StatusBar<'a> {
                 } else {
                     bar.word.to_owned()
                 };
-                (bar.keys.to_owned(), what)
+                (
+                    if row.partial {
+                        row.labels
+                    } else {
+                        bar.keys.to_owned()
+                    },
+                    what,
+                )
             })
-            .fold(Vec::new(), |mut hints, hint| {
-                if !hints.contains(&hint) {
+            .fold(Vec::<(String, String)>::new(), |mut hints, hint| {
+                if !hints.iter().any(|(_, what)| what == &hint.1) {
                     hints.push(hint);
                 }
                 hints
@@ -64,10 +71,29 @@ impl Widget for StatusBar<'_> {
         if self.model.status.busy || self.model.arriving {
             spans.push(Span::styled("… ", t.dim));
         }
+        let budget = area.width.saturating_sub(9) as usize;
+        let mut used = Line::from(spans.clone()).width();
         for (key, what) in self.hints() {
+            let width = Line::from(format!("{key} {what}  ")).width();
+            if used + width > budget {
+                break;
+            }
             spans.push(Span::styled(key, t.key));
             spans.push(Span::styled(format!(" {what}  "), t.dim));
+            used += width;
         }
-        Paragraph::new(Line::from(spans)).render(area, buf);
+        let help_width = 9.min(area.width);
+        Paragraph::new(Line::from(spans)).render(
+            Rect::new(area.x, area.y, area.width - help_width, area.height),
+            buf,
+        );
+        Paragraph::new(Line::from(vec![
+            Span::styled(" f1", t.key),
+            Span::styled(" help ", t.dim),
+        ]))
+        .render(
+            Rect::new(area.right() - help_width, area.y, help_width, area.height),
+            buf,
+        );
     }
 }

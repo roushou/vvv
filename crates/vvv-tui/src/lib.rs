@@ -17,6 +17,7 @@ mod keymap;
 mod model;
 mod modes;
 mod overlays;
+mod preferences;
 mod render;
 mod screen;
 mod tui;

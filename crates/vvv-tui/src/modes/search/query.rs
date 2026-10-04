@@ -13,6 +13,12 @@ pub struct QueryBar {
     text: String,
 }
 
+impl From<String> for QueryBar {
+    fn from(text: String) -> Self {
+        Self { text }
+    }
+}
+
 /// A filter word's key, with the short form it also accepts.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Filter {
@@ -64,7 +70,7 @@ impl QueryBar {
 
     /// The current value of a filter word, if present.
     pub fn filter(&self, filter: Filter) -> Option<&str> {
-        self.text.split_whitespace().find_map(|w| {
+        self.text.split_whitespace().rev().find_map(|w| {
             Filter::parse(w)
                 .filter(|(f, _)| *f == filter)
                 .map(|(_, v)| v)
@@ -189,5 +195,19 @@ mod tests {
         assert_eq!(q.text(), "Foo symbol:trait ");
         q.set_filter(Filter::Symbol, None);
         assert_eq!(q.text(), "Foo ");
+    }
+
+    #[test]
+    fn border_and_picker_values_agree_with_the_last_filter_executed() {
+        let q = bar("Language s:struct symbol:trait l:typescript lang:rust");
+        let parsed = q.parse().unwrap();
+        assert_eq!(
+            q.filter(Filter::Symbol),
+            parsed.symbol().map(SymbolKind::as_str)
+        );
+        assert_eq!(
+            q.filter(Filter::Lang),
+            parsed.language().map(LanguageId::as_str)
+        );
     }
 }

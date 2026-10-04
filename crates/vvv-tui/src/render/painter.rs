@@ -52,6 +52,38 @@ impl Painter {
         TextLine::from(self.spans(line))
     }
 
+    pub fn review_state(&self, state: crate::modes::review::ReviewState<'_>) -> TextLine<'static> {
+        use crate::modes::review::ReviewState;
+        let style = match state {
+            ReviewState::Failed(_) => self.error,
+            ReviewState::Ready => self.added,
+            ReviewState::Planning | ReviewState::Applying => self.warning,
+            ReviewState::Input(_) | ReviewState::Empty(_) => self.dim,
+        };
+        TextLine::from(Span::styled(format!(" {} ", state.message()), style))
+    }
+
+    pub fn diff_window(
+        &self,
+        file: &vvv_engine::protocol::FileChange,
+        anchor: Option<u32>,
+        scroll: usize,
+        height: usize,
+    ) -> Vec<TextLine<'static>> {
+        let lines: Vec<_> = if let Some(line) = anchor {
+            file.diff.lines_from(line).collect()
+        } else {
+            file.diff.lines().collect()
+        };
+        let first = scroll.min(lines.len().saturating_sub(height.max(1)));
+        lines
+            .into_iter()
+            .skip(first)
+            .take(height)
+            .map(|line| self.line(&line))
+            .collect()
+    }
+
     /// Selection fills the row without dimming its text or replacing semantic spans.
     pub fn selected_line<'a>(
         &self,
@@ -201,48 +233,6 @@ impl Painter {
             .collect()
     }
 
-    /// A declaration without its enclosing indentation or a number gutter.
-    /// The indentation comes from the declaration's first line, never the
-    /// visible window, so scrolling preserves the body's relative indentation.
-    pub fn code_window(
-        &self,
-        preview: &FilePreview,
-        declaration: vvv_engine::Span,
-        visible: std::ops::Range<usize>,
-        width: usize,
-        hit: Option<vvv_engine::Span>,
-    ) -> Vec<TextLine<'static>> {
-        let Some(lines) = preview.lines_in(declaration) else {
-            return Vec::new();
-        };
-        let Some((start, _)) = preview.line_span(lines.start) else {
-            return Vec::new();
-        };
-        let prefix = &preview.text()[start..declaration.start];
-        let indent = if prefix.chars().all(|c| matches!(c, ' ' | '\t')) {
-            prefix
-        } else {
-            ""
-        };
-        (visible.start.max(lines.start)..lines.end.min(visible.end))
-            .filter_map(|n| {
-                let (mut start, end) = preview.line_span(n)?;
-                if preview.text()[start..end].starts_with(indent) {
-                    start += indent.len();
-                }
-                let range = (start.max(declaration.start), end.min(declaration.end));
-                let mut spans = vec![Span::raw(" ")];
-                spans.extend(self.source_spans(
-                    preview,
-                    range,
-                    hit.map(|s| (s.start, s.end)),
-                    width.saturating_sub(1),
-                ));
-                Some(TextLine::from(spans))
-            })
-            .collect()
-    }
-
     /// One source line: number gutter, syntax colours, `hit` bytes and
     /// `marked` line emphasis.
     fn source_line(
@@ -345,6 +335,7 @@ impl Deref for Painter {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::render::CodeWindow;
     use vvv_engine::{Highlight, HighlightKind, Span as SourceSpan};
 
     #[test]
@@ -410,7 +401,19 @@ mod tests {
             }],
         });
         let painter = Painter::colored();
-        let lines = painter.code_window(&preview, SourceSpan::new(start, end), 0..10, 80, None);
+        let lines = CodeWindow {
+            preview: &preview,
+            painter,
+            visible: 0..10,
+            width: 80,
+            declaration: Some(SourceSpan::new(start, end)),
+            origin: None,
+            marked: None,
+            horizontal: 0,
+            hits: &[],
+            active: None,
+        }
+        .rows();
         assert_eq!(lines.len(), 1);
         assert_eq!(lines[0].to_string(), " fn nested() {}");
         assert_eq!(lines[0].spans[1].content, "fn");

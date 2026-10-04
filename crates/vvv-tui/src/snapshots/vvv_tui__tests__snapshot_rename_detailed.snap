@@ -1,24 +1,24 @@
 ---
 source: crates/vvv-tui/src/tests.rs
-expression: render(&m)
+expression: "FrameFixture::new(&m).render()"
 ---
-┌ rename ● trait Language → Lang ────────────────────────────────────────────────────────┐
-│lang/mod.rs:64                                                                          │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-┌ ? unverified 1  1 file  ▪ 0 ──────────────┐┌ src/other.rs:13 ──────────────────────────┐
-│  1     10:5    Language::new()            ││↗ re-export   reached through a re-export v│
+┌ 1 Rename trait ──────────────────────────────────────────────── 3/4 selected · 3 files ┐
+│ Language → Lang                                                                        │
+└ src/lang/mod.rs:64 · ready to apply ───────────────────────────────────────────────────┘
+┌ 2 ? Unverified ───────────── 1/1 · 1 file ┐┌ 5 Diff · src/other.rs:13 ─────────────────┐
+│  src/other.rs                             ││ ↗ re-export · reached through a re-export │
+│  ▫ 1. 10 Language::new()                  ││ vvv followed to the declaration           │
+└ 0/1 selected ─────────────────────────────┘│@@ -10,6 +10,6 @@                          │
+┌ 3 ✓ Safe ────────────────── 3/3 · 3 files ┐│ // line 10                                │
+│  src/lang/mod.rs                          ││ // line 11                                │
+│  ▪ 1. 64 pub trait Language: Send + Sync {││ // line 12                                │
+│  src/lib.rs                               ││-    vvv::Language::default()              │
+│  ▪ 2. 26 pub use lang::{Language, Languag…││+    vvv::Lang::default()                  │
+│  src/other.rs                             ││ // line 14                                │
+│> ▪ 3. 13 vvv::Language::default()         ││ // line 15                                │
 │                                           ││                                           │
-│                                           ││@@ -10,6 +10,6 @@                          │
-│                                           ││ // line 10                                │
-│                                           ││ // line 11                                │
-│                                           ││ // line 12                                │
-│                                           ││-    vvv::Language::default()              │
-└───────────────────────────────────────────┘│+    vvv::Lang::default()                  │
-┌ ✓ safe 3  3 files  ▪ 3 ───────────────────┐│ // line 14                                │
-│  1     64:11   pub trait Language: Send + ││ // line 15                                │
-│  2 →   26:16   pub use lang::{Language, La││                                           │
-│  3     13:10   vvv::Language::default()   ││                                           │
 │                                           ││                                           │
-└───────────────────────────────────────────┘│                                           │
- ✗ another declaration's 0 ──────────────────└───────────────────────────────────────────┘
- rename space toggle  a all here  ⏎ apply 3 in 3 files  esc back  j/k move  e editor  ? ke
+│                                           ││                                           │
+└ 3/3 selected ─────────────────────────────┘│                                           │
+ 4 ✗ Other ─────────────────── 0/0 · 0 files └ selected ─────────────────────────────────┘
+ rename space toggle  a all here  ⏎ apply 3 in 3 files  esc back  j/k move        f1 help

@@ -2,12 +2,11 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "format!(\"{history}\\n\\n=== confirm ===\\n{confirm}\")"
 ---
-┌ history ────────────────────────────────────────────────────────────── 2 entries  ↩ #2 ┐
-│oldest first; only the newest can be undone                                             │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-┌ entries ──────────────────────────────────┐┌ files ────────────────────────────────────┐
-│#1   just now  rename Config →…  0 files   ││ ∅                                         │
-│#2   just now  rename Con…  0 files  ↩     ││                                           │
+┌ History ──────────────────────────────────────────────────────────────────── 2 entries ┐
+└ oldest first · newest #2 · undo available ─────────────────────────────────────────────┘
+┌ 1 Entries ─────────────────────────── 2/2 ┐┌ 2 Files ──────────────────── #2 · 0 files ┐
+│  #1   rename Config → Settings · 0 files  ││ rename Config → Settings                  │
+│> #2   rename Config → Settings · 0 files  ││ No files in this entry                    │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
@@ -20,16 +19,17 @@ expression: "format!(\"{history}\\n\\n=== confirm ===\\n{confirm}\")"
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
-└───────────────────────────────────────────┘└───────────────────────────────────────────┘
- history u undo #2  esc back  j/k move  e editor  ? keys  v view
+│                                           ││                                           │
+└ just now · newest · can undo ─────────────┘└───────────────────────────────────────────┘
+ history ⏎/u undo #2  esc back  j/k move  e editor  ? keys  v view                f1 help
 
 === confirm ===
-┌ history ────────────────────────────────────────────────────────────── 2 entries  ↩ #2 ┐
-│oldest first; only the newest can be undone                                             │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-┌ entries ──────────────────────────────────┐┌ files ────────────────────────────────────┐
-│#1   just now  rename Config →…  0 files   ││ ∅                                         │
-│#2   just now  rename Con…  0 files  ↩     ││                                           │
+┌ History ──────────────────────────────────────────────────────────────────── 2 entries ┐
+└ oldest first · newest #2 · undo available ─────────────────────────────────────────────┘
+┌ 1 Entries ─────────────────────────── 2/2 ┐┌ 2 Files ──────────────────── #2 · 0 files ┐
+│  #1   rename Config → Settings · 0 files  ││ rename Config → Settings                  │
+│> #2   rename Config → Settings · 0 files  ││ No files in this entry                    │
+│                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
@@ -42,5 +42,5 @@ expression: "format!(\"{history}\\n\\n=== confirm ===\\n{confirm}\")"
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
-└───────────────────────────────────────────┘└───────────────────────────────────────────┘
- history y yes  n no
+└ just now · newest · can undo ─────────────┘└───────────────────────────────────────────┘
+ history y yes  n no                                                              f1 help

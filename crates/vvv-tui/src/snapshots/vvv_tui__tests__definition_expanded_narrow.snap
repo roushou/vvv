@@ -1,0 +1,22 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: "FrameFixture::new(&m).render_size(70, 18)"
+---
+┌ vvv ~/dev/nx ─── 1 query · search · ctrl+g filters · ctrl+o places ┐
+│> Language                                                          │
+└ workspace · all results ───────────────────────────────────────────┘
+┌ definition · src/lang/mod.rs:64 ──────────────────────────── 65–67 ┐
+│     fn name(&self) -> &str;                                        │
+│     fn extensions(&self) -> &[&str];                               │
+│ }                                                                  │
+│                                                                    │
+│                                                                    │
+│                                                                    │
+│                                                                    │
+│                                                                    │
+│                                                                    │
+│                                                                    │
+│                                                                    │
+│                                                                    │
+└ z restore ─────────────────────────────────────────────────────────┘
+ search ⏎ follow  / find  : line  n hit  → columns            f1 help

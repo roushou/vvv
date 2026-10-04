@@ -2,23 +2,23 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ keys ──────────────────────────────────────────────────────────────────────────────────┐
-│ Marks                                                                                  │
-│           ● → ↗  declaration · import · re-export                                      │
-│           ✓ ? ✗  will · unsure · will not    ▪ ▫ ticked or not                         │
-│           ± ! ∅  structural edit · by hand · nothing                                   │
+┌ Help · Search · Query ─────────────────────────────────────────────────────────────────┐
 │ Search                                                                                 │
-│             ↓ ⏎  results                                                               │
-│             esc  clear                                                                 │
-│             esc  quit                                                                  │
-│            bksp  erase                                                                 │
-│   ctrl+n ctrl+p  switch files without leaving the query                                │
-│          typing  a name, an ast-grep pattern, or filters: symbol:trait name:Foo kind:im│
-│               F  fuzzy-filter result files (navigation only)                           │
-│          ctrl+f  choose result location                                                │
-│          ctrl+s  choose declaration kind                                               │
-│          ctrl+t  choose result category                                                │
-│          ctrl+l  choose language                                                       │
-│           alt+←  previous browsing location                                            │
-│           alt+→  next browsing location                                                │
-└────────────────────────────────────────────────────────────────────────────────────────┘
+│          ↓ ⏎  results                                                                  │
+│          esc  clear                                                                    │
+│         bksp  erase                                                                    │
+│ctrl+n ctrl+p  switch files without leaving the query                                   │
+│       typing  a name, an ast-grep pattern, or filters: symbol:trait name:Foo           │
+│               kind:impl_item lang:rust                                                 │
+│       ctrl+o  open browsing trail and recent searches                                  │
+│       ctrl+g  edit or clear filters; reset restrictions while keeping the query        │
+│       ctrl+f  choose result location                                                   │
+│       ctrl+s  choose declaration kind                                                  │
+│       ctrl+t  choose result category                                                   │
+│       ctrl+l  choose language                                                          │
+│       ctrl+r  refresh search after source changes                                      │
+│ Everywhere                                                                             │
+│    tab s-tab  next / previous panel                                                    │
+│           f1  help for the focused pane; press again to return                         │
+│       ctrl+c  quit                                                                     │
+└ ↑/↓ scroll · f1 / esc return ──────────────────────────────────────────────────────────┘

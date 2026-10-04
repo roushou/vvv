@@ -38,23 +38,29 @@ impl Region {
         (Region(top), Region(rest))
     }
 
-    /// Stack panels vertically: collapsed ones one line, the rest sharing the
-    /// remaining height by `weight`.
-    pub fn rows(self, sizes: &[(usize, u16)]) -> Vec<Region> {
-        let constraints: Vec<Constraint> = sizes
+    /// Review lists keep compact sibling panes and give their active list
+    /// the remaining space. Short terminals retain a navigable active pane.
+    pub fn review_rows(self, rows: &[usize], active: usize) -> Vec<Region> {
+        let compact = self.0.height < (rows.len() * 4) as u16;
+        let constraints: Vec<_> = rows
             .iter()
-            .map(|(rows, weight)| {
-                if *rows == 0 {
-                    Constraint::Length(1)
+            .enumerate()
+            .map(|(i, &count)| {
+                if i == active {
+                    Constraint::Fill(1)
                 } else {
-                    Constraint::Fill(*weight)
+                    Constraint::Length(if compact || count == 0 {
+                        1
+                    } else {
+                        (count.saturating_mul(2) + 2).min(4) as u16
+                    })
                 }
             })
             .collect();
         Layout::vertical(constraints)
             .split(self.0)
-            .to_vec()
-            .into_iter()
+            .iter()
+            .copied()
             .map(Region)
             .collect()
     }

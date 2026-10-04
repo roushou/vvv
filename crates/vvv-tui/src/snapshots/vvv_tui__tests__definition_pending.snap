@@ -2,10 +2,10 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ vvv ~/dev/nx ──────────────────────────────────────────────────────── 1 query · search ┐
+┌ vvv ~/dev/nx ─────────────────────── 1 query · search · ctrl+g filters · ctrl+o places ┐
 │> Language                                                                              │
-└ f in: workspace  ·  s kind: any  ·  L lang: any ───────────────────────────────────────┘
-┌ 2 Files ──────────────────── 3/3 · 4 hits ┐┌ definition · src/lang/mod.rs:64 ──────────┐
+└ workspace · all results ───────────────────────────────────────────────────────────────┘
+┌ 2 Files ──────────────────── 3/3 · 4 hits ┐┌ definition · src/lang/mod.rs:64 ─── 65–67 ┐
 │  src/lang/mod.rs                        1 ││     fn name(&self) -> &str;               │
 │  src/lang/registry.rs                   1 ││     fn extensions(&self) -> &[&str];      │
 │> src/lib.rs                             2 ││ }                                         │
@@ -21,4 +21,4 @@ expression: "FrameFixture::new(&m).render()"
 │                                           ││                                           │
 │                                           ││                                           │
 └ [All 4] Decl 1 Imp 2 Use 1 ───────────────┘└ updating ─────────────────────────────────┘
- search p preview  ⏎ follow  ← results  < > resize  F files  j/k scroll  d/u page  e edito
+ search ⏎ follow  / find  : line  n hit  → columns  z expand  p preview           f1 help

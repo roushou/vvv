@@ -4,7 +4,10 @@ pub(crate) mod files;
 mod locations;
 pub(crate) use locations::Locations;
 pub(crate) mod browse;
+pub(crate) mod filters;
+pub(crate) mod inspection;
 use browse::{BrowsePage, NavigationTrail};
+pub(crate) mod recall;
 use std::sync::Arc;
 pub(crate) mod query;
 pub(crate) mod screen;
@@ -26,6 +29,7 @@ use vvv_engine::{
 /// The hub: a query, its results, and context for the cursor row.
 #[derive(Debug, Default)]
 pub struct Search {
+    pub recent: recall::RecentSearches,
     pub trail: NavigationTrail,
     pub page: BrowsePage,
     pub stale: bool,
@@ -41,15 +45,136 @@ pub struct Search {
     pub definition_tab: bool,
     /// A manual context scroll position; `None` follows the cursor.
     pub preview_scroll: Option<usize>,
+    pub inspection: inspection::Inspection,
+    pub expanded: Option<SearchPanel>,
 }
 
 impl Search {
+    pub fn remember_page(&mut self, busy: bool) {
+        if busy || self.stale || self.query.is_empty() {
+            return;
+        }
+        if let Some(recipe) = recall::SearchRecipe::capture(self) {
+            self.recent.remember(recipe);
+        }
+        self.trail.commit(browse::NavigationEntry::capture(self));
+    }
+    pub fn reopen(
+        &mut self,
+        recipe: &recall::SearchRecipe,
+        context: &mut ModeContext<'_>,
+    ) -> Vec<Effect> {
+        if !recipe.valid() {
+            return Vec::new();
+        }
+        self.remember_page(context.status.busy);
+        recipe.restore(self);
+        let effects = self.search(context);
+        self.results
+            .set_category(Category::from_key(&recipe.category).expect("validated category"));
+        effects
+    }
+    pub fn inspection_editing(&self) -> bool {
+        match self.focus {
+            SearchPanel::Context => self.inspection.edit.is_some(),
+            SearchPanel::Body => self.body.inspection.edit.is_some(),
+            _ => false,
+        }
+    }
+
+    fn inspection_action(&mut self, action: Action) {
+        use inspection::InspectionKind;
+        if action == Action::ExpandPreview {
+            self.expanded = if self.expanded == Some(self.focus) {
+                None
+            } else {
+                Some(self.focus)
+            };
+            return;
+        }
+        let definition = self.focus == SearchPanel::Body;
+        let source = if definition {
+            self.body
+                .declaration()
+                .and_then(|d| self.body.symbol(d))
+                .and_then(|s| self.body.preview.clone().map(|p| (p, s.span)))
+        } else {
+            self.displayed_source()
+                .and_then(|_| self.preview.clone())
+                .map(|p| {
+                    let end = p.text().len();
+                    (p, vvv_engine::Span::new(0, end))
+                })
+        };
+        let Some((preview, range)) = source else {
+            return;
+        };
+        let lines = if definition {
+            preview.lines_in(range).unwrap_or(0..0)
+        } else {
+            0..preview.line_count()
+        };
+        let scroll = if definition {
+            lines.start + self.body.scroll
+        } else {
+            self.preview_scroll.unwrap_or_else(|| self.preview_anchor())
+        };
+        let inspection = if definition {
+            &mut self.body.inspection
+        } else {
+            &mut self.inspection
+        };
+        inspection.sync(&preview, range);
+        let next = match action {
+            Action::InspectFind | Action::InspectLine => {
+                inspection.begin(
+                    if action == Action::InspectFind {
+                        InspectionKind::Find
+                    } else {
+                        InspectionKind::Line
+                    },
+                    scroll,
+                );
+                None
+            }
+            Action::Input(c) => inspection.input(Some(c), false, &preview, range),
+            Action::Backspace => inspection.input(None, false, &preview, range),
+            Action::Clear => inspection.input(None, true, &preview, range),
+            Action::Enter => inspection.accept(lines.clone()),
+            Action::Back => inspection.cancel(&preview, range),
+            Action::InspectNext(by) => inspection.step(by, &preview, scroll),
+            Action::InspectHorizontal(by) => {
+                inspection.horizontal_by(by);
+                None
+            }
+            Action::InspectStart => {
+                inspection.horizontal = 0;
+                None
+            }
+            _ => None,
+        };
+        if let Some(line) = next {
+            if definition {
+                self.body.scroll = line.saturating_sub(lines.start);
+            } else {
+                self.preview_scroll = Some(line);
+            }
+        }
+    }
+
     pub fn input_focused(&self) -> bool {
         self.focus == SearchPanel::Query
+            || self.inspection_editing()
             || (self.focus == SearchPanel::Files && self.results.files.edit.is_some())
     }
     pub fn screen(&self) -> &'static crate::screen::Screen {
-        if self.results.files.edit.is_some() && self.focus == SearchPanel::Files {
+        if self.inspection_editing() {
+            if self.focus == SearchPanel::Body {
+                &screen::INSPECT_BODY
+            } else {
+                &screen::INSPECT_SOURCE
+            }
+        } else if self.results.files.edit.is_some() && self.focus == SearchPanel::Files {
             &screen::FILTER_SEARCH
         } else {
             &screen::SEARCH
@@ -237,12 +362,16 @@ impl Search {
     }
 
     pub fn travel(&mut self, forward: bool, context: &mut ModeContext<'_>) -> Vec<Effect> {
+        self.travel_steps(if forward { 1 } else { -1 }, context)
+    }
+    pub fn travel_steps(&mut self, steps: i32, context: &mut ModeContext<'_>) -> Vec<Effect> {
+        let forward = steps > 0;
         self.trail.cancel();
-        if !self.trail.can_travel(forward) {
+        if steps == 0 || !self.trail.can_travel(forward) {
             return Vec::new();
         }
         let current = browse::NavigationEntry::capture(self);
-        let Some(entry) = self.trail.travel(current, forward) else {
+        let Some(entry) = self.trail.travel(current, steps) else {
             return Vec::new();
         };
         context.next_generation();
@@ -264,6 +393,7 @@ impl Search {
         let generation = context.next_generation();
         match self.query.parse() {
             Ok(query) => {
+                self.stale = true;
                 if query.symbol().is_some() {
                     self.results.set_category(Category::Declarations);
                 }
@@ -306,6 +436,7 @@ impl Search {
         let Some(query) = declaration.and_then(|d| self.results.subject_at(d)) else {
             return context.fail("put the cursor on a declaration to enter its scope");
         };
+        self.remember_page(context.status.busy);
         context.status.busy = true;
         let generation = context.next_generation();
         vec![Effect::Query {
@@ -318,10 +449,36 @@ impl Search {
         (target, value): (MenuTarget, Option<String>),
         context: &mut ModeContext<'_>,
     ) -> Navigation {
+        self.remember_page(context.status.busy);
+        if target != MenuTarget::Relation {
+            self.results.prefer_selection();
+        }
         match target {
+            MenuTarget::Filters => {
+                let restrictions: Vec<_> = match value.as_deref() {
+                    Some("all") => filters::Restriction::ALL.to_vec(),
+                    Some(key) => filters::Restriction::from_key(key).into_iter().collect(),
+                    None => Vec::new(),
+                };
+                let mut rerun = false;
+                for restriction in restrictions {
+                    if restriction.value(self).is_some() {
+                        rerun |= restriction.clear(self);
+                    }
+                }
+                if rerun {
+                    Navigation::Effects(self.search(context))
+                } else {
+                    Navigation::Selection
+                }
+            }
             MenuTarget::Symbol => {
                 self.query.set_filter(Filter::Symbol, value.as_deref());
-                self.results.set_category(Category::Declarations);
+                self.results.set_category(if value.is_some() {
+                    Category::Declarations
+                } else {
+                    Category::All
+                });
                 Navigation::Effects(self.search(context))
             }
             MenuTarget::Language => {
@@ -449,6 +606,11 @@ impl Search {
         }
     }
     fn sync_preview_tab(&mut self) {
+        self.inspection.edit = None;
+        self.body.inspection.edit = None;
+        if self.expanded.is_some() {
+            self.expanded = self.scroll_focused().then_some(self.focus);
+        }
         match self.focus {
             SearchPanel::Body => self.definition_tab = true,
             SearchPanel::Context => self.definition_tab = false,
@@ -456,6 +618,7 @@ impl Search {
         }
     }
     pub fn moved(&mut self, by: i32) {
+        self.results.files.preferred = None;
         if self.focus == SearchPanel::Files {
             self.file_by(by);
             return;
@@ -500,16 +663,25 @@ impl Search {
             .select(self.results.current(), self.results.revision);
         if !self.panel_available(self.focus) {
             self.focus = SearchPanel::Results;
+            self.sync_preview_tab();
         }
     }
     pub fn site(&self) -> Option<(RelPath, u32)> {
         if self.focus == SearchPanel::Body {
-            self.body
-                .declaration()
-                .map(|d| (d.path.clone(), d.start.line))
+            self.body.declaration().map(|d| {
+                (
+                    d.path.clone(),
+                    self.body.inspection.line.map_or(d.start.line, |n| n as u32),
+                )
+            })
         } else if self.focus == SearchPanel::Context {
             self.displayed_source()
-                .map(|anchor| (anchor.path, anchor.line))
+                .map(|anchor| {
+                    (
+                        anchor.path,
+                        self.inspection.line.map_or(anchor.line, |n| n as u32),
+                    )
+                })
                 .or_else(|| self.results.current_site())
         } else {
             self.results.current_site()
@@ -535,6 +707,12 @@ impl Search {
         {
             if self.source_anchor.as_ref() != Some(&anchor) {
                 self.preview_scroll = None;
+                self.inspection.cursor = None;
+                self.inspection.line = None;
+            }
+            if let Some(preview) = &self.preview {
+                self.inspection
+                    .sync(preview, vvv_engine::Span::new(0, preview.text().len()));
             }
             self.source_anchor = Some(anchor);
         }
@@ -589,6 +767,14 @@ impl Search {
         }
     }
     pub fn back(&mut self, context: &mut ModeContext<'_>) -> Vec<Effect> {
+        if self.inspection_editing() {
+            self.inspection_action(Action::Back);
+            return Vec::new();
+        }
+        if self.expanded.is_some() {
+            self.expanded = None;
+            return Vec::new();
+        }
         if self.results.files.edit.is_some() {
             let (selected, focus) = self
                 .results
@@ -676,6 +862,7 @@ impl Search {
             }
             PointerIntent::Filter => return self.update(Action::FilterFiles, context),
             PointerIntent::File(path) => {
+                self.results.files.preferred = None;
                 let groups = self.results.file_groups();
                 let Some(index) = groups.iter().position(|group| *group.path == path) else {
                     return Vec::new();
@@ -690,6 +877,7 @@ impl Search {
                 self.selection_changed();
             }
             PointerIntent::Match(id) => {
+                self.results.files.preferred = None;
                 if !self.results.listed().iter().any(|m| m.id == id) {
                     return Vec::new();
                 }
@@ -713,9 +901,33 @@ impl Search {
     }
 
     pub fn update(&mut self, action: Action, context: &mut ModeContext<'_>) -> Vec<Effect> {
+        if self.scroll_focused()
+            && ((self.inspection_editing()
+                && matches!(
+                    action,
+                    Action::Input(_)
+                        | Action::Backspace
+                        | Action::Clear
+                        | Action::Enter
+                        | Action::Back
+                ))
+                || matches!(
+                    action,
+                    Action::InspectFind
+                        | Action::InspectLine
+                        | Action::InspectNext(_)
+                        | Action::InspectHorizontal(_)
+                        | Action::InspectStart
+                        | Action::ExpandPreview
+                ))
+        {
+            self.inspection_action(action);
+            return Vec::new();
+        }
         if self.results.files.edit.is_some() && self.focus == SearchPanel::Files {
             match action {
                 Action::Input(_) | Action::Backspace | Action::Clear => {
+                    self.results.prefer_selection();
                     let selected = self.results.current().map(|m| m.id.clone()).or_else(|| {
                         self.results
                             .files
@@ -778,6 +990,7 @@ impl Search {
                 } else {
                     SearchPanel::Context
                 };
+                self.sync_preview_tab();
             }
             Action::Top => return self.jump(true),
             Action::Bottom => return self.jump(false),
@@ -787,14 +1000,20 @@ impl Search {
             }
             Action::Scroll(n) => self.moved(n),
             Action::Input(c) => {
+                self.remember_page(context.status.busy);
+                self.results.files.preferred = None;
                 self.query.push(c);
                 return self.search(context);
             }
             Action::Backspace => {
+                self.remember_page(context.status.busy);
+                self.results.files.preferred = None;
                 self.query.pop();
                 return self.search(context);
             }
             Action::Clear => {
+                self.remember_page(context.status.busy);
+                self.results.files.preferred = None;
                 self.query.clear();
                 return self.search(context);
             }
@@ -823,6 +1042,10 @@ impl Search {
             .is_some_and(|(path, _)| path == preview.path)
         {
             self.preview = Some(preview);
+            if let Some(preview) = &self.preview {
+                self.inspection
+                    .sync(preview, vvv_engine::Span::new(0, preview.text().len()));
+            }
             self.preview_dirty = false;
             self.sync_source();
         }
@@ -848,6 +1071,9 @@ impl Search {
             self.preview_dirty = true;
         }
         self.selection_changed();
+        if let Some(recipe) = recall::SearchRecipe::capture(self) {
+            self.recent.searched(recipe);
+        }
         if skipped.is_empty() {
             context.status.clear()
         } else {
@@ -902,6 +1128,17 @@ impl Panels for SearchPanel {
         Self::Context,
         Self::Body,
     ];
+}
+impl SearchPanel {
+    pub fn label(self) -> &'static str {
+        match self {
+            Self::Query => "Query",
+            Self::Files => "Files",
+            Self::Results => "Matches",
+            Self::Context => "Source",
+            Self::Body => "Definition",
+        }
+    }
 }
 
 /// What the hub shows about the declaration it was narrowed to.
@@ -1059,6 +1296,7 @@ impl Results {
     }
 
     pub fn set_category(&mut self, category: Category) {
+        self.prefer_selection();
         let selected = self.current().map(|m| m.id.clone());
         self.category = category;
         self.revision += 1;
@@ -1082,8 +1320,12 @@ impl Results {
             .iter()
             .flat_map(|f| f.matches.iter().copied())
             .collect();
-        let index = selected
-            .and_then(|id| matches.iter().position(|m| m.id == id))
+        let index = self
+            .files
+            .preferred
+            .as_ref()
+            .and_then(|id| matches.iter().position(|m| &m.id == id))
+            .or_else(|| selected.and_then(|id| matches.iter().position(|m| m.id == id)))
             .or_else(|| fallback.and_then(|id| matches.iter().position(|m| m.id == id)))
             .unwrap_or(0);
         let len = matches.len();
@@ -1092,6 +1334,7 @@ impl Results {
     }
 
     pub fn set_location(&mut self, location: Option<RelPath>) {
+        self.prefer_selection();
         let selected = self.current().map(|m| m.id.clone());
         self.location = location;
         self.revision += 1;
@@ -1179,7 +1422,14 @@ impl Results {
         }
     }
 
+    fn prefer_selection(&mut self) {
+        if self.files.preferred.is_none() {
+            self.files.preferred = self.current().map(|m| m.id.clone());
+        }
+    }
+
     pub fn move_file(&mut self, by: i32) -> bool {
+        self.files.preferred = None;
         self.remember_current();
         let path = self.current().map(|m| &m.path);
         let groups = self.file_groups();

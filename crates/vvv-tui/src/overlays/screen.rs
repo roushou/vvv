@@ -10,8 +10,9 @@ use ratatui::widgets::{Block, Clear, Paragraph, Widget};
 use super::{Confirm, Menu};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
-use crate::render::Painter;
+use crate::render::{Fit, Painter};
 use crate::screen::{BoundScreen, Panel, Screen};
+use vvv_engine::protocol::vocabulary::Plural;
 use vvv_engine::report::{Detailed, Document, Options, View};
 
 use Action as A;
@@ -21,6 +22,24 @@ use Dispatch::Run;
 const MENU: Layer<Action> = Layer {
     name: "Menus and questions",
     bindings: &[
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('u'))],
+            dispatch: Run(A::Clear),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "clear picker text",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('x'))],
+            dispatch: Run(A::MenuClear),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "clear this restriction and close the picker",
+            },
+        },
         Keybinding {
             triggers: &[Trigger::Key(Key::enter())],
             dispatch: Run(A::MenuChoose),
@@ -131,6 +150,42 @@ const CONFIRM: Layer<Action> = Layer {
 const HELP: Layer<Action> = Layer {
     name: "Menus and questions",
     bindings: &[
+        Keybinding {
+            triggers: &[Trigger::Key(Key::page_down())],
+            dispatch: Run(A::Page(1)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "next help page",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::page_up())],
+            dispatch: Run(A::Page(-1)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "previous help page",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::home())],
+            dispatch: Run(A::Top),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "first help page",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::end())],
+            dispatch: Run(A::Bottom),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "last help page",
+            },
+        },
         Keybinding {
             triggers: &[Trigger::Key(Key::down()), Trigger::Key(Key::char('j'))],
             dispatch: Run(A::Scroll(1)),
@@ -294,52 +349,110 @@ impl<'a> MenuBox<'a> {
 impl MenuBox<'_> {
     fn draw(&self, area: Rect, buf: &mut Buffer) {
         let items = self.menu.shown();
-        let height = (items.len() as u16 + 4).min(area.height);
         let width = items
             .iter()
-            .map(|i| Line::from(i.label.as_str()).width() + 4)
+            .map(|i| Line::from(i.label.as_str()).width() + 14)
             .max()
-            .unwrap_or(30)
-            .clamp(40, 76) as u16;
+            .unwrap_or(50)
+            .clamp(66, 92)
+            .min(area.width as usize) as u16;
+        let content_width = width.saturating_sub(2) as usize;
+        let label_width = content_width.saturating_sub(12).max(1);
+        let mut choices = Vec::new();
+        let mut selection = 0..0;
+        for (i, item) in items.iter().enumerate() {
+            let start = choices.len();
+            let wrapped = Fit(&item.label, label_width).wrapped();
+            let last = wrapped.len().saturating_sub(1);
+            for (row, label) in wrapped.into_iter().enumerate() {
+                let applied = self.menu.target != super::MenuTarget::Filters
+                    && item.value == self.menu.selected;
+                let mut spans = vec![
+                    Span::styled(
+                        if i == self.menu.cursor && row == 0 {
+                            "> "
+                        } else {
+                            "  "
+                        },
+                        self.painter.selection_marker(true),
+                    ),
+                    Span::styled(
+                        if applied && row == 0 { "✓ " } else { "  " },
+                        self.painter.key,
+                    ),
+                    Span::raw(label),
+                ];
+                if row == last
+                    && let Some(count) = item.count
+                {
+                    let count = count.to_string();
+                    let used = Line::from(spans.clone()).width();
+                    spans.push(Span::raw(
+                        " ".repeat(content_width.saturating_sub(used + count.len() + 1)),
+                    ));
+                    spans.push(Span::styled(format!("{count} "), self.painter.dim));
+                }
+                let line = Line::from(spans);
+                choices.push(if i == self.menu.cursor {
+                    self.painter.selected_line(line, true, content_width)
+                } else {
+                    line
+                });
+            }
+            if i == self.menu.cursor {
+                selection = start..choices.len();
+            }
+        }
+        if choices.is_empty() {
+            choices.push(Line::from(Span::styled(
+                " No choices match · Ctrl+U clear text",
+                self.painter.dim,
+            )));
+        }
+        let height =
+            (choices.len().saturating_add(4).min(u16::MAX as usize) as u16).min(area.height);
         let boxed = area.centered(Constraint::Length(width), Constraint::Length(height));
         Clear.render(boxed, buf);
+        let footer = if self.menu.target == super::MenuTarget::Filters {
+            " Enter edit · Ctrl+X clear · Esc cancel "
+        } else {
+            " Enter choose · Ctrl+X clear · Ctrl+U text · Esc cancel "
+        };
         let block = Block::bordered()
             .border_style(self.painter.focused)
             .title(Span::styled(
                 format!(" {} ", self.menu.title()),
                 self.painter.title,
             ))
-            .title_bottom(Span::styled(
-                " Enter select · Esc cancel ",
-                self.painter.dim,
-            ));
+            .title_top(
+                Line::from(Span::styled(
+                    format!(
+                        " {}{} ",
+                        Plural(items.len(), "choice"),
+                        if self.menu.counted {
+                            " · loaded hits"
+                        } else {
+                            ""
+                        }
+                    ),
+                    self.painter.dim,
+                ))
+                .right_aligned(),
+            )
+            .title_bottom(Span::styled(footer, self.painter.dim));
         let inner = block.inner(boxed);
         block.render(boxed, buf);
-        let mut rows = vec![Line::from(format!("> {}▏", self.menu.filter))];
-        rows.push(Line::default());
-        let height = inner.height.saturating_sub(2) as usize;
-        let offset = self.menu.cursor.saturating_sub(height.saturating_sub(1));
-        rows.extend(
-            items
-                .iter()
-                .enumerate()
-                .skip(offset)
-                .take(height)
-                .map(|(i, item)| {
-                    let line = Line::from(vec![
-                        Span::styled(
-                            if i == self.menu.cursor { "> " } else { "  " },
-                            self.painter.selection_marker(true),
-                        ),
-                        Span::raw(item.label.clone()),
-                    ]);
-                    if i == self.menu.cursor {
-                        self.painter.selected_line(line, true, inner.width as usize)
-                    } else {
-                        line
-                    }
-                }),
-        );
+        let mut rows = vec![
+            Line::from(vec![
+                Span::styled("> ", self.painter.key),
+                Span::raw(Fit(&self.menu.filter, content_width.saturating_sub(4)).to_string()),
+                self.painter.caret(true),
+            ]),
+            Line::default(),
+        ];
+        let visible = inner.height.saturating_sub(2) as usize;
+        let offset = selection.end.saturating_sub(visible);
+        rows.extend(choices.into_iter().skip(offset).take(visible));
         Paragraph::new(rows).render(inner, buf);
     }
 }
@@ -380,8 +493,8 @@ impl ConfirmBox<'_> {
 }
 
 pub struct HelpBox<'a> {
-    screen: &'a Screen,
-    focus: usize,
+    title: &'a str,
+    sections: &'a [(&'static str, Vec<crate::keymap::Row<'static, Action>>)],
     scroll: usize,
     painter: Painter,
 }
@@ -390,10 +503,15 @@ impl<'a> HelpBox<'a> {
     pub fn screen(self) -> BoundScreen<Self, 1> {
         BoundScreen::new(self, &HELP_SCREEN, |_, area| area.full(), [Self::draw])
     }
-    pub fn new(screen: &'a Screen, focus: usize, scroll: usize, painter: Painter) -> Self {
+    pub fn new(
+        title: &'a str,
+        sections: &'a [(&'static str, Vec<crate::keymap::Row<'static, Action>>)],
+        scroll: usize,
+        painter: Painter,
+    ) -> Self {
         Self {
-            screen,
-            focus,
+            title,
+            sections,
             scroll,
             painter,
         }
@@ -409,59 +527,91 @@ impl<'a> HelpBox<'a> {
     /// (key, what) rows; an empty key starts a section. The marks first,
     /// then every key that works where the user was, by where it comes from.
     fn rows(&self) -> Vec<(String, String)> {
-        let mut rows: Vec<(String, String)> = vec![(String::new(), "Marks".to_owned())];
-        rows.extend(
-            Self::MARKS
-                .iter()
-                .map(|(k, w)| ((*k).to_owned(), (*w).to_owned())),
-        );
-        for (title, section) in self.screen.sections(self.focus) {
-            rows.push((String::new(), title.to_owned()));
+        let mut rows: Vec<(String, String)> = Vec::new();
+        for (title, section) in self.sections.iter() {
+            rows.push((String::new(), (*title).to_owned()));
             for row in section {
                 rows.push((row.labels.clone(), row.legend.help.to_owned()));
             }
         }
+        rows.push((String::new(), "Marks".into()));
+        rows.extend(Self::MARKS.iter().map(|(k, w)| ((*k).into(), (*w).into())));
         rows
     }
 }
 
 impl HelpBox<'_> {
+    fn lines(&self, width: u16) -> Vec<Line<'static>> {
+        let width = 96.min(width).saturating_sub(2) as usize;
+        let gutter = self
+            .rows()
+            .iter()
+            .map(|(k, _)| Line::from(k.as_str()).width())
+            .max()
+            .unwrap_or(0)
+            .min(width / 3)
+            .max(1);
+        let mut lines = Vec::new();
+        for (key, what) in self.rows() {
+            if key.is_empty() {
+                lines.push(Line::from(Span::styled(
+                    format!(" {what}"),
+                    self.painter.title,
+                )));
+            } else {
+                let keys = Fit(&key, gutter).wrapped_words();
+                let words = Fit(&what, width.saturating_sub(gutter + 2).max(1)).wrapped_words();
+                for i in 0..keys.len().max(words.len()) {
+                    lines.push(Line::from(vec![
+                        Span::styled(
+                            format!("{:>gutter$}  ", keys.get(i).map_or("", String::as_str)),
+                            self.painter.key,
+                        ),
+                        Span::raw(words.get(i).cloned().unwrap_or_default()),
+                    ]));
+                }
+            }
+        }
+        lines
+    }
+    pub fn scroll_limit(&self, width: u16, height: u16) -> usize {
+        self.lines(width)
+            .len()
+            .saturating_sub(height.saturating_sub(2) as usize)
+    }
     fn draw(&self, area: Rect, buf: &mut Buffer) {
-        let rows = self.rows();
-        let height = (rows.len() as u16 + 2).min(area.height);
+        let lines = self.lines(area.width);
         let boxed = area.centered(
             Constraint::Length(96.min(area.width)),
-            Constraint::Length(height),
+            Constraint::Length((lines.len() as u16 + 2).min(area.height)),
         );
         Clear.render(boxed, buf);
         let block = Block::bordered()
             .border_style(self.painter.focused)
-            .title(Span::styled(" keys ", self.painter.title));
+            .title(Span::styled(
+                format!(" Help · {} ", self.title),
+                self.painter.title,
+            ))
+            .title_bottom(Span::styled(
+                " ↑/↓ scroll · f1 / esc return ",
+                self.painter.dim,
+            ));
         let inner = block.inner(boxed);
         block.render(boxed, buf);
-        // Never scroll past the last page.
         let scroll = self
             .scroll
-            .min(rows.len().saturating_sub(inner.height as usize));
-        let lines: Vec<Line> = rows
-            .into_iter()
-            .skip(scroll)
-            .map(|(key, what)| {
-                if key.is_empty() {
-                    Line::from(Span::styled(format!(" {what}"), self.painter.title))
-                } else {
-                    Line::from(vec![
-                        Span::styled(format!("{key:>16}  "), self.painter.key),
-                        Span::raw(what),
-                    ])
-                }
-            })
-            .collect();
-        Paragraph::new(lines).render(inner, buf);
+            .min(lines.len().saturating_sub(inner.height as usize));
+        Paragraph::new(
+            lines
+                .into_iter()
+                .skip(scroll)
+                .take(inner.height as usize)
+                .collect::<Vec<_>>(),
+        )
+        .render(inner, buf);
     }
 }
 
-/// The result of an apply, laid out as the lines every renderer reads.
 pub struct ReportBox<'a> {
     report: &'a Document,
     cursor: usize,
@@ -694,5 +844,247 @@ impl<'a> NavigationBox<'a> {
                 }),
         );
         Paragraph::new(lines).render(inner, buf);
+    }
+}
+
+const PLACES: Layer<Action> = Layer {
+    name: "Places",
+    bindings: &[
+        Keybinding {
+            triggers: &[Trigger::Key(Key::tab()), Trigger::Key(Key::back_tab())],
+            dispatch: Run(A::PlacesTab),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "tab",
+                    word: "trail/recent",
+                }),
+                help: "switch browsing trail / recent searches",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::enter())],
+            dispatch: Run(A::Enter),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "⏎",
+                    word: "open",
+                }),
+                help: "restore a browsing page or run a recent search",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::esc())],
+            dispatch: Run(A::Back),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "esc",
+                    word: "cancel",
+                }),
+                help: "close without changing your place",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::down()), Trigger::Key(Key::ctrl('n'))],
+            dispatch: Run(A::Move(1)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "next place",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::up()), Trigger::Key(Key::ctrl('p'))],
+            dispatch: Run(A::Move(-1)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "previous place",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::home())],
+            dispatch: Run(A::Top),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "first place",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::end())],
+            dispatch: Run(A::Bottom),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "last place",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::page_down())],
+            dispatch: Run(A::Page(1)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "next page",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::page_up())],
+            dispatch: Run(A::Page(-1)),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "previous page",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('u'))],
+            dispatch: Run(A::Clear),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "clear place filter",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('d'))],
+            dispatch: Run(A::ForgetSearch),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "forget selected recent search",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('l'))],
+            dispatch: Run(A::ResetLayout),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "reset split, report view and preview choice",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::backspace())],
+            dispatch: Run(A::Backspace),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "edit place filter",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Text],
+            dispatch: Dispatch::Type,
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "filter queries and complete paths",
+            },
+        },
+    ],
+};
+pub static PLACES_SCREEN: Screen = Screen {
+    layer: PLACES,
+    panels: &[Panel {
+        layer: PLACES,
+        kind: None,
+    }],
+};
+pub struct PlacesBox<'a> {
+    places: &'a super::places::Places,
+    painter: Painter,
+}
+impl<'a> PlacesBox<'a> {
+    pub fn new(places: &'a super::places::Places, painter: Painter) -> Self {
+        Self { places, painter }
+    }
+    pub fn screen(self) -> BoundScreen<Self, 1> {
+        BoundScreen::new(self, &PLACES_SCREEN, |_, area| area.full(), [Self::draw])
+    }
+    fn draw(&self, area: Rect, buf: &mut Buffer) {
+        let boxed = area.centered(
+            Constraint::Percentage(94),
+            Constraint::Length(20.min(area.height)),
+        );
+        Clear.render(boxed, buf);
+        let p = self.places;
+        let visible = p.visible();
+        let width = boxed.width.saturating_sub(4) as usize;
+        let mut rows = Vec::new();
+        let mut cursor = None;
+        for (i, item) in visible.iter().enumerate() {
+            if i == p.cursor.index {
+                cursor = Some(rows.len());
+            }
+            rows.extend(
+                Fit(
+                    &format!(
+                        "{}{}",
+                        if i == p.cursor.index { "> " } else { "  " },
+                        item.label
+                    ),
+                    width,
+                )
+                .wrapped()
+                .into_iter()
+                .map(|row| {
+                    let line = Line::from(row);
+                    if i == p.cursor.index {
+                        self.painter.selected_line(
+                            line,
+                            true,
+                            boxed.width.saturating_sub(2) as usize,
+                        )
+                    } else {
+                        line
+                    }
+                }),
+            );
+        }
+        let mut title = vec![Span::styled("Places · ", self.painter.title)];
+        title.push(Span::styled(
+            format!("Trail {}", p.trail.len()),
+            if p.recent {
+                self.painter.dim
+            } else {
+                self.painter.key
+            },
+        ));
+        title.push(Span::styled(" / ", self.painter.dim));
+        title.push(Span::styled(
+            format!("Recent {}", p.searches.len()),
+            if p.recent {
+                self.painter.key
+            } else {
+                self.painter.dim
+            },
+        ));
+        let footer = if p.recent && width >= 65 {
+            " tab switch · ctrl+d forget · ctrl+l layout · f1 keys "
+        } else if p.recent {
+            " tab switch · ctrl+d forget · f1 keys "
+        } else {
+            " tab switch · ⏎ return · f1 keys "
+        };
+        crate::render::Pane::new(self.painter, Line::from(title), true)
+            .right(Line::from(format!("{} shown", visible.len())))
+            .footer(Line::from(Span::styled(footer, self.painter.dim)))
+            .prefix(vec![Line::from(vec![
+                Span::styled("Find: ", self.painter.key),
+                Span::raw(p.filter.clone()),
+                self.painter.caret(true),
+            ])])
+            .rows(rows)
+            .cursor(cursor)
+            .empty(if p.recent {
+                "No recent searches match. Search first, or ctrl+u to clear."
+            } else {
+                "No places match. ctrl+u clears the filter."
+            })
+            .render(boxed, buf);
     }
 }

@@ -60,6 +60,7 @@ impl Tui {
     /// Take the terminal until the user quits.
     pub fn run(self) -> Result<(), Error> {
         let root = self.engine.root().to_path_buf();
+        let root = std::fs::canonicalize(&root).unwrap_or(root);
         let languages = self
             .engine
             .language_ids()
@@ -74,6 +75,10 @@ impl Tui {
         let editor = self.editor;
         let worker = Worker::spawn(self.engine);
         let mut model = Model::new(root.display().to_string(), languages);
+        let preferences = PreferenceFile::new(&root);
+        if let Some(file) = &preferences {
+            file.load(&mut model);
+        }
         let mut terminal = ratatui::init();
         let capture = MouseCapture::new()?;
         let outcome = Self::event_loop(
@@ -86,7 +91,11 @@ impl Tui {
         );
         drop(capture);
         ratatui::restore();
-        outcome
+        outcome?;
+        if let Some(file) = preferences {
+            file.save(&model).map_err(Error::Preferences)?;
+        }
+        Ok(())
     }
 
     fn event_loop(
@@ -221,5 +230,96 @@ impl Drop for MouseCapture {
         if self.enabled {
             let _ = ratatui::crossterm::execute!(std::io::stdout(), DisableMouseCapture);
         }
+    }
+}
+
+/// UI data stays outside the project tree and is keyed by canonical workspace.
+struct PreferenceFile {
+    path: std::path::PathBuf,
+}
+impl PreferenceFile {
+    fn new(root: &Path) -> Option<Self> {
+        use std::hash::{Hash, Hasher};
+        let state = std::env::var_os("XDG_STATE_HOME")
+            .map(std::path::PathBuf::from)
+            .or_else(|| {
+                if cfg!(windows) {
+                    std::env::var_os("LOCALAPPDATA").map(std::path::PathBuf::from)
+                } else {
+                    std::env::var_os("HOME").map(|home| {
+                        let home = std::path::PathBuf::from(home);
+                        if cfg!(target_os = "macos") {
+                            home.join("Library/Application Support")
+                        } else {
+                            home.join(".local/state")
+                        }
+                    })
+                }
+            })?;
+        let mut hash = std::collections::hash_map::DefaultHasher::new();
+        root.hash(&mut hash);
+        Some(Self {
+            path: state
+                .join("vvv/tui")
+                .join(format!("{:016x}.json", hash.finish())),
+        })
+    }
+    fn load(&self, model: &mut Model) {
+        let Ok(metadata) = std::fs::metadata(&self.path) else {
+            return;
+        };
+        if metadata.len() > 256 * 1024 {
+            return;
+        }
+        if let Ok(bytes) = std::fs::read(&self.path)
+            && let Some(preferences) = crate::preferences::Preferences::decode(&bytes, &model.root)
+        {
+            preferences.restore(model);
+        }
+    }
+    fn save(&self, model: &Model) -> std::io::Result<()> {
+        let directory = self.path.parent().expect("preference file has a parent");
+        std::fs::create_dir_all(directory)?;
+        std::fs::write(
+            &self.path,
+            crate::preferences::Preferences::capture(model).encode(),
+        )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn preference_storage_round_trip_is_workspace_bound_and_rejects_corrupt_or_oversized_files() {
+        let directory = std::env::temp_dir().join(format!(
+            "vvv-tui-preferences-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        let file = PreferenceFile {
+            path: directory.join("workspace.json"),
+        };
+        let mut model = Model::new("/workspace".into(), vec![]);
+        model.split = 67;
+        file.save(&model).unwrap();
+        let mut restored = Model::new("/workspace".into(), vec![]);
+        file.load(&mut restored);
+        assert_eq!(restored.split, 67);
+        let mut other = Model::new("/other".into(), vec![]);
+        file.load(&mut other);
+        assert_eq!(other.split, 50);
+        std::fs::write(&file.path, b"broken").unwrap();
+        let mut fresh = Model::new("/workspace".into(), vec![]);
+        file.load(&mut fresh);
+        assert_eq!(fresh.split, 50);
+        std::fs::write(&file.path, vec![b' '; 256 * 1024 + 1]).unwrap();
+        file.load(&mut fresh);
+        assert_eq!(fresh.split, 50);
+        std::fs::remove_file(&file.path).unwrap();
+        std::fs::remove_dir(&directory).unwrap();
     }
 }

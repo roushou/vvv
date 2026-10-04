@@ -53,7 +53,15 @@ impl HistoryMode {
             Action::FocusPrev => self.focus_by(-1),
             Action::FocusNth(n) => self.focus_nth(n),
             Action::Move(n) => self.moved(n),
+            Action::Top if self.scroll_focused() => {
+                self.files_scroll = 0;
+                return Vec::new();
+            }
             Action::Top => self.moved(i32::MIN / 2),
+            Action::Bottom if self.scroll_focused() => {
+                self.files_scroll = usize::MAX;
+                return Vec::new();
+            }
             Action::Bottom => self.moved(i32::MAX / 2),
             Action::Scroll(n) if self.scroll_focused() => {
                 self.scrolled(n);
@@ -78,7 +86,7 @@ impl HistoryMode {
         self.files_scroll = 0;
     }
     pub fn scrolled(&mut self, by: i32) {
-        self.files_scroll = (self.files_scroll as i32 + by).max(0) as usize;
+        self.files_scroll = self.files_scroll.saturating_add_signed(by as isize);
     }
     pub fn scroll_focused(&self) -> bool {
         self.focus == HistoryPanel::Files

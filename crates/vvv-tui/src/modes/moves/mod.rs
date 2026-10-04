@@ -3,6 +3,7 @@ pub(crate) mod screen;
 use crate::action::{Action, Effect};
 use crate::model::{Cursor, FilePreview, Panels};
 use crate::modes::context::ModeContext;
+use crate::modes::review::ReviewState;
 use vvv_engine::SymbolKind;
 use vvv_engine::protocol::FileChange;
 use vvv_engine::{Intent, Notice, RelPath, Respelling};
@@ -27,6 +28,7 @@ pub struct MoveMode {
     /// Show the whole file diff in the detail panel.
     pub diff: bool,
     pub busy: bool,
+    pub applying: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -74,10 +76,9 @@ impl MovePlan {
     pub fn structural_label(&self, i: usize) -> String {
         let file = &self.files[i];
         if let Some(to) = &file.moved_to {
-            return format!("{} → {}", file.path.short(), to.short());
+            return format!("→ {to}");
         }
-        let change = file
-            .diff
+        file.diff
             .as_str()
             .lines()
             .find(|l| {
@@ -86,8 +87,7 @@ impl MovePlan {
                     && !l.starts_with("+++")
             })
             .map(|l| format!("{} {}", &l[..1], l[1..].trim()))
-            .unwrap_or_default();
-        format!("{}  {change}", file.path.short())
+            .unwrap_or_default()
     }
 }
 
@@ -148,10 +148,26 @@ impl MoveRow<'_> {
 }
 
 impl MoveMode {
+    pub fn state(&self) -> ReviewState<'_> {
+        if self.applying {
+            ReviewState::Applying
+        } else if self.busy {
+            ReviewState::Planning
+        } else if let Some(error) = &self.error {
+            ReviewState::Failed(error)
+        } else if self.to.trim().is_empty() {
+            ReviewState::Input("type a destination")
+        } else if self.plan.as_ref().is_none_or(|plan| plan.files.is_empty()) {
+            ReviewState::Empty("no changes")
+        } else {
+            ReviewState::Ready
+        }
+    }
+
     pub fn new(from: RelPath, symbol: Option<String>) -> Self {
         let to = match &symbol {
             Some(_) => String::new(),
-            None => from.short(),
+            None => from.as_str().to_owned(),
         };
         Self {
             from,
@@ -166,6 +182,7 @@ impl MoveMode {
             preview: None,
             diff: false,
             busy: false,
+            applying: false,
         }
     }
 
@@ -223,12 +240,32 @@ impl MoveMode {
     }
 
     pub fn update(&mut self, action: Action, context: &mut ModeContext<'_>) -> Vec<Effect> {
+        if self.applying
+            && matches!(
+                action,
+                Action::Input(_)
+                    | Action::Backspace
+                    | Action::Clear
+                    | Action::Toggle
+                    | Action::ToggleAll
+            )
+        {
+            return Vec::new();
+        }
         match action {
             Action::FocusNext => self.focus_by(1),
             Action::FocusPrev => self.focus_by(-1),
             Action::FocusNth(n) => self.focus_nth(n),
             Action::Move(n) => self.moved(n),
+            Action::Top if self.scroll_focused() => {
+                self.detail_scroll = 0;
+                return Vec::new();
+            }
             Action::Top => self.moved(i32::MIN / 2),
+            Action::Bottom if self.scroll_focused() => {
+                self.detail_scroll = usize::MAX;
+                return Vec::new();
+            }
             Action::Bottom => self.moved(i32::MAX / 2),
             Action::Scroll(n) if self.scroll_focused() => {
                 self.scrolled(n);
@@ -236,12 +273,20 @@ impl MoveMode {
             }
             Action::Scroll(n) => self.moved(n),
             Action::Input(c) => {
+                context.status.clear();
                 self.input(Some(c));
                 let generation = context.next_generation();
                 return self.plan(generation, true);
             }
             Action::Backspace => {
+                context.status.clear();
                 self.input(None);
+                let generation = context.next_generation();
+                return self.plan(generation, true);
+            }
+            Action::Clear => {
+                context.status.clear();
+                self.to.clear();
                 let generation = context.next_generation();
                 return self.plan(generation, true);
             }
@@ -256,11 +301,21 @@ impl MoveMode {
     }
     pub fn focus_by(&mut self, by: i32) {
         self.focus = self.focus.step(by);
+        while self.focus.slot().is_some() && self.len(self.focus) == 0 {
+            self.focus = self.focus.step(by);
+        }
+        self.remember_list();
     }
     pub fn focus_nth(&mut self, n: u8) {
         if let Some(p) = MovePanel::nth(n) {
             self.focus = p;
+            self.remember_list();
         };
+    }
+    fn remember_list(&mut self) {
+        if self.focus.slot().is_some() {
+            self.last_list = self.focus;
+        }
     }
     pub fn moved(&mut self, by: i32) {
         let panel = self.list();
@@ -271,7 +326,7 @@ impl MoveMode {
         self.detail_scroll = 0;
     }
     pub fn scrolled(&mut self, by: i32) {
-        self.detail_scroll = (self.detail_scroll as i32 + by).max(0) as usize;
+        self.detail_scroll = self.detail_scroll.saturating_add_signed(by as isize);
     }
     pub fn plan(&mut self, generation: u64, debounce: bool) -> Vec<Effect> {
         match self.intent() {
@@ -287,14 +342,16 @@ impl MoveMode {
                 self.plan = None;
                 self.error = None;
                 self.busy = false;
+                self.applying = false;
                 Vec::new()
             }
         }
     }
     pub fn commit(&mut self, context: &mut ModeContext<'_>) -> Vec<Effect> {
         match &self.plan {
-            Some(plan) if !self.busy => {
+            Some(plan) if self.state() == ReviewState::Ready => {
                 self.busy = true;
+                self.applying = true;
                 context.status.busy = true;
                 vec![Effect::Commit {
                     intent: plan.intent.clone(),
@@ -313,6 +370,7 @@ impl MoveMode {
         self.plan = Some(MovePlan::new(intent, files, respellings, notices));
         self.error = None;
         self.busy = false;
+        self.applying = false;
         for panel in [
             MovePanel::Respellings,
             MovePanel::Structural,
@@ -323,11 +381,13 @@ impl MoveMode {
                 cursor.clamp(len);
             }
         }
-        self.last_list = if self.len(MovePanel::Respellings) > 0 {
-            MovePanel::Respellings
-        } else {
-            MovePanel::Structural
-        };
+        if self.len(self.last_list) == 0 {
+            self.last_list = if self.len(MovePanel::Respellings) > 0 {
+                MovePanel::Respellings
+            } else {
+                MovePanel::Structural
+            };
+        }
         self.preview_effect()
     }
     pub fn from_results(
@@ -381,16 +441,23 @@ impl MoveMode {
         self.focus == MovePanel::Detail
     }
     pub fn previewed(&mut self, preview: FilePreview) {
+        if self.current().is_none_or(|row| *row.path() != preview.path) {
+            return;
+        }
+        if self.preview.as_ref().is_none_or(|p| p.path != preview.path) {
+            self.detail_scroll = 0;
+        }
         self.preview = Some(preview);
-        self.detail_scroll = 0;
     }
     pub fn plan_failed(&mut self, message: String) {
         self.busy = false;
+        self.applying = false;
         self.plan = None;
         self.error = Some(message);
     }
     pub fn failed(&mut self) {
         self.busy = false;
+        self.applying = false;
     }
     pub fn toggle_diff(&mut self) {
         self.diff = !self.diff;

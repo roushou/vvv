@@ -1141,7 +1141,11 @@ file's selected match and updating its previews. A `?` in a pattern (a Rust `?`,
 TypeScript `x?: T`) is just text. `esc` goes back one step, ultimately to search;
 `e` opens `$EDITOR` at the row under the cursor; `?` on a list or detail shows the
 marks and every key that works where you are, by where it comes from (`j`/`k` scroll
-it, any other key closes it) — the query itself has none, so `tab` to a list for it.
+it; Page Up/Down and Home/End also work; another key closes it). **F1** opens
+contextual help from every pane, including inputs and overlays, and returns to
+the same place when pressed again. Help wraps descriptions and lists only keys
+that are active at that focus, excluding shadowed shortcuts. The footer keeps
+F1 visible and shows complete hints that fit.
 The status bar and that list are two views of one table, so they never disagree. The picker keeps what it has read between keystrokes and re-reads only files that changed;
 it looks at the tree again at most once a second while you type, and always right
 after the editor returns or it writes something itself.
@@ -1212,6 +1216,27 @@ words (`symbol:trait`, `name:Foo`, `kind:impl_item`, `lang:rust`) still work in 
 query. Ctrl+F, Ctrl+S, Ctrl+L and Ctrl+T open location, kind, language and category pickers while
 query focus keeps ordinary letters as text.
 
+The search border groups active location, symbol kind, language, node kind,
+category, and fuzzy file restrictions. **Ctrl+G** opens their shared menu from any
+search pane: Enter edits the selected filter (node kind returns to the query),
+**Ctrl+X** clears it, and **Reset all filters** keeps the name or pattern being
+searched. The direct picker shortcuts still work. Inside a picker, **Ctrl+U**
+clears its text, **Ctrl+X** removes that picker’s restriction, and Escape cancels
+without changing the search. Clearing symbol kind also restores all categories.
+
+Picker borders label counts as **loaded hits**: they describe the last completed
+search, before category and fuzzy file filtering, within the current location.
+Location counts describe paths within that loaded search; sibling directories
+may have more matches when searched. Zero-count choices remain selectable, and
+counts are omitted while a search is pending or stale. A check marks the applied
+choice independently of the cursor. Long choices and active restriction paths
+wrap rather than hiding their filenames.
+
+Empty results identify the restrictions to adjust. Filter changes retain focus
+and the chosen preview pane. A match hidden by a restriction is remembered and
+restored when clearing makes it visible again; deliberate file or match navigation
+establishes a new selection instead. Query edits start a new search selection.
+
 `f` chooses where results are located. The picker suggests directories observed
 in search results and accepts a typed workspace-relative file or directory path;
 **Entire workspace** removes the restriction. Location filtering uses the engine's
@@ -1222,12 +1247,11 @@ preview and follow a declaration in another crate; its definition border marks
 an entered declaration's references, location filters the judged occurrence list;
 leaving it reruns search if its location changed.
 
-The results list is where you act: `↓` or `⏎` from the query (from a preview, `esc`
-or `←`), then `r` to rename, `m` to move the file, `M` to move the declaration,
+The results list is where you act: `↓` or `⏎` from the query (from a preview, `esc`), then `r` to rename, `m` to move the file, `M` to move the declaration,
 `w` to rewrite the category's search matches, `h` for history, and `u` to undo the
 newest apply. `v` switches references and other reports between compact rows and
 the full report's result rows; ordinary search keeps source excerpts in both views.
-The footer prioritizes navigation; `?` lists the available actions.
+The footer prioritizes navigation; `?` or F1 lists the available actions.
 CLI flag hints stay in the CLI.
 
 Inside an entered reference view, rewrite still uses the retained search matches;
@@ -1285,10 +1309,31 @@ replace the current request.
 `5` focuses the definition; `tab`/`shift-tab` include it in the panel cycle and
 reveal it when sharing a single preview with source. Use `j`/`k` or arrows to
 scroll, `d`/`u` or Page Down/Up to page, and `g`/`G` or Home/End to reach the
-top/bottom. `esc` returns to results; `e` opens the displayed declaration.
+top/bottom. Left/Right or `h`/`l` scroll code by eight terminal columns; `0`
+restores the first column. Source line numbers stay fixed. The border shows the
+visible file-line range and horizontal offset. `esc` returns to results; `e` opens
+the selected occurrence or displayed declaration unless find or go-to-line has
+chosen a specific line.
 Moving between uses of the same definition preserves
 scroll. A different definition or source version resets it; selecting a variant
 outside the visible portion of its enum reveals that variant.
+
+**Inspecting code.** In either preview, `/` finds literal, case-sensitive text
+within its displayed source: the whole file in Source, the enclosing declaration
+in Definition. Matches highlight as you type; Enter keeps the find and `n`/`N`
+cycle hits, wrapping at either end. The bottom border shows the term and hit
+position. Escape during editing restores the previous find and scroll position;
+Ctrl+U clears the text. `:` accepts an absolute file line, with the valid range
+shown for an invalid entry. Enter jumps there; Escape cancels. `e` then opens the
+found or requested line in the editor. Source and Definition retain independent
+find terms, hit positions and horizontal scroll. Replacement files reindex the
+find against the displayed bytes.
+
+`z` expands the focused preview across the area below Query; `z` or Escape
+restores the split layout without changing focus, selection or list positions.
+`p` switches previews while expanded. Focusing Query, Files or Matches restores
+the layout. Use `i` to edit the query from a preview; `/` searches its code.
+Browsing Back/Forward also restores inspection and expansion state.
 
 **Following code.** Press `o` on a result to follow its exact occurrence to a
 definition. In the context or definition pane, Enter or `o` opens an identifier
@@ -1296,6 +1341,36 @@ picker. Type to filter, use arrows or Page Up/Down to choose, and Enter to follo
 Each occurrence shows its line, column, and surrounding source, so two uses of the
 same name remain separate choices. If several definitions match, choose one from
 a second picker showing kind and location. Escape cancels without changing pages.
+
+**Ctrl+O** opens **Places** from any search pane. Its border has two tabs:
+**Trail**, the current session’s browsing pages, and **Recent**, up to 24 completed
+search configurations. Tab/Shift+Tab switch tabs; typing filters queries and
+complete paths (all space-separated terms must match). Arrows or Ctrl+N/P select;
+Page Up/Down and Home/End navigate the list; Enter opens the selection. Escape
+cancels without moving the underlying selection or scroll positions. Ctrl+U
+clears the picker text, and F1 explains its controls.
+
+The trail marks the current page and supports jumping directly to any retained
+page. Its entries show the page, source location, and active restrictions, wrapping
+complete paths without blank gaps. Editing a completed query or changing filters
+retains the page being left; typing while a search is pending does not create a
+page per keystroke. The search border shows the current trail position and which
+Back/Forward directions are available. Returning restores saved selection, focus,
+filters, preview choice and scroll, then validates the destination’s source.
+
+Recent searches retain query text (including language, symbol and node filters),
+location, category and fuzzy file filter. Reopening runs a fresh engine search;
+restrictions appear on the usual borders. **Ctrl+D** in Recent forgets its selected
+entry; a new completed search can record that configuration again.
+**Ctrl+L** in Places resets split width, report view and preview choice.
+
+On normal exit, the picker saves these layout choices and recent searches per
+canonical workspace. Startup restores the layout and makes the recipes available
+in Places; it starts with an empty query and unrestricted scope. Source previews,
+browsing pages and mutation plans are never saved to disk. State lives in
+`$XDG_STATE_HOME/vvv/tui` when set, otherwise `~/Library/Application Support/vvv/tui`
+on macOS, `%LOCALAPPDATA%/vvv/tui` on Windows, or `~/.local/state/vvv/tui` on other
+systems. Invalid, oversized or incompatible state is ignored.
 
 A successful follow opens the declaration and focuses its definition pane.
 Alt+Left and Alt+Right restore previous/next browsing locations, including the
@@ -1321,29 +1396,47 @@ all references, one verdict, `impact` (the modules importing it, depth by depth)
 `definition` (its address, reach and importers) or `deps` (the declaring file's
 imports and who imports it). Each answer is written by the engine, not guessed.
 
-**Rename** shows the new name in the title — the field starts empty with a `new name`
-placeholder, and the plan is re-made as you type — and a panel per verdict: `? unverified`
-(largest, where judgment is needed), `✓ safe`, `✗ another declaration's`.
-Each row is a site with a checkbox (`▪` ticked, `▫` not), the reason glyph, the place
-and the line; `space` flips one, `a` flips every row of the focused panel. The
-checkboxes start where the CLI's default would act. The detail panel shows the reason
-unfolded and the plan's diff for the row's file — the same hunks the CLI prints — or
-the source around the site when the plan leaves it alone. `⏎` writes exactly the
-ticked rows.
+**Reviewing operations.** Rename, move and rewrite share numbered pane titles,
+full file paths and compact source rows. Complete paths appear once above each
+consecutive file group, wrapping when necessary; source line numbers size their
+gutter to the list. The active list receives the remaining height, with compact
+sibling previews or collapsed borders in a short terminal. Tab cycles panels;
+empty verdict lists are skipped. Digits jump to the pane number from a non-input
+panel. The detail pane keeps following the last list used, including when editing
+an input. Home/End in a detail pane scroll its content without changing selection.
 
-**Move** takes the destination in the title and plans it as you type: the panels below
-(`→ paths rewritten`, `± structure` — the `mod` line, the file itself — and
-`! by hand`) fill when the destination is valid, and the title says
-why when it is not. The detail panel shows the respelling and the line, or the hunk;
-`d` switches between source and hunks. `⏎` applies.
+Headers show selection/file counts and whether a preview is updating, ready,
+invalid, empty or applying. Enter applies only when the preview is ready. Ctrl+U in
+an operation input clears its text and preview. Checkbox changes in rename and
+rewrite request a new preview for the exact selected IDs; older replies cannot
+restore a discarded preview. Inputs and checkboxes stay fixed during apply.
 
-**Rewrite** keeps the search as its pattern and takes the template in the title; each
-match is a row, and the right panel shows the file's diff — the same hunks the CLI
-prints — scrolled to the hunk holding the match, updating as the template expands.
-`⏎` writes the ticked rows.
+**Rename** starts with an empty new-name field. Its verdict panes are
+`2 ? Unverified`, `3 ✓ Safe` and `4 ✗ Other`. Each site has a checkbox (`▪`
+selected, `▫` excluded); Space flips one and moves to the next site, and `a`
+flips every site in that verdict. Defaults come from the engine's judged plan.
+`5 Diff` shows the selected file's planned hunks and the occurrence's full
+resolution reason. A site excluded from the plan shows Source instead, with its
+exclusion on the bottom border. Enter writes the selected sites.
 
-**History** is the ledger, oldest first, `↩` on the entry `u` reverses; the right panel
-lists the files that entry touched.
+**Move** edits the destination in `1 Move file` or `1 Move declaration`, with the
+complete origin path on the bottom border. Its lists are `2 Paths rewritten`,
+`3 Structure` and `4 Manual fixes`. The header counts affected files and manual
+fixes. `5 Source` shows a respelling's old/new paths and source; `d` switches to
+its diff. Structural changes show Diff, and manual fixes show the full explanation
+and action required. Manual fixes are excluded from automatic writes. Enter applies
+the complete move plan.
+
+**Rewrite** keeps the search as its pattern and edits a replacement template.
+`2 Matches` has the same selection controls as rename; `3 Diff` shows the selected
+preview's hunks and any capture values. An excluded site is marked on its border.
+Enter writes the selected matches.
+
+**History** lists applied operations oldest first. `1 Entries` marks the selected
+operation; its bottom border shows its age and whether it can be undone. `2 Files`
+shows the full operation and complete file paths, including move destinations
+without repeating the moved file. Enter or `u` requests confirmation to undo the
+newest entry. Older entries remain browsable and explicitly say they cannot be undone.
 
 After an apply the picker returns to search, re-runs the query so the rows show the
 new state, and reports the receipt (`✓ #3  rename Reach → Scope`) in the status bar.

@@ -2,9 +2,9 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render_size(120, 30)"
 ---
-┌ vvv ~/dev/nx ────────────────────────────────────────────────────────────────────────────────────── 1 query · search ┐
+┌ vvv ~/dev/nx ───────────────────────────────────────────────────── 1 query · search · ctrl+g filters · ctrl+o places ┐
 │> Engine                                                                                                              │
-└ f in: crates/vvv  ·  s kind: any  ·  L lang: any ────────────────────────────────────────────────────────────────────┘
+└ in: crates/vvv ──────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ┌ 2 Files ─────────────────────────────────── 1/2 · 2 hits ┐┌ source · crates/vvv/src/cli/commands/serve.rs:38 ────────┐
 │> crates/vvv/src/cli/commands/serve.rs                  1 ││   33 │ // line 33                                        │
 │  crates/vvv/src/cli/context.rs                         1 ││   34 │ // line 34                                        │
@@ -20,7 +20,7 @@ expression: "FrameFixture::new(&m).render_size(120, 30)"
 │                                                          ││                                                          │
 │                                                          ││                                                          │
 │                                                          │└──────────────────────────────────────────────────────────┘
-│                                                          │┌ definition · crates/vvv-engine/src/engine.rs:1 ──────────┐
+│                                                          │┌ definition · crates/vvv-engine/src/engine.rs:1 ───── 1–4 ┐
 │                                                          ││ pub struct Engine {                                      │
 │                                                          ││     workspace: Workspace,                                │
 │                                                          ││     languages: LanguageRegistry,                         │
@@ -31,4 +31,4 @@ expression: "FrameFixture::new(&m).render_size(120, 30)"
 │                                                          ││                                                          │
 │                                                          ││                                                          │
 └ [All 2] Declarations 0 Imports 0 Uses 2 ─────────────────┘└ outside location ────────────────────────────────────────┘
- search j/k move  ⏎ references  F files  f location  t category  o follow  / query  e editor  ? keys  v view
+ search j/k move  ⏎ references  F files  f location  t category  o follow  / query  e editor  ? keys  v view    f1 help

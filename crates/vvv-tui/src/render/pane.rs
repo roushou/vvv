@@ -138,11 +138,17 @@ impl Widget for Pane<'_> {
         title.spans.push(Span::raw(" "));
         if area.height <= 1 {
             // Collapsed: the legend as a rule.
-            Block::new()
+            let mut block = Block::new()
                 .borders(Borders::TOP)
                 .border_style(t.border(self.focused))
-                .title(title)
-                .render(area, buf);
+                .title(title);
+            let mut right = self.right;
+            if right.width() > 0 && area.width as usize > right.width() + title_width + 6 {
+                right.spans.insert(0, Span::raw(" "));
+                right.spans.push(Span::raw(" "));
+                block = block.title_top(right.right_aligned());
+            }
+            block.render(area, buf);
             return;
         }
         let mut block = Block::bordered()

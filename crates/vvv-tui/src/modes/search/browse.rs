@@ -26,10 +26,50 @@ pub struct NavigationEntry {
     body: Body,
     definition_tab: bool,
     preview_scroll: Option<usize>,
+    inspection: super::inspection::Inspection,
+    expanded: Option<SearchPanel>,
     bytes: usize,
 }
 
 impl NavigationEntry {
+    pub fn label(&self) -> String {
+        let context = match self.page {
+            BrowsePage::Search => format!("Search: {}", self.query.text().trim()),
+            BrowsePage::Definition(_) => format!(
+                "Definition: {}",
+                self.results
+                    .current()
+                    .and_then(|m| m.symbol.as_ref())
+                    .map_or("", |s| s.name.as_str())
+            ),
+            BrowsePage::References => format!(
+                "{}: {}",
+                self.results.relation.label(),
+                self.query.text().trim()
+            ),
+        };
+        let location = self
+            .results
+            .current_site()
+            .map(|(p, l)| format!("{p}:{}", l + 1))
+            .unwrap_or_else(|| {
+                self.locations
+                    .selected
+                    .as_ref()
+                    .map_or("workspace".into(), ToString::to_string)
+            });
+        let mut label = format!("{context} · {location}");
+        if let Some(scope) = &self.locations.selected {
+            label.push_str(&format!(" · in: {scope}"));
+        }
+        if self.results.category != super::Category::All {
+            label.push_str(&format!(" · {}", self.results.category.label()));
+        }
+        if !self.results.files.filter.is_empty() {
+            label.push_str(&format!(" · files: {}", self.results.files.filter));
+        }
+        label
+    }
     pub fn capture(search: &Search) -> Self {
         // Charge shared payloads on every entry. This deliberately overcounts
         // shared allocations and bounds retention without an ownership registry.
@@ -41,6 +81,7 @@ impl NavigationEntry {
             bytes += preview.retained_bytes();
         }
         bytes += search.results.retained_bytes();
+        bytes += search.inspection.retained_bytes() + search.body.inspection.retained_bytes();
         bytes += search
             .source_anchor
             .as_ref()
@@ -57,6 +98,8 @@ impl NavigationEntry {
             body: search.body.clone(),
             definition_tab: search.definition_tab,
             preview_scroll: search.preview_scroll,
+            inspection: search.inspection.clone(),
+            expanded: search.expanded,
             bytes,
         }
     }
@@ -76,6 +119,8 @@ impl NavigationEntry {
         search.body.reticket(ticket);
         search.body.viewport = viewport;
         search.preview_scroll = self.preview_scroll;
+        search.inspection = self.inspection;
+        search.expanded = self.expanded;
         search.stale = true;
     }
 }
@@ -109,6 +154,30 @@ impl Default for NavigationTrail {
     }
 }
 impl NavigationTrail {
+    pub fn position(&self) -> (usize, usize) {
+        (
+            self.back.len() + 1,
+            self.back.len() + self.forward.len() + 1,
+        )
+    }
+    pub fn locations(&self, search: &Search) -> Vec<(i32, String)> {
+        self.back
+            .iter()
+            .enumerate()
+            .map(|(i, e)| (i as i32 - self.back.len() as i32, e.label()))
+            .chain(std::iter::once((
+                0,
+                NavigationEntry::capture(search).label(),
+            )))
+            .chain(
+                self.forward
+                    .iter()
+                    .rev()
+                    .enumerate()
+                    .map(|(i, e)| (i as i32 + 1, e.label())),
+            )
+            .collect()
+    }
     pub fn can_travel(&self, forward: bool) -> bool {
         if forward {
             !self.forward.is_empty()
@@ -147,19 +216,32 @@ impl NavigationTrail {
         self.back.push_back(entry);
         self.trim();
     }
-    pub fn travel(&mut self, current: NavigationEntry, forward: bool) -> Option<NavigationEntry> {
-        self.cancel();
-        let entry = if forward {
-            let entry = self.forward.pop_back()?;
-            self.back.push_back(current);
-            entry
+    pub fn travel(&mut self, mut current: NavigationEntry, steps: i32) -> Option<NavigationEntry> {
+        let forward = steps > 0;
+        let available = if forward {
+            self.forward.len()
         } else {
-            let entry = self.back.pop_back()?;
-            self.forward.push_back(current);
-            entry
+            self.back.len()
         };
+        if steps == 0 || steps.unsigned_abs() as usize > available {
+            return None;
+        }
+        self.cancel();
+        // Move the whole route before trimming: a large departing page must
+        // not evict the selected destination halfway through a direct jump.
+        for _ in 0..steps.unsigned_abs() {
+            current = if forward {
+                let entry = self.forward.pop_back()?;
+                self.back.push_back(current);
+                entry
+            } else {
+                let entry = self.back.pop_back()?;
+                self.forward.push_back(current);
+                entry
+            };
+        }
         self.trim();
-        Some(entry)
+        Some(current)
     }
     fn trim(&mut self) {
         while self.back.len() + self.forward.len() > self.max_entries
@@ -230,6 +312,36 @@ mod tests {
         trail.commit(NavigationEntry::capture(&search));
         trail.commit(NavigationEntry::capture(&search));
         assert_eq!(std::sync::Arc::strong_count(&search.results.matches), 2);
+    }
+    #[test]
+    fn direct_jump_selects_its_destination_before_a_large_departing_page_trims_history() {
+        let mut search = Search::default();
+        let mut trail = NavigationTrail {
+            max_bytes: 8192,
+            ..NavigationTrail::default()
+        };
+        for name in ["First", "Second", "Third"] {
+            search.query = QueryBar::from(name.to_owned());
+            trail.commit(NavigationEntry::capture(&search));
+        }
+        search.preview = Some(FilePreview::new(vvv_engine::File {
+            path: "large.rs".into(),
+            text: "x".repeat(16000),
+            highlights: vec![],
+            symbols: vec![],
+            identifiers: vec![],
+        }));
+        let target = trail.travel(NavigationEntry::capture(&search), -3).unwrap();
+        assert_eq!(target.query.text(), "First");
+        assert!(
+            trail
+                .back
+                .iter()
+                .chain(&trail.forward)
+                .map(|e| e.bytes)
+                .sum::<usize>()
+                <= trail.max_bytes
+        );
     }
     #[test]
     fn request_identity_rejects_duplicate_and_superseded_successes_and_failures() {

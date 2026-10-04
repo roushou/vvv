@@ -88,49 +88,78 @@ impl Screen {
         None
     }
 
-    /// The help's sections for a focus: the panel, the screen, the kind
-    /// default and the globals, grouped by name.
-    pub fn sections(&self, focus: usize) -> Vec<(&'static str, Vec<Row<'static, Action>>)> {
+    /// Effective bindings for this focus, grouped by their owning layer.
+    pub fn sections(
+        &self,
+        focus: usize,
+        holds: impl Fn(When) -> bool,
+    ) -> Vec<(&'static str, Vec<Row<'static, Action>>)> {
+        let mut layers = Vec::new();
+        if let Some(panel) = self.panel(focus) {
+            layers.push(panel.layer);
+            layers.push(self.layer);
+            if let Some(layer) = panel.kind.and_then(PanelKind::layer) {
+                layers.push(*layer);
+            }
+            layers.push(defaults::NAVIGATE);
+            if panel.kind != Some(PanelKind::Input) {
+                layers.push(defaults::DIGITS);
+            }
+        } else {
+            layers.push(self.layer);
+        }
+        layers.push(defaults::GLOBAL);
         let mut sections = Sections::default();
-        if let Some(panel) = self.panel(focus) {
-            sections.add(panel.layer);
-            sections.add(self.layer);
-            if let Some(kind) = panel.kind
-                && let Some(layer) = kind.layer()
-            {
-                sections.add(*layer);
+        let mut seen = Vec::new();
+        for layer in layers {
+            let mut rows: Vec<Row<'static, Action>> = Vec::new();
+            for binding in layer.bindings.iter().filter(|b| holds(b.when)) {
+                let triggers: Vec<_> = binding
+                    .triggers
+                    .iter()
+                    .copied()
+                    .filter(|trigger| {
+                        let effective = match trigger {
+                            crate::keymap::Trigger::Key(key) => {
+                                self.resolve(focus, *key, &holds) == Some(binding.dispatch)
+                            }
+                            crate::keymap::Trigger::Text => ['a', '#', 'é'].into_iter().any(|c| {
+                                self.resolve(focus, Key::char(c), &holds) == Some(binding.dispatch)
+                            }),
+                            crate::keymap::Trigger::Any => {
+                                self.resolve(focus, Key::ctrl('~'), &holds)
+                                    == Some(binding.dispatch)
+                            }
+                        };
+                        effective && !seen.contains(trigger)
+                    })
+                    .collect();
+                if triggers.is_empty() {
+                    continue;
+                }
+                seen.extend(triggers.iter().copied());
+                let labels = triggers
+                    .iter()
+                    .map(|t| t.label())
+                    .collect::<Vec<_>>()
+                    .join(" ");
+                let partial = triggers.len() != binding.triggers.len();
+                if let Some(row) = rows.last_mut().filter(|r| r.legend == binding.legend) {
+                    row.labels.push(' ');
+                    row.labels.push_str(&labels);
+                    row.partial |= partial;
+                } else {
+                    rows.push(Row {
+                        labels,
+                        legend: binding.legend,
+                        binding,
+                        partial,
+                    });
+                }
             }
-            sections.add(defaults::NAVIGATE);
-            if panel.kind != Some(PanelKind::Input) {
-                sections.add(defaults::DIGITS);
-            }
-        } else {
-            sections.add(self.layer);
+            sections.add(layer.name, rows);
         }
-        sections.add(defaults::GLOBAL);
         sections.into_vec()
-    }
-
-    /// The status bar's rows for a focus, most specific first.
-    pub fn rows(&self, focus: usize) -> Vec<Row<'static, Action>> {
-        let mut rows: Vec<Row<'static, Action>> = Vec::new();
-        if let Some(panel) = self.panel(focus) {
-            rows.extend(panel.layer.rows());
-            rows.extend(self.layer.rows());
-            if let Some(kind) = panel.kind
-                && let Some(layer) = kind.layer()
-            {
-                rows.extend(layer.rows());
-            }
-            rows.extend(defaults::NAVIGATE.rows());
-            if panel.kind != Some(PanelKind::Input) {
-                rows.extend(defaults::DIGITS.rows());
-            }
-        } else {
-            rows.extend(self.layer.rows());
-        }
-        rows.extend(defaults::GLOBAL.rows());
-        rows
     }
 }
 
@@ -170,14 +199,13 @@ impl<V, const N: usize> BoundScreen<V, N> {
 struct Sections(Vec<(&'static str, Vec<Row<'static, Action>>)>);
 
 impl Sections {
-    fn add(&mut self, layer: Layer<Action>) {
-        let rows = layer.rows();
+    fn add(&mut self, name: &'static str, rows: Vec<Row<'static, Action>>) {
         if rows.is_empty() {
             return;
         }
-        match self.0.iter_mut().find(|(name, _)| *name == layer.name) {
+        match self.0.iter_mut().find(|(title, _)| *title == name) {
             Some((_, all)) => all.extend(rows),
-            None => self.0.push((layer.name, rows)),
+            None => self.0.push((name, rows)),
         }
     }
 
@@ -251,6 +279,8 @@ mod tests {
             ];
             for screen in [
                 &search::SEARCH,
+                &search::INSPECT_SOURCE,
+                &search::INSPECT_BODY,
                 &rename::RENAME,
                 &moving::MOVE,
                 &rewrite::REWRITE,
@@ -258,6 +288,8 @@ mod tests {
                 &overlay::MENU_SCREEN,
                 &overlay::CONFIRM_SCREEN,
                 &overlay::HELP_SCREEN,
+                &overlay::PLACES_SCREEN,
+                &overlay::NAVIGATION_SCREEN,
             ] {
                 layers.push(&screen.layer);
                 for panel in screen.panels {

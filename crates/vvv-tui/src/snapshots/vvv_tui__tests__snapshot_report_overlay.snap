@@ -1,14 +1,14 @@
 ---
 source: crates/vvv-tui/src/tests.rs
-expression: render(&m)
+expression: "FrameFixture::new(&m).render()"
 ---
-┌ rename ● trait Language → new name▏ ───────────────────────────────────────────────────┐
-│lang/mod.rs:64                                                                          │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-┌ ? unverified 1  1 file  ▪ 0 ──────────────┐┌ src/other.rs:10 ──────────────────────────┐
-│▫ ∅ src/other.rs:10        Language::new() ││∅ unresolved   a bare name nothing imports,│
-│                                           ││                                           │
-│                                           ││                                           │
+┌ 1 Rename trait ──────────────────────────────────────────────── 3/4 selected · 3 files ┐
+│ Language → new name▏                                                                   │
+└ src/lang/mod.rs:64 · type a new name ──────────────────────────────────────────────────┘
+┌ 2 ? Unverified ───────────── 1/1 · 1 file ┐┌ 5 Source · src/other.rs:10 ───────────────┐
+│  src/other.rs                             ││ ∅ unresolved · a bare name nothing        │
+│> ▫ 10 Language::new()                     ││ imports, or a path vvv cannot place       │
+│                                           ││ Loading source                            │
 ┌ report ────────────────────────────────────────────────────────────────────────────────┐
 │rename Config → Settings                                                                │
 │                                                                                        │
@@ -16,9 +16,9 @@ expression: render(&m)
 │                                                                                        │
 │✓ #3  2 files                                                                           │
 └────────────────────────────────────────────────────────────────────────────────────────┘
-│▪ → src/lib.rs:26          pub use lang::{…││                                           │
-│▪ ↗ src/other.rs:13        vvv::Language::…││                                           │
-│                                           ││                                           │
-└───────────────────────────────────────────┘│                                           │
- ✗ another declaration's 0 ──────────────────└───────────────────────────────────────────┘
- rename j/k row  e editor  any key close
+┌ 3 ✓ Safe ────────────────── 1/3 · 3 files ┐│                                           │
+│  src/lang/mod.rs                          ││                                           │
+│  ▪ 64 pub trait Language: Send + Sync {   ││                                           │
+└ 3/3 selected ─────────────────────────────┘│                                           │
+ 4 ✗ Other ─────────────────── 0/0 · 0 files └ excluded from apply ──────────────────────┘
+ rename j/k row  e editor  any key close                                          f1 help

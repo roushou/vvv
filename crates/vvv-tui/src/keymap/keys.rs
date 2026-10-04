@@ -25,6 +25,7 @@ impl Modifiers {
 /// A key without its modifiers.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Code {
+    F1,
     Char(char),
     Enter,
     Esc,
@@ -55,9 +56,10 @@ impl Key {
     }
 
     /// The keymap's key for a terminal event, or `None` for a key the picker
-    /// does not bind (function keys and the like).
+    /// does not bind (function keys other than F1 and the like).
     pub fn from_event(event: KeyEvent) -> Option<Self> {
         let code = match event.code {
+            KeyCode::F(1) => Code::F1,
             KeyCode::Char(c) => Code::Char(c),
             KeyCode::Enter => Code::Enter,
             KeyCode::Esc => Code::Esc,
@@ -93,6 +95,9 @@ impl Key {
 
     pub const fn ctrl(c: char) -> Self {
         Self::new(Code::Char(c), Modifiers::CTRL)
+    }
+    pub const fn help() -> Self {
+        Self::code(Code::F1)
     }
 
     pub const fn code(code: Code) -> Self {
@@ -170,6 +175,7 @@ impl Key {
     /// How the key is written in the help and the status bar.
     pub fn label(&self) -> String {
         let label = match self.code {
+            Code::F1 => "f1".to_owned(),
             Code::Char(' ') => "space".to_owned(),
             Code::Char(c) => c.to_string(),
             Code::Enter => "⏎".to_owned(),

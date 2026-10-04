@@ -89,6 +89,8 @@ impl Model {
     pub fn holds(&self, when: When) -> bool {
         match when {
             When::Always => true,
+            When::BrowseBack => self.search.trail.can_travel(false),
+            When::BrowseForward => self.search.trail.can_travel(true),
             When::QueryEmpty => self.search.query.is_empty(),
             When::QueryNotEmpty => !self.search.query.is_empty(),
             When::SearchList => {
@@ -145,20 +147,50 @@ impl Model {
         };
         match (action, self.shown()) {
             (Action::Enter, Mode::Rename(r)) => {
-                format!("apply {} in {}", r.ticks.len(), files(r.files()))
+                if r.state() == crate::modes::review::ReviewState::Ready {
+                    format!("apply {} in {}", r.ticks.len(), files(r.files()))
+                } else {
+                    r.state().apply_hint().to_owned()
+                }
             }
             (Action::Enter, Mode::Rewrite(rw)) => {
-                format!("apply {} in {}", rw.ticks.len(), files(rw.files()))
+                if rw.state() == crate::modes::review::ReviewState::Ready {
+                    format!("apply {} in {}", rw.ticks.len(), files(rw.files()))
+                } else {
+                    rw.state().apply_hint().to_owned()
+                }
             }
-            (Action::Enter, Mode::Move(mv)) => match &mv.plan {
-                Some(plan) => format!("apply {}", files(plan.files.len())),
-                None => "apply".to_owned(),
-            },
+            (Action::Enter, Mode::Move(mv)) => {
+                if mv.state() == crate::modes::review::ReviewState::Ready {
+                    format!(
+                        "apply {}",
+                        files(mv.plan.as_ref().map_or(0, |p| p.files.len()))
+                    )
+                } else {
+                    mv.state().apply_hint().to_owned()
+                }
+            }
+            (Action::ExpandPreview, Mode::Search) => if self.search.expanded.is_some() {
+                "restore"
+            } else {
+                "expand"
+            }
+            .to_owned(),
+            (Action::Back, Mode::Search) => if self.search.expanded.is_some() {
+                "restore"
+            } else {
+                "results"
+            }
+            .to_owned(),
             (Action::Enter, _) => "apply".to_owned(),
-            (Action::Undo, Mode::History(h)) => h
-                .entries
-                .last()
-                .map_or("undo".to_owned(), |e| format!("undo #{}", e.id)),
+            (Action::Undo, Mode::History(h)) => {
+                if h.is_newest() {
+                    h.current()
+                        .map_or("nothing to undo".to_owned(), |e| format!("undo #{}", e.id))
+                } else {
+                    "newest entry only".to_owned()
+                }
+            }
             (Action::Undo, _) => "undo".to_owned(),
             (Action::Diff, Mode::Move(mv)) if mv.diff => "source".to_owned(),
             (Action::Diff, _) => "diff".to_owned(),
@@ -209,6 +241,35 @@ impl Model {
     }
 
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
+        if let Some(Overlay::Places(picker)) = &mut self.overlay {
+            match action {
+                Action::Input(_) | Action::Backspace | Action::Clear => {
+                    picker.input(action);
+                    return Vec::new();
+                }
+                Action::PlacesTab => {
+                    picker.tab();
+                    return Vec::new();
+                }
+                Action::ForgetSearch => {
+                    if let Some(crate::overlays::places::Place::Recent(recipe)) = picker.chosen() {
+                        self.search.recent.forget(&recipe);
+                        picker.forget(&recipe);
+                    }
+                    return Vec::new();
+                }
+                Action::ResetLayout => {
+                    self.split = 50;
+                    self.view = ReportView::Compact;
+                    self.search.definition_tab = false;
+                    self.search.expanded = None;
+                    self.sync_viewport();
+                    self.status.info("Layout reset");
+                    return Vec::new();
+                }
+                _ => {}
+            }
+        }
         if let Some(Overlay::Menu(menu)) = &mut self.overlay {
             match action {
                 Action::Input(c) => {
@@ -217,6 +278,11 @@ impl Model {
                 }
                 Action::Backspace => {
                     menu.input(None);
+                    return Vec::new();
+                }
+                Action::Clear => {
+                    menu.filter.clear();
+                    menu.cursor = 0;
                     return Vec::new();
                 }
                 _ => {}
@@ -255,6 +321,22 @@ impl Model {
             self.search.trail.cancel();
         }
         match action {
+            Action::Places => {
+                if !matches!(self.mode, Mode::Search) {
+                    return Vec::new();
+                }
+                if !self.status.busy
+                    && let Some(recipe) =
+                        crate::modes::search::recall::SearchRecipe::capture(&self.search)
+                {
+                    self.search.recent.remember(recipe);
+                }
+                self.search.trail.cancel();
+                self.overlay = Some(Overlay::Places(crate::overlays::places::Places::new(
+                    &self.search,
+                )));
+                Vec::new()
+            }
             Action::Follow => self.follow(),
             Action::Start => Vec::new(),
             Action::Quit => {
@@ -272,6 +354,9 @@ impl Model {
                 }
             }
             Action::Page(n) => {
+                if matches!(self.overlay, Some(Overlay::Help { .. })) {
+                    return self.scrolled(n.saturating_mul(10));
+                }
                 let page = if self.overlay.is_none()
                     && matches!(self.mode, Mode::Search)
                     && matches!(self.search.focus, SearchPanel::Files | SearchPanel::Results)
@@ -306,11 +391,55 @@ impl Model {
             }
             Action::OpenMenu(target) => self.open_menu(target),
             Action::MenuChoose => self.choose_menu(),
+            Action::MenuClear => {
+                let Some(Overlay::Menu(menu)) = &self.overlay else {
+                    return Vec::new();
+                };
+                if menu.target == MenuTarget::Filters {
+                    let Some(choice) = menu.chosen() else {
+                        return Vec::new();
+                    };
+                    self.overlay = None;
+                    let navigation = self.search.choose_menu(
+                        choice,
+                        &mut ModeContext {
+                            status: &mut self.status,
+                            generation: &mut self.generation,
+                        },
+                    );
+                    return self.navigation(navigation);
+                }
+                let target = menu.target;
+                self.overlay = None;
+                let navigation = self.search.choose_menu(
+                    (target, None),
+                    &mut ModeContext {
+                        status: &mut self.status,
+                        generation: &mut self.generation,
+                    },
+                );
+                self.navigation(navigation)
+            }
             Action::Undo => self.undo_requested(),
             Action::Help => {
+                if matches!(self.overlay, Some(Overlay::Help { .. })) {
+                    return self.back();
+                }
+                let screen = self.screen();
+                let title = if self.overlay.is_none() && matches!(self.shown(), Mode::Search) {
+                    format!("Search · {}", self.search.focus.label())
+                } else {
+                    screen
+                        .panel(self.focus())
+                        .map_or(screen.layer.name, |p| p.layer.name)
+                        .to_owned()
+                };
+                let sections = screen.sections(self.focus(), |when| self.holds(when));
+                let previous = self.overlay.take().map(Box::new);
                 self.overlay = Some(Overlay::Help {
-                    screen: self.mode_screen(),
-                    focus: self.focus(),
+                    title,
+                    previous,
+                    sections,
                     scroll: 0,
                 });
                 Vec::new()
@@ -410,7 +539,25 @@ impl Model {
             height.saturating_sub(1),
         ));
         self.search.body.viewport = Some(definition_rows);
+        for (panel, area) in &frame.panels {
+            if !area.is_empty() {
+                match panel {
+                    SearchPanel::Context => {
+                        self.search.inspection.viewport =
+                            Some(area.width.saturating_sub(10) as usize)
+                    }
+                    SearchPanel::Body => {
+                        self.search.body.inspection.viewport =
+                            Some(area.width.saturating_sub(3) as usize)
+                    }
+                    _ => {}
+                }
+            }
+        }
         for list in frame.lists {
+            if list.area.is_empty() {
+                continue;
+            }
             let viewport = if list.panel == SearchPanel::Files {
                 &mut self.search.results.files.viewport
             } else if let Some(path) = self.search.results.current().map(|m| m.path.clone()) {
@@ -501,6 +648,9 @@ impl Model {
             }
             Event::Viewport { width, height } => {
                 self.viewport = Some((width, height));
+                if let Some(overlay) = &mut self.overlay {
+                    overlay.help_scrolled(0, (width, height));
+                }
                 self.sync_viewport();
                 Vec::new()
             }
@@ -699,7 +849,10 @@ impl Model {
     // ------------------------------------------------------------ cursors
 
     fn moved(&mut self, by: i32) -> Vec<Effect> {
-        if let Some(Overlay::Navigation(picker)) = &mut self.overlay {
+        if let Some(Overlay::Places(picker)) = &mut self.overlay {
+            picker.moved(by);
+            Vec::new()
+        } else if let Some(Overlay::Navigation(picker)) = &mut self.overlay {
             picker.moved(by);
             Vec::new()
         } else if let Some(Overlay::Menu(menu)) = &mut self.overlay {
@@ -711,11 +864,16 @@ impl Model {
     }
 
     fn jump(&mut self, top: bool) -> Vec<Effect> {
+        if matches!(self.overlay, Some(Overlay::Help { .. })) {
+            return self.scrolled(if top { i32::MIN / 2 } else { i32::MAX / 2 });
+        }
         if self.overlay.is_none()
             && matches!(self.mode, Mode::Search)
             && self.search.scroll_focused()
         {
             self.search.jump(top)
+        } else if self.overlay.is_none() && self.scroll_focused() {
+            self.mode_update(if top { Action::Top } else { Action::Bottom })
         } else {
             self.moved(if top { i32::MIN / 2 } else { i32::MAX / 2 })
         }
@@ -737,7 +895,7 @@ impl Model {
         if self
             .overlay
             .as_mut()
-            .is_some_and(|overlay| overlay.help_scrolled(by))
+            .is_some_and(|overlay| overlay.help_scrolled(by, self.viewport.unwrap_or((90, 20))))
         {
             Vec::new()
         } else if !self.scroll_focused() {
@@ -780,6 +938,26 @@ impl Model {
     /// `⏎`: in search, go to the results; in a mode, commit; on a
     /// confirmation, yes.
     fn entered(&mut self) -> Vec<Effect> {
+        if let Some(Overlay::Places(picker)) = &self.overlay {
+            let Some(place) = picker.chosen() else {
+                return Vec::new();
+            };
+            self.overlay = None;
+            let mut context = ModeContext {
+                status: &mut self.status,
+                generation: &mut self.generation,
+            };
+            let effects = match place {
+                crate::overlays::places::Place::Trail(steps) => {
+                    self.search.travel_steps(steps, &mut context)
+                }
+                crate::overlays::places::Place::Recent(recipe) => {
+                    self.search.reopen(&recipe, &mut context)
+                }
+            };
+            self.sync_viewport();
+            return effects;
+        }
         if let Some(Overlay::Confirm(c)) = &self.overlay {
             let then = c.then.clone();
             self.overlay = None;
@@ -796,6 +974,12 @@ impl Model {
     }
 
     fn back(&mut self) -> Vec<Effect> {
+        if let Some(Overlay::Help { previous, .. }) =
+            self.overlay.take_if(|o| matches!(o, Overlay::Help { .. }))
+        {
+            self.overlay = previous.map(|o| *o);
+            return Vec::new();
+        }
         if self.overlay.take().is_some() {
             return Vec::new();
         }
@@ -868,6 +1052,7 @@ impl Model {
             target,
             &self.languages,
             &self.search,
+            !self.status.busy && !self.search.stale,
         )));
         Vec::new()
     }
@@ -906,6 +1091,23 @@ impl Model {
         let Some(choice) = menu.chosen() else {
             return Vec::new();
         };
+        if choice.0 == MenuTarget::Filters {
+            match choice.1.as_deref() {
+                Some("in") => return self.open_menu(MenuTarget::Location),
+                Some("symbol") => return self.open_menu(MenuTarget::Symbol),
+                Some("lang") => return self.open_menu(MenuTarget::Language),
+                Some("category") => return self.open_menu(MenuTarget::Category),
+                Some("files") => {
+                    self.overlay = None;
+                    return self.mode_update(Action::FilterFiles);
+                }
+                Some("node") => {
+                    self.overlay = None;
+                    return self.mode_update(Action::FocusNth(1));
+                }
+                _ => {}
+            }
+        }
         self.overlay = None;
         let navigation = self.search.choose_menu(
             choice,

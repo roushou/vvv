@@ -53,30 +53,73 @@ impl<'a> Header<'a> {
     pub fn areas(&self, area: Region) -> (Region, Region) {
         let width = area.rect().width.saturating_sub(4) as usize;
         let extra = if self.bottom.width() > width {
-            Fit(&self.bottom.to_string(), width).wrapped().len() as u16
+            self.bottom_text_rows(width).len() as u16
         } else {
             0
         };
         area.split(self.height() + extra)
     }
+
+    fn bottom_text_rows(&self, width: usize) -> Vec<String> {
+        let text = self.bottom.to_string();
+        let mut rows = Vec::new();
+        let mut row = String::new();
+        for part in text.split_inclusive(" · ") {
+            if !row.is_empty() && Line::from(format!("{row}{part}")).width() > width {
+                rows.push(std::mem::take(&mut row));
+            }
+            if Line::from(part).width() > width {
+                let mut wrapped = Fit(part, width).wrapped();
+                row = wrapped.pop().unwrap_or_default();
+                rows.extend(wrapped);
+            } else {
+                row.push_str(part);
+            }
+        }
+        if !row.is_empty() {
+            rows.push(row);
+        }
+        rows
+    }
+
+    /// Keep restriction emphasis when complete metadata needs multiple rows.
+    fn wrapped_bottom(&self, width: usize) -> Vec<Line<'static>> {
+        let mut styled = self.bottom.spans.iter().flat_map(|span| {
+            span.content
+                .chars()
+                .map(move |c| (c, self.bottom.style.patch(span.style)))
+        });
+        self.bottom_text_rows(width)
+            .into_iter()
+            .map(|row| {
+                let mut spans: Vec<Span<'static>> = Vec::new();
+                for _ in row.chars() {
+                    if let Some((c, style)) = styled.next() {
+                        if let Some(last) = spans.last_mut().filter(|s| s.style == style) {
+                            last.content.to_mut().push(c);
+                        } else {
+                            spans.push(Span::styled(c.to_string(), style));
+                        }
+                    }
+                }
+                Line::from(spans)
+            })
+            .collect()
+    }
 }
 
 impl Widget for Header<'_> {
     fn render(self, area: Rect, buf: &mut Buffer) {
+        let width = area.width.saturating_sub(4) as usize;
+        let wrapped = (self.bottom.width() > width).then(|| self.wrapped_bottom(width));
         let mut right = self.right;
         if !right.spans.is_empty() {
             right.spans.insert(0, Span::raw(" "));
             right.spans.push(Span::raw(" "));
         }
-        let width = area.width.saturating_sub(4) as usize;
         let mut lines = self.lines;
-        let bottom = if self.bottom.width() > width {
-            lines.extend(
-                Fit(&self.bottom.to_string(), width)
-                    .wrapped()
-                    .into_iter()
-                    .map(Line::from),
-            );
+        let bottom = if let Some(wrapped) = wrapped {
+            lines.extend(wrapped);
             Line::default()
         } else {
             self.bottom

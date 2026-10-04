@@ -33,6 +33,12 @@ pub enum Action {
     ClearFileFilter,
     /// Switch the source / definition preview on a single-preview layout.
     PreviewTab,
+    InspectFind,
+    InspectLine,
+    InspectNext(i32),
+    InspectHorizontal(i32),
+    InspectStart,
+    ExpandPreview,
     Page(i32),
     Top,
     Bottom,
@@ -58,6 +64,8 @@ pub enum Action {
     History,
     OpenMenu(MenuTarget),
     MenuChoose,
+    /// Remove the restriction edited by the open picker.
+    MenuClear,
     Undo,
     Help,
     /// Show the full diff for the cursor's file in the detail panel.
@@ -71,6 +79,10 @@ pub enum Action {
     Refresh,
     BrowseBack,
     BrowseForward,
+    Places,
+    PlacesTab,
+    ForgetSearch,
+    ResetLayout,
 }
 
 /// Work for the engine, run off the UI thread — except `Edit`, which the

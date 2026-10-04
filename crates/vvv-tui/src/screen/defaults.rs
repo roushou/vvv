@@ -16,15 +16,26 @@ const fn bar(keys: &'static str, word: &'static str) -> Option<Bar> {
 /// business.
 pub static GLOBAL: Layer<Action> = Layer {
     name: "Everywhere",
-    bindings: &[Keybinding {
-        triggers: &[Trigger::Key(Key::ctrl('c'))],
-        dispatch: Run(A::Quit),
-        when: When::Always,
-        legend: Legend {
-            bar: None,
-            help: "quit",
+    bindings: &[
+        Keybinding {
+            triggers: &[Trigger::Key(Key::help())],
+            dispatch: Run(A::Help),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "help for the focused pane; press again to return",
+            },
         },
-    }],
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('c'))],
+            dispatch: Run(A::Quit),
+            when: When::Always,
+            legend: Legend {
+                bar: None,
+                help: "quit",
+            },
+        },
+    ],
 };
 
 /// Moving focus; every view that is not an overlay answers it.

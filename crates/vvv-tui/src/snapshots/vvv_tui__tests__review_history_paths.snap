@@ -1,0 +1,24 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: "FrameFixture::new(&m).render_size(90, 20)"
+---
+┌ History ──────────────────────────────────────────────────────────────────── 2 entries ┐
+└ oldest first · newest #2 · undo available ─────────────────────────────────────────────┘
+┌ 1 Entries ─────────────────────────── 2/2 ┐┌ 2 Files ──────────────────── #2 · 2 files ┐
+│  #1   rename Config → Settings · 0 files  ││ rename Config → Settings                  │
+│> #2   rename Config → Settings · 2 files  ││ crates/世 界 /src/very_long_directory/      │
+│                                           ││ original.rs                               │
+│                                           ││ → crates/世 界 /src/renamed_directory/      │
+│                                           ││ renamed.rs                                │
+│                                           ││ crates/世 界 /src/very_long_directory/      │
+│                                           ││ other.rs                                  │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+└ just now · newest · can undo ─────────────┘└───────────────────────────────────────────┘
+ history ⏎/u undo #2  esc back  j/k scroll  pgdn d pgup page  e editor  v view    f1 help

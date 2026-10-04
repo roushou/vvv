@@ -6,16 +6,16 @@ use ratatui::buffer::Buffer;
 use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::Widget;
-use vvv_engine::{CaptureValue, Match};
+use vvv_engine::CaptureValue;
 
 use super::{RewriteMode, RewritePanel};
 use crate::action::Action;
 use crate::keymap::{Bar, Dispatch, Key, Keybinding, Layer, Legend, Trigger, When};
 use crate::model::{PanelKind, ReportView};
 use crate::render::Pane;
-use crate::render::{Header, Painter, Region};
+use crate::render::{Header, Painter, Region, ReviewItem, ReviewList};
 use crate::screen::{BoundScreen, Panel, Screen};
-use vvv_engine::protocol::vocabulary::{Mark, Plural};
+use vvv_engine::protocol::vocabulary::Plural;
 
 use Action as A;
 use Dispatch::Run;
@@ -74,6 +74,18 @@ const TEMPLATE: Layer<Action> = Layer {
             legend: Legend {
                 bar: None,
                 help: "erase",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('u'))],
+            dispatch: Run(A::Clear),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "ctrl+u",
+                    word: "clear",
+                }),
+                help: "clear the input and its preview",
             },
         },
         Keybinding {
@@ -188,94 +200,81 @@ impl<'a> RewriteView<'a> {
     fn header(&self) -> Header<'a> {
         let (rw, t) = (self.mode, self.painter);
         let focused = rw.focus == RewritePanel::Template;
-        let ticked = rw.ticks.len();
-        let right = vec![
-            t.glyph(Mark::Rewrite),
-            Span::raw(format!("{}  ", rw.matches.len())),
-            Span::styled(
-                format!("{} {ticked}  ", Mark::Ticked),
-                if ticked > 0 { t.tick } else { t.dim },
-            ),
-            Span::styled(Plural(rw.files(), "file").to_string(), t.dim),
-        ];
-        let pattern = rw
-            .query
-            .pattern_str()
-            .map(str::to_owned)
-            .unwrap_or_else(|| "(declarations)".to_owned());
-        let mut template = vec![
-            Span::styled("template  ", t.dim),
-            Span::raw(rw.template.clone()),
-            t.caret(focused),
-        ];
-        if let Some(error) = &rw.error {
-            template.push(Span::styled(format!("   ✗ {error}"), t.error));
-        } else if rw.busy {
-            template.push(Span::styled("   …", t.dim));
-        }
-        Header::new(
-            t,
-            focused,
-            Line::from(vec![Span::styled(" rewrite ", t.title)]),
-        )
-        .right(Line::from(right))
-        .line(Line::from(vec![
-            Span::styled("pattern   ", t.dim),
-            Span::raw(pattern),
-        ]))
-        .line(Line::from(template))
-    }
-
-    /// The row the picker's view lays out: the compact view shows the template
-    /// preview, the detailed one the terminal's numbered match.
-    fn row(&self, m: &Match, ordinal: usize, width: usize) -> Line<'static> {
-        let row = self
-            .view
-            .view()
-            .rewrite(m, ordinal, self.mode.is_ticked(m), width);
-        self.painter.line(&row.line)
+        let pattern = rw.query.pattern_str().unwrap_or("(declarations)");
+        let mut bottom = Line::from(Span::styled(format!(" pattern: {pattern} ·"), t.dim));
+        bottom.spans.extend(t.review_state(rw.state()).spans);
+        Header::new(t, focused, Line::from(Span::styled(" 1 Rewrite ", t.title)))
+            .right(Line::from(Span::styled(
+                format!(
+                    "{}/{} selected · {}",
+                    rw.ticks.len(),
+                    rw.matches.len(),
+                    Plural(rw.files(), "file")
+                ),
+                t.key,
+            )))
+            .line(Line::from(vec![
+                Span::styled(" template: ", t.dim),
+                if rw.template.is_empty() {
+                    Span::styled("replacement", t.dim)
+                } else {
+                    Span::raw(rw.template.clone())
+                },
+                t.caret(focused),
+            ]))
+            .bottom(bottom)
     }
 
     fn matches(&self, area: Rect, buf: &mut Buffer) {
         let (rw, t) = (self.mode, self.painter);
-        let width = area.width.saturating_sub(2) as usize;
-        let rows: Vec<Line> = rw
-            .matches
-            .iter()
-            .enumerate()
-            .map(|(i, m)| self.row(m, i + 1, width))
-            .collect();
-        let title = Line::from(vec![
-            t.glyph(Mark::Rewrite),
-            Span::styled(
-                format!("{} {}", Mark::Rewrite.word(), rw.matches.len()),
-                t.title,
+        let title = Line::from(Span::styled("2 Matches", t.title));
+        ReviewList {
+            painter: t,
+            items: rw
+                .matches
+                .iter()
+                .map(|m| ReviewItem::matched(m, rw.is_ticked(m)))
+                .collect(),
+            numbered: self.view == ReportView::Detailed,
+            active: true,
+        }
+        .pane(
+            area,
+            title,
+            rw.focus == RewritePanel::Matches,
+            rw.cursor.index,
+        )
+        .right(Line::from(Span::styled(
+            format!(
+                "{}/{}",
+                if rw.matches.is_empty() {
+                    0
+                } else {
+                    rw.cursor.index + 1
+                },
+                rw.matches.len()
             ),
-        ]);
-        Pane::new(t, title, rw.focus == RewritePanel::Matches)
-            .rows(rows)
-            .cursor((!rw.matches.is_empty()).then_some(rw.cursor.index))
-            .emphasized(true)
-            .render(area, buf);
+            t.dim,
+        )))
+        .footer(Line::from(Span::styled(
+            format!(" {}/{} selected ", rw.ticks.len(), rw.matches.len()),
+            t.tick,
+        )))
+        .empty("No matches")
+        .render(area, buf);
     }
 
     fn detail(&self, area: Rect, buf: &mut Buffer) {
         let (rw, t) = (self.mode, self.painter);
-        let focused = rw.focus == RewritePanel::Detail;
         let current = rw.current();
-        let title = current.map_or_else(
-            || Line::from(Span::styled("detail", t.dim)),
-            |m| {
-                Line::from(Span::styled(
-                    format!("{}:{}", m.path.short(), m.start.line + 1),
-                    t.path,
-                ))
-            },
+        let mut pane = Pane::new(
+            t,
+            Line::from(Span::styled("3 Diff", t.title)),
+            rw.focus == RewritePanel::Detail,
         );
-        let mut rows: Vec<Line> = Vec::new();
-        if let Some(m) = current
-            && !m.captures.is_empty()
-        {
+        let mut captures = Vec::new();
+        if let Some(m) = current {
+            pane = pane.location(format!("{}:{}", m.path, m.start.line + 1));
             for (name, value) in &m.captures {
                 let text = match value {
                     CaptureValue::Single(c) => c.text.clone(),
@@ -285,27 +284,46 @@ impl<'a> RewriteView<'a> {
                         .collect::<Vec<_>>()
                         .join(", "),
                 };
-                rows.push(Line::from(vec![
-                    Span::styled(format!("${name} "), t.symbol),
+                captures.push(Line::from(vec![
+                    Span::styled(format!(" ${name} "), t.symbol),
                     Span::styled("= ", t.dim),
                     Span::raw(text),
                 ]));
             }
-            rows.push(Line::default());
+            pane = pane.footer(if rw.busy {
+                t.review_state(rw.state())
+            } else {
+                Line::from(Span::styled(
+                    if rw.is_ticked(m) {
+                        " selected "
+                    } else {
+                        " excluded from apply "
+                    },
+                    if rw.is_ticked(m) { t.tick } else { t.dim },
+                ))
+            });
         }
-        if let Some(m) = current
-            && let Some(file) = rw.changes.iter().find(|f| f.path == m.path)
-        {
-            rows.extend(
-                file.diff
-                    .lines_from(m.start.line + 1)
-                    .skip(rw.detail_scroll)
-                    .map(|line| t.line(&line)),
-            );
-        }
-        Pane::new(t, title, focused)
-            .rows(rows)
-            .empty("")
+        pane = pane.prefix(captures);
+        let rows = current
+            .and_then(|m| {
+                rw.changes.iter().find(|f| f.path == m.path).map(|file| {
+                    t.diff_window(
+                        file,
+                        Some(m.start.line + 1),
+                        rw.detail_scroll,
+                        pane.content_height(area),
+                    )
+                })
+            })
+            .unwrap_or_default();
+        pane.rows(rows)
+            .empty(if rw.busy {
+                "Updating preview"
+            } else if rw.error.is_some() {
+                "Fix the template to preview changes"
+            } else {
+                "No changes for this match"
+            })
             .render(area, buf);
     }
 }

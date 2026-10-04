@@ -3,6 +3,7 @@ pub(crate) mod screen;
 use crate::action::{Action, Effect};
 use crate::model::{Cursor, FilePreview, Panels};
 use crate::modes::context::ModeContext;
+use crate::modes::review::ReviewState;
 use std::collections::BTreeSet;
 use std::path::Path;
 use vvv_engine::protocol::FileChange;
@@ -45,6 +46,7 @@ pub struct RenameMode {
     pub judged: bool,
     /// Waiting for the judge, or for the commit.
     pub busy: bool,
+    pub applying: bool,
     pub error: Option<String>,
 }
 
@@ -88,6 +90,24 @@ impl RenamePanel {
 }
 
 impl RenameMode {
+    pub fn state(&self) -> ReviewState<'_> {
+        if self.applying {
+            ReviewState::Applying
+        } else if self.busy {
+            ReviewState::Planning
+        } else if let Some(error) = &self.error {
+            ReviewState::Failed(error)
+        } else if self.name.trim().is_empty() || self.name.trim() == self.target.name {
+            ReviewState::Input("type a new name")
+        } else if self.ticks.is_empty() {
+            ReviewState::Empty("select sites")
+        } else if self.changes.is_empty() {
+            ReviewState::Empty("no changes")
+        } else {
+            ReviewState::Ready
+        }
+    }
+
     pub fn new(target: RenameTarget, language: Option<vvv_engine::LanguageId>) -> Self {
         Self {
             name: String::new(),
@@ -104,6 +124,7 @@ impl RenameMode {
             preview: None,
             judged: false,
             busy: true,
+            applying: false,
             error: None,
         }
     }
@@ -198,12 +219,32 @@ impl RenameMode {
     }
 
     pub fn update(&mut self, action: Action, context: &mut ModeContext<'_>) -> Vec<Effect> {
+        if self.applying
+            && matches!(
+                action,
+                Action::Input(_)
+                    | Action::Backspace
+                    | Action::Clear
+                    | Action::Toggle
+                    | Action::ToggleAll
+            )
+        {
+            return Vec::new();
+        }
         match action {
             Action::FocusNext => self.focus_by(1),
             Action::FocusPrev => self.focus_by(-1),
             Action::FocusNth(n) => self.focus_nth(n),
             Action::Move(n) => self.moved(n),
+            Action::Top if self.scroll_focused() => {
+                self.detail_scroll = 0;
+                return Vec::new();
+            }
             Action::Top => self.moved(i32::MIN / 2),
+            Action::Bottom if self.scroll_focused() => {
+                self.detail_scroll = usize::MAX;
+                return Vec::new();
+            }
             Action::Bottom => self.moved(i32::MAX / 2),
             Action::Scroll(n) if self.scroll_focused() => {
                 self.scrolled(n);
@@ -211,18 +252,26 @@ impl RenameMode {
             }
             Action::Scroll(n) => self.moved(n),
             Action::Input(c) => {
+                context.status.clear();
                 self.input(Some(c));
                 let generation = context.next_generation();
                 return self.plan(generation, true);
             }
             Action::Backspace => {
+                context.status.clear();
                 self.input(None);
                 let generation = context.next_generation();
                 return self.plan(generation, true);
             }
+            Action::Clear => {
+                context.status.clear();
+                self.name.clear();
+                let generation = context.next_generation();
+                return self.plan(generation, true);
+            }
             Action::Enter => return self.commit(context),
-            Action::Toggle => return self.toggled(false),
-            Action::ToggleAll => return self.toggled(true),
+            Action::Toggle => return self.toggled(false, context),
+            Action::ToggleAll => return self.toggled(true, context),
             _ => return Vec::new(),
         }
         self.preview_effect()
@@ -232,11 +281,25 @@ impl RenameMode {
     }
     pub fn focus_by(&mut self, by: i32) {
         self.focus = self.focus.step(by);
+        while self
+            .focus
+            .confidence()
+            .is_some_and(|c| self.rows(c).is_empty())
+        {
+            self.focus = self.focus.step(by);
+        }
+        self.remember_list();
     }
     pub fn focus_nth(&mut self, n: u8) {
         if let Some(p) = RenamePanel::nth(n) {
             self.focus = p;
+            self.remember_list();
         };
+    }
+    fn remember_list(&mut self) {
+        if self.focus.confidence().is_some() {
+            self.last_list = self.focus;
+        }
     }
     pub fn moved(&mut self, by: i32) {
         let panel = self.list();
@@ -249,16 +312,26 @@ impl RenameMode {
         };
     }
     pub fn scrolled(&mut self, by: i32) {
-        self.detail_scroll = (self.detail_scroll as i32 + by).max(0) as usize;
+        self.detail_scroll = self.detail_scroll.saturating_add_signed(by as isize);
     }
     pub fn plan(&mut self, generation: u64, debounce: bool) -> Vec<Effect> {
-        if self.name.trim().is_empty() {
+        if self.judged && (self.name.trim().is_empty() || self.ticks.is_empty()) {
             self.changes.clear();
             self.error = None;
             self.busy = false;
+            self.applying = false;
             return Vec::new();
         }
-        let mut intent = RenameIntent::new(&self.target.name, self.name.trim());
+        let name = if self.name.trim().is_empty() {
+            self.target.name.as_str()
+        } else {
+            self.name.trim()
+        };
+        // Until the first judgment arrives, the engine must choose the defaults.
+        let mut intent = RenameIntent::new(&self.target.name, name);
+        if self.judged {
+            intent.selection = Selection::Ids(self.ticks.clone());
+        }
         intent.references.symbol = self.target.symbol;
         intent.references.language = self.language.clone();
         intent.references.declared_in = self.target.declared_in.clone();
@@ -273,6 +346,9 @@ impl RenameMode {
         if self.busy || self.occurrences.is_empty() {
             return Vec::new();
         }
+        if let Some(error) = &self.error {
+            return context.fail(error);
+        }
         let to = self.name.trim().to_owned();
         if to.is_empty() || to == self.target.name {
             return context.fail("type the new name first");
@@ -280,12 +356,16 @@ impl RenameMode {
         if self.ticks.is_empty() {
             return context.fail("nothing ticked");
         }
+        if self.changes.is_empty() {
+            return context.fail("no changes to apply");
+        }
         let mut intent =
             RenameIntent::new(&self.target.name, to).selecting(Selection::Ids(self.ticks.clone()));
         intent.references.symbol = self.target.symbol;
         intent.references.language = self.language.clone();
         intent.references.declared_in = self.target.declared_in.clone();
         self.busy = true;
+        self.applying = true;
         context.status.busy = true;
         vec![Effect::Commit {
             intent: Intent::Rename(intent),
@@ -301,6 +381,7 @@ impl RenameMode {
         self.occurrences = occurrences;
         self.changes = files;
         self.busy = false;
+        self.applying = false;
         self.error = None;
         // The first plan seeds the ticks from the engine's default:
         // what its plan with no selection edits. Later plans (typing
@@ -329,16 +410,17 @@ impl RenameMode {
         }
         self.preview_effect()
     }
-    pub fn toggled(&mut self, all: bool) -> Vec<Effect> {
+    pub fn toggled(&mut self, all: bool, context: &mut ModeContext<'_>) -> Vec<Effect> {
         if all {
             self.toggle_panel();
         } else {
             self.toggle();
             self.moved(1);
-            return self.preview_effect();
         }
-
-        Vec::new()
+        let generation = context.next_generation();
+        let mut effects = self.preview_effect();
+        effects.extend(self.plan(generation, true));
+        effects
     }
     pub fn from_results(results: &crate::modes::search::Results) -> Result<Self, &'static str> {
         let (target, language) = match &results.subject {
@@ -376,15 +458,23 @@ impl RenameMode {
         self.focus == RenamePanel::Detail
     }
     pub fn previewed(&mut self, preview: FilePreview) {
+        if self.current().is_none_or(|row| row.m.path != preview.path) {
+            return;
+        }
+        if self.preview.as_ref().is_none_or(|p| p.path != preview.path) {
+            self.detail_scroll = 0;
+        }
         self.preview = Some(preview);
-        self.detail_scroll = 0;
     }
     pub fn plan_failed(&mut self, message: String) {
         self.busy = false;
+        self.applying = false;
+        self.changes.clear();
         self.error = Some(message);
     }
     pub fn failed(&mut self) {
         self.busy = false;
+        self.applying = false;
     }
     pub fn judgment(&self) -> RenameIntent {
         let mut intent = RenameIntent::new(&self.target.name, &self.target.name);

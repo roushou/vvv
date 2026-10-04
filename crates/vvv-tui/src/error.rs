@@ -3,6 +3,8 @@
 /// A session ended early: the terminal, the engine, or the editor failed.
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("could not save TUI preferences: {0}")]
+    Preferences(std::io::Error),
     #[error("terminal: {0}")]
     Terminal(#[from] std::io::Error),
     #[error(transparent)]

@@ -1,0 +1,16 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: "FrameFixture::new(&m).render_size(50, 12)"
+---
+┌ ┌ Places · Trail 2 / Recent 2 ─────── 2 shown ┐┐
+│>│Find: ▏                                      ││
+│ │    Search: Language · src/lang/             ││
+│i│mod.rs:64 · in: crates/vvv/src/very/long/    ││
+│m│path/with/multiple/components                ││
+└─│> ● Search: Language · src/lang/             │┘
+ 2│mod.rs:64 · in: crates/vvv/src/very/long/    │┐
+├ │path/with/multiple/components                ││
+│>│                                             ││
+│ │                                             ││
+└ │                                             │┘
+ s└ tab switch · ⏎ return · f1 keys ────────────┘

@@ -117,4 +117,21 @@ fn large_result_browsing() {
     let mut preview = Browsing::new(1, 1);
     preview.large_preview();
     preview.measure("20k source lines: redraw near end", 10, Browsing::draw);
+    preview.model.update(Action::FocusNth(4));
+    preview.model.update(Action::InspectFind);
+    for c in "Engine".chars() {
+        preview.model.update(Action::Input(c));
+    }
+    preview.model.update(Action::Enter);
+    preview.measure("20k find hits: next hit + redraw", 10, |b| {
+        black_box(b.model.update(Action::InspectNext(1)));
+        b.draw();
+    });
+    preview.model.update(Action::ExpandPreview);
+    preview.model.update(Action::InspectHorizontal(8));
+    preview.measure(
+        "20k find hits: expanded horizontal redraw",
+        10,
+        Browsing::draw,
+    );
 }

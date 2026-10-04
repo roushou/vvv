@@ -1,0 +1,28 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: "FrameFixture::new(&m).render_size(120, 24)"
+---
+┌ vvv ~/dev/nx ───────────────────────────────────────────────────── 1 query · search · ctrl+g filters · ctrl+o places ┐
+│> Language lang:rust kind:trait_item                                                                                  │
+└ lang: rust · node: trait_item · category: declarations · files: mod ─────────────────────────────────────────────────┘
+┌ 2 Files ───────────────────────────── 1/1 of 1 · 1/1 hit ┐┌ source · src/lang/mod.rs:64 ─────────────────── 13–22/70 ┐
+│ files: mod                                               ││   13 │ // line 13                                        │
+│> src/lang/mod.rs                                       1 ││   14 │ // line 14                                        │
+├ 3 Matches · j/k ──────────────────────────────────── 1/1 ┤│   15 │ // line 15                                        │
+│> 64  pub trait Language: ┌ search filters ───────────────────────────────────── 7 choices ┐                          │
+│                          │> ▏                                                             │                          │
+│                          │                                                                │                          │
+│                          │>   Location: workspace                                         │                          │
+│                          │    Symbol kind: any                                            │                          │
+│                          │    Language: rust                                              │                          │
+│                          │    Node kind: trait_item                                       │                          │
+│                          │    Category: declarations                                      │──────────────────────────┘
+│                          │    File filter: mod                                            │ ────────────────── 64–67 ┐
+│                          │    Reset all filters · keep query                              │ {                        │
+│                          └ Enter edit · Ctrl+X clear · Esc cancel ────────────────────────┘                          │
+│                                                          ││     fn extensions(&self) -> &[&str];                     │
+│                                                          ││ }                                                        │
+│                                                          ││                                                          │
+│                                                          ││                                                          │
+└All 4  [Declaration 1] Imports 2 Use 1 ───────────────────┘└──────────────────────────────────────────────────────────┘
+ search ⏎ choose  esc cancel                                                                                    f1 help

@@ -1,0 +1,22 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: "FrameFixture::new(&m).render_size(50, 18)"
+---
+┌ Help · Places ─────────────────────────────────┐
+│ Places                                         │
+│tab s-tab  switch browsing trail / recent       │
+│           searches                             │
+│        ⏎  restore a browsing page or run a     │
+│           recent search                        │
+│      esc  close without changing your place    │
+│ ↓ ctrl+n  next place                           │
+│ ↑ ctrl+p  previous place                       │
+│     home  first place                          │
+│      end  last place                           │
+│     pgdn  next page                            │
+│     pgup  previous page                        │
+│   ctrl+u  clear place filter                   │
+│   ctrl+d  forget selected recent search        │
+│   ctrl+l  reset split, report view and preview │
+│           choice                               │
+└ ↑/↓ scroll · f1 / esc return ──────────────────┘

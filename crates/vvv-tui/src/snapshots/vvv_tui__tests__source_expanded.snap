@@ -1,0 +1,34 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: "FrameFixture::new(&m).render_size(120, 30)"
+---
+┌ vvv ~/dev/nx ───────────────────────────────────────────────────── 1 query · search · ctrl+g filters · ctrl+o places ┐
+│> Language                                                                                                            │
+└ workspace · all results ─────────────────────────────────────────────────────────────────────────────────────────────┘
+┌ source · src/lang/mod.rs:64 ─────────────────────────────────────────────────────────────────────────────── 62–70/70 ┐
+│   62 │ // line 62                                                                                                    │
+│   63 │ // line 63                                                                                                    │
+│   64 │ pub trait Language: Send + Sync {                                                                             │
+│   65 │     fn name(&self) -> &str;                                                                                   │
+│   66 │     fn extensions(&self) -> &[&str];                                                                          │
+│   67 │ }                                                                                                             │
+│   68 │ // line 68                                                                                                    │
+│   69 │ // line 69                                                                                                    │
+│   70 │ // line 70                                                                                                    │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+│                                                                                                                      │
+└ z restore ───────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+ search ⏎ follow  / find  : line  n hit  → columns  z restore  p preview  < resize  F files  j/k scroll         f1 help

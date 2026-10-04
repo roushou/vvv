@@ -1,7 +1,8 @@
 //! Overlay questions, selection, and typed rendering.
 pub(crate) mod navigation;
+pub(crate) mod places;
 pub(crate) mod screen;
-use crate::modes::search::{Category, Relation};
+use crate::modes::search::{Category, Relation, filters::Restriction};
 use crate::modes::search::{Search, query::Filter};
 use crate::render::Painter;
 use crate::screen::Screen;
@@ -18,15 +19,19 @@ use vvv_engine::{RelPath, SymbolKind};
 /// A small question in front of the mode.
 #[derive(Debug, Clone)]
 pub enum Overlay {
+    Places(places::Places),
     Menu(Menu),
     Navigation(NavigationPicker),
     Confirm(Confirm),
-    /// The key list: the screen the user was in and the panel that had the
-    /// focus, kept so the list stays about them; `scroll` is how many rows
-    /// are above the box.
+    /// Effective keys captured at the originating focus. Nested help retains
+    /// the overlay it returns to; scrolling never changes the underlying mode.
     Help {
-        screen: &'static Screen,
-        focus: usize,
+        title: String,
+        previous: Option<Box<Overlay>>,
+        sections: Vec<(
+            &'static str,
+            Vec<crate::keymap::Row<'static, crate::action::Action>>,
+        )>,
         scroll: usize,
     },
     /// What an apply produced, as the report the picker shows.
@@ -63,9 +68,20 @@ impl Overlay {
             .get(*cursor)
             .map(|site| (site.path.clone(), site.line))
     }
-    pub fn help_scrolled(&mut self, by: i32) -> bool {
-        if let Self::Help { scroll, .. } = self {
-            *scroll = (*scroll as i32 + by).max(0) as usize;
+    pub fn help_scrolled(&mut self, by: i32, viewport: (u16, u16)) -> bool {
+        if let Self::Help {
+            title,
+            sections,
+            scroll,
+            ..
+        } = self
+        {
+            let limit = HelpBox::new(title, sections, *scroll, Painter::plain())
+                .scroll_limit(viewport.0, viewport.1);
+            *scroll = (*scroll)
+                .min(limit)
+                .saturating_add_signed(by as isize)
+                .min(limit);
             true
         } else {
             false
@@ -74,6 +90,7 @@ impl Overlay {
 
     pub fn screen(&self) -> &'static Screen {
         match self {
+            Self::Places(_) => &screen::PLACES_SCREEN,
             Self::Navigation(_) => &screen::NAVIGATION_SCREEN,
             Self::Menu(_) => &MENU_SCREEN,
             Self::Confirm(_) => &CONFIRM_SCREEN,
@@ -83,16 +100,20 @@ impl Overlay {
     }
     pub fn render(&self, painter: Painter, area: Rect, buf: &mut Buffer) {
         match self {
+            Self::Places(places) => screen::PlacesBox::new(places, painter)
+                .screen()
+                .render(area, buf),
             Self::Navigation(picker) => screen::NavigationBox::new(picker, painter)
                 .screen()
                 .render(area, buf),
             Self::Menu(menu) => MenuBox::new(menu, painter).screen().render(area, buf),
             Self::Confirm(confirm) => ConfirmBox::new(confirm, painter).screen().render(area, buf),
             Self::Help {
-                screen,
-                focus,
+                title,
+                sections,
                 scroll,
-            } => HelpBox::new(screen, *focus, *scroll, painter)
+                ..
+            } => HelpBox::new(title, sections, *scroll, painter)
                 .screen()
                 .render(area, buf),
             Self::Report { report, cursor } => ReportBox::new(report, *cursor, painter)
@@ -111,10 +132,13 @@ pub struct Menu {
     pub items: Vec<MenuItem>,
     pub cursor: usize,
     pub filter: String,
+    pub selected: Option<String>,
+    pub counted: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum MenuTarget {
+    Filters,
     Symbol,
     Language,
     Relation,
@@ -127,6 +151,7 @@ pub struct MenuItem {
     pub label: String,
     /// The filter value, or `None` for "any".
     pub value: Option<String>,
+    pub count: Option<usize>,
 }
 
 impl Menu {
@@ -135,10 +160,12 @@ impl Menu {
         let mut items = vec![MenuItem {
             label: "any".to_owned(),
             value: None,
+            count: None,
         }];
         items.extend(values.into_iter().map(|v| MenuItem {
             label: v.clone(),
             value: Some(v),
+            count: None,
         }));
         let cursor = items
             .iter()
@@ -149,6 +176,8 @@ impl Menu {
             items,
             cursor,
             filter: String::new(),
+            selected: current.map(str::to_owned),
+            counted: false,
         }
     }
 
@@ -159,6 +188,7 @@ impl Menu {
             .map(|r| MenuItem {
                 label: r.label().to_owned(),
                 value: Some(r.key().to_owned()),
+                count: None,
             })
             .collect();
         let cursor = Relation::ALL
@@ -170,11 +200,14 @@ impl Menu {
             items,
             cursor,
             filter: String::new(),
+            selected: Some(current.key().to_owned()),
+            counted: false,
         }
     }
 
     pub fn title(&self) -> &'static str {
         match self.target {
+            MenuTarget::Filters => "search filters",
             MenuTarget::Symbol => "symbol kind",
             MenuTarget::Language => "language",
             MenuTarget::Relation => "relation",
@@ -200,6 +233,7 @@ impl Menu {
             items.push(MenuItem {
                 label: format!("Use path: {}", self.filter),
                 value: Some(self.filter.clone()),
+                count: None,
             });
         }
         items
@@ -215,36 +249,67 @@ impl Menu {
         self.cursor = (self.cursor as i32 + by).clamp(0, last) as usize;
     }
 
-    pub fn for_target(target: MenuTarget, languages: &[String], search: &Search) -> Self {
-        match target {
+    pub fn for_target(
+        target: MenuTarget,
+        languages: &[String],
+        search: &Search,
+        counts_current: bool,
+    ) -> Self {
+        let mut menu = match target {
+            MenuTarget::Filters => {
+                let mut items: Vec<_> = Restriction::ALL
+                    .iter()
+                    .filter(|r| **r != Restriction::Files || search.results.has_file_list())
+                    .map(|r| MenuItem {
+                        label: format!(
+                            "{}: {}",
+                            r.label(),
+                            r.value(search).unwrap_or_else(|| {
+                                if *r == Restriction::Location {
+                                    "workspace".into()
+                                } else {
+                                    "any".into()
+                                }
+                            })
+                        ),
+                        value: Some(r.key().to_owned()),
+                        count: None,
+                    })
+                    .collect();
+                items.push(MenuItem {
+                    label: "Reset all filters · keep query".into(),
+                    value: Some("all".into()),
+                    count: None,
+                });
+                Self {
+                    target,
+                    items,
+                    cursor: 0,
+                    filter: String::new(),
+                    selected: None,
+                    counted: false,
+                }
+            }
             MenuTarget::Symbol => {
                 let values = SymbolKind::ALL
                     .iter()
                     .map(|k| k.as_str().to_owned())
                     .collect();
-                let current = search.query.filter(Filter::Symbol).map(str::to_owned);
-                Self::new(target, values, current.as_deref())
+                Self::new(target, values, search.query.filter(Filter::Symbol))
             }
-            MenuTarget::Language => {
-                let current = search.query.filter(Filter::Lang).map(str::to_owned);
-                Self::new(target, languages.to_vec(), current.as_deref())
-            }
+            MenuTarget::Language => Self::new(
+                target,
+                languages.to_vec(),
+                search.query.filter(Filter::Lang),
+            ),
             MenuTarget::Relation => Self::relations(search.results.relation),
             MenuTarget::Category => {
                 let items = Category::ALL
                     .iter()
                     .map(|c| MenuItem {
-                        label: format!(
-                            "{}  {}",
-                            c.label(),
-                            search
-                                .results
-                                .matches
-                                .iter()
-                                .filter(|m| c.includes(m.role))
-                                .count()
-                        ),
+                        label: c.label().to_owned(),
                         value: Some(c.key().to_owned()),
+                        count: None,
                     })
                     .collect();
                 Self {
@@ -255,19 +320,80 @@ impl Menu {
                         .position(|c| *c == search.results.category)
                         .unwrap_or(0),
                     filter: String::new(),
+                    selected: Some(search.results.category.key().to_owned()),
+                    counted: false,
                 }
             }
-            MenuTarget::Location => {
-                let mut menu = Self::new(
-                    target,
-                    search.locations.choices(),
-                    search.locations.selected.as_ref().map(|p| p.as_str()),
-                );
-                menu.items[0].label = "Entire workspace".into();
-                menu
+            MenuTarget::Location => Self::new(
+                target,
+                search.locations.choices(),
+                search.locations.selected.as_ref().map(|p| p.as_str()),
+            ),
+        };
+        match target {
+            MenuTarget::Symbol => menu.items[0].label = "Any symbol kind".into(),
+            MenuTarget::Language => menu.items[0].label = "Any language".into(),
+            MenuTarget::Location => menu.items[0].label = "Entire workspace".into(),
+            _ => {}
+        }
+        menu.counted = counts_current
+            && matches!(
+                target,
+                MenuTarget::Symbol
+                    | MenuTarget::Language
+                    | MenuTarget::Location
+                    | MenuTarget::Category
+            );
+        if menu.counted {
+            menu.count(search);
+        }
+        menu
+    }
+    /// Tally the loaded answer once; opening a location picker must not scan
+    /// every hit again for every suggested directory.
+    fn count(&mut self, search: &Search) {
+        let mut counts: std::collections::BTreeMap<Option<String>, usize> = Default::default();
+        for m in search.results.matches.iter() {
+            if self.target != MenuTarget::Location && !search.locations.includes(&m.path) {
+                continue;
+            }
+            *counts.entry(None).or_default() += 1;
+            match self.target {
+                MenuTarget::Location => {
+                    let mut prefix = String::new();
+                    for component in m.path.as_str().split('/') {
+                        if !prefix.is_empty() {
+                            prefix.push('/');
+                        }
+                        prefix.push_str(component);
+                        *counts.entry(Some(prefix.clone())).or_default() += 1;
+                    }
+                }
+                MenuTarget::Symbol => {
+                    if let Some(symbol) = &m.symbol {
+                        *counts
+                            .entry(Some(symbol.kind.as_str().to_owned()))
+                            .or_default() += 1;
+                    }
+                }
+                MenuTarget::Language => {
+                    *counts
+                        .entry(Some(m.language.as_str().to_owned()))
+                        .or_default() += 1;
+                }
+                MenuTarget::Category => {
+                    for c in Category::ALL.iter().filter(|c| c.includes(m.role)) {
+                        *counts.entry(Some(c.key().to_owned())).or_default() += 1;
+                    }
+                }
+                _ => {}
             }
         }
+        for item in &mut self.items {
+            item.count = Some(counts.get(&item.value).copied().unwrap_or(0));
+        }
     }
+
     pub fn chosen(&self) -> Option<(MenuTarget, Option<String>)> {
         self.current().map(|i| (self.target, i.value))
     }

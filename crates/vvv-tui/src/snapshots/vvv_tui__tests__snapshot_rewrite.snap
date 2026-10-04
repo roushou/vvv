@@ -1,24 +1,24 @@
 ---
 source: crates/vvv-tui/src/tests.rs
-expression: render(&m)
+expression: "FrameFixture::new(&m).render()"
 ---
-┌ rewrite ──────────────────────────────────────────────────────────── ± 4  ▪ 4  3 files ┐
-│pattern   Language                                                                      │
-│template  Lang                                                                          │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-┌ ± rewrites 4 ─────────────────────────────┐┌ lang/registry.rs:4 ───────────────────────┐
-│▪ lang/mod.rs:64         pub trait Languag…││@@ -1,6 +1,6 @@                            │
-│▪ lang/registry.rs:4     use super::{Langu…││ // line 1                                 │
-│▪ src/lib.rs:26          pub use lang::{La…││ // line 2                                 │
-│▪ src/lib.rs:41          Language::new()   ││ // line 3                                 │
-│                                           ││-use super::{Language, LanguageId};        │
-│                                           ││+use super::{Lang, LanguageId};            │
-│                                           ││ // line 5                                 │
+┌ 1 Rewrite ───────────────────────────────────────────────────── 4/4 selected · 3 files ┐
+│ template: Lang                                                                         │
+└ pattern: Language · ready to apply ────────────────────────────────────────────────────┘
+┌ 2 Matches ─────────────────────────── 2/4 ┐┌ 3 Diff · src/lang/registry.rs:4 ──────────┐
+│  src/lang/mod.rs                          ││@@ -1,6 +1,6 @@                            │
+│  ▪ 64 pub trait Language: Send + Sync {   ││ // line 1                                 │
+│  src/lang/registry.rs                     ││ // line 2                                 │
+│> ▪  4 use super::{Language, LanguageId};  ││ // line 3                                 │
+│  src/lib.rs                               ││-use super::{Language, LanguageId};        │
+│  ▪ 26 pub use lang::{Language, LanguageId…││+use super::{Lang, LanguageId};            │
+│  ▪ 41 Language::new()                     ││ // line 5                                 │
 │                                           ││ // line 6                                 │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
-└───────────────────────────────────────────┘└───────────────────────────────────────────┘
- rewrite space toggle  a all  ⏎ apply 4 in 3 files  esc back  j/k move  e editor  ? keys
+│                                           ││                                           │
+└ 4/4 selected ─────────────────────────────┘└ selected ─────────────────────────────────┘
+ rewrite space toggle  a all  ⏎ apply 4 in 3 files  esc back  j/k move            f1 help

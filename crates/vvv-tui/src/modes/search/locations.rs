@@ -10,6 +10,9 @@ pub struct Locations {
 }
 
 impl Locations {
+    pub fn observe_path(&mut self, path: &RelPath) {
+        self.known.insert(path.clone());
+    }
     pub fn scope(&self) -> SearchScope {
         SearchScope {
             paths: self.selected.iter().cloned().collect(),

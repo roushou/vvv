@@ -13,7 +13,6 @@ use crate::model::PanelKind;
 use crate::render::Pane;
 use crate::render::{Fit, Header, Painter, Region};
 use crate::screen::{BoundScreen, Panel, Screen};
-use vvv_engine::protocol::vocabulary::Mark;
 use vvv_engine::protocol::vocabulary::{Ago, IntentLine, Plural};
 
 use Action as A;
@@ -29,7 +28,7 @@ const MODE: Layer<Action> = Layer {
             when: When::Always,
             legend: Legend {
                 bar: Some(Bar {
-                    keys: "u",
+                    keys: "⏎/u",
                     word: "",
                 }),
                 help: "undo the newest apply",
@@ -116,86 +115,138 @@ impl<'a> HistoryView<'a> {
             .render(area, buf);
     }
     fn draw_files(&self, area: Rect, buf: &mut Buffer) {
-        self.files().render(area, buf);
+        self.files(area).render(area, buf);
     }
     fn header(&self) -> Header<'a> {
         let (h, t) = (self.mode, self.painter);
-        let newest = h.entries.last().map(|e| e.id);
-        let mut right = vec![Span::styled(
-            format!(
-                "{} entr{}  ",
-                h.entries.len(),
-                if h.entries.len() == 1 { "y" } else { "ies" }
-            ),
-            t.dim,
-        )];
-        if let Some(id) = newest {
-            right.push(t.glyph(Mark::Undo));
-            right.push(Span::raw(format!("#{id}")));
-        }
-        Header::new(t, false, Line::from(Span::styled(" history ", t.title)))
-            .right(Line::from(right))
-            .line(Line::from(Span::styled(
-                "oldest first; only the newest can be undone",
+        let newest = h.entries.last().map_or_else(
+            || "nothing to undo".to_owned(),
+            |e| format!("newest #{} · undo available", e.id),
+        );
+        Header::new(t, false, Line::from(Span::styled(" History ", t.title)))
+            .right(Line::from(Span::styled(
+                Plural(h.entries.len(), "entry").to_string(),
+                t.dim,
+            )))
+            .bottom(Line::from(Span::styled(
+                format!(" oldest first · {newest} "),
                 t.dim,
             )))
     }
 
     fn entries(&self, width: usize) -> Pane<'a> {
         let (h, t) = (self.mode, self.painter);
-        let newest = h.entries.last().map(|e| e.id);
-        let now = self.now;
         let rows: Vec<Line> = h
             .entries
             .iter()
-            .map(|e| {
-                let intent = IntentLine(&e.intent).to_string();
-                let tail = format!("  {}", Plural(e.files, "file"));
-                let mark = if Some(e.id) == newest { "  ↩" } else { "" };
-                let budget = width.saturating_sub(18 + tail.len() + mark.len());
+            .enumerate()
+            .map(|(i, e)| {
+                let prefix = format!(
+                    "{} #{:<3} ",
+                    if i == h.cursor.index { ">" } else { " " },
+                    e.id
+                );
+                let tail = format!(" · {}", Plural(e.files, "file"));
+                let budget = width.saturating_sub(
+                    Line::from(prefix.as_str()).width() + Line::from(tail.as_str()).width(),
+                );
                 Line::from(vec![
-                    Span::styled(format!("#{:<3} ", e.id), t.title),
-                    Span::styled(format!("{:>10}  ", Ago::between(e.at, now)), t.dim),
-                    Span::raw(Fit(&intent, budget).to_string()),
+                    Span::styled(prefix, t.selection_marker(h.focus == HistoryPanel::Entries)),
+                    Span::raw(Fit(&IntentLine(&e.intent).to_string(), budget).to_string()),
                     Span::styled(tail, t.dim),
-                    Span::styled(mark, t.key),
                 ])
             })
             .collect();
+        let selected = h
+            .current()
+            .map(|e| {
+                format!(
+                    " {} · {} ",
+                    Ago::between(e.at, self.now),
+                    if h.is_newest() {
+                        "newest · can undo"
+                    } else {
+                        "older entry · cannot undo"
+                    }
+                )
+            })
+            .unwrap_or_default();
         Pane::new(
             t,
-            Line::from(Span::styled("entries", t.title)),
+            Line::from(Span::styled("1 Entries", t.title)),
             h.focus == HistoryPanel::Entries,
         )
+        .right(Line::from(Span::styled(
+            format!(
+                "{}/{}",
+                if h.entries.is_empty() {
+                    0
+                } else {
+                    h.cursor.index + 1
+                },
+                h.entries.len()
+            ),
+            t.dim,
+        )))
+        .footer(Line::from(Span::styled(
+            selected,
+            if h.is_newest() { t.key } else { t.dim },
+        )))
         .rows(rows)
         .cursor((!h.entries.is_empty()).then_some(h.cursor.index))
-        .emphasized(true)
+        .empty("No applied operations")
     }
 
-    fn files(&self) -> Pane<'a> {
+    fn files(&self, area: Rect) -> Pane<'a> {
         let (h, t) = (self.mode, self.painter);
-        let mut out: Vec<Line> = Vec::new();
+        let mut out = Vec::new();
+        let width = area.width.saturating_sub(3) as usize;
+        let mut pane = Pane::new(
+            t,
+            Line::from(Span::styled("2 Files", t.title)),
+            h.focus == HistoryPanel::Files,
+        );
         if let Some(entry) = h.current() {
+            pane = pane
+                .right(Line::from(Span::styled(
+                    format!("#{} · {}", entry.id, Plural(entry.files, "file")),
+                    t.dim,
+                )))
+                .prefix(
+                    Fit(&IntentLine(&entry.intent).to_string(), width)
+                        .wrapped()
+                        .into_iter()
+                        .map(|row| Line::from(Span::styled(format!(" {row}"), t.title)))
+                        .collect(),
+                );
             for (from, to) in &entry.moves {
-                out.push(Line::from(vec![
-                    Span::styled(from.short(), t.dim),
-                    Span::styled(" → ", t.import),
-                    Span::styled(to.short(), t.path),
-                ]));
+                for text in [from.as_str().to_owned(), format!("→ {to}")] {
+                    out.extend(
+                        Fit(&text, width)
+                            .wrapped()
+                            .into_iter()
+                            .map(|row| t.path_line(&format!(" {row}"))),
+                    );
+                }
             }
             for path in &entry.paths {
-                out.push(Line::from(vec![
-                    t.glyph(Mark::Structure),
-                    Span::styled(path.short(), t.path),
-                ]));
+                if entry
+                    .moves
+                    .iter()
+                    .any(|(from, to)| path == from || path == to)
+                {
+                    continue;
+                }
+                out.extend(
+                    Fit(path.as_str(), width)
+                        .wrapped()
+                        .into_iter()
+                        .map(|row| t.path_line(&format!(" {row}"))),
+                );
             }
         }
-        Pane::new(
-            t,
-            Line::from(Span::styled("files", t.title)),
-            h.focus == HistoryPanel::Files,
-        )
-        .rows(out)
-        .scroll(h.files_scroll)
+        pane.rows(out)
+            .scroll(h.files_scroll)
+            .empty("No files in this entry")
     }
 }

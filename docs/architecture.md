@@ -734,10 +734,11 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
   `Modifiers`) and its constructors. `mod.rs`: `Trigger` is what a
   `Keybinding` listens for (`Key`, `Text`, `Any`), `Dispatch` is what it does
   (`Run(A)`, `Type`), `Legend`/`Bar` say how it reads, and `Layer` is a named
-  set of bindings with `resolve` and `rows`. `Key::from_event` in `keys.rs`
+  set of bindings with `resolve`. `Key::from_event` in `keys.rs`
   turns a crossterm event into a `Key`, folding shift into the character.
 - `screen/` — shared key, focus, and help metadata (`Screen`, `Panel`) and
-  the application frame. `BoundScreen<V>` owns a typed view and its layout and panel
+  the application frame. Help and footer rows resolve each binding against actual
+  precedence and current conditions, suppressing shadowed aliases. `BoundScreen<V>` owns a typed view and its layout and panel
   callbacks; panels render from that view without inspecting `Mode`.
   `screen/defaults.rs` holds the shared key layers. Each mode binds its view once;
   the application chooses the shown mode before panel rendering. Panels never
@@ -745,8 +746,9 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
 - `overlays/mod.rs` — menu, confirmation, help, and report state with selection,
   transition, and view-binding methods. `screen.rs` owns metadata and typed box
   views, each with its rendering methods. `Overlay` owns report-source selection
-  and help scrolling. Help retains static screen metadata independently of a
-  renderer.
+  and help scrolling. Help captures effective binding rows at its originating focus and retains an
+  underlying overlay for cancellation. `places.rs` owns the searchable trail and
+  recent-recipe picker.
 - `modes/context.rs` — shared status and generation borrowed by a mode transition,
   without access to `Model` or another mode. `input.rs` holds `TextInput`, which
   edits a borrowed string buffer for name, destination, and template inputs.
@@ -756,7 +758,7 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
   the painter (`Theme::role` maps a `display::Role`, `Theme::mark` colours a
   `Mark`). The stateful boxes are `Pane` (a bordered list/text box) and `Header`
   (the title card); a screen's `layout` splits a `Region` into panel regions
-  (`columns`, `split`, `rows`), and `Fit` is a text helper. Words come from
+  (`columns`, `split`, `review_rows`), and `Fit` is a text helper. Words come from
   `protocol::vocabulary`.
 - `worker.rs` — the engine on its own thread; effects in, events out; bursts of
   searches or plans are coalesced. Interleaved context/definition preview bursts
@@ -780,10 +782,29 @@ and the `✓ 3  ? 1  ✗ 0` counts line is defined once, in the protocol.
 Selection in the TUI _is_ the CLI's `--select`: the rename and rewrite modes' ticked
 rows are content-derived ids fed to `Selection::Ids`.
 
+Operation modes share a typed `ReviewState` for border metadata and apply hints.
+Rename and rewrite preview the exact checked `MatchId` selection; each input or
+selection change advances its generation, and apply waits for the corresponding
+preview. Empty inputs and selections invalidate pending previews without engine I/O once
+selection is available. Rename completes its first judgment with the engine's
+default selection before relying on checked IDs. Applying modes reject input and selection edits until completion. File-grouped review
+rows are a shared rendering component: complete paths stay in reading order, source
+excerpts retain hit styling, and display offsets map back to the mode's item cursor.
+Compact sibling panes leave remaining space for the retained active list; short
+layouts collapse siblings to borders. Detail focus preserves the last list and
+text boundaries scroll content rather than changing the selected occurrence.
+
+Workspace UI preferences are pure, versioned data in `preferences.rs`.
+`tui.rs` owns their bounded loading and saving outside the project tree, keyed by
+canonical workspace; restoring them sets layout choices and recent recipes,
+never the active query or restrictions. Search's `recall.rs` owns bounded,
+validated query/location/category/file-filter recipes, separate from source pages.
+Forgotten recipes remain suppressed until explicitly searched again in the session.
+
 The search mode owns explicit browsing pages and a bounded navigation trail. Saved
 results and file previews share immutable allocations; entries retain query,
-result location, category, file filter, per-file selection, focus and both preview scroll positions,
-never mutation plans. Search scopes constrain result files; definition navigation
+result location, category, file filter, per-file selection, focus, preview scroll
+positions, inspection state and preview expansion, never mutation plans. Search scopes constrain result files; definition navigation
 continues to use the whole workspace. File and match lists share the left column;
 Files and Matches have independent focus and viewports. The selected file's
 occurrences stay within their file during match navigation. Search view geometry
@@ -793,6 +814,13 @@ and result revisions before accepting selection. Wheel scrolling preserves focus
 and selection. The terminal session owns mouse capture and suspends it for the editor. Local fuzzy filtering ranks retained file groups and preserves
 stable match identities without changing query execution or mutation selection.
 Reference files group all visible confidences together; verdicts remain engine data.
+Search restrictions share one typed vocabulary for border metadata and the filter
+menu. Pickers count retained search matches, before category and fuzzy file filters;
+counts are never estimates of unsearched workspace facets. Pending or stale searches
+omit them. Filter navigation retains a hidden match identity until explicit result
+navigation or query editing replaces it. Menu text clearing and restriction clearing
+are separate pure actions; resetting restrictions preserves the query’s pattern and
+name. Definition resolution remains independent of result location.
 Each result page memoizes file grouping and occurrence order by immutable answer
 identity, category, relation, and location. Fuzzy edits rerank those file groups
 without regrouping occurrences. Cursor movement and views reuse the projection;
@@ -806,12 +834,25 @@ file loads; its text, anchor, and scroll position change together on an accepted
 preview. Pending file selection never relabels retained text as the destination.
 Refresh, editor return, and newly observed match content identities mark the source
 for replacement even when the selected path stays the same.
+Each preview owns an inspection state keyed by displayed path, content identity and
+source range. Literal find spans use source byte offsets; next-hit navigation,
+line validation and horizontal scrolling are pure transitions over retained bytes.
+Source inspection covers the file; definition inspection covers its displayed
+enclosing declaration. Rendering clips syntax and find highlights in terminal
+columns, expands tabs and preserves fixed gutters. Find drafts retain their prior
+position for cancellation. Explicit find and line jumps supply editor sites;
+ordinary preview scrolling preserves the selected occurrence's editor site.
+Expansion retains hidden list viewports and follows explicit preview focus; leaving
+preview focus restores the split. Inspection allocations count toward navigation
+history's retention bounds.
 Wide previews reserve fixed source and definition regions independent of selection,
 loading, and empty results. Single-preview layouts reveal source or definition
 according to focus and the retained preview choice; selecting a result does not
 change that choice. Explicit follows use a separate
 request ticket from coalesced row previews and only successful follows push
-history. Restoring a page validates its versioned occurrence and displayed target
+history. Completed query and filter changes retain the departing page without
+recording pending keystrokes. A direct trail jump moves the entire route before
+applying retention bounds and validates only the destination. Restoring a page validates its versioned occurrence and displayed target
 before following again. Identifier/candidate choices belong to a typed navigation
 overlay; the engine supplies source anchors, including identifiers in file previews.
 
