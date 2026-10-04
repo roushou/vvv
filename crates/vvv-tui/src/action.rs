@@ -30,6 +30,7 @@ pub enum Action {
     File(i32),
     /// Edit the local fuzzy filter on result file paths.
     FilterFiles,
+    FilterOutline,
     ClearFileFilter,
     /// Switch the source / definition preview on a single-preview layout.
     PreviewTab,

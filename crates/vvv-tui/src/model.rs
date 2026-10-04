@@ -112,6 +112,22 @@ impl Model {
                 !matches!(self.mode, Mode::Search) || self.search.workspace.is_none()
             }
             When::InputFocused => self.input_focused(),
+            When::PreviewInspectable => {
+                self.overlay.is_none()
+                    && matches!(self.mode, Mode::Search)
+                    && self.search.scroll_focused()
+                    && !self.input_focused()
+                    && self.problem().is_none()
+            }
+            When::WorkspaceSplit => {
+                self.search.workspace.as_ref().is_some_and(|b| !b.expanded)
+                    && self.viewport.is_none_or(|(width, _)| width >= 72)
+            }
+            When::WorkspaceSymbol => self
+                .search
+                .workspace
+                .as_ref()
+                .is_some_and(|b| b.symbol().is_some()),
             When::PlacesRecent => matches!(&self.overlay, Some(Overlay::Places(p)) if p.recent),
             When::BrowseBack => self.search.trail.can_travel(false),
             When::BrowseForward => self.search.trail.can_travel(true),
@@ -201,13 +217,15 @@ impl Model {
                     mv.state().apply_hint().to_owned()
                 }
             }
-            (Action::ExpandPreview, Mode::Search) => if self.search.expanded.is_some() {
+            (Action::ExpandPreview, Mode::Search) => if self.search.expanded.is_some() || self.search.workspace.as_ref().is_some_and(|b| b.expanded) {
                 "restore"
             } else {
                 "expand"
             }
             .to_owned(),
-            (Action::Back, Mode::Search) if self.search.workspace.is_some() => "search".into(),
+            (Action::Back, Mode::Search) if self.search.workspace.is_some() => {
+                if self.search.workspace.as_ref().is_some_and(|b| b.expanded) { "restore" } else { "search" }.into()
+            },
             (Action::Back, Mode::Search) => if self.search.expanded.is_some() {
                 "restore"
             } else {
@@ -541,7 +559,9 @@ impl Model {
                 }
                 let page = if self.overlay.is_none()
                     && matches!(self.mode, Mode::Search)
-                    && matches!(self.search.focus, SearchPanel::Files | SearchPanel::Results)
+                    && (matches!(self.search.focus, SearchPanel::Files | SearchPanel::Results)
+                        || (self.search.workspace.is_some()
+                            && self.search.focus == SearchPanel::Context))
                 {
                     self.search_page_size()
                 } else {
@@ -653,11 +673,24 @@ impl Model {
         let Some((width, height)) = self.viewport else {
             return Default::default();
         };
-        if !matches!(self.mode, Mode::Search)
-            || self.overlay.is_some()
-            || self.search.workspace.is_some()
-        {
+        if !matches!(self.mode, Mode::Search) || self.overlay.is_some() {
             return Default::default();
+        }
+        if let Some(workspace) = &self.search.workspace {
+            return crate::modes::workspace::screen::WorkspaceView::new(
+                workspace,
+                self.search.focus,
+                self.search.problem.as_ref(),
+                &self.root,
+                crate::render::Painter::plain(),
+                self.split,
+            )
+            .frame(ratatui::layout::Rect::new(
+                0,
+                0,
+                width,
+                height.saturating_sub(1),
+            ));
         }
         crate::modes::search::screen::SearchView::new(
             &self.search,
@@ -676,6 +709,26 @@ impl Model {
     }
 
     fn search_page_size(&self) -> usize {
+        if let Some(workspace) = &self.search.workspace
+            && self.search.focus == SearchPanel::Context
+            && let Some((width, height)) = self.viewport
+        {
+            return crate::modes::workspace::screen::WorkspaceView::new(
+                workspace,
+                self.search.focus,
+                self.search.problem.as_ref(),
+                &self.root,
+                crate::render::Painter::plain(),
+                self.split,
+            )
+            .source_rows(ratatui::layout::Rect::new(
+                0,
+                0,
+                width,
+                height.saturating_sub(1),
+            ))
+            .max(1);
+        }
         let frame = self.search_frame();
         let Some(list) = frame
             .lists
@@ -697,18 +750,56 @@ impl Model {
                 }
             }
             paths.len().max(1)
+        } else if self.search.workspace.is_some() {
+            list.rows
+                .iter()
+                .skip(list.offset)
+                .take(list.content.height as usize)
+                .filter_map(|row| match row {
+                    crate::modes::search::files::PointerIntent::Outline { span, .. } => {
+                        Some((span.start, span.end))
+                    }
+                    _ => None,
+                })
+                .collect::<std::collections::BTreeSet<_>>()
+                .len()
+                .max(1)
         } else {
             (list.content.height as usize).max(1)
         }
     }
 
     fn sync_viewport(&mut self) {
-        if self.search.workspace.is_some() {
-            return;
-        }
         let Some((width, height)) = self.viewport else {
             return;
         };
+        if let Some(workspace) = &mut self.search.workspace {
+            let view = crate::modes::workspace::screen::WorkspaceView::new(
+                workspace,
+                self.search.focus,
+                self.search.problem.as_ref(),
+                &self.root,
+                crate::render::Painter::plain(),
+                self.split,
+            );
+            let area = ratatui::layout::Rect::new(0, 0, width, height.saturating_sub(1));
+            let frame = view.frame(area);
+            let columns = view.source_columns(area);
+            workspace.inspection.viewport = Some(columns);
+            for list in frame.lists {
+                if list.area.is_empty() {
+                    continue;
+                }
+                let viewport = if list.panel == SearchPanel::Files {
+                    &mut workspace.files_viewport
+                } else {
+                    &mut workspace.outline_viewport
+                };
+                viewport.offset = list.offset;
+                viewport.reveal = false;
+            }
+            return;
+        }
         let view = crate::modes::search::screen::SearchView::new(
             &self.search,
             &self.root,
@@ -777,7 +868,9 @@ impl Model {
                 };
                 self.status.busy = false;
                 self.search.problem = None;
-                workspace.install(paths)
+                let effects = workspace.install(paths);
+                self.sync_viewport();
+                effects
             }
 
             Event::Paste(text) => self.paste(&text),
@@ -854,6 +947,12 @@ impl Model {
                 Vec::new()
             }
             Event::Viewport { width, height } => {
+                if self.viewport != Some((width, height))
+                    && let Some(workspace) = &mut self.search.workspace
+                {
+                    workspace.files_viewport.reveal = true;
+                    workspace.outline_viewport.reveal = true;
+                }
                 self.viewport = Some((width, height));
                 if let Some(overlay) = &mut self.overlay {
                     overlay.help_scrolled(0, (width, height));

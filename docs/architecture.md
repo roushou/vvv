@@ -717,7 +717,7 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
   Common cursor, panel-focus, and file-preview types keep their methods here.
   `Model::mode_screen()`/`overlay_screen()` select screen metadata;
   `Model::focus()` returns the focused panel's index.
-  `Model::action_for(event)` resolves through the global, recovery, input-editing, focused-panel, screen,
+  `Model::action_for(event)` resolves through the global, recovery, input-editing, focused-panel, shared preview-inspection, screen,
   panel-default, and navigation key layers. `Model::update` routes application
   actions to the selected mode; `Model::on_event` checks generations before
   delivering answers. Both are pure and return effects. Entering a mode sends its
@@ -726,8 +726,11 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
 - `modes/<name>/mod.rs` — each mode's state and methods, including action and event
   transitions (`rename`, `moves`, `rewrite`, `history`, `search`). Workspace browsing
   owns its state and typed screen in `modes/workspace/`, retained as a search browsing
-  page so the existing trail restores both workspace and search contexts. Its `screen.rs`
-  defines a separate view type with its rendering methods. Search's `query.rs`
+  page so the existing trail restores both workspace and search contexts. Workspace
+  state owns independent file/outline viewports, local outline filtering, per-file
+  inspection positions, and revision-checked pointer selection. Its typed view owns
+  the same wrapped-row geometry used by rendering and hit testing, including narrow
+  layouts. Its `screen.rs` defines a separate view type with its rendering methods. Search's `query.rs`
   owns the query bar; `files.rs` owns fuzzy file ranking, filter edits, file and match viewports, remembered
   occurrence selections, and stable pointer targets; `locations.rs` keeps result scope and directory suggestions
   separate from global navigation. Its state includes role categories, read-only

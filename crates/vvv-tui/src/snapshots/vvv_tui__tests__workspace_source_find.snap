@@ -1,0 +1,30 @@
+---
+source: crates/vvv-tui/src/tests.rs
+assertion_line: 5693
+expression: "FrameFixture::new(m).render_size(110, 25)"
+---
+┌ Workspace ─────────────────────────────────────────────────────────────────────────────────────── ~/dev/nx ┐
+│ files: fuzzy-filter paths                                                                                  │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌ Files ─────────────────────────────────── 2/2 files ┐┌ Source · src/a.rs ──────────────────────── 12–30/46 ┐
+│> src/a.rs                                           ││   12 │‹11() {                                      …│
+│  src/b.rs                                           ││   13 │‹12() {                                      …│
+└─────────────────────────────────────────────────────┘│   14 │‹13() {                                      …│
+┌ Outline ────────────────────────────── 45 symbols ↓ ┐│   15 │‹14() {                                      …│
+│>  1  function item_00                               ││   16 │‹15() {                                      …│
+│   2  function item_01                               ││   17 │‹16() {                                      …│
+│   3  function item_02                               ││   18 │‹17() {                                      …│
+│   4  function item_03                               ││   19 │‹18() {                                      …│
+│   5  function item_04                               ││   20 │‹19() {                                      …│
+│   6  function item_05                               ││   21 │‹20() {                                      …│
+│   7  function item_06                               ││   22 │‹21() {                                      …│
+│   8  function item_07                               ││   23 │‹22() {                                      …│
+│   9  function item_08                               ││   24 │‹23() {                                      …│
+│  10  function item_09                               ││   25 │‹24() {                                      …│
+│  11  function item_10                               ││   26 │‹25() {                                      …│
+│  12  function item_11                               ││   27 │‹26() {                                      …│
+│  13  function item_12                               ││   28 │‹27() {                                      …│
+│  14  function item_13                               ││   29 │‹28() {                                      …│
+│  15  function item_14                               ││   30 │‹29() {                                      …│
+└─────────────────────────────────────────────────────┘└ /needle_31 · 0/1 · col 9 ───────────────────────────┘
+ workspace j/k scroll  d/u page  ⏎ follow  / find  : line  n hit  → columns  z expand  < resize       f1 help

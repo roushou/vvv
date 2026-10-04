@@ -75,6 +75,9 @@ impl Screen {
         if let Some(dispatch) = panel.layer.resolve(key, &holds) {
             return Some(dispatch);
         }
+        if let Some(dispatch) = defaults::PREVIEW.resolve(key, &holds) {
+            return Some(dispatch);
+        }
         if let Some(dispatch) = self.layer.resolve(key, &holds) {
             return Some(dispatch);
         }
@@ -103,6 +106,7 @@ impl Screen {
         let mut layers = vec![defaults::RECOVERY];
         if let Some(panel) = self.panel(focus) {
             layers.push(panel.layer);
+            layers.push(defaults::PREVIEW);
             layers.push(self.layer);
             if let Some(layer) = panel.kind.and_then(PanelKind::layer) {
                 layers.push(*layer);

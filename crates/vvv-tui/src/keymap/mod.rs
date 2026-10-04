@@ -89,6 +89,9 @@ impl<A: Copy> Keybinding<A> {
 pub enum When {
     Always,
     InputFocused,
+    PreviewInspectable,
+    WorkspaceSymbol,
+    WorkspaceSplit,
     ReportViewAvailable,
     Recoverable,
     RecoveryFile,

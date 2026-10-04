@@ -1,5 +1,6 @@
 ---
 source: crates/vvv-tui/src/tests.rs
+assertion_line: 239
 expression: "FrameFixture::new(&m).render_size(120, 26)"
 ---
 ┌ vvv ~/dev/nx ───────────────────────────────────────────────────────────────────────────────────────── Query · stale ┐
@@ -27,4 +28,4 @@ expression: "FrameFixture::new(&m).render_size(120, 26)"
 │                                                          ││                                                          │
 │                                                          ││                                                          │
 └ [All 4] Declaration 1 Imports 2 Use 1 ───────────────────┘└──────────────────────────────────────────────────────────┘
- search e inspect file  j/k scroll  d/u page  ⏎ follow  / find  : line  n hit  → columns  z expand  p preview   f1 help
+ search e inspect file  j/k scroll  d/u page  ⏎ follow  p preview  esc results  < resize  ctrl+g filters        f1 help

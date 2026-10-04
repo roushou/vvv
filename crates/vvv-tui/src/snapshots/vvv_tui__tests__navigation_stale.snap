@@ -1,5 +1,6 @@
 ---
 source: crates/vvv-tui/src/tests.rs
+assertion_line: 3398
 expression: "FrameFixture::new(&m).render()"
 ---
 ┌ vvv ~/dev/nx ─────────────────────────────────────────────────────────── Query · stale ┐
@@ -21,4 +22,4 @@ expression: "FrameFixture::new(&m).render()"
 │                                           ││                                           │
 │                                           ││                                           │
 └ [All 1] Decl 1 Imp 0 Uses 0 ──────────────┘└───────────────────────────────────────────┘
- search ctrl+r refresh  j/k scroll  d/u page  i edit input  ⏎ follow  / find      f1 help
+ search ctrl+r refresh  j/k scroll  d/u page  i edit input  ⏎ follow  p preview   f1 help

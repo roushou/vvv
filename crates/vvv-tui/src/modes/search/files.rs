@@ -172,6 +172,11 @@ pub enum PointerIntent {
     Focus(SearchPanel),
     File(RelPath),
     Match(MatchId),
+    Outline {
+        path: RelPath,
+        content: vvv_engine::ContentId,
+        span: vvv_engine::Span,
+    },
     Filter,
     Scroll {
         panel: SearchPanel,
@@ -237,7 +242,7 @@ impl SearchFrame {
                             .get(row)
                             .cloned()
                             .unwrap_or(PointerIntent::Focus(*panel))
-                    } else if *panel == SearchPanel::Files
+                    } else if matches!(panel, SearchPanel::Files | SearchPanel::Results)
                         && event.row > list.area.y
                         && event.row < list.content.y
                     {

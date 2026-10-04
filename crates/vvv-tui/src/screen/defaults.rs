@@ -465,3 +465,97 @@ pub static RECOVERY: Layer<Action> = Layer {
         },
     ],
 };
+
+/// Source inspection shared by search and workspace previews.
+pub const PREVIEW: Layer<Action> = Layer {
+    name: "Preview inspection",
+    bindings: &[
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('/'))],
+            dispatch: Run(A::InspectFind),
+            when: When::PreviewInspectable,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "/",
+                    word: "find",
+                }),
+                help: "find literal text in this preview",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char(':'))],
+            dispatch: Run(A::InspectLine),
+            when: When::PreviewInspectable,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: ":",
+                    word: "line",
+                }),
+                help: "go to an absolute file line in this preview",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('n'))],
+            dispatch: Run(A::InspectNext(1)),
+            when: When::PreviewInspectable,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "n",
+                    word: "hit",
+                }),
+                help: "next / previous preview find hit; wraps",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('N'))],
+            dispatch: Run(A::InspectNext(-1)),
+            when: When::PreviewInspectable,
+            legend: Legend {
+                bar: None,
+                help: "previous preview find hit; wraps",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::right()), Trigger::Key(Key::char('l'))],
+            dispatch: Run(A::InspectHorizontal(8)),
+            when: When::PreviewInspectable,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "→",
+                    word: "columns",
+                }),
+                help: "scroll right by eight terminal columns",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::left()), Trigger::Key(Key::char('h'))],
+            dispatch: Run(A::InspectHorizontal(-8)),
+            when: When::PreviewInspectable,
+            legend: Legend {
+                bar: None,
+                help: "scroll left by eight terminal columns",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('0'))],
+            dispatch: Run(A::InspectStart),
+            when: When::PreviewInspectable,
+            legend: Legend {
+                bar: None,
+                help: "restore the first code column",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('z'))],
+            dispatch: Run(A::ExpandPreview),
+            when: When::PreviewInspectable,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "z",
+                    word: "",
+                }),
+                help: "expand / restore this preview",
+            },
+        },
+    ],
+};

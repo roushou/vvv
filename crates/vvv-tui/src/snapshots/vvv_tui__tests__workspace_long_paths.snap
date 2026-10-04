@@ -1,0 +1,23 @@
+---
+source: crates/vvv-tui/src/tests.rs
+assertion_line: 5920
+expression: "FrameFixture::new(m).render_size(90, 18)"
+---
+┌ Workspace ─────────────────────────────────────────────────────────────────── ~/dev/nx ┐
+│ files: fuzzy-filter paths                                                              │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+┌ Files ──────────────────── 20/20 files ↑↓ ┐┌ Source · src/a.rs ─────────────── 1–12/46 ┐
+│  crates/世 界 /very_long_directory/         ││    1 │ fn item_00() {                    …│
+│  another_directory/source_01.rs           ││    2 │ fn item_01() {                    …│
+│  crates/世 界 /very_long_directory/         ││    3 │ fn item_02() {                    …│
+│  another_directory/source_02.rs           ││    4 │ fn item_03() {                    …│
+│  crates/世 界 /very_long_directory/         ││    5 │ fn item_04() {                    …│
+│  another_directory/source_03.rs           ││    6 │ fn item_05() {                    …│
+│> crates/世 界 /very_long_directory/         ││    7 │ fn item_06() {                    …│
+│  another_directory/source_04.rs           ││    8 │ fn item_07() {                    …│
+└───────────────────────────────────────────┘│    9 │ fn item_08() {                    …│
+┌ Outline ──────────────────────── updating ┐│   10 │ fn item_09() {                    …│
+│ waiting for source…                       ││   11 │ fn item_10() {                    …│
+│                                           ││   12 │ fn item_11() {                    …│
+└───────────────────────────────────────────┘└ updating ─────────────────────────────────┘
+ workspace j/k move  ⏎ outline  / filter  p source  < resize  esc back            f1 help

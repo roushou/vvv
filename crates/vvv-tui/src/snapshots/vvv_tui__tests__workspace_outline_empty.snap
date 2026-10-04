@@ -1,0 +1,23 @@
+---
+source: crates/vvv-tui/src/tests.rs
+assertion_line: 5783
+expression: "FrameFixture::new(m).render_size(70, 18)"
+---
+┌ Workspace ─────────────────────────────────────────────── ~/dev/nx ┐
+│ files: fuzzy-filter paths                                          │
+└────────────────────────────────────────────────────────────────────┘
+ Files ────────────────────────────────────────────────── 2/2 files ↓
+┌ Outline ───────────────────────────────────────────── 0/45 symbols ┐
+│ /zzzz                                                              │
+│ no declarations match the filter                                   │
+│                                                                    │
+│                                                                    │
+│                                                                    │
+│                                                                    │
+│                                                                    │
+│                                                                    │
+│                                                                    │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+ Source · src/a.rs ───────────────────────────────────────── 46 lines
+ workspace j/k move  / filter  p source  esc back  e editor   f1 help

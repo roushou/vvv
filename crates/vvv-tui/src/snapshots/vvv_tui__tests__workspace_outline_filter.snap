@@ -1,0 +1,30 @@
+---
+source: crates/vvv-tui/src/tests.rs
+assertion_line: 5741
+expression: "FrameFixture::new(m).render_size(110, 25)"
+---
+┌ Workspace ─────────────────────────────────────────────────────────────────────────────────────── ~/dev/nx ┐
+│ files: fuzzy-filter paths                                                                                  │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌ Files ─────────────────────────────────── 2/2 files ┐┌ Source · src/a.rs ──────────────────────── 29–46/46 ┐
+│> src/a.rs                                           ││   29 │ fn item_28() {                              …│
+│  src/b.rs                                           ││   30 │ fn item_29() {                              …│
+└─────────────────────────────────────────────────────┘│   31 │ fn item_30() {                              …│
+┌ Outline ────────────────────────────── 1/45 symbols ┐│   32 │ fn target_语 言 () {                          …│
+│ /▏tgt 语 言                                           ││   33 │ fn item_32() {                              …│
+│> 32  function target_语 言                            ││   34 │ fn item_33() {                              …│
+│                                                     ││   35 │ fn item_34() {                              …│
+│                                                     ││   36 │ fn item_35() {                              …│
+│                                                     ││   37 │ fn item_36() {                              …│
+│                                                     ││   38 │ fn item_37() {                              …│
+│                                                     ││   39 │ fn item_38() {                              …│
+│                                                     ││   40 │ fn item_39() {                              …│
+│                                                     ││   41 │ fn item_40() {                              …│
+│                                                     ││   42 │ fn item_41() {                              …│
+│                                                     ││   43 │ fn item_42() {                              …│
+│                                                     ││   44 │ fn item_43() {                              …│
+│                                                     ││   45 │ fn item_44() {                              …│
+│                                                     ││   46 │                                              │
+│                                                     ││                                                     │
+└─────────────────────────────────────────────────────┘└─────────────────────────────────────────────────────┘
+ workspace ctrl+n/ctrl+p symbols  ⏎ keep filter  esc cancel  ctrl+b search  alt+← back  tab panes     f1 help

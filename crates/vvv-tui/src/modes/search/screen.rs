@@ -491,93 +491,6 @@ const CONTEXT: Layer<Action> = Layer {
             },
         },
         Keybinding {
-            triggers: &[Trigger::Key(Key::char('/'))],
-            dispatch: Run(A::InspectFind),
-            when: When::Always,
-            legend: Legend {
-                bar: Some(Bar {
-                    keys: "/",
-                    word: "find",
-                }),
-                help: "find literal text in this preview",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::char(':'))],
-            dispatch: Run(A::InspectLine),
-            when: When::Always,
-            legend: Legend {
-                bar: Some(Bar {
-                    keys: ":",
-                    word: "line",
-                }),
-                help: "go to an absolute file line in this preview",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::char('n'))],
-            dispatch: Run(A::InspectNext(1)),
-            when: When::Always,
-            legend: Legend {
-                bar: Some(Bar {
-                    keys: "n",
-                    word: "hit",
-                }),
-                help: "next / previous preview find hit; wraps",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::char('N'))],
-            dispatch: Run(A::InspectNext(-1)),
-            when: When::Always,
-            legend: Legend {
-                bar: None,
-                help: "previous preview find hit; wraps",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::right()), Trigger::Key(Key::char('l'))],
-            dispatch: Run(A::InspectHorizontal(8)),
-            when: When::Always,
-            legend: Legend {
-                bar: Some(Bar {
-                    keys: "→",
-                    word: "columns",
-                }),
-                help: "scroll right by eight terminal columns",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::left()), Trigger::Key(Key::char('h'))],
-            dispatch: Run(A::InspectHorizontal(-8)),
-            when: When::Always,
-            legend: Legend {
-                bar: None,
-                help: "scroll left by eight terminal columns",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::char('0'))],
-            dispatch: Run(A::InspectStart),
-            when: When::Always,
-            legend: Legend {
-                bar: None,
-                help: "restore the first code column",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::char('z'))],
-            dispatch: Run(A::ExpandPreview),
-            when: When::Always,
-            legend: Legend {
-                bar: Some(Bar {
-                    keys: "z",
-                    word: "",
-                }),
-                help: "expand / restore this preview",
-            },
-        },
-        Keybinding {
             triggers: &[Trigger::Key(Key::char('p'))],
             dispatch: Run(A::PreviewTab),
             when: When::Always,
@@ -813,7 +726,7 @@ const FILE_FILTER: Layer<Action> = Layer {
     ],
 };
 
-const INSPECTION_INPUT: Layer<Action> = Layer {
+pub(crate) const INSPECTION_INPUT: Layer<Action> = Layer {
     name: "Preview inspection",
     bindings: &[
         Keybinding {
@@ -1785,63 +1698,7 @@ impl<'a> SearchView<'a> {
         status: &str,
         width: usize,
     ) -> Line<'static> {
-        use super::inspection::InspectionKind;
-        let t = self.painter;
-        if let Some(edit) = &inspection.edit {
-            let prefix = if edit.kind == InspectionKind::Find {
-                "/"
-            } else {
-                "line: "
-            };
-            let suffix = if let Some(error) = &edit.error {
-                format!(" · {error}")
-            } else if edit.kind == InspectionKind::Find {
-                format!(
-                    " · {}/{}",
-                    inspection.cursor.map_or(0, |i| i + 1),
-                    inspection.hits.len()
-                )
-            } else {
-                String::new()
-            };
-            let budget =
-                width.saturating_sub(Span::raw(prefix).width() + Span::raw(&suffix).width() + 3);
-            let mut spans = vec![Span::raw(" "), Span::styled(prefix, t.key)];
-            spans.extend(edit.caret.line(&edit.text, t, true, budget + 1).spans);
-            spans.push(Span::styled(
-                suffix,
-                if edit.error.is_some() { t.error } else { t.dim },
-            ));
-            spans.push(Span::raw(" "));
-            return Line::from(spans);
-        }
-        let mut parts = Vec::new();
-        if !inspection.term.is_empty() {
-            parts.push(format!(
-                "/{} · {}/{}",
-                inspection.term,
-                inspection.cursor.map_or(0, |i| i + 1),
-                inspection.hits.len()
-            ));
-        }
-        if inspection.horizontal > 0 {
-            parts.push(format!("col {}", inspection.horizontal + 1));
-        }
-        if self.search.expanded.is_some() {
-            parts.push("expanded".into());
-        }
-        if !status.is_empty() {
-            parts.push(status.into());
-        }
-        let text = parts.join(" · ");
-        if text.is_empty() {
-            Line::default()
-        } else {
-            Line::from(Span::styled(
-                format!(" {} ", Fit(&text, width.saturating_sub(2))),
-                if status.is_empty() { t.key } else { t.warning },
-            ))
-        }
+        inspection.footer(self.painter, self.search.expanded.is_some(), status, width)
     }
 
     /// A report answer as rows: what `Document`/`View` compose, with the

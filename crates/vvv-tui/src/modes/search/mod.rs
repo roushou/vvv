@@ -186,15 +186,21 @@ impl Search {
     }
 
     pub fn input_focused(&self) -> bool {
-        if self.workspace.is_some() {
-            return self.focus == SearchPanel::Query;
+        if let Some(workspace) = &self.workspace {
+            return workspace.input_focused(self.focus);
         }
         self.focus == SearchPanel::Query
             || self.inspection_editing()
             || (self.focus == SearchPanel::Files && self.results.files.edit.is_some())
     }
     pub fn screen(&self) -> &'static crate::screen::Screen {
-        if self.workspace.is_some() {
+        if let Some(workspace) = &self.workspace {
+            if self.focus == SearchPanel::Results && workspace.outline_edit.is_some() {
+                return &crate::modes::workspace::screen::FILTER_OUTLINE;
+            }
+            if self.focus == SearchPanel::Context && workspace.inspection.edit.is_some() {
+                return &crate::modes::workspace::screen::INSPECT_SOURCE;
+            }
             return &crate::modes::workspace::screen::WORKSPACE;
         }
         if self.inspection_editing() {
@@ -677,6 +683,9 @@ impl Search {
         }
     }
     fn sync_preview_tab(&mut self) {
+        if let Some(workspace) = &mut self.workspace {
+            workspace.focus_changed(self.focus);
+        }
         self.inspection.edit = None;
         self.body.inspection.edit = None;
         if self.expanded.is_some() {
@@ -869,7 +878,10 @@ impl Search {
         }
     }
     pub fn back(&mut self, context: &mut ModeContext<'_>) -> Vec<Effect> {
-        if self.workspace.is_some() {
+        if let Some(workspace) = &mut self.workspace {
+            if workspace.cancel_edit(self.focus) {
+                return Vec::new();
+            }
             return self.travel(false, context);
         }
         if self.inspection_editing() {
@@ -931,6 +943,24 @@ impl Search {
         context: &mut ModeContext<'_>,
     ) -> Vec<Effect> {
         use files::PointerIntent;
+        if let Some(workspace) = &mut self.workspace {
+            if pointer.revision != workspace.revision {
+                return Vec::new();
+            }
+            if let PointerIntent::Scroll {
+                panel: SearchPanel::Context,
+                by,
+                ..
+            } = pointer.intent
+                && let Some(problem) = &mut self.problem
+            {
+                problem.navigate(Action::Scroll(by));
+                return Vec::new();
+            }
+            let effects = workspace.pointer(pointer, &mut self.focus);
+            self.clear_preview_problem();
+            return effects;
+        }
         if pointer.revision != self.results.revision {
             return Vec::new();
         }
@@ -965,6 +995,7 @@ impl Search {
                 }
                 return Vec::new();
             }
+            PointerIntent::Outline { .. } => return Vec::new(),
             PointerIntent::Filter => return self.update(Action::FilterFiles, context),
             PointerIntent::File(path) => {
                 self.results.files.preferred = None;
@@ -1011,7 +1042,7 @@ impl Search {
         context: &mut ModeContext<'_>,
     ) -> Vec<Effect> {
         if let Some(workspace) = &mut self.workspace {
-            let effects = workspace.edit(edit);
+            let effects = workspace.edit_input(edit, self.focus);
             self.clear_preview_problem();
             return effects;
         }
@@ -1099,7 +1130,8 @@ impl Search {
     pub fn update(&mut self, action: Action, context: &mut ModeContext<'_>) -> Vec<Effect> {
         if self.workspace.is_some() {
             match action {
-                Action::BrowseBack | Action::Back => return self.travel(false, context),
+                Action::Back => return self.back(context),
+                Action::BrowseBack => return self.travel(false, context),
                 Action::BrowseForward => return self.travel(true, context),
                 Action::FocusNext => self.focus_by(1),
                 Action::FocusPrev => self.focus_by(-1),

@@ -36,6 +36,17 @@ impl<'a> StatusBar<'a> {
             Dispatch::Run(Action::Recover) => 0,
             Dispatch::Run(Action::Edit) if self.model.holds(crate::keymap::When::RecoveryFile) => 0,
             Dispatch::Run(Action::Move(_) | Action::Scroll(_)) => 1,
+            Dispatch::Run(Action::Page(_)) if m.holds(crate::keymap::When::PreviewInspectable) => 2,
+            Dispatch::Run(Action::Follow) if m.holds(crate::keymap::When::PreviewInspectable) => 3,
+            Dispatch::Run(
+                Action::InspectFind
+                | Action::InspectLine
+                | Action::InspectNext(_)
+                | Action::InspectHorizontal(_)
+                | Action::InspectStart
+                | Action::ExpandPreview,
+            ) if m.holds(crate::keymap::When::PreviewInspectable) => 4,
+            _ if m.holds(crate::keymap::When::PreviewInspectable) => 5,
             _ => 2,
         });
         rows.into_iter()

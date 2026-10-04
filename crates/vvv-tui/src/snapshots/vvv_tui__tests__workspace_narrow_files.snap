@@ -1,0 +1,17 @@
+---
+source: crates/vvv-tui/src/tests.rs
+assertion_line: 5941
+expression: "FrameFixture::new(m).render_size(50, 12)"
+---
+┌ Workspace ─────────────────────────── ~/dev/nx ┐
+│ files: fuzzy-filter paths                      │
+└────────────────────────────────────────────────┘
+┌ Files ───────────────────────── 20/20 files ↑↓ ┐
+│  crates/世 界 /very_long_directory/              │
+│  another_directory/source_03.rs                │
+│> crates/世 界 /very_long_directory/              │
+│  another_directory/source_04.rs                │
+└────────────────────────────────────────────────┘
+ Outline ─────────────────────────────── updating
+ Source · src/a.rs ────────── 46 lines · updating
+ workspace j/k move  ⏎ outline            f1 help

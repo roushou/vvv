@@ -245,6 +245,72 @@ impl Inspection {
         self.cursor.and_then(|i| self.hits.get(i).copied())
     }
 
+    pub fn footer(
+        &self,
+        painter: crate::render::Painter,
+        expanded: bool,
+        status: &str,
+        width: usize,
+    ) -> ratatui::text::Line<'static> {
+        use ratatui::text::{Line, Span};
+        let t = painter;
+        if let Some(edit) = &self.edit {
+            let prefix = if edit.kind == InspectionKind::Find {
+                "/"
+            } else {
+                "line: "
+            };
+            let suffix = if let Some(error) = &edit.error {
+                format!(" · {error}")
+            } else if edit.kind == InspectionKind::Find {
+                format!(
+                    " · {}/{}",
+                    self.cursor.map_or(0, |i| i + 1),
+                    self.hits.len()
+                )
+            } else {
+                String::new()
+            };
+            let budget =
+                width.saturating_sub(Span::raw(prefix).width() + Span::raw(&suffix).width() + 3);
+            let mut spans = vec![Span::raw(" "), Span::styled(prefix, t.key)];
+            spans.extend(edit.caret.line(&edit.text, t, true, budget + 1).spans);
+            spans.push(Span::styled(
+                suffix,
+                if edit.error.is_some() { t.error } else { t.dim },
+            ));
+            spans.push(Span::raw(" "));
+            return Line::from(spans);
+        }
+        let mut parts = Vec::new();
+        if !self.term.is_empty() {
+            parts.push(format!(
+                "/{} · {}/{}",
+                self.term,
+                self.cursor.map_or(0, |i| i + 1),
+                self.hits.len()
+            ));
+        }
+        if self.horizontal > 0 {
+            parts.push(format!("col {}", self.horizontal + 1));
+        }
+        if expanded {
+            parts.push("expanded".into());
+        }
+        if !status.is_empty() {
+            parts.push(status.into());
+        }
+        let text = parts.join(" · ");
+        if text.is_empty() {
+            Line::default()
+        } else {
+            Line::from(Span::styled(
+                format!(" {} ", crate::render::Fit(&text, width.saturating_sub(2))),
+                if status.is_empty() { t.key } else { t.warning },
+            ))
+        }
+    }
+
     pub fn retained_bytes(&self) -> usize {
         self.term.len()
             + self.hits.capacity() * std::mem::size_of::<Span>()

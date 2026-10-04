@@ -1177,9 +1177,42 @@ movement opens a file, `/` returns to the filter, and Enter focuses Outline. Out
 movement reveals the declaration in Source; Enter follows it through global
 navigation. In Source, Enter opens the identifier picker for global navigation.
 `p` focuses Source from either list; `e` opens the selected file in the editor.
+Right or `l` moves from Files to Outline, and Left or `h` returns to Files.
+`i` returns to the workspace file filter from a non-input pane.
 Tab cycles filter, Files, Outline, and Source; the non-input digits are 1–4.
-Ctrl+U in the filter clears it; Ctrl+R refreshes the inventory and source.
-Escape or Ctrl+B returns to the preceding page. Workspace pages participate in
+Ctrl+U in the file filter or Files clears it; Ctrl+R refreshes the inventory and source.
+
+In Outline, `/` edits a fuzzy declaration-name filter. It updates locally, keeps
+source order, highlights matching characters, and shows visible/total symbol counts.
+Arrows or Ctrl+N/P select matching declarations while editing. Enter keeps the
+filter; Escape restores its previous text, selection, source position, and viewport.
+Tab or clicking another pane accepts the filter before changing focus. Ctrl+U clears
+it while editing or browsing Outline. A hidden selection returns when the filter
+allows it again, unless you deliberately select another declaration. Empty filtered
+outlines explain why no declaration is shown and offer no definition action.
+
+Workspace Source shares search inspection: `/` finds literal text, `:` goes to an
+absolute file line, `n`/`N` cycles find hits, Left/Right or `h`/`l` scrolls code
+horizontally, and `0` returns to the first column. Find and line inputs use the shared
+caret editor; Escape cancels editing and restores the preceding position. `z`
+expands/restores Source; Escape restores an expanded pane. Find text, horizontal
+position, and source scroll are remembered per file. These controls use retained
+source and issue no engine requests. The editor opens at the inspected line when
+one is active.
+
+Click a file or declaration to select it; wrapped continuation rows refer to the
+same item. Clicking a border or empty space changes focus. The mouse wheel scrolls
+the hovered list or Source without changing selection or keyboard focus; keyboard
+movement reveals the selection again. Page Up/Down move by a visible page of items,
+accounting for wrapped rows. Mouse input stays blocked by overlays. Full relative
+paths wrap continuously, selected rows remain highlighted across their wrapped
+lines, and arrows on borders indicate more content. On narrow terminals, the focused
+pane occupies the full width and sibling panes keep their headers; on short wide
+terminals, the focused list receives the available left-column space. `<`/`>` adjusts
+the split on wide terminals. Key hints remain exclusively in the bottom bar and F1.
+
+Escape outside editing or expansion, or Ctrl+B, returns to the preceding page.
+Workspace pages participate in
 Alt+Left/Right and Places, preserving the file filter, selection, and scroll.
 Returning to search restores its query, caret, restrictions, selected match,
 and previews; saved source is validated under the usual browsing-trail rules.
