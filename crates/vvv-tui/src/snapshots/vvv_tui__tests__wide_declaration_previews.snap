@@ -2,15 +2,15 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render_size(120, 30)"
 ---
-┌ vvv ~/dev/nx ───────────────────────────────────────────────────── 1 query · search · ctrl+g filters · ctrl+o places ┐
+┌ vvv ~/dev/nx ──────────────────────────────────────────────────────────────────────────────────────── Query · search ┐
 │> Language                                                                                                            │
 └ workspace · all results ─────────────────────────────────────────────────────────────────────────────────────────────┘
-┌ 2 Files ─────────────────────────────────── 1/3 · 4 hits ┐┌ source · src/lang/mod.rs:64 ─────────────────── 59–70/70 ┐
+┌ Files ───────────────────────────────────── 1/3 · 4 hits ┐┌ source · src/lang/mod.rs:64 ─────────────────── 59–70/70 ┐
 │> src/lang/mod.rs                                       1 ││   59 │ // line 59                                        │
 │  src/lang/registry.rs                                  1 ││   60 │ // line 60                                        │
 │  src/lib.rs                                            2 ││   61 │ // line 61                                        │
 │                                                          ││   62 │ // line 62                                        │
-├ 3 Matches · j/k ──────────────────────────────────── 1/1 ┤│   63 │ // line 63                                        │
+├ Matches ──────────────────────────────────────────── 1/1 ┤│   63 │ // line 63                                        │
 │> 64  pub trait Language: Send + Sync {                   ││   64 │ pub trait Language: Send + Sync {                 │
 │                                                          ││   65 │     fn name(&self) -> &str;                       │
 │                                                          ││   66 │     fn extensions(&self) -> &[&str];              │
@@ -31,4 +31,4 @@ expression: "FrameFixture::new(&m).render_size(120, 30)"
 │                                                          ││                                                          │
 │                                                          ││                                                          │
 └ [All 4] Declaration 1 Imports 2 Use 1 ───────────────────┘└ updating ────────────────────────────────────────────────┘
- search j/k move  ⏎ references  F files  f location  t category  o follow  / query  e editor  ? keys  v view    f1 help
+ search j/k move  ⏎ references  ctrl+g filters  ctrl+o places  F files  ctrl+r refresh  f location  o follow    f1 help

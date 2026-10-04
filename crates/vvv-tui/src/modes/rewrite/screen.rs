@@ -203,7 +203,7 @@ impl<'a> RewriteView<'a> {
         let pattern = rw.query.pattern_str().unwrap_or("(declarations)");
         let mut bottom = Line::from(Span::styled(format!(" pattern: {pattern} ·"), t.dim));
         bottom.spans.extend(t.review_state(rw.state()).spans);
-        Header::new(t, focused, Line::from(Span::styled(" 1 Rewrite ", t.title)))
+        Header::new(t, focused, Line::from(Span::styled(" Rewrite ", t.title)))
             .right(Line::from(Span::styled(
                 format!(
                     "{}/{} selected · {}",
@@ -227,7 +227,7 @@ impl<'a> RewriteView<'a> {
 
     fn matches(&self, area: Rect, buf: &mut Buffer) {
         let (rw, t) = (self.mode, self.painter);
-        let title = Line::from(Span::styled("2 Matches", t.title));
+        let title = Line::from(Span::styled("Matches", t.title));
         ReviewList {
             painter: t,
             items: rw
@@ -269,7 +269,7 @@ impl<'a> RewriteView<'a> {
         let current = rw.current();
         let mut pane = Pane::new(
             t,
-            Line::from(Span::styled("3 Diff", t.title)),
+            Line::from(Span::styled("Diff", t.title)),
             rw.focus == RewritePanel::Detail,
         );
         let mut captures = Vec::new();

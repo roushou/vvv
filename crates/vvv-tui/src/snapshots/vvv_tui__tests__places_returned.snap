@@ -2,15 +2,15 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ vvv ~/dev/nx ──────────────────────── 1 query · stale · ctrl+g filters · ctrl+o places ┐
+┌ vvv ~/dev/nx ─────────────────────────────────────────────────────────── Query · stale ┐
 │> Language▏                                                                             │
-└ 1/3 alt+→ forward · files: lang ───────────────────────────────────────────────────────┘
-┌ 2 Files ───────────── 1/2 of 3 · 2/4 hits ┐┌ source · src/lang/mod.rs:64 ──── 14–27/70 ┐
+└ 1/3 · files: lang ─────────────────────────────────────────────────────────────────────┘
+┌ Files ─────────────── 1/2 of 3 · 2/4 hits ┐┌ source · src/lang/mod.rs:64 ──── 14–27/70 ┐
 │ files: lang                               ││   14 │ // line 14                         │
 │> src/lang/mod.rs                        1 ││   15 │ // line 15                         │
 │  src/lang/registry.rs                   1 ││   16 │ // line 16                         │
 │                                           ││   17 │ // line 17                         │
-├ 3 Matches · j/k ───────────────────── 1/1 ┤│   18 │ // line 18                         │
+├ Matches ───────────────────────────── 1/1 ┤│   18 │ // line 18                         │
 │> 64  pub trait Language: Send + Sync {    ││   19 │ // line 19                         │
 │                                           ││   20 │ // line 20                         │
 │                                           ││   21 │ // line 21                         │
@@ -21,4 +21,4 @@ expression: "FrameFixture::new(&m).render()"
 │                                           ││   26 │ // line 26                         │
 │                                           ││   27 │ // line 27                         │
 └ [All 4] Decl 1 Imp 2 Use 1 ───────────────┘└───────────────────────────────────────────┘
- search  Checking saved source…  ↓ results  ctrl+n ctrl+p files                   f1 help
+ search  Checking saved source…  ⏎ results  ctrl+n ctrl+p files  ctrl+g filters   f1 help

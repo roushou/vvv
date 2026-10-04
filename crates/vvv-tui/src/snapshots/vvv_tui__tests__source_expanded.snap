@@ -2,7 +2,7 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render_size(120, 30)"
 ---
-┌ vvv ~/dev/nx ───────────────────────────────────────────────────── 1 query · search · ctrl+g filters · ctrl+o places ┐
+┌ vvv ~/dev/nx ──────────────────────────────────────────────────────────────────────────────────────── Query · search ┐
 │> Language                                                                                                            │
 └ workspace · all results ─────────────────────────────────────────────────────────────────────────────────────────────┘
 ┌ source · src/lang/mod.rs:64 ─────────────────────────────────────────────────────────────────────────────── 62–70/70 ┐
@@ -30,5 +30,5 @@ expression: "FrameFixture::new(&m).render_size(120, 30)"
 │                                                                                                                      │
 │                                                                                                                      │
 │                                                                                                                      │
-└ z restore ───────────────────────────────────────────────────────────────────────────────────────────────────────────┘
- search ⏎ follow  / find  : line  n hit  → columns  z restore  p preview  < resize  F files  j/k scroll         f1 help
+└ expanded ────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+ search j/k scroll  d/u page  ⏎ follow  / find  : line  n hit  → columns  z restore  p preview  < resize        f1 help

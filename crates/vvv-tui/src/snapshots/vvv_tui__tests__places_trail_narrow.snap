@@ -8,9 +8,9 @@ expression: "FrameFixture::new(&m).render_size(50, 12)"
 │i│mod.rs:64 · in: crates/vvv/src/very/long/    ││
 │m│path/with/multiple/components                ││
 └─│> ● Search: Language · src/lang/             │┘
- 2│mod.rs:64 · in: crates/vvv/src/very/long/    │┐
+ F│mod.rs:64 · in: crates/vvv/src/very/long/    │┐
 ├ │path/with/multiple/components                ││
 │>│                                             ││
 │ │                                             ││
-└ │                                             │┘
- s└ tab switch · ⏎ return · f1 keys ────────────┘
+└ └─────────────────────────────────────────────┘┘
+ search ↑/↓ move  ⏎ open  esc cancel      f1 help

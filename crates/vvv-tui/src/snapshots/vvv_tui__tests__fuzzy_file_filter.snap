@@ -2,15 +2,15 @@
 source: crates/vvv-tui/src/tests.rs
 expression: frame
 ---
-┌ vvv ~/dev/nx ───────────────────────────────────────────────────── 1 query · search · ctrl+g filters · ctrl+o places ┐
+┌ vvv ~/dev/nx ──────────────────────────────────────────────────────────────────────────────────────── Query · search ┐
 │> Language                                                                                                            │
 └ files: lib ──────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-┌ 2 Files · filter ─────────────────── 1/1 of 3 · 2/4 hits ┐┌ source · src/lang/mod.rs:64 ─────────────────── 59–68/70 ┐
+┌ Files · filter ───────────────────── 1/1 of 3 · 2/4 hits ┐┌ source · src/lang/mod.rs:64 ─────────────────── 59–68/70 ┐
 │ files: lib▏                                              ││   59 │ // line 59                                        │
 │> src/lib.rs                                            2 ││   60 │ // line 60                                        │
 │                                                          ││   61 │ // line 61                                        │
 │                                                          ││   62 │ // line 62                                        │
-├ 3 Matches · j/k ──────────────────────────────────── 1/2 ┤│   63 │ // line 63                                        │
+├ Matches ──────────────────────────────────────────── 1/2 ┤│   63 │ // line 63                                        │
 │> 26  pub use lang::{Language, LanguageId};               ││   64 │ pub trait Language: Send + Sync {                 │
 │  41  Language::new()                                     ││   65 │     fn name(&self) -> &str;                       │
 │                                                          ││   66 │     fn extensions(&self) -> &[&str];              │
@@ -25,4 +25,4 @@ expression: frame
 │                                                          ││                                                          │
 │                                                          ││                                                          │
 └ [All 4] Declaration 1 Imports 2 Use 1 ───────────────────┘└ updating ────────────────────────────────────────────────┘
- search ↑/↓ files  ⏎ keep filter  esc cancel  ctrl+u clear                                                      f1 help
+ search ↑/↓ files  ⏎ keep filter  esc cancel  ctrl+u clear  ctrl+g filters  ctrl+o places  ctrl+r refresh       f1 help

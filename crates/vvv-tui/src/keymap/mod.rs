@@ -100,6 +100,7 @@ pub enum When {
     FileList,
     BrowseBack,
     BrowseForward,
+    PlacesRecent,
 }
 
 /// A named set of bindings.

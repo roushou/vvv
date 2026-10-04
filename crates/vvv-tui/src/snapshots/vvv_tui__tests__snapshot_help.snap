@@ -10,8 +10,8 @@ expression: "FrameFixture::new(&m).render()"
 │ctrl+n ctrl+p  switch files without leaving the query                                   │
 │       typing  a name, an ast-grep pattern, or filters: symbol:trait name:Foo           │
 │               kind:impl_item lang:rust                                                 │
-│       ctrl+o  open browsing trail and recent searches                                  │
 │       ctrl+g  edit or clear filters; reset restrictions while keeping the query        │
+│       ctrl+o  open browsing trail and recent searches                                  │
 │       ctrl+f  choose result location                                                   │
 │       ctrl+s  choose declaration kind                                                  │
 │       ctrl+t  choose result category                                                   │
@@ -20,5 +20,5 @@ expression: "FrameFixture::new(&m).render()"
 │ Everywhere                                                                             │
 │    tab s-tab  next / previous panel                                                    │
 │           f1  help for the focused pane; press again to return                         │
-│       ctrl+c  quit                                                                     │
-└ ↑/↓ scroll · f1 / esc return ──────────────────────────────────────────────────────────┘
+└────────────────────────────────────────────────────────────────────────────────────────┘
+ search j/k scroll  any key close                                               f1 return

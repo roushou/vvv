@@ -254,10 +254,10 @@ impl Widget for App<'_> {
                 .screen()
                 .render(body, buf),
         }
-        StatusBar::new(m, t).render(bottom, buf);
         if let Some(overlay) = &m.overlay {
-            overlay.render(t, area, buf);
+            overlay.render(t, body, buf);
         }
+        StatusBar::new(m, t).render(bottom, buf);
     }
 }
 

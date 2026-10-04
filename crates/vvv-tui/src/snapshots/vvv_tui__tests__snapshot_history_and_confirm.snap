@@ -4,7 +4,7 @@ expression: "format!(\"{history}\\n\\n=== confirm ===\\n{confirm}\")"
 ---
 ┌ History ──────────────────────────────────────────────────────────────────── 2 entries ┐
 └ oldest first · newest #2 · undo available ─────────────────────────────────────────────┘
-┌ 1 Entries ─────────────────────────── 2/2 ┐┌ 2 Files ──────────────────── #2 · 0 files ┐
+┌ Entries ───────────────────────────── 2/2 ┐┌ Files ────────────────────── #2 · 0 files ┐
 │  #1   rename Config → Settings · 0 files  ││ rename Config → Settings                  │
 │> #2   rename Config → Settings · 0 files  ││ No files in this entry                    │
 │                                           ││                                           │
@@ -21,21 +21,21 @@ expression: "format!(\"{history}\\n\\n=== confirm ===\\n{confirm}\")"
 │                                           ││                                           │
 │                                           ││                                           │
 └ just now · newest · can undo ─────────────┘└───────────────────────────────────────────┘
- history ⏎/u undo #2  esc back  j/k move  e editor  ? keys  v view                f1 help
+ history j/k move  ⏎/u undo #2  esc back  e editor  v view  tab panes             f1 help
 
 === confirm ===
 ┌ History ──────────────────────────────────────────────────────────────────── 2 entries ┐
 └ oldest first · newest #2 · undo available ─────────────────────────────────────────────┘
-┌ 1 Entries ─────────────────────────── 2/2 ┐┌ 2 Files ──────────────────── #2 · 0 files ┐
+┌ Entries ───────────────────────────── 2/2 ┐┌ Files ────────────────────── #2 · 0 files ┐
 │  #1   rename Config → Settings · 0 files  ││ rename Config → Settings                  │
 │> #2   rename Config → Settings · 0 files  ││ No files in this entry                    │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
-│                                           ││                                           │
 │                        ┌───────────────────────────────────────┐                       │
-│                        │↩ #2  rename Config → Settings?  y/n   │                       │
+│                        │↩ #2  rename Config → Settings?        │                       │
 │                        └───────────────────────────────────────┘                       │
+│                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │

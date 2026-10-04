@@ -2,14 +2,14 @@
 source: crates/vvv-tui/src/tests.rs
 expression: wide
 ---
-┌ vvv ~/dev/nx ───────────────────────────────────────────────────── 1 query · search · ctrl+g filters · ctrl+o places ┐
+┌ vvv ~/dev/nx ──────────────────────────────────────────────────────────────────────────────────────── Query · search ┐
 │> Engine                                                                                                              │
 └ workspace · all results ─────────────────────────────────────────────────────────────────────────────────────────────┘
-┌ 2 Files ────────────────────────────────── 1/1 · 35 hits ┐┌ source ──────────────────────────────────────────────────┐
+┌ Files ──────────────────────────────────── 1/1 · 35 hits ┐┌ source ──────────────────────────────────────────────────┐
 │> crates/vvv-engine/src/very/long/module/directory/       ││ crates/vvv-engine/src/very/long/module/directory/        │
 │  engine.rs                                            35 ││ engine.rs:35                                             │
 │                                                          ││                                                          │
-├ 3 Matches · j/k ──────────────────────────────── 35/35 ↑ ┤│                                                          │
+├ Matches ──────────────────────────────────────── 35/35 ↑ ┤│                                                          │
 │  22  Engine                                              ││                                                          │
 │  23  Engine                                              ││                                                          │
 │  24  Engine                                              ││                                                          │
@@ -25,4 +25,4 @@ expression: wide
 │  34  Engine                                              ││                                                          │
 │> 35  Engine                                              ││                                                          │
 └ [All 35] Declarations 0 Imports 0 Uses 35 ───────────────┘└ updating ────────────────────────────────────────────────┘
- search j/k move  ⏎ references  F files  f location  t category  o follow  / query  e editor  ? keys  v view    f1 help
+ search j/k move  ⏎ references  ctrl+g filters  ctrl+o places  F files  ctrl+r refresh  f location  o follow    f1 help

@@ -77,7 +77,7 @@ impl Overlay {
         } = self
         {
             let limit = HelpBox::new(title, sections, *scroll, Painter::plain())
-                .scroll_limit(viewport.0, viewport.1);
+                .scroll_limit(viewport.0, viewport.1.saturating_sub(1));
             *scroll = (*scroll)
                 .min(limit)
                 .saturating_add_signed(by as isize)

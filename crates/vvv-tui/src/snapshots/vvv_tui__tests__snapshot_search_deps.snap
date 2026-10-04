@@ -2,9 +2,9 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ vvv ~/dev/nx ─────────────────────── 1 query · search · ctrl+g filters · ctrl+o places ┐
+┌ vvv ~/dev/nx ────────────────────────────────────────────────────────── Query · search ┐
 │> Language                                                                              │
-└ 2/2 alt+← back · workspace · deps (imports) ───────────────────────────────────────────┘
+└ 2/2 · workspace · deps (imports) ──────────────────────────────────────────────────────┘
 ┌ ●  trait Language ─────────────────── 0/0 ┐┌ source · src/lang/mod.rs:1 ────── 1–14/70 ┐
 │src/lang/mod.rs                            ││    1 │ // line 1                          │
 │                                           ││    2 │ // line 2                          │
@@ -20,5 +20,5 @@ expression: "FrameFixture::new(&m).render()"
 │                                           ││   12 │ // line 12                         │
 │                                           ││   13 │ // line 13                         │
 │                                           ││   14 │ // line 14                         │
-└ deps (imports) · R relation ──────────────┘└───────────────────────────────────────────┘
- search j/k move  ⏎ references  f location  t category  o follow  R relation      f1 help
+└ deps (imports) ───────────────────────────┘└───────────────────────────────────────────┘
+ search j/k move  ⏎ references  ctrl+g filters  ctrl+o places  alt+← back         f1 help

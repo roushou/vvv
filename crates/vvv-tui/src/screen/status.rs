@@ -6,7 +6,9 @@ use ratatui::layout::Rect;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Paragraph, Widget};
 
-use crate::model::{Level, Model};
+use crate::action::Action;
+use crate::keymap::Dispatch;
+use crate::model::{Level, Model, Overlay};
 use crate::render::Painter;
 
 pub struct StatusBar<'a> {
@@ -20,13 +22,23 @@ impl<'a> StatusBar<'a> {
     }
 
     /// (keys, what) for where the focus is: the active layers' entries
-    /// that ask to be shown, most specific first.
+    /// that ask to be shown, with navigation first.
     fn hints(&self) -> Vec<(String, String)> {
         let m = self.model;
-        m.screen()
+        let mut rows: Vec<_> = m
+            .screen()
             .sections(m.focus(), |when| m.holds(when))
             .into_iter()
             .flat_map(|(_, rows)| rows)
+            .collect();
+        // Keep basic navigation visible before the focused pane's other actions.
+        rows.sort_by_key(|row| {
+            !matches!(
+                row.binding.dispatch,
+                Dispatch::Run(Action::Move(_) | Action::Scroll(_))
+            )
+        });
+        rows.into_iter()
             .filter_map(|row| row.legend.bar.map(|bar| (row, bar)))
             .map(|(row, bar)| {
                 // An empty word means the meaning depends on the state.
@@ -71,25 +83,30 @@ impl Widget for StatusBar<'_> {
         if self.model.status.busy || self.model.arriving {
             spans.push(Span::styled("… ", t.dim));
         }
-        let budget = area.width.saturating_sub(9) as usize;
+        let help_word = if matches!(&self.model.overlay, Some(Overlay::Help { .. })) {
+            " return "
+        } else {
+            " help "
+        };
+        let help_width = (3 + help_word.len() as u16).min(area.width);
+        let budget = area.width.saturating_sub(help_width) as usize;
         let mut used = Line::from(spans.clone()).width();
         for (key, what) in self.hints() {
             let width = Line::from(format!("{key} {what}  ")).width();
             if used + width > budget {
-                break;
+                continue;
             }
             spans.push(Span::styled(key, t.key));
             spans.push(Span::styled(format!(" {what}  "), t.dim));
             used += width;
         }
-        let help_width = 9.min(area.width);
         Paragraph::new(Line::from(spans)).render(
             Rect::new(area.x, area.y, area.width - help_width, area.height),
             buf,
         );
         Paragraph::new(Line::from(vec![
             Span::styled(" f1", t.key),
-            Span::styled(" help ", t.dim),
+            Span::styled(help_word, t.dim),
         ]))
         .render(
             Rect::new(area.right() - help_width, area.y, help_width, area.height),

@@ -2,14 +2,14 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ 1 Rename trait ──────────────────────────────────────────────── 3/4 selected · 3 files ┐
+┌ Rename trait ────────────────────────────────────────────────── 3/4 selected · 3 files ┐
 │ Language → Lang                                                                        │
 └ src/lang/mod.rs:64 · ready to apply ───────────────────────────────────────────────────┘
-┌ 2 ? Unverified ───────────── 1/1 · 1 file ┐┌ 5 Diff · src/other.rs:13 ─────────────────┐
+┌ ? Unverified ─────────────── 1/1 · 1 file ┐┌ Diff · src/other.rs:13 ───────────────────┐
 │  src/other.rs                             ││ ↗ re-export · reached through a re-export │
 │  ▫ 1. 10 Language::new()                  ││ vvv followed to the declaration           │
 └ 0/1 selected ─────────────────────────────┘│@@ -10,6 +10,6 @@                          │
-┌ 3 ✓ Safe ────────────────── 3/3 · 3 files ┐│ // line 10                                │
+┌ ✓ Safe ──────────────────── 3/3 · 3 files ┐│ // line 10                                │
 │  src/lang/mod.rs                          ││ // line 11                                │
 │  ▪ 1. 64 pub trait Language: Send + Sync {││ // line 12                                │
 │  src/lib.rs                               ││-    vvv::Language::default()              │
@@ -20,5 +20,5 @@ expression: "FrameFixture::new(&m).render()"
 │                                           ││                                           │
 │                                           ││                                           │
 └ 3/3 selected ─────────────────────────────┘│                                           │
- 4 ✗ Other ─────────────────── 0/0 · 0 files └ selected ─────────────────────────────────┘
- rename space toggle  a all here  ⏎ apply 3 in 3 files  esc back  j/k move        f1 help
+ ✗ Other ───────────────────── 0/0 · 0 files └ selected ─────────────────────────────────┘
+ rename j/k move  space toggle  a all here  ⏎ apply 3 in 3 files  esc back        f1 help

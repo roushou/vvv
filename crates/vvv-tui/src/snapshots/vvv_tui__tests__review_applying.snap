@@ -2,14 +2,14 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ 1 Rename trait ──────────────────────────────────────────────── 2/4 selected · 2 files ┐
+┌ Rename trait ────────────────────────────────────────────────── 2/4 selected · 2 files ┐
 │ Language → Lang                                                                        │
 └ src/lang/mod.rs:64 · applying ─────────────────────────────────────────────────────────┘
-┌ 2 ? Unverified ───────────── 1/1 · 1 file ┐┌ 5 Diff · src/lib.rs:26 ───────────────────┐
+┌ ? Unverified ─────────────── 1/1 · 1 file ┐┌ Diff · src/lib.rs:26 ─────────────────────┐
 │  src/other.rs                             ││ → imported · an import resolving to the   │
 │  ▫ 10 Language::new()                     ││ declaration brings the name in            │
 └ 0/1 selected ─────────────────────────────┘│@@ -23,6 +23,6 @@                          │
-┌ 3 ✓ Safe ────────────────── 2/3 · 3 files ┐│ // line 23                                │
+┌ ✓ Safe ──────────────────── 2/3 · 3 files ┐│ // line 23                                │
 │  src/lang/mod.rs                          ││ // line 24                                │
 │  ▫ 64 pub trait Language: Send + Sync {   ││ // line 25                                │
 │  src/lib.rs                               ││-pub use lang::{Language, LanguageId};     │
@@ -20,5 +20,5 @@ expression: "FrameFixture::new(&m).render()"
 │                                           ││                                           │
 │                                           ││                                           │
 └ 2/3 selected ─────────────────────────────┘│                                           │
- 4 ✗ Other ─────────────────── 0/0 · 0 files └ applying ─────────────────────────────────┘
- rename … space toggle  a all here  ⏎ applying  esc back  j/k move  e editor      f1 help
+ ✗ Other ───────────────────── 0/0 · 0 files └ applying ─────────────────────────────────┘
+ rename … j/k move  space toggle  a all here  ⏎ applying  esc back  e editor      f1 help

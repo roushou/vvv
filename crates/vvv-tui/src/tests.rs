@@ -1106,6 +1106,103 @@ fn shared_move_and_rename_reports_have_no_cli_flag_advice() {
 }
 
 #[test]
+fn passive_search_key_hints_only_appear_in_the_bottom_bar_and_follow_focus() {
+    let mut m = searched();
+    for (focus, hint) in [
+        (SearchPanel::Query, "⏎ results"),
+        (SearchPanel::Files, "⏎ matches"),
+        (SearchPanel::Results, "⏎ references"),
+        (SearchPanel::Context, "j/k scroll"),
+        (SearchPanel::Body, "j/k scroll"),
+    ] {
+        m.search.focus = focus;
+        for width in [50, 90, 120] {
+            let frame = FrameFixture::new(&m).render_size(width, 20);
+            let (body, footer) = frame.rsplit_once('\n').unwrap();
+            assert!(footer.contains(hint), "{focus:?}, {width}: {footer}");
+            assert!(footer.contains("f1 help"));
+            for key in [
+                "ctrl+",
+                "Ctrl+",
+                "j/k",
+                "alt+←",
+                "alt+→",
+                "R relation",
+                "t category",
+                "z restore",
+            ] {
+                assert!(!body.contains(key), "hint {key:?} outside footer: {body}");
+            }
+            if focus == SearchPanel::Query && width >= 90 {
+                assert!(footer.contains("ctrl+g filters") && footer.contains("ctrl+o places"));
+                assert!(
+                    !footer.contains("j/k"),
+                    "typing must not advertise list keys"
+                );
+            }
+        }
+    }
+    m.search.focus = SearchPanel::Query;
+    // The long file-cycling hint cannot fit here; a shorter filter hint still can.
+    let frame = FrameFixture::new(&m).render_size(45, 20);
+    assert!(frame.lines().last().unwrap().contains("ctrl+g filters"));
+}
+
+#[test]
+fn dialogs_leave_the_bottom_bar_visible_and_show_their_own_controls() {
+    let mut m = searched();
+    m.update(Action::OpenMenu(MenuTarget::Filters));
+    let frame = FrameFixture::new(&m).render();
+    let (body, footer) = frame.rsplit_once('\n').unwrap();
+    assert!(body.contains("search filters"));
+    assert!(!body.contains("Ctrl+") && !body.contains("ctrl+"));
+    assert!(footer.contains("⏎ edit") && footer.contains("ctrl+x clear"));
+    m.update(Action::Back);
+    m.update(Action::OpenMenu(MenuTarget::Language));
+    let frame = FrameFixture::new(&m).render();
+    assert!(frame.lines().last().unwrap().contains("⏎ choose"));
+    m.update(Action::Back);
+    m.update(Action::Places);
+    for width in [50, 90, 120] {
+        let frame = FrameFixture::new(&m).render_size(width, 12);
+        let (body, footer) = frame.rsplit_once('\n').unwrap();
+        assert!(body.contains("Places"));
+        assert!(!body.contains("ctrl+") && !body.contains("tab switch"));
+        assert!(
+            footer.contains("⏎ open")
+                && footer.contains("esc cancel")
+                && footer.contains("f1 help")
+        );
+        assert!(!footer.contains("forget"));
+    }
+    m.update(Action::PlacesTab);
+    let frame = FrameFixture::new(&m).render_size(120, 12);
+    assert!(frame.lines().last().unwrap().contains("ctrl+d forget"));
+    m.on_event(Event::Viewport {
+        width: 50,
+        height: 12,
+    });
+    m.update(Action::Help);
+    m.on_key(key(KeyCode::End));
+    let frame = FrameFixture::new(&m).render_size(50, 12);
+    let (body, footer) = frame.rsplit_once('\n').unwrap();
+    assert!(
+        body.contains("ctrl+c"),
+        "the final help row must remain reachable"
+    );
+    assert!(!body.contains("f1 / esc return"));
+    assert!(footer.contains("f1 return"));
+    m.update(Action::Help);
+    m.update(Action::Back);
+    m.on_event(Event::History(vec![history_entry(1), history_entry(2)]));
+    m.update(Action::Undo);
+    let frame = FrameFixture::new(&m).render();
+    let (body, footer) = frame.rsplit_once('\n').unwrap();
+    assert!(!body.contains("y/n"));
+    assert!(footer.contains("y yes") && footer.contains("n no"));
+}
+
+#[test]
 fn snapshot_search() {
     let mut m = searched();
     m.update(Action::Enter);
@@ -2655,6 +2752,10 @@ fn identifier_picker_filters_repeated_names_and_follows_exact_anchors() {
     };
     assert_eq!(picker.visible().len(), 2);
     assert!(picker.visible()[0].label.contains("first:"));
+    let frame = FrameFixture::new(&m).render_size(50, 12);
+    let (body, footer) = frame.rsplit_once('\n').unwrap();
+    assert!(!body.contains("enter follow") && !body.contains("esc cancel"));
+    assert!(footer.contains("⏎ follow") && footer.contains("esc cancel"));
     insta::assert_snapshot!("navigation_identifiers", FrameFixture::new(&m).render());
     m.update(Action::Move(1));
     let expected = match &m.overlay {

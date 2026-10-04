@@ -8,9 +8,9 @@ expression: "FrameFixture::new(&m).render_size(50, 12)"
 │i│path/with/multiple/components · all          ││
 │m│                                             ││
 └─│                                             │┘
- 2│                                             │┐
+ F│                                             │┐
 ├ │                                             ││
 │>│                                             ││
 │ │                                             ││
-└ │                                             │┘
- s└ tab switch · ctrl+d forget · f1 keys ───────┘
+└ └─────────────────────────────────────────────┘┘
+ search ↑/↓ move  ⏎ open  esc cancel      f1 help

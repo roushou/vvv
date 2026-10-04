@@ -2,15 +2,15 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ vvv ~/dev/nx ─────────────────────── 1 query · search · ctrl+g filters · ctrl+o places ┐
+┌ vvv ~/dev/nx ────────────────────────────────────────────────────────── Query · search ┐
 │> Language▏                                                                             │
 └ workspace · all results ───────────────────────────────────────────────────────────────┘
-┌ 2 Files ──────────────────── 2/3 · 4 hits ┐┌ definition · src/lang/mod.rs:64 ─── 64–67 ┐
+┌ Files ────────────────────── 2/3 · 4 hits ┐┌ definition · src/lang/mod.rs:64 ─── 64–67 ┐
 │  src/lang/mod.rs                        1 ││ pub trait Language: Send + Sync {         │
 │> src/lang/registry.rs                   1 ││     fn name(&self) -> &str;               │
 │  src/lib.rs                             2 ││     fn extensions(&self) -> &[&str];      │
 │                                           ││ }                                         │
-├ 3 Matches · j/k ───────────────────── 1/1 ┤│                                           │
+├ Matches ───────────────────────────── 1/1 ┤│                                           │
 │> 4  use super::{Language, LanguageId};    ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
@@ -21,4 +21,4 @@ expression: "FrameFixture::new(&m).render()"
 │                                           ││                                           │
 │                                           ││                                           │
 └ [All 4] Decl 1 Imp 2 Use 1 ───────────────┘└ updating ─────────────────────────────────┘
- search ↓ results  ctrl+n ctrl+p files                                            f1 help
+ search ⏎ results  ctrl+n ctrl+p files  ctrl+g filters  ctrl+o places             f1 help

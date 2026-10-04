@@ -2,17 +2,17 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ vvv ~/dev/nx ─────────────────────── 1 query · search · ctrl+g filters · ctrl+o places ┐
+┌ vvv ~/dev/nx ────────────────────────────────────────────────────────── Query · search ┐
 │> Language                                                                              │
 └ files: zzzzzz ─────────────────────────────────────────────────────────────────────────┘
-┌ 2 Files · filter ──── 0/0 of 3 · 0/4 hits ┐┌ source ───────────────────────────────────┐
+┌ Files · filter ────── 0/0 of 3 · 0/4 hits ┐┌ source ───────────────────────────────────┐
 │ files: zzzzzz▏                            ││                                           │
-│ no matching files · Ctrl+U clear          ││                                           │
+│ no matching files                         ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
-├ 3 Matches · j/k ───────────────────── 0/0 ┤│                                           │
+├ Matches ───────────────────────────── 0/0 ┤│                                           │
 │ No files pass the file filter.            ││                                           │
-│ Ctrl+G clear files · F edit               ││                                           │
+│                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
@@ -21,4 +21,4 @@ expression: "FrameFixture::new(&m).render()"
 │                                           ││                                           │
 │                                           ││                                           │
 └ [All 4] Decl 1 Imp 2 Use 1 ───────────────┘└───────────────────────────────────────────┘
- search ↑/↓ files  ⏎ keep filter  esc cancel  ctrl+u clear                        f1 help
+ search ↑/↓ files  ⏎ keep filter  esc cancel  ctrl+u clear  ctrl+g filters        f1 help

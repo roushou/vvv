@@ -2,10 +2,10 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ 1 Rewrite ───────────────────────────────────────────────────── 4/4 selected · 3 files ┐
+┌ Rewrite ─────────────────────────────────────────────────────── 4/4 selected · 3 files ┐
 │ template: Lang                                                                         │
 └ pattern: Language · ready to apply ────────────────────────────────────────────────────┘
-┌ 2 Matches ─────────────────────────── 2/4 ┐┌ 3 Diff · src/lang/registry.rs:4 ──────────┐
+┌ Matches ───────────────────────────── 2/4 ┐┌ Diff · src/lang/registry.rs:4 ────────────┐
 │  src/lang/mod.rs                          ││@@ -1,6 +1,6 @@                            │
 │  ▪ 64 pub trait Language: Send + Sync {   ││ // line 1                                 │
 │  src/lang/registry.rs                     ││ // line 2                                 │
@@ -21,4 +21,4 @@ expression: "FrameFixture::new(&m).render()"
 │                                           ││                                           │
 │                                           ││                                           │
 └ 4/4 selected ─────────────────────────────┘└ selected ─────────────────────────────────┘
- rewrite space toggle  a all  ⏎ apply 4 in 3 files  esc back  j/k move            f1 help
+ rewrite j/k move  space toggle  a all  ⏎ apply 4 in 3 files  esc back  v view    f1 help

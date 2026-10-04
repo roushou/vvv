@@ -2,13 +2,13 @@
 source: crates/vvv-tui/src/tests.rs
 expression: loaded
 ---
-┌ vvv ~/dev/nx ─────────────────────── 1 query · search · ctrl+g filters · ctrl+o places ┐
+┌ vvv ~/dev/nx ────────────────────────────────────────────────────────── Query · search ┐
 │> Language▏                                                                             │
 └ workspace · all results ───────────────────────────────────────────────────────────────┘
-┌ 2 Files ───────────────────── 1/1 · 1 hit ┐┌ definition · error.rs:4 ───────────── 1–6 ┐
+┌ Files ─────────────────────── 1/1 · 1 hit ┐┌ definition · error.rs:4 ───────────── 1–6 ┐
 │> error.rs                               1 ││ enum Error {                              │
 │                                           ││     Io,                                   │
-├ 3 Matches · j/k ───────────────────── 1/1 ┤│     #[error(transparent)]                 │
+├ Matches ───────────────────────────── 1/1 ┤│     #[error(transparent)]                 │
 │> 4      Engine(#[from] vvv_engine::Engine…││     Engine(#[from] vvv_engine::EngineErro…│
 │                                           ││     Editor,                               │
 │                                           ││ }                                         │
@@ -21,4 +21,4 @@ expression: loaded
 │                                           ││                                           │
 │                                           ││                                           │
 └ [All 1] Decl 1 Imp 0 Uses 0 ──────────────┘└───────────────────────────────────────────┘
- search ↓ results  ctrl+n ctrl+p files                                            f1 help
+ search ⏎ results  ctrl+n ctrl+p files  ctrl+g filters  ctrl+o places             f1 help

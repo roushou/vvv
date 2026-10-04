@@ -270,7 +270,7 @@ impl<'a> RenameView<'a> {
             focused,
             Line::from(Span::styled(
                 format!(
-                    " 1 Rename{} ",
+                    " Rename{} ",
                     r.target
                         .symbol
                         .map_or(String::new(), |kind| format!(" {kind}"))
@@ -303,13 +303,12 @@ impl<'a> RenameView<'a> {
         let (r, t) = (self.mode, self.painter);
         let confidence = panel.confidence().expect("a verdict panel");
         let rows = r.rows(confidence);
-        let (number, label) = match panel {
-            RenamePanel::Unsure => (2, "Unverified"),
-            RenamePanel::Sure => (3, "Safe"),
-            _ => (4, "Other"),
+        let label = match panel {
+            RenamePanel::Unsure => "Unverified",
+            RenamePanel::Sure => "Safe",
+            _ => "Other",
         };
         let title = Line::from(vec![
-            Span::styled(format!("{number} "), t.key),
             t.glyph(Mark::from(confidence)),
             Span::styled(label, t.title),
         ]);
@@ -355,7 +354,7 @@ impl<'a> RenameView<'a> {
         let mut pane = Pane::new(
             t,
             Line::from(Span::styled(
-                if diff.is_some() { "5 Diff" } else { "5 Source" },
+                if diff.is_some() { "Diff" } else { "Source" },
                 t.title,
             )),
             r.focus == RenamePanel::Detail,

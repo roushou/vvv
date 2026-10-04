@@ -2,15 +2,15 @@
 source: crates/vvv-tui/src/tests.rs
 expression: ready
 ---
-┌ vvv ~/dev/nx ───────────────────────────────────────────────────── 1 query · search · ctrl+g filters · ctrl+o places ┐
+┌ vvv ~/dev/nx ──────────────────────────────────────────────────────────────────────────────────────── Query · search ┐
 │> Engine                                                                                                              │
 └ workspace · all results ─────────────────────────────────────────────────────────────────────────────────────────────┘
-┌ 2 Files ─────────────────────────────────── 3/3 · 3 hits ┐┌ source · c.rs:36 ────────────────────────────── 31–43/60 ┐
+┌ Files ───────────────────────────────────── 3/3 · 3 hits ┐┌ source · c.rs:36 ────────────────────────────── 31–43/60 ┐
 │  a.rs                                                  1 ││   31 │ // line 31                                        │
 │  b.rs                                                  1 ││   32 │ // line 32                                        │
 │> c.rs                                                  1 ││   33 │ // line 33                                        │
 │                                                          ││   34 │ // line 34                                        │
-├ 3 Matches · j/k ──────────────────────────────────── 1/1 ┤│   35 │ // line 35                                        │
+├ Matches ──────────────────────────────────────────── 1/1 ┤│   35 │ // line 35                                        │
 │> 36  Engine::from_c()                                    ││   36 │ Engine::from_c()                                  │
 │                                                          ││   37 │ // line 37                                        │
 │                                                          ││   38 │ // line 38                                        │
@@ -31,4 +31,4 @@ expression: ready
 │                                                          ││                                                          │
 │                                                          ││                                                          │
 └ [All 3] Declarations 0 Imports 0 Uses 3 ─────────────────┘└ updating ────────────────────────────────────────────────┘
- search ⏎ follow  / find  : line  n hit  → columns  z expand  p preview  esc results  < resize  F files         f1 help
+ search j/k scroll  d/u page  ⏎ follow  / find  : line  n hit  → columns  z expand  p preview  esc results      f1 help

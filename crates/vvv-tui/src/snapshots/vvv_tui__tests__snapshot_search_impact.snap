@@ -2,9 +2,9 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ vvv ~/dev/nx ─────────────────────── 1 query · search · ctrl+g filters · ctrl+o places ┐
+┌ vvv ~/dev/nx ────────────────────────────────────────────────────────── Query · search ┐
 │> Language                                                                              │
-└ 2/2 alt+← back · workspace · impact (importers) ───────────────────────────────────────┘
+└ 2/2 · workspace · impact (importers) ──────────────────────────────────────────────────┘
 ┌ ●  trait Language ─────────────────── 1/3 ┐┌ source · src/lang/registry.rs:1 ─── 1–5/5 ┐
 │← imported by 2   depth 1                  ││    1 │ use super::{Language, LanguageId}; │
 │  lang/registry.rs                         ││    2 │ // line 2                          │
@@ -20,5 +20,5 @@ expression: "FrameFixture::new(&m).render()"
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
-└ impact (importers) · R relation ──────────┘└───────────────────────────────────────────┘
- search j/k move  ⏎ references  f location  t category  o follow  R relation      f1 help
+└ impact (importers) ───────────────────────┘└───────────────────────────────────────────┘
+ search j/k move  ⏎ references  ctrl+g filters  ctrl+o places  alt+← back         f1 help

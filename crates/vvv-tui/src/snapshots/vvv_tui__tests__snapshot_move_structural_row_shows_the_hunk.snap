@@ -2,14 +2,14 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ 1 Move file ───────────────────────────────────────────────── 4 files · 2 manual fixes ┐
+┌ Move file ─────────────────────────────────────────────────── 4 files · 2 manual fixes ┐
 │ destination: src/net/parse.rs                                                          │
 └ ./src/util/parse.rs · ready to apply ──────────────────────────────────────────────────┘
-┌ 2 → Paths rewritten ───────────────── 1/2 ┐┌ 5 Diff · src/util/mod.rs:1 ───────────────┐
+┌ → Paths rewritten ─────────────────── 1/2 ┐┌ Diff · src/util/mod.rs:1 ─────────────────┐
 │  src/lib.rs                               ││@@ -1,2 +1 @@                              │
 │  → 1 crate::util::parse::X → crate::net::…││-mod parse;                                │
 └───────────────────────────────────────────┘│ mod s;                                    │
-┌ 3 ± Structure ─────────────────────── 1/2 ┐│                                           │
+┌ ± Structure ───────────────────────── 1/2 ┐│                                           │
 │  src/util/mod.rs                          ││                                           │
 │> ±   - mod parse;                         ││                                           │
 │  src/util/parse.rs                        ││                                           │
@@ -17,8 +17,8 @@ expression: "FrameFixture::new(&m).render()"
 │                                           ││                                           │
 │                                           ││                                           │
 └───────────────────────────────────────────┘│                                           │
-┌ 4 ! Manual fixes ──────────────────── 1/2 ┐│                                           │
+┌ ! Manual fixes ────────────────────── 1/2 ┐│                                           │
 │  src/net.rs                               ││                                           │
 │  ! 3 crate::util::parse::Config → crate::…││                                           │
 └───────────────────────────────────────────┘└ included in apply ────────────────────────┘
- move d diff  ⏎ apply 4 files  esc back  j/k move  e editor  ? keys  v view       f1 help
+ move j/k move  d diff  ⏎ apply 4 files  esc back  e editor  v view  tab panes    f1 help

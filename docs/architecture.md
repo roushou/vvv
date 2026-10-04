@@ -743,6 +743,9 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
   `screen/defaults.rs` holds the shared key layers. Each mode binds its view once;
   the application chooses the shown mode before panel rendering. Panels never
   receive `Model` or inspect `Mode`.
+  The shared bottom bar is the sole passive key legend, derived from effective
+  bindings for the focused pane or overlay. Borders hold content metadata.
+  Overlays render within the body, leaving the bottom bar visible.
 - `overlays/mod.rs` — menu, confirmation, help, and report state with selection,
   transition, and view-binding methods. `screen.rs` owns metadata and typed box
   views, each with its rendering methods. `Overlay` owns report-source selection

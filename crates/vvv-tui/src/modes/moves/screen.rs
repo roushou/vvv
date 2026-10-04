@@ -250,9 +250,9 @@ impl<'a> MoveView<'a> {
             focused,
             Line::from(Span::styled(
                 if mv.symbol.is_some() {
-                    " 1 Move declaration "
+                    " Move declaration "
                 } else {
-                    " 1 Move file "
+                    " Move file "
                 },
                 t.title,
             )),
@@ -285,10 +285,10 @@ impl<'a> MoveView<'a> {
 
     fn list_panel(&self, panel: MovePanel, area: Rect, buf: &mut Buffer) {
         let (mv, t) = (self.mode, self.painter);
-        let (number, mark, label) = match panel {
-            MovePanel::Respellings => (2, Mark::Import, "Paths rewritten"),
-            MovePanel::Structural => (3, Mark::Structure, "Structure"),
-            MovePanel::Notices => (4, Mark::ByHand, "Manual fixes"),
+        let (mark, label) = match panel {
+            MovePanel::Respellings => (Mark::Import, "Paths rewritten"),
+            MovePanel::Structural => (Mark::Structure, "Structure"),
+            MovePanel::Notices => (Mark::ByHand, "Manual fixes"),
             _ => return,
         };
         let mut items = Vec::new();
@@ -346,11 +346,7 @@ impl<'a> MoveView<'a> {
         }
         .pane(
             area,
-            Line::from(vec![
-                Span::styled(format!("{number} "), t.key),
-                t.glyph(mark),
-                Span::styled(label, t.title),
-            ]),
+            Line::from(vec![t.glyph(mark), Span::styled(label, t.title)]),
             mv.focus == panel,
             cursor,
         )
@@ -366,10 +362,10 @@ impl<'a> MoveView<'a> {
         let (mv, t) = (self.mode, self.painter);
         let current = mv.current();
         let label = match &current {
-            Some(MoveRow::Notice(_)) => "5 Manual fix",
-            Some(MoveRow::Structural(_)) => "5 Diff",
-            _ if mv.diff => "5 Diff",
-            _ => "5 Source",
+            Some(MoveRow::Notice(_)) => "Manual fix",
+            Some(MoveRow::Structural(_)) => "Diff",
+            _ if mv.diff => "Diff",
+            _ => "Source",
         };
         let mut pane = Pane::new(
             t,

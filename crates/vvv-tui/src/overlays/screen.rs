@@ -23,31 +23,13 @@ const MENU: Layer<Action> = Layer {
     name: "Menus and questions",
     bindings: &[
         Keybinding {
-            triggers: &[Trigger::Key(Key::ctrl('u'))],
-            dispatch: Run(A::Clear),
-            when: When::Always,
-            legend: Legend {
-                bar: None,
-                help: "clear picker text",
-            },
-        },
-        Keybinding {
-            triggers: &[Trigger::Key(Key::ctrl('x'))],
-            dispatch: Run(A::MenuClear),
-            when: When::Always,
-            legend: Legend {
-                bar: None,
-                help: "clear this restriction and close the picker",
-            },
-        },
-        Keybinding {
             triggers: &[Trigger::Key(Key::enter())],
             dispatch: Run(A::MenuChoose),
             when: When::Always,
             legend: Legend {
                 bar: Some(Bar {
                     keys: "⏎",
-                    word: "choose",
+                    word: "",
                 }),
                 help: "choose",
             },
@@ -65,11 +47,38 @@ const MENU: Layer<Action> = Layer {
             },
         },
         Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('x'))],
+            dispatch: Run(A::MenuClear),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "ctrl+x",
+                    word: "clear",
+                }),
+                help: "clear this restriction and close the picker",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('u'))],
+            dispatch: Run(A::Clear),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "ctrl+u",
+                    word: "text",
+                }),
+                help: "clear picker text",
+            },
+        },
+        Keybinding {
             triggers: &[Trigger::Key(Key::down()), Trigger::Key(Key::ctrl('n'))],
             dispatch: Run(A::Move(1)),
             when: When::Always,
             legend: Legend {
-                bar: None,
+                bar: Some(Bar {
+                    keys: "↑/↓",
+                    word: "move",
+                }),
                 help: "move",
             },
         },
@@ -78,7 +87,10 @@ const MENU: Layer<Action> = Layer {
             dispatch: Run(A::Move(-1)),
             when: When::Always,
             legend: Legend {
-                bar: None,
+                bar: Some(Bar {
+                    keys: "↑/↓",
+                    word: "move",
+                }),
                 help: "move",
             },
         },
@@ -405,7 +417,7 @@ impl MenuBox<'_> {
         }
         if choices.is_empty() {
             choices.push(Line::from(Span::styled(
-                " No choices match · Ctrl+U clear text",
+                " No choices match",
                 self.painter.dim,
             )));
         }
@@ -413,11 +425,6 @@ impl MenuBox<'_> {
             (choices.len().saturating_add(4).min(u16::MAX as usize) as u16).min(area.height);
         let boxed = area.centered(Constraint::Length(width), Constraint::Length(height));
         Clear.render(boxed, buf);
-        let footer = if self.menu.target == super::MenuTarget::Filters {
-            " Enter edit · Ctrl+X clear · Esc cancel "
-        } else {
-            " Enter choose · Ctrl+X clear · Ctrl+U text · Esc cancel "
-        };
         let block = Block::bordered()
             .border_style(self.painter.focused)
             .title(Span::styled(
@@ -438,8 +445,7 @@ impl MenuBox<'_> {
                     self.painter.dim,
                 ))
                 .right_aligned(),
-            )
-            .title_bottom(Span::styled(footer, self.painter.dim));
+            );
         let inner = block.inner(boxed);
         block.render(boxed, buf);
         let mut rows = vec![
@@ -482,13 +488,7 @@ impl ConfirmBox<'_> {
         let block = Block::bordered().border_style(self.painter.warning);
         let inner = block.inner(boxed);
         block.render(boxed, buf);
-        Paragraph::new(Line::from(vec![
-            Span::raw(format!("{}  ", self.confirm.question)),
-            Span::styled("y", self.painter.key),
-            Span::styled("/", self.painter.dim),
-            Span::styled("n", self.painter.key),
-        ]))
-        .render(inner, buf);
+        Paragraph::new(self.confirm.question.as_str()).render(inner, buf);
     }
 }
 
@@ -591,10 +591,6 @@ impl HelpBox<'_> {
             .title(Span::styled(
                 format!(" Help · {} ", self.title),
                 self.painter.title,
-            ))
-            .title_bottom(Span::styled(
-                " ↑/↓ scroll · f1 / esc return ",
-                self.painter.dim,
             ));
         let inner = block.inner(boxed);
         block.render(boxed, buf);
@@ -687,7 +683,10 @@ const NAVIGATION: Layer<Action> = Layer {
             dispatch: Run(A::MenuChoose),
             when: When::Always,
             legend: Legend {
-                bar: None,
+                bar: Some(Bar {
+                    keys: "⏎",
+                    word: "follow",
+                }),
                 help: "follow",
             },
         },
@@ -696,7 +695,10 @@ const NAVIGATION: Layer<Action> = Layer {
             dispatch: Run(A::Back),
             when: When::Always,
             legend: Legend {
-                bar: None,
+                bar: Some(Bar {
+                    keys: "esc",
+                    word: "cancel",
+                }),
                 help: "cancel",
             },
         },
@@ -705,8 +707,11 @@ const NAVIGATION: Layer<Action> = Layer {
             dispatch: Run(A::Move(1)),
             when: When::Always,
             legend: Legend {
-                bar: None,
-                help: "next choice",
+                bar: Some(Bar {
+                    keys: "↑/↓",
+                    word: "move",
+                }),
+                help: "select a choice",
             },
         },
         Keybinding {
@@ -714,8 +719,11 @@ const NAVIGATION: Layer<Action> = Layer {
             dispatch: Run(A::Move(-1)),
             when: When::Always,
             legend: Legend {
-                bar: None,
-                help: "previous choice",
+                bar: Some(Bar {
+                    keys: "↑/↓",
+                    word: "move",
+                }),
+                help: "select a choice",
             },
         },
         Keybinding {
@@ -805,10 +813,7 @@ impl<'a> NavigationBox<'a> {
         Clear.render(boxed, buf);
         let block = Block::bordered()
             .border_style(self.painter.focused)
-            .title(format!(
-                " {} · ↑/↓ choose · enter follow · esc cancel ",
-                self.picker.title
-            ));
+            .title(format!(" {} ", self.picker.title));
         let inner = block.inner(boxed);
         block.render(boxed, buf);
         let visible = self.picker.visible();
@@ -851,18 +856,6 @@ const PLACES: Layer<Action> = Layer {
     name: "Places",
     bindings: &[
         Keybinding {
-            triggers: &[Trigger::Key(Key::tab()), Trigger::Key(Key::back_tab())],
-            dispatch: Run(A::PlacesTab),
-            when: When::Always,
-            legend: Legend {
-                bar: Some(Bar {
-                    keys: "tab",
-                    word: "trail/recent",
-                }),
-                help: "switch browsing trail / recent searches",
-            },
-        },
-        Keybinding {
             triggers: &[Trigger::Key(Key::enter())],
             dispatch: Run(A::Enter),
             when: When::Always,
@@ -887,12 +880,27 @@ const PLACES: Layer<Action> = Layer {
             },
         },
         Keybinding {
+            triggers: &[Trigger::Key(Key::tab()), Trigger::Key(Key::back_tab())],
+            dispatch: Run(A::PlacesTab),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "tab",
+                    word: "trail/recent",
+                }),
+                help: "switch browsing trail / recent searches",
+            },
+        },
+        Keybinding {
             triggers: &[Trigger::Key(Key::down()), Trigger::Key(Key::ctrl('n'))],
             dispatch: Run(A::Move(1)),
             when: When::Always,
             legend: Legend {
-                bar: None,
-                help: "next place",
+                bar: Some(Bar {
+                    keys: "↑/↓",
+                    word: "move",
+                }),
+                help: "select a place",
             },
         },
         Keybinding {
@@ -900,8 +908,11 @@ const PLACES: Layer<Action> = Layer {
             dispatch: Run(A::Move(-1)),
             when: When::Always,
             legend: Legend {
-                bar: None,
-                help: "previous place",
+                bar: Some(Bar {
+                    keys: "↑/↓",
+                    word: "move",
+                }),
+                help: "select a place",
             },
         },
         Keybinding {
@@ -945,16 +956,22 @@ const PLACES: Layer<Action> = Layer {
             dispatch: Run(A::Clear),
             when: When::Always,
             legend: Legend {
-                bar: None,
+                bar: Some(Bar {
+                    keys: "ctrl+u",
+                    word: "text",
+                }),
                 help: "clear place filter",
             },
         },
         Keybinding {
             triggers: &[Trigger::Key(Key::ctrl('d'))],
             dispatch: Run(A::ForgetSearch),
-            when: When::Always,
+            when: When::PlacesRecent,
             legend: Legend {
-                bar: None,
+                bar: Some(Bar {
+                    keys: "ctrl+d",
+                    word: "forget",
+                }),
                 help: "forget selected recent search",
             },
         },
@@ -963,7 +980,10 @@ const PLACES: Layer<Action> = Layer {
             dispatch: Run(A::ResetLayout),
             when: When::Always,
             legend: Legend {
-                bar: None,
+                bar: Some(Bar {
+                    keys: "ctrl+l",
+                    word: "layout",
+                }),
                 help: "reset split, report view and preview choice",
             },
         },
@@ -1063,16 +1083,8 @@ impl<'a> PlacesBox<'a> {
                 self.painter.dim
             },
         ));
-        let footer = if p.recent && width >= 65 {
-            " tab switch · ctrl+d forget · ctrl+l layout · f1 keys "
-        } else if p.recent {
-            " tab switch · ctrl+d forget · f1 keys "
-        } else {
-            " tab switch · ⏎ return · f1 keys "
-        };
         crate::render::Pane::new(self.painter, Line::from(title), true)
             .right(Line::from(format!("{} shown", visible.len())))
-            .footer(Line::from(Span::styled(footer, self.painter.dim)))
             .prefix(vec![Line::from(vec![
                 Span::styled("Find: ", self.painter.key),
                 Span::raw(p.filter.clone()),
@@ -1081,9 +1093,9 @@ impl<'a> PlacesBox<'a> {
             .rows(rows)
             .cursor(cursor)
             .empty(if p.recent {
-                "No recent searches match. Search first, or ctrl+u to clear."
+                "No recent searches match."
             } else {
-                "No places match. ctrl+u clears the filter."
+                "No places match."
             })
             .render(boxed, buf);
     }

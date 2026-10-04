@@ -26,21 +26,27 @@ const MODE: Layer<Action> = Layer {
     name: "Search",
     bindings: &[
         Keybinding {
-            triggers: &[Trigger::Key(Key::ctrl('o'))],
-            dispatch: Run(A::Places),
-            when: When::Always,
-            legend: Legend {
-                bar: None,
-                help: "open browsing trail and recent searches",
-            },
-        },
-        Keybinding {
             triggers: &[Trigger::Key(Key::ctrl('g'))],
             dispatch: Run(A::OpenMenu(MenuTarget::Filters)),
             when: When::Always,
             legend: Legend {
-                bar: None,
+                bar: Some(Bar {
+                    keys: "ctrl+g",
+                    word: "filters",
+                }),
                 help: "edit or clear filters; reset restrictions while keeping the query",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('o'))],
+            dispatch: Run(A::Places),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "ctrl+o",
+                    word: "places",
+                }),
+                help: "open browsing trail and recent searches",
             },
         },
         Keybinding {
@@ -96,7 +102,10 @@ const MODE: Layer<Action> = Layer {
             dispatch: Run(A::BrowseBack),
             when: When::BrowseBack,
             legend: Legend {
-                bar: None,
+                bar: Some(Bar {
+                    keys: "alt+←",
+                    word: "back",
+                }),
                 help: "previous browsing location",
             },
         },
@@ -105,7 +114,10 @@ const MODE: Layer<Action> = Layer {
             dispatch: Run(A::BrowseForward),
             when: When::BrowseForward,
             legend: Legend {
-                bar: None,
+                bar: Some(Bar {
+                    keys: "alt+→",
+                    word: "forward",
+                }),
                 help: "next browsing location",
             },
         },
@@ -114,7 +126,10 @@ const MODE: Layer<Action> = Layer {
             dispatch: Run(A::Refresh),
             when: When::Always,
             legend: Legend {
-                bar: None,
+                bar: Some(Bar {
+                    keys: "ctrl+r",
+                    word: "refresh",
+                }),
                 help: "refresh search after source changes",
             },
         },
@@ -317,7 +332,7 @@ const QUERY: Layer<Action> = Layer {
             when: When::Always,
             legend: Legend {
                 bar: Some(Bar {
-                    keys: "↓",
+                    keys: "⏎",
                     word: "results",
                 }),
                 help: "results",
@@ -1256,13 +1271,7 @@ impl<'a> SearchView<'a> {
         } else {
             Span::raw("")
         };
-        let right = if width >= 70 {
-            format!("1 query · {right} · ctrl+g filters · ctrl+o places")
-        } else if width >= 45 {
-            format!("1 query · {right} · ctrl+o places")
-        } else {
-            "1 query · ctrl+o places".into()
-        };
+        let right = format!("Query · {right}");
         let available =
             width.saturating_sub(Line::from(right.as_str()).width() as u16 + 12) as usize;
         let root = if Line::from(self.root).width() <= available {
@@ -1293,12 +1302,6 @@ impl<'a> SearchView<'a> {
                 format!("{position}/{total}"),
                 self.painter.key,
             ));
-            if self.search.trail.can_travel(false) {
-                spans.push(Span::styled(" alt+← back", self.painter.dim));
-            }
-            if self.search.trail.can_travel(true) {
-                spans.push(Span::styled(" alt+→ forward", self.painter.dim));
-            }
         }
         let context_spans = spans.len();
         for r in Restriction::ALL {
@@ -1341,10 +1344,10 @@ impl<'a> SearchView<'a> {
             return "searching…".into();
         }
         if s.results.eligible_count() > 0 && !s.results.files.filter.trim().is_empty() {
-            return "No files pass the file filter.\nCtrl+G clear files · F edit".into();
+            return "No files pass the file filter.".into();
         }
         if s.results.is_anchored() {
-            return "No occurrences in this view.\nCtrl+F location · R relation".into();
+            return "No occurrences in this view.".into();
         }
         if s.results.category != Category::All
             && s.results
@@ -1353,21 +1356,21 @@ impl<'a> SearchView<'a> {
                 .any(|m| s.locations.includes(&m.path))
         {
             return format!(
-                "No {} in loaded results.\nCtrl+T category · Ctrl+G reset filters",
+                "No {} in loaded results.",
                 s.results.category.label().to_lowercase()
             );
         }
         if s.query.is_empty() {
-            return "Type a name or pattern to search.\nCtrl+G filters".into();
+            return "Type a name or pattern to search.".into();
         }
         let restrictions: Vec<_> = Restriction::ALL
             .iter()
             .filter(|r| r.value(s).is_some())
             .collect();
         if restrictions.is_empty() {
-            "No matches for this query.\n1 edit query · Ctrl+G filters".into()
+            "No matches for this query.".into()
         } else {
-            "No matches with active filters.\nCtrl+G change / reset filters".into()
+            "No matches with active filters.".into()
         }
     }
 
@@ -1453,7 +1456,7 @@ impl<'a> SearchView<'a> {
         let (s, t) = (self.search, self.painter);
         if s.results.is_anchored() {
             let mut line = Line::from(Span::styled(
-                format!(" {} · R relation ", s.results.relation.label()),
+                format!(" {} ", s.results.relation.label()),
                 t.dim,
             ));
             if s.results.relation.is_references()
@@ -1475,12 +1478,6 @@ impl<'a> SearchView<'a> {
                     )
                 });
                 let summary = t.line(&vvv_engine::protocol::display::Line::counts(&counts));
-                if summary.width() + line.width() + 1 > width {
-                    line = Line::from(Span::styled(
-                        format!(" {} · R ", s.results.relation.label()),
-                        t.dim,
-                    ));
-                }
                 line.spans.extend(summary.spans);
                 line.spans.push(Span::raw(" "));
             }
@@ -1519,7 +1516,7 @@ impl<'a> SearchView<'a> {
         } else {
             Line::from(Span::styled(
                 format!(
-                    " {} {} · t category ",
+                    " {} {} ",
                     s.results.category.count_label(s.results.len()),
                     s.results.len()
                 ),
@@ -1637,11 +1634,7 @@ impl<'a> SearchView<'a> {
         Pane::new(
             t,
             Line::from(Span::styled(
-                if editing {
-                    "2 Files · filter"
-                } else {
-                    "2 Files"
-                },
+                if editing { "Files · filter" } else { "Files" },
                 t.title,
             )),
             s.focus == SearchPanel::Files,
@@ -1654,10 +1647,8 @@ impl<'a> SearchView<'a> {
         .list_offset(0)
         .empty(if eligible == 0 {
             "no result files"
-        } else if editing {
-            "no matching files · Ctrl+U clear"
         } else {
-            "no matching files · F edit"
+            "no matching files"
         })
         .render(area, buf);
     }
@@ -1726,9 +1717,9 @@ impl<'a> SearchView<'a> {
             })
             .collect();
         let title = if let Some(subject) = &s.results.subject {
-            format!("3 Matches · {}", subject.name)
+            format!("Matches · {}", subject.name)
         } else {
-            "3 Matches · j/k".into()
+            "Matches".into()
         };
         if rows.is_empty() {
             rows = self.empty_rows(width, geometry.content.height as usize);
@@ -1755,7 +1746,7 @@ impl<'a> SearchView<'a> {
         .empty(if eligible == 0 && self.busy {
             "searching…"
         } else if visible == 0 && !s.results.files.filter.is_empty() {
-            "no matching files · F edit / clear"
+            "no matching files"
         } else {
             "no matches"
         })
@@ -1789,7 +1780,7 @@ impl<'a> SearchView<'a> {
                     inspection.hits.len()
                 )
             } else {
-                " · Enter go".into()
+                String::new()
             };
             let budget =
                 width.saturating_sub(Span::raw(prefix).width() + Span::raw(&suffix).width() + 3);
@@ -1828,7 +1819,7 @@ impl<'a> SearchView<'a> {
             parts.push(format!("col {}", inspection.horizontal + 1));
         }
         if self.search.expanded.is_some() {
-            parts.push("z restore".into());
+            parts.push("expanded".into());
         }
         if !status.is_empty() {
             parts.push(status.into());
@@ -1917,7 +1908,7 @@ impl<'a> SearchView<'a> {
             s.preview_dirty || site.as_ref().is_some_and(|(path, _)| *path != anchor.path)
         }) {
             if s.stale && s.preview_dirty && !self.busy {
-                "stale · ctrl+r refresh"
+                "stale"
             } else {
                 "updating"
             }

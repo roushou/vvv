@@ -1145,7 +1145,10 @@ it; Page Up/Down and Home/End also work; another key closes it). **F1** opens
 contextual help from every pane, including inputs and overlays, and returns to
 the same place when pressed again. Help wraps descriptions and lists only keys
 that are active at that focus, excluding shadowed shortcuts. The footer keeps
-F1 visible and shows complete hints that fit.
+F1 visible and shows complete hints that fit. It is the only place for passive
+key hints: pane and picker borders show titles, paths, counts, restrictions and
+status. The hints change with the focused pane or open dialog, and dialogs leave
+the bottom bar visible. Open F1 for the full key reference.
 The status bar and that list are two views of one table, so they never disagree. The picker keeps what it has read between keystrokes and re-reads only files that changed;
 it looks at the tree again at most once a second while you type, and always right
 after the editor returns or it writes something itself.
@@ -1354,8 +1357,8 @@ The trail marks the current page and supports jumping directly to any retained
 page. Its entries show the page, source location, and active restrictions, wrapping
 complete paths without blank gaps. Editing a completed query or changing filters
 retains the page being left; typing while a search is pending does not create a
-page per keystroke. The search border shows the current trail position and which
-Back/Forward directions are available. Returning restores saved selection, focus,
+page per keystroke. The search border shows the current trail position; the bottom bar and help show
+the available Back/Forward controls. Returning restores saved selection, focus,
 filters, preview choice and scroll, then validates the destination’s source.
 
 Recent searches retain query text (including language, symbol and node filters),
@@ -1396,12 +1399,12 @@ all references, one verdict, `impact` (the modules importing it, depth by depth)
 `definition` (its address, reach and importers) or `deps` (the declaring file's
 imports and who imports it). Each answer is written by the engine, not guessed.
 
-**Reviewing operations.** Rename, move and rewrite share numbered pane titles,
+**Reviewing operations.** Rename, move and rewrite share descriptive pane titles,
 full file paths and compact source rows. Complete paths appear once above each
 consecutive file group, wrapping when necessary; source line numbers size their
 gutter to the list. The active list receives the remaining height, with compact
 sibling previews or collapsed borders in a short terminal. Tab cycles panels;
-empty verdict lists are skipped. Digits jump to the pane number from a non-input
+empty verdict lists are skipped. Digits select panes in layout order from a non-input
 panel. The detail pane keeps following the last list used, including when editing
 an input. Home/End in a detail pane scroll its content without changing selection.
 
@@ -1412,28 +1415,28 @@ rewrite request a new preview for the exact selected IDs; older replies cannot
 restore a discarded preview. Inputs and checkboxes stay fixed during apply.
 
 **Rename** starts with an empty new-name field. Its verdict panes are
-`2 ? Unverified`, `3 ✓ Safe` and `4 ✗ Other`. Each site has a checkbox (`▪`
+`? Unverified`, `✓ Safe` and `✗ Other`. Each site has a checkbox (`▪`
 selected, `▫` excluded); Space flips one and moves to the next site, and `a`
 flips every site in that verdict. Defaults come from the engine's judged plan.
-`5 Diff` shows the selected file's planned hunks and the occurrence's full
+`Diff` shows the selected file's planned hunks and the occurrence's full
 resolution reason. A site excluded from the plan shows Source instead, with its
 exclusion on the bottom border. Enter writes the selected sites.
 
-**Move** edits the destination in `1 Move file` or `1 Move declaration`, with the
-complete origin path on the bottom border. Its lists are `2 Paths rewritten`,
-`3 Structure` and `4 Manual fixes`. The header counts affected files and manual
-fixes. `5 Source` shows a respelling's old/new paths and source; `d` switches to
+**Move** edits the destination in `Move file` or `Move declaration`, with the
+complete origin path on the bottom border. Its lists are `Paths rewritten`,
+`Structure` and `Manual fixes`. The header counts affected files and manual
+fixes. `Source` shows a respelling's old/new paths and source; `d` switches to
 its diff. Structural changes show Diff, and manual fixes show the full explanation
 and action required. Manual fixes are excluded from automatic writes. Enter applies
 the complete move plan.
 
 **Rewrite** keeps the search as its pattern and edits a replacement template.
-`2 Matches` has the same selection controls as rename; `3 Diff` shows the selected
+`Matches` has the same selection controls as rename; `Diff` shows the selected
 preview's hunks and any capture values. An excluded site is marked on its border.
 Enter writes the selected matches.
 
-**History** lists applied operations oldest first. `1 Entries` marks the selected
-operation; its bottom border shows its age and whether it can be undone. `2 Files`
+**History** lists applied operations oldest first. `Entries` marks the selected
+operation; its bottom border shows its age and whether it can be undone. `Files`
 shows the full operation and complete file paths, including move destinations
 without repeating the moved file. Enter or `u` requests confirmation to undo the
 newest entry. Older entries remain browsable and explicitly say they cannot be undone.

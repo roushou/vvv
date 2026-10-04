@@ -89,6 +89,7 @@ impl Model {
     pub fn holds(&self, when: When) -> bool {
         match when {
             When::Always => true,
+            When::PlacesRecent => matches!(&self.overlay, Some(Overlay::Places(p)) if p.recent),
             When::BrowseBack => self.search.trail.can_travel(false),
             When::BrowseForward => self.search.trail.can_travel(true),
             When::QueryEmpty => self.search.query.is_empty(),
@@ -146,6 +147,11 @@ impl Model {
             return String::new();
         };
         match (action, self.shown()) {
+            (Action::MenuChoose, _) => if matches!(&self.overlay, Some(Overlay::Menu(menu)) if menu.target == MenuTarget::Filters) {
+                "edit"
+            } else {
+                "choose"
+            }.to_owned(),
             (Action::Enter, Mode::Rename(r)) => {
                 if r.state() == crate::modes::review::ReviewState::Ready {
                     format!("apply {} in {}", r.ticks.len(), files(r.files()))

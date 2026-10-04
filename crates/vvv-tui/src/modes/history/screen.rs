@@ -173,7 +173,7 @@ impl<'a> HistoryView<'a> {
             .unwrap_or_default();
         Pane::new(
             t,
-            Line::from(Span::styled("1 Entries", t.title)),
+            Line::from(Span::styled("Entries", t.title)),
             h.focus == HistoryPanel::Entries,
         )
         .right(Line::from(Span::styled(
@@ -203,7 +203,7 @@ impl<'a> HistoryView<'a> {
         let width = area.width.saturating_sub(3) as usize;
         let mut pane = Pane::new(
             t,
-            Line::from(Span::styled("2 Files", t.title)),
+            Line::from(Span::styled("Files", t.title)),
             h.focus == HistoryPanel::Files,
         );
         if let Some(entry) = h.current() {

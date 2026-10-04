@@ -2,15 +2,15 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ vvv ~/dev/nx ─────────────────────── 1 query · search · ctrl+g filters · ctrl+o places ┐
+┌ vvv ~/dev/nx ────────────────────────────────────────────────────────── Query · search ┐
 │> Language                                                                              │
-└ 2/2 alt+← back · workspace · references ───────────────────────────────────────────────┘
-┌ 2 Files ──────────────────── 1/3 · 4 hits ┐┌ source · src/lang/mod.rs:64 ──── 59–70/70 ┐
+└ 2/2 · workspace · references ──────────────────────────────────────────────────────────┘
+┌ Files ────────────────────── 1/3 · 4 hits ┐┌ source · src/lang/mod.rs:64 ──── 59–70/70 ┐
 │> src/lang/mod.rs                        1 ││   59 │ // line 59                         │
 │  src/lang/registry.rs                   1 ││   60 │ // line 60                         │
 │  src/lib.rs                             2 ││   61 │ // line 61                         │
 │                                           ││   62 │ // line 62                         │
-├ 3 Matches · Language ──────────────── 1/1 ┤│   63 │ // line 63                         │
+├ Matches · Language ────────────────── 1/1 ┤│   63 │ // line 63                         │
 │> 64  ✓ pub trait Language: Send + Sync {  ││   64 │ pub trait Language: Send + Sync {  │
 │                                           ││   65 │     fn name(&self) -> &str;        │
 │                                           ││   66 │     fn extensions(&self) -> &[&str…│
@@ -20,5 +20,5 @@ expression: "FrameFixture::new(&m).render()"
 │                                           ││   70 │ // line 70                         │
 │                                           ││                                           │
 │                                           ││                                           │
-└ references · R relation ✓ 3  ? 1  ✗ 0 ────┘└───────────────────────────────────────────┘
- search j/k move  ⏎ references  F files  f location  t category  o follow         f1 help
+└ references ✓ 3  ? 1  ✗ 0 ─────────────────┘└───────────────────────────────────────────┘
+ search j/k move  ⏎ references  ctrl+g filters  ctrl+o places  F files  / query   f1 help

@@ -47,7 +47,7 @@ pub static NAVIGATE: Layer<Action> = Layer {
             dispatch: Run(A::FocusNext),
             when: When::Always,
             legend: Legend {
-                bar: None,
+                bar: bar("tab", "panes"),
                 help: "next / previous panel",
             },
         },
@@ -56,7 +56,7 @@ pub static NAVIGATE: Layer<Action> = Layer {
             dispatch: Run(A::FocusPrev),
             when: When::Always,
             legend: Legend {
-                bar: None,
+                bar: bar("tab", "panes"),
                 help: "next / previous panel",
             },
         },
@@ -196,7 +196,7 @@ pub static LIST: Layer<Action> = Layer {
             dispatch: Run(A::Help),
             when: When::Always,
             legend: Legend {
-                bar: bar("?", "keys"),
+                bar: None,
                 help: "this list",
             },
         },

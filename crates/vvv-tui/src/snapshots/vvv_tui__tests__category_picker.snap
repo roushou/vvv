@@ -2,23 +2,23 @@
 source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
-┌ vvv ~/dev/nx ─────────────────────── 1 query · search · ctrl+g filters · ctrl+o places ┐
+┌ vvv ~/dev/nx ────────────────────────────────────────────────────────── Query · search ┐
 │> Engine                                                                                │
 └ in: crates/vvv ────────────────────────────────────────────────────────────────────────┘
-┌ 2 Files ──────────────────── 1/2 · 2 hits ┐┌ source ───────────────────────── 33–42/42 ┐
+┌ Files ────────────────────── 1/2 · 2 hits ┐┌ source ───────────────────────── 33–42/42 ┐
 │> crates/vvv/src/cli/commands/             ││ crates/vvv/src/cli/commands/serve.rs:38   │
 │  serve.rs                               1 ││   33 │ // line 33                         │
 │  crates/vv┌ result category ────────────────────── 4 choices · loaded hits ┐           │
 │           │> ▏                                                             │           │
-├ 3 Matches │                                                                │           │
+├ Matches ──│                                                                │           │
 │> 38  engin│> ✓ All                                                       2 │           │
 │           │    Declarations                                              0 │           │
 │           │    Imports                                                   0 │           │
 │           │    Uses                                                      2 │           │
-│           └ Enter choose · Ctrl+X clear · Ctrl+U text · Esc cancel ────────┘           │
+│           └────────────────────────────────────────────────────────────────┘           │
 │                                           ││   42 │ // line 42                         │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 └ [All 2] Decl 0 Imp 0 Uses 2 ──────────────┘└───────────────────────────────────────────┘
- search ⏎ choose  esc cancel                                                      f1 help
+ search ↑/↓ move  ⏎ choose  esc cancel  ctrl+x clear  ctrl+u text                 f1 help
