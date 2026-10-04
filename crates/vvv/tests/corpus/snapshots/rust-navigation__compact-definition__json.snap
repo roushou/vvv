@@ -1,71 +1,31 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "a1f32c4ccce121194779a3e2275d4f272c86bda8a55a79c3a3113503e4213568",
-    "outcome": "resolved",
-    "target": {
+    "container": {
+      "declaration": {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/origin.rs","span":{"end":63,"start":0}},
+      "kind": "struct",
       "language": "rust",
-      "declaration": {
-        "path": "src/origin.rs",
-        "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-        "span": {
-          "start": 0,
-          "end": 63
-        }
-      },
-      "name_span": {
-        "start": 30,
-        "end": 36
-      },
-      "kind": "struct"
+      "name_span": {"end":36,"start":30}
     },
+    "evidence": {"addresses":[{"package":"navigation","path":["consumer","Engine"]},{"package":"navigation","path":["origin","Engine"]}]},
     "id": "f2c97c3b389f",
     "name": "Engine",
-    "start": {
-      "line": 1,
-      "column": 0
-    },
-    "evidence": {
-      "addresses": [
-        {
-          "package": "navigation",
-          "path": [
-            "consumer",
-            "Engine"
-          ]
-        },
-        {
-          "package": "navigation",
-          "path": [
-            "origin",
-            "Engine"
-          ]
-        }
-      ]
-    },
-    "container": {
+    "outcome": "resolved",
+    "snapshot": "a1f32c4ccce121194779a3e2275d4f272c86bda8a55a79c3a3113503e4213568",
+    "start": {"column":0,"line":1},
+    "target": {
+      "declaration": {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/origin.rs","span":{"end":63,"start":0}},
+      "kind": "struct",
       "language": "rust",
-      "declaration": {
-        "path": "src/origin.rs",
-        "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-        "span": {
-          "start": 0,
-          "end": 63
-        }
-      },
-      "name_span": {
-        "start": 30,
-        "end": 36
-      },
-      "kind": "struct"
+      "name_span": {"end":36,"start":30}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

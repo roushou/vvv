@@ -1,77 +1,37 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "5de2c4bb29981c7b04f80a425d5f28b94a4e0b4ff5d0e2ef8bde81c01bb06e84",
-    "outcome": "resolved",
-    "target": {
+    "container": {
+      "declaration": {"content":"66bb4deb196606181daefdeb3386a3b746c7fa16a8a787a330c1b47937457c05","path":"src/limits.rs","span":{"end":27,"start":0}},
+      "kind": "const",
       "language": "rust",
-      "declaration": {
-        "path": "src/limits.rs",
-        "content": "66bb4deb196606181daefdeb3386a3b746c7fa16a8a787a330c1b47937457c05",
-        "span": {
-          "start": 0,
-          "end": 27
-        }
-      },
-      "name_span": {
-        "start": 10,
-        "end": 15
-      },
-      "kind": "const"
-    },
-    "id": "b9ff300a466e",
-    "name": "START",
-    "start": {
-      "line": 0,
-      "column": 0
+      "name_span": {"end":15,"start":10}
     },
     "evidence": {
       "addresses": [
-        {
-          "package": "rust_pattern_references",
-          "path": [
-            "LOW"
-          ]
-        },
-        {
-          "package": "rust_pattern_references",
-          "path": [
-            "bridge",
-            "LOW"
-          ]
-        },
-        {
-          "package": "rust_pattern_references",
-          "path": [
-            "limits",
-            "START"
-          ]
-        }
+        {"package":"rust_pattern_references","path":["LOW"]},
+        {"package":"rust_pattern_references","path":["bridge","LOW"]},
+        {"package":"rust_pattern_references","path":["limits","START"]}
       ]
     },
-    "container": {
+    "id": "b9ff300a466e",
+    "name": "START",
+    "outcome": "resolved",
+    "snapshot": "5de2c4bb29981c7b04f80a425d5f28b94a4e0b4ff5d0e2ef8bde81c01bb06e84",
+    "start": {"column":0,"line":0},
+    "target": {
+      "declaration": {"content":"66bb4deb196606181daefdeb3386a3b746c7fa16a8a787a330c1b47937457c05","path":"src/limits.rs","span":{"end":27,"start":0}},
+      "kind": "const",
       "language": "rust",
-      "declaration": {
-        "path": "src/limits.rs",
-        "content": "66bb4deb196606181daefdeb3386a3b746c7fa16a8a787a330c1b47937457c05",
-        "span": {
-          "start": 0,
-          "end": 27
-        }
-      },
-      "name_span": {
-        "start": 10,
-        "end": 15
-      },
-      "kind": "const"
+      "name_span": {"end":15,"start":10}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

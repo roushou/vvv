@@ -1,71 +1,41 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "6e80d068b993e94740c9088ec246cd9ddbc1c8737725076a7a133edf58b02471",
-    "outcome": "ambiguous",
     "candidates": [
       {
-        "target": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-            "span": {
-              "start": 2342,
-              "end": 2368
-            }
-          },
-          "name_span": {
-            "start": 2347,
-            "end": 2352
-          },
-          "kind": "variable"
-        },
+        "evidence": {"addresses":[]},
         "id": "0408db9124b7",
         "name": "value",
-        "start": {
-          "line": 108,
-          "column": 12
-        },
-        "evidence": {
-          "addresses": []
+        "start": {"column":12,"line":108},
+        "target": {
+          "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":2368,"start":2342}},
+          "kind": "variable",
+          "language": "rust",
+          "name_span": {"end":2352,"start":2347}
         }
       },
       {
-        "target": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-            "span": {
-              "start": 2342,
-              "end": 2368
-            }
-          },
-          "name_span": {
-            "start": 2354,
-            "end": 2359
-          },
-          "kind": "variable"
-        },
+        "evidence": {"addresses":[]},
         "id": "1d0c686f7f00",
         "name": "value",
-        "start": {
-          "line": 108,
-          "column": 19
-        },
-        "evidence": {
-          "addresses": []
+        "start": {"column":19,"line":108},
+        "target": {
+          "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":2368,"start":2342}},
+          "kind": "variable",
+          "language": "rust",
+          "name_span": {"end":2359,"start":2354}
         }
       }
-    ]
-  }
+    ],
+    "outcome": "ambiguous",
+    "snapshot": "6e80d068b993e94740c9088ec246cd9ddbc1c8737725076a7a133edf58b02471"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

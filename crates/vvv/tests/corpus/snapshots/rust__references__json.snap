@@ -1,383 +1,235 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "name": "Point",
     "declarations": [
       {
+        "address": {"package":"corpus_core","path":["geometry","point","Point"]},
         "content": "e8dadb6bda7e721eaa565045578523bd9d2cdb5acc94f21157ddd7f2cc5f1709",
+        "end": {"column":1,"line":5},
         "id": "679da9ff7222",
-        "path": "core/src/geometry/point.rs",
-        "language": "rust",
-        "span": {
-          "start": 73,
-          "end": 125
-        },
-        "start": {
-          "line": 2,
-          "column": 0
-        },
-        "end": {
-          "line": 5,
-          "column": 1
-        },
         "kind": "struct_item",
-        "text": "pub struct Point {\n    pub x: i32,\n    pub y: i32,\n}",
+        "language": "rust",
         "line": "pub struct Point {",
+        "path": "core/src/geometry/point.rs",
+        "role": "declaration",
+        "span": {"end":125,"start":73},
+        "start": {"column":0,"line":2},
         "symbol": {
+          "extent": {"end":125,"start":0},
           "kind": "struct",
           "name": "Point",
-          "name_span": {
-            "start": 84,
-            "end": 89
-          },
-          "span": {
-            "start": 73,
-            "end": 125
-          },
-          "extent": {
-            "start": 0,
-            "end": 125
-          },
-          "visibility": {
-            "span": {
-              "start": 73,
-              "end": 76
-            },
-            "text": "pub"
-          }
+          "name_span": {"end":89,"start":84},
+          "span": {"end":125,"start":73},
+          "visibility": {"span":{"end":76,"start":73},"text":"pub"}
         },
-        "role": "declaration",
-        "address": {
-          "package": "corpus_core",
-          "path": [
-            "geometry",
-            "point",
-            "Point"
-          ]
-        }
+        "text": "pub struct Point {\n    pub x: i32,\n    pub y: i32,\n}"
       }
     ],
+    "name": "Point",
     "occurrences": [
       {
+        "confidence": "resolved",
         "content": "e8dadb6bda7e721eaa565045578523bd9d2cdb5acc94f21157ddd7f2cc5f1709",
+        "end": {"column":16,"line":2},
         "id": "6f07460c7daa",
-        "path": "core/src/geometry/point.rs",
-        "language": "rust",
-        "span": {
-          "start": 84,
-          "end": 89
-        },
-        "start": {
-          "line": 2,
-          "column": 11
-        },
-        "end": {
-          "line": 2,
-          "column": 16
-        },
         "kind": "type_identifier",
-        "text": "Point",
+        "language": "rust",
         "line": "pub struct Point {",
+        "path": "core/src/geometry/point.rs",
+        "reason": "declaring",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "declaring"
+        "span": {"end":89,"start":84},
+        "start": {"column":11,"line":2},
+        "text": "Point"
       },
       {
+        "confidence": "resolved",
         "content": "e8dadb6bda7e721eaa565045578523bd9d2cdb5acc94f21157ddd7f2cc5f1709",
+        "end": {"column":10,"line":7},
         "id": "7c45f8e33e34",
-        "path": "core/src/geometry/point.rs",
-        "language": "rust",
-        "span": {
-          "start": 132,
-          "end": 137
-        },
-        "start": {
-          "line": 7,
-          "column": 5
-        },
-        "end": {
-          "line": 7,
-          "column": 10
-        },
         "kind": "type_identifier",
-        "text": "Point",
+        "language": "rust",
         "line": "impl Point {",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "declaring"
-      },
-      {
-        "content": "e8dadb6bda7e721eaa565045578523bd9d2cdb5acc94f21157ddd7f2cc5f1709",
-        "id": "653b8792f61e",
         "path": "core/src/geometry/point.rs",
-        "language": "rust",
-        "span": {
-          "start": 260,
-          "end": 265
-        },
-        "start": {
-          "line": 13,
-          "column": 8
-        },
-        "end": {
-          "line": 13,
-          "column": 13
-        },
+        "reason": "declaring",
+        "role": "use",
+        "span": {"end":137,"start":132},
+        "start": {"column":5,"line":7},
+        "text": "Point"
+      },
+      {
+        "confidence": "resolved",
+        "content": "e8dadb6bda7e721eaa565045578523bd9d2cdb5acc94f21157ddd7f2cc5f1709",
+        "end": {"column":13,"line":13},
+        "id": "653b8792f61e",
         "kind": "identifier",
-        "text": "Point",
+        "language": "rust",
         "line": "        Point::new(self.x + dx, self.y)",
+        "path": "core/src/geometry/point.rs",
+        "reason": "declaring",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "declaring"
+        "span": {"end":265,"start":260},
+        "start": {"column":8,"line":13},
+        "text": "Point"
       },
       {
+        "confidence": "resolved",
         "content": "be82ffb684029ba0abd6b2d15b9540cb7b7bbdd7de90b628b344a558290fb81e",
+        "end": {"column":24,"line":5},
         "id": "7738a0a93793",
-        "path": "core/src/geometry/mod.rs",
-        "language": "rust",
-        "span": {
-          "start": 69,
-          "end": 74
-        },
-        "start": {
-          "line": 5,
-          "column": 19
-        },
-        "end": {
-          "line": 5,
-          "column": 24
-        },
         "kind": "type_identifier",
-        "text": "Point",
+        "language": "rust",
         "line": "pub fn origin() -> Point {",
+        "path": "core/src/geometry/mod.rs",
+        "reason": "imported",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "imported"
+        "span": {"end":74,"start":69},
+        "start": {"column":19,"line":5},
+        "text": "Point"
       },
       {
+        "confidence": "resolved",
         "content": "be82ffb684029ba0abd6b2d15b9540cb7b7bbdd7de90b628b344a558290fb81e",
+        "end": {"column":9,"line":6},
         "id": "f952008219b5",
-        "path": "core/src/geometry/mod.rs",
-        "language": "rust",
-        "span": {
-          "start": 81,
-          "end": 86
-        },
-        "start": {
-          "line": 6,
-          "column": 4
-        },
-        "end": {
-          "line": 6,
-          "column": 9
-        },
         "kind": "identifier",
-        "text": "Point",
+        "language": "rust",
         "line": "    Point::new(0, 0)",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "imported"
-      },
-      {
-        "content": "be82ffb684029ba0abd6b2d15b9540cb7b7bbdd7de90b628b344a558290fb81e",
-        "id": "57fbc997e1e7",
         "path": "core/src/geometry/mod.rs",
-        "language": "rust",
-        "span": {
-          "start": 42,
-          "end": 47
-        },
-        "start": {
-          "line": 3,
-          "column": 15
-        },
-        "end": {
-          "line": 3,
-          "column": 20
-        },
+        "reason": "imported",
+        "role": "use",
+        "span": {"end":86,"start":81},
+        "start": {"column":4,"line":6},
+        "text": "Point"
+      },
+      {
+        "confidence": "resolved",
+        "content": "be82ffb684029ba0abd6b2d15b9540cb7b7bbdd7de90b628b344a558290fb81e",
+        "end": {"column":20,"line":3},
+        "id": "57fbc997e1e7",
         "kind": "identifier",
-        "text": "Point",
+        "language": "rust",
         "line": "pub use point::Point;",
+        "path": "core/src/geometry/mod.rs",
+        "reason": "path",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "path"
+        "span": {"end":47,"start":42},
+        "start": {"column":15,"line":3},
+        "text": "Point"
       },
       {
+        "confidence": "resolved",
         "content": "01fb736f8e211e345613c7c9e4dc63f0df2eded91b074faf2ff7a38745d80904",
+        "end": {"column":29,"line":3},
         "id": "fc1796e0d79e",
-        "path": "app/src/main.rs",
-        "language": "rust",
-        "span": {
-          "start": 69,
-          "end": 74
-        },
-        "start": {
-          "line": 3,
-          "column": 24
-        },
-        "end": {
-          "line": 3,
-          "column": 29
-        },
         "kind": "identifier",
-        "text": "Point",
+        "language": "rust",
         "line": "use corpus_core::{area, Point, Shape};",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "re-export"
-      },
-      {
-        "content": "01fb736f8e211e345613c7c9e4dc63f0df2eded91b074faf2ff7a38745d80904",
-        "id": "e9f54510e8e4",
         "path": "app/src/main.rs",
-        "language": "rust",
-        "span": {
-          "start": 109,
-          "end": 114
-        },
-        "start": {
-          "line": 6,
-          "column": 12
-        },
-        "end": {
-          "line": 6,
-          "column": 17
-        },
+        "reason": "re-export",
+        "role": "use",
+        "span": {"end":74,"start":69},
+        "start": {"column":24,"line":3},
+        "text": "Point"
+      },
+      {
+        "confidence": "resolved",
+        "content": "01fb736f8e211e345613c7c9e4dc63f0df2eded91b074faf2ff7a38745d80904",
+        "end": {"column":17,"line":6},
+        "id": "e9f54510e8e4",
         "kind": "identifier",
-        "text": "Point",
+        "language": "rust",
         "line": "    let p = Point::new(1, 2);",
+        "path": "app/src/main.rs",
+        "reason": "re-export",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "re-export"
+        "span": {"end":114,"start":109},
+        "start": {"column":12,"line":6},
+        "text": "Point"
       },
       {
+        "confidence": "resolved",
         "content": "1c01fd4543776a4fba8e20a5b85a39db9697ae231eea6d1a3b21209b6ad6fa8d",
+        "end": {"column":16,"line":0},
         "id": "9cf65a86894c",
-        "path": "core/src/geometry/shape.rs",
-        "language": "rust",
-        "span": {
-          "start": 11,
-          "end": 16
-        },
-        "start": {
-          "line": 0,
-          "column": 11
-        },
-        "end": {
-          "line": 0,
-          "column": 16
-        },
         "kind": "identifier",
-        "text": "Point",
+        "language": "rust",
         "line": "use super::Point;",
+        "path": "core/src/geometry/shape.rs",
+        "reason": "re-export",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "re-export"
+        "span": {"end":16,"start":11},
+        "start": {"column":11,"line":0},
+        "text": "Point"
       },
       {
+        "confidence": "resolved",
         "content": "1c01fd4543776a4fba8e20a5b85a39db9697ae231eea6d1a3b21209b6ad6fa8d",
+        "end": {"column":13,"line":4},
         "id": "3d7759d0f3d6",
-        "path": "core/src/geometry/shape.rs",
-        "language": "rust",
-        "span": {
-          "start": 67,
-          "end": 72
-        },
-        "start": {
-          "line": 4,
-          "column": 8
-        },
-        "end": {
-          "line": 4,
-          "column": 13
-        },
         "kind": "type_identifier",
-        "text": "Point",
+        "language": "rust",
         "line": "    Dot(Point),",
+        "path": "core/src/geometry/shape.rs",
+        "reason": "re-export",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "re-export"
+        "span": {"end":72,"start":67},
+        "start": {"column":8,"line":4},
+        "text": "Point"
       },
       {
+        "confidence": "resolved",
         "content": "1c01fd4543776a4fba8e20a5b85a39db9697ae231eea6d1a3b21209b6ad6fa8d",
+        "end": {"column":26,"line":5},
         "id": "712aa3dfdb7d",
-        "path": "core/src/geometry/shape.rs",
-        "language": "rust",
-        "span": {
-          "start": 96,
-          "end": 101
-        },
-        "start": {
-          "line": 5,
-          "column": 21
-        },
-        "end": {
-          "line": 5,
-          "column": 26
-        },
         "kind": "type_identifier",
-        "text": "Point",
+        "language": "rust",
         "line": "    Square { corner: Point, side: u32 },",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "re-export"
-      },
-      {
-        "content": "1c01fd4543776a4fba8e20a5b85a39db9697ae231eea6d1a3b21209b6ad6fa8d",
-        "id": "22e9c20bac46",
         "path": "core/src/geometry/shape.rs",
-        "language": "rust",
-        "span": {
-          "start": 317,
-          "end": 322
-        },
-        "start": {
-          "line": 16,
-          "column": 28
-        },
-        "end": {
-          "line": 16,
-          "column": 33
-        },
-        "kind": "type_identifier",
-        "text": "Point",
-        "line": "    pub fn anchor(&self) -> Point {",
+        "reason": "re-export",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "re-export"
+        "span": {"end":101,"start":96},
+        "start": {"column":21,"line":5},
+        "text": "Point"
       },
       {
-        "content": "b681160781b01344378769b063a24e853ce033dcdef12f5c9b2fa8cef6fcb66d",
-        "id": "2fe487e37790",
-        "path": "core/src/lib.rs",
-        "language": "rust",
-        "span": {
-          "start": 230,
-          "end": 235
-        },
-        "start": {
-          "line": 7,
-          "column": 33
-        },
-        "end": {
-          "line": 7,
-          "column": 38
-        },
-        "kind": "identifier",
-        "text": "Point",
-        "line": "pub use geometry::{shape::Shape, Point};",
-        "role": "use",
         "confidence": "resolved",
-        "reason": "re-export"
+        "content": "1c01fd4543776a4fba8e20a5b85a39db9697ae231eea6d1a3b21209b6ad6fa8d",
+        "end": {"column":33,"line":16},
+        "id": "22e9c20bac46",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "    pub fn anchor(&self) -> Point {",
+        "path": "core/src/geometry/shape.rs",
+        "reason": "re-export",
+        "role": "use",
+        "span": {"end":322,"start":317},
+        "start": {"column":28,"line":16},
+        "text": "Point"
+      },
+      {
+        "confidence": "resolved",
+        "content": "b681160781b01344378769b063a24e853ce033dcdef12f5c9b2fa8cef6fcb66d",
+        "end": {"column":38,"line":7},
+        "id": "2fe487e37790",
+        "kind": "identifier",
+        "language": "rust",
+        "line": "pub use geometry::{shape::Shape, Point};",
+        "path": "core/src/lib.rs",
+        "reason": "re-export",
+        "role": "use",
+        "span": {"end":235,"start":230},
+        "start": {"column":33,"line":7},
+        "text": "Point"
       }
     ]
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

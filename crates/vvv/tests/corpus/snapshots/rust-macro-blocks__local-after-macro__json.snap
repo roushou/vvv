@@ -1,56 +1,31 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "15adaa40b8e710c7beef96cde9ad0899778c05140a7076e6462693bc106b1dc1",
-    "outcome": "resolved",
-    "target": {
+    "container": {
+      "declaration": {"content":"aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6","path":"src/lib.rs","span":{"end":282,"start":264}},
+      "kind": "variable",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
-        "span": {
-          "start": 264,
-          "end": 282
-        }
-      },
-      "name_span": {
-        "start": 272,
-        "end": 277
-      },
-      "kind": "variable"
+      "name_span": {"end":277,"start":272}
     },
+    "evidence": {"addresses":[]},
     "id": "87322139b716",
     "name": "after",
-    "start": {
-      "line": 9,
-      "column": 4
-    },
-    "evidence": {
-      "addresses": []
-    },
-    "container": {
+    "outcome": "resolved",
+    "snapshot": "15adaa40b8e710c7beef96cde9ad0899778c05140a7076e6462693bc106b1dc1",
+    "start": {"column":4,"line":9},
+    "target": {
+      "declaration": {"content":"aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6","path":"src/lib.rs","span":{"end":282,"start":264}},
+      "kind": "variable",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
-        "span": {
-          "start": 264,
-          "end": 282
-        }
-      },
-      "name_span": {
-        "start": 272,
-        "end": 277
-      },
-      "kind": "variable"
+      "name_span": {"end":277,"start":272}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

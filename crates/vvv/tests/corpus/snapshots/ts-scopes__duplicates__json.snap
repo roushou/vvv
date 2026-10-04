@@ -1,135 +1,63 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "fa95cf579f89650ce6fc1f096da2a5e416273d824cb69d72d1c5bc27dbdae7ee",
-    "outcome": "ambiguous",
     "candidates": [
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/scopes.ts",
-            "content": "a3e4708d8a857e970c7424d1d0b011b0b2f9a151c5926a9ee5558a0dba5d6de3",
-            "span": {
-              "start": 2020,
-              "end": 2032
-            }
-          },
-          "name_span": {
-            "start": 2021,
-            "end": 2025
-          },
-          "kind": "parameter"
-        },
         "declaration": {
           "content": "a3e4708d8a857e970c7424d1d0b011b0b2f9a151c5926a9ee5558a0dba5d6de3",
+          "end": {"column":25,"line":71},
           "id": "928a5af23c79",
-          "path": "src/scopes.ts",
-          "language": "typescript",
-          "span": {
-            "start": 2021,
-            "end": 2025
-          },
-          "start": {
-            "line": 71,
-            "column": 21
-          },
-          "end": {
-            "line": 71,
-            "column": 25
-          },
           "kind": "declaration",
-          "text": "same",
+          "language": "typescript",
           "line": "  const callback = ([same, same]) => same;",
-          "symbol": {
-            "kind": "parameter",
-            "name": "same",
-            "name_span": {
-              "start": 2021,
-              "end": 2025
-            },
-            "span": {
-              "start": 2020,
-              "end": 2032
-            },
-            "extent": {
-              "start": 2020,
-              "end": 2032
-            }
-          },
-          "role": "declaration"
+          "path": "src/scopes.ts",
+          "role": "declaration",
+          "span": {"end":2025,"start":2021},
+          "start": {"column":21,"line":71},
+          "symbol": {"extent":{"end":2032,"start":2020},"kind":"parameter","name":"same","name_span":{"end":2025,"start":2021},"span":{"end":2032,"start":2020}},
+          "text": "same"
         },
-        "evidence": {
-          "addresses": []
+        "evidence": {"addresses":[]},
+        "target": {
+          "declaration": {"content":"a3e4708d8a857e970c7424d1d0b011b0b2f9a151c5926a9ee5558a0dba5d6de3","path":"src/scopes.ts","span":{"end":2032,"start":2020}},
+          "kind": "parameter",
+          "language": "typescript",
+          "name_span": {"end":2025,"start":2021}
         }
       },
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/scopes.ts",
-            "content": "a3e4708d8a857e970c7424d1d0b011b0b2f9a151c5926a9ee5558a0dba5d6de3",
-            "span": {
-              "start": 2020,
-              "end": 2032
-            }
-          },
-          "name_span": {
-            "start": 2027,
-            "end": 2031
-          },
-          "kind": "parameter"
-        },
         "declaration": {
           "content": "a3e4708d8a857e970c7424d1d0b011b0b2f9a151c5926a9ee5558a0dba5d6de3",
+          "end": {"column":31,"line":71},
           "id": "f19a6b236441",
-          "path": "src/scopes.ts",
-          "language": "typescript",
-          "span": {
-            "start": 2027,
-            "end": 2031
-          },
-          "start": {
-            "line": 71,
-            "column": 27
-          },
-          "end": {
-            "line": 71,
-            "column": 31
-          },
           "kind": "declaration",
-          "text": "same",
+          "language": "typescript",
           "line": "  const callback = ([same, same]) => same;",
-          "symbol": {
-            "kind": "parameter",
-            "name": "same",
-            "name_span": {
-              "start": 2027,
-              "end": 2031
-            },
-            "span": {
-              "start": 2020,
-              "end": 2032
-            },
-            "extent": {
-              "start": 2020,
-              "end": 2032
-            }
-          },
-          "role": "declaration"
+          "path": "src/scopes.ts",
+          "role": "declaration",
+          "span": {"end":2031,"start":2027},
+          "start": {"column":27,"line":71},
+          "symbol": {"extent":{"end":2032,"start":2020},"kind":"parameter","name":"same","name_span":{"end":2031,"start":2027},"span":{"end":2032,"start":2020}},
+          "text": "same"
         },
-        "evidence": {
-          "addresses": []
+        "evidence": {"addresses":[]},
+        "target": {
+          "declaration": {"content":"a3e4708d8a857e970c7424d1d0b011b0b2f9a151c5926a9ee5558a0dba5d6de3","path":"src/scopes.ts","span":{"end":2032,"start":2020}},
+          "kind": "parameter",
+          "language": "typescript",
+          "name_span": {"end":2031,"start":2027}
         }
       }
-    ]
-  }
+    ],
+    "outcome": "ambiguous",
+    "snapshot": "fa95cf579f89650ce6fc1f096da2a5e416273d824cb69d72d1c5bc27dbdae7ee"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

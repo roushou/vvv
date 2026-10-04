@@ -1,173 +1,53 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "intent": {
-      "from": "src/a.rs",
-      "to": "src/renamed.rs"
-    },
     "applied": false,
-    "from": "src/a.rs",
-    "to": "src/renamed.rs",
-    "from_address": {
-      "package": "parent_alias_probe",
-      "path": [
-        "a"
-      ]
-    },
-    "to_address": {
-      "package": "parent_alias_probe",
-      "path": [
-        "renamed"
-      ]
-    },
-    "respellings": [
+    "files": [
+      {"diff":"--- a/src/a.rs\n+++ b/src/renamed.rs\n","edits":[],"moved_to":"src/renamed.rs","path":"src/a.rs"},
       {
-        "path": "src/competing.rs",
-        "span": {
-          "start": 17,
-          "end": 25
-        },
-        "start": {
-          "line": 1,
-          "column": 4
-        },
-        "from": "crate::a",
-        "to": "crate::renamed"
+        "diff": "--- a/src/competing.rs\n+++ b/src/competing.rs\n@@ -1,5 +1,5 @@\n #[cfg(unix)]\n-use crate::a as root;\n+use crate::renamed as root;\n #[cfg(windows)]\n use crate::b as root;\n pub mod nested;\n",
+        "edits": [{"replacement":"crate::renamed","span":{"end":25,"start":17}}],
+        "path": "src/competing.rs"
       },
       {
-        "path": "src/parent.rs",
-        "span": {
-          "start": 4,
-          "end": 12
-        },
-        "start": {
-          "line": 0,
-          "column": 4
-        },
-        "from": "crate::a",
-        "to": "crate::renamed"
+        "diff": "--- a/src/lib.rs\n+++ b/src/lib.rs\n@@ -1,4 +1,4 @@\n-pub mod a;\n+pub mod renamed;\n pub mod b;\n pub mod parent;\n pub mod restricted;\n",
+        "edits": [{"replacement":"renamed","span":{"end":9,"start":8}}],
+        "path": "src/lib.rs"
       },
       {
-        "path": "src/restricted.rs",
-        "span": {
-          "start": 15,
-          "end": 23
-        },
-        "start": {
-          "line": 0,
-          "column": 15
-        },
-        "from": "crate::a",
-        "to": "crate::renamed"
+        "diff": "--- a/src/parent.rs\n+++ b/src/parent.rs\n@@ -1,2 +1,2 @@\n-use crate::a as parent;\n+use crate::renamed as parent;\n pub mod nested;\n",
+        "edits": [{"replacement":"crate::renamed","span":{"end":12,"start":4}}],
+        "path": "src/parent.rs"
       },
       {
-        "path": "src/restricted.rs",
-        "span": {
-          "start": 57,
-          "end": 65
-        },
-        "start": {
-          "line": 1,
-          "column": 15
-        },
-        "from": "crate::a",
-        "to": "crate::renamed"
-      },
-      {
-        "path": "src/restricted.rs",
-        "span": {
-          "start": 113,
-          "end": 121
-        },
-        "start": {
-          "line": 2,
-          "column": 30
-        },
-        "from": "crate::a",
-        "to": "crate::renamed"
+        "diff": "--- a/src/restricted.rs\n+++ b/src/restricted.rs\n@@ -1,6 +1,6 @@\n-pub(crate) use crate::a as package_alias;\n-pub(super) use crate::a as parent_alias;\n-pub(in crate::restricted) use crate::a as limited;\n+pub(crate) use crate::renamed as package_alias;\n+pub(super) use crate::renamed as parent_alias;\n+pub(in crate::restricted) use crate::renamed as limited;\n pub mod nested;\n fn hidden() { use crate::b as local_only; }\n mod inline { use crate::b as inline_only; }\n",
+        "edits": [
+          {"replacement":"crate::renamed","span":{"end":23,"start":15}},
+          {"replacement":"crate::renamed","span":{"end":65,"start":57}},
+          {"replacement":"crate::renamed","span":{"end":121,"start":113}}
+        ],
+        "path": "src/restricted.rs"
       }
     ],
-    "files": [
-      {
-        "path": "src/a.rs",
-        "moved_to": "src/renamed.rs",
-        "edits": [],
-        "diff": "--- a/src/a.rs\n+++ b/src/renamed.rs\n"
-      },
-      {
-        "path": "src/competing.rs",
-        "edits": [
-          {
-            "span": {
-              "start": 17,
-              "end": 25
-            },
-            "replacement": "crate::renamed"
-          }
-        ],
-        "diff": "--- a/src/competing.rs\n+++ b/src/competing.rs\n@@ -1,5 +1,5 @@\n #[cfg(unix)]\n-use crate::a as root;\n+use crate::renamed as root;\n #[cfg(windows)]\n use crate::b as root;\n pub mod nested;\n"
-      },
-      {
-        "path": "src/lib.rs",
-        "edits": [
-          {
-            "span": {
-              "start": 8,
-              "end": 9
-            },
-            "replacement": "renamed"
-          }
-        ],
-        "diff": "--- a/src/lib.rs\n+++ b/src/lib.rs\n@@ -1,4 +1,4 @@\n-pub mod a;\n+pub mod renamed;\n pub mod b;\n pub mod parent;\n pub mod restricted;\n"
-      },
-      {
-        "path": "src/parent.rs",
-        "edits": [
-          {
-            "span": {
-              "start": 4,
-              "end": 12
-            },
-            "replacement": "crate::renamed"
-          }
-        ],
-        "diff": "--- a/src/parent.rs\n+++ b/src/parent.rs\n@@ -1,2 +1,2 @@\n-use crate::a as parent;\n+use crate::renamed as parent;\n pub mod nested;\n"
-      },
-      {
-        "path": "src/restricted.rs",
-        "edits": [
-          {
-            "span": {
-              "start": 15,
-              "end": 23
-            },
-            "replacement": "crate::renamed"
-          },
-          {
-            "span": {
-              "start": 57,
-              "end": 65
-            },
-            "replacement": "crate::renamed"
-          },
-          {
-            "span": {
-              "start": 113,
-              "end": 121
-            },
-            "replacement": "crate::renamed"
-          }
-        ],
-        "diff": "--- a/src/restricted.rs\n+++ b/src/restricted.rs\n@@ -1,6 +1,6 @@\n-pub(crate) use crate::a as package_alias;\n-pub(super) use crate::a as parent_alias;\n-pub(in crate::restricted) use crate::a as limited;\n+pub(crate) use crate::renamed as package_alias;\n+pub(super) use crate::renamed as parent_alias;\n+pub(in crate::restricted) use crate::renamed as limited;\n pub mod nested;\n fn hidden() { use crate::b as local_only; }\n mod inline { use crate::b as inline_only; }\n"
-      }
-    ]
-  }
+    "from": "src/a.rs",
+    "from_address": {"package":"parent_alias_probe","path":["a"]},
+    "intent": {"from":"src/a.rs","to":"src/renamed.rs"},
+    "respellings": [
+      {"from":"crate::a","path":"src/competing.rs","span":{"end":25,"start":17},"start":{"column":4,"line":1},"to":"crate::renamed"},
+      {"from":"crate::a","path":"src/parent.rs","span":{"end":12,"start":4},"start":{"column":4,"line":0},"to":"crate::renamed"},
+      {"from":"crate::a","path":"src/restricted.rs","span":{"end":23,"start":15},"start":{"column":15,"line":0},"to":"crate::renamed"},
+      {"from":"crate::a","path":"src/restricted.rs","span":{"end":65,"start":57},"start":{"column":15,"line":1},"to":"crate::renamed"},
+      {"from":"crate::a","path":"src/restricted.rs","span":{"end":121,"start":113},"start":{"column":30,"line":2},"to":"crate::renamed"}
+    ],
+    "to": "src/renamed.rs",
+    "to_address": {"package":"parent_alias_probe","path":["renamed"]}
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

@@ -1,6 +1,6 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
+expression: "JsonSnapshot(&serde_json::to_value(&transcript.replies).unwrap()).to_string()"
 ---
 [
   {
@@ -11,54 +11,24 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         "applied": false,
         "declarations": [
           {
-            "address": {
-              "package": "navigation",
-              "path": [
-                "origin",
-                "Engine"
-              ]
-            },
+            "address": {"package":"navigation","path":["origin","Engine"]},
             "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-            "end": {
-              "column": 1,
-              "line": 3
-            },
+            "end": {"column":1,"line":3},
             "id": "f2c97c3b389f",
             "kind": "struct_item",
             "language": "rust",
             "line": "pub struct Engine {",
             "path": "src/origin.rs",
             "role": "declaration",
-            "span": {
-              "end": 63,
-              "start": 19
-            },
-            "start": {
-              "column": 0,
-              "line": 1
-            },
+            "span": {"end":63,"start":19},
+            "start": {"column":0,"line":1},
             "symbol": {
-              "extent": {
-                "end": 63,
-                "start": 0
-              },
+              "extent": {"end":63,"start":0},
               "kind": "struct",
               "name": "Engine",
-              "name_span": {
-                "end": 36,
-                "start": 30
-              },
-              "span": {
-                "end": 63,
-                "start": 19
-              },
-              "visibility": {
-                "span": {
-                  "end": 22,
-                  "start": 19
-                },
-                "text": "pub"
-              }
+              "name_span": {"end":36,"start":30},
+              "span": {"end":63,"start":19},
+              "visibility": {"span":{"end":22,"start":19},"text":"pub"}
             },
             "text": "pub struct Engine {\n    pub running: bool,\n}"
           }
@@ -66,166 +36,53 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         "files": [
           {
             "diff": "--- a/src/ambiguous.rs\n+++ b/src/ambiguous.rs\n@@ -1,3 +1,3 @@\n use crate::origin::*;\n use crate::other::*;\n-pub struct App { engine: Engine }\n+pub struct App { engine: Runtime }\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 74,
-                  "start": 68
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":74,"start":68}}],
             "path": "src/ambiguous.rs"
           },
           {
             "diff": "--- a/src/bindings.rs\n+++ b/src/bindings.rs\n@@ -1,5 +1,5 @@\n fn pairs((left, right): (u8, u8)) { consume(left); consume(right); }\n fn closure(value: u8) { let f = |value| value; consume(value); }\n fn destructure(pair: (u8, u8)) { let (left, right) = pair; consume(right); }\n-use crate::origin::Engine;\n-fn annotated() { let engine: Engine; }\n+use crate::origin::Runtime;\n+fn annotated() { let engine: Runtime; }\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 236,
-                  "start": 230
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 273,
-                  "start": 267
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":236,"start":230}},{"replacement":"Runtime","span":{"end":273,"start":267}}],
             "path": "src/bindings.rs"
           },
           {
             "diff": "--- a/src/bridge.rs\n+++ b/src/bridge.rs\n@@ -1 +1 @@\n-pub use crate::origin::Engine as Runtime;\n+pub use crate::origin::Runtime as Runtime;\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 29,
-                  "start": 23
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":29,"start":23}}],
             "path": "src/bridge.rs"
           },
           {
             "diff": "--- a/src/consumer.rs\n+++ b/src/consumer.rs\n@@ -1,5 +1,5 @@\n use crate::bridge::Runtime;\n-use crate::origin::Engine;\n+use crate::origin::Runtime;\n \n pub struct App {\n     engine: Engine,\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 53,
-                  "start": 47
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":53,"start":47}}],
             "path": "src/consumer.rs"
           },
           {
             "diff": "--- a/src/lexical.rs\n+++ b/src/lexical.rs\n@@ -1,9 +1,9 @@\n-use crate::origin::Engine;\n-fn generic<Engine>(value: Engine) -> Engine { value }\n-fn shadow(value: Engine) {\n+use crate::origin::Runtime;\n+fn generic<Runtime>(value: Runtime) -> Runtime { value }\n+fn shadow(value: Runtime) {\n     let value = value;\n     { let value = 1; consume(value); }\n     consume(value);\n }\n fn nested<T>(value: T) { fn inner() { let x: T; } }\n-fn destructured(value: Engine, (left, right): (u8, u8)) { consume(value); }\n+fn destructured(value: Runtime, (left, right): (u8, u8)) { consume(value); }\n",
             "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 25,
-                  "start": 19
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 44,
-                  "start": 38
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 59,
-                  "start": 53
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 70,
-                  "start": 64
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 104,
-                  "start": 98
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 273,
-                  "start": 267
-                }
-              }
+              {"replacement":"Runtime","span":{"end":25,"start":19}},
+              {"replacement":"Runtime","span":{"end":44,"start":38}},
+              {"replacement":"Runtime","span":{"end":59,"start":53}},
+              {"replacement":"Runtime","span":{"end":70,"start":64}},
+              {"replacement":"Runtime","span":{"end":104,"start":98}},
+              {"replacement":"Runtime","span":{"end":273,"start":267}}
             ],
             "path": "src/lexical.rs"
           },
           {
             "diff": "--- a/src/origin.rs\n+++ b/src/origin.rs\n@@ -1,8 +1,8 @@\n /// Runtime state.\n-pub struct Engine {\n+pub struct Runtime {\n     pub running: bool,\n }\n pub enum Error {\n-    Engine,\n+    Runtime,\n     Io,\n }\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 36,
-                  "start": 30
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 91,
-                  "start": 85
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":36,"start":30}},{"replacement":"Runtime","span":{"end":91,"start":85}}],
             "path": "src/origin.rs"
           },
           {
             "diff": "--- a/src/test/check.rs\n+++ b/src/test/check.rs\n@@ -1,2 +1,2 @@\n-use crate::origin::Engine;\n-fn related(value: Engine) {}\n+use crate::origin::Runtime;\n+fn related(value: Runtime) {}\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 25,
-                  "start": 19
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 51,
-                  "start": 45
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":25,"start":19}},{"replacement":"Runtime","span":{"end":51,"start":45}}],
             "path": "src/test/check.rs"
           }
         ],
-        "intent": {
-          "declared_in": "src/origin.rs",
-          "name": "Engine",
-          "symbol": "struct",
-          "to": "Runtime"
-        },
+        "intent": {"declared_in":"src/origin.rs","name":"Engine","symbol":"struct","to":"Runtime"},
         "occurrences": [
           {
             "confidence": "resolved",
             "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-            "end": {
-              "column": 17,
-              "line": 1
-            },
+            "end": {"column":17,"line":1},
             "id": "9d9176e29a8f",
             "kind": "type_identifier",
             "language": "rust",
@@ -233,23 +90,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/origin.rs",
             "reason": "declaring",
             "role": "use",
-            "span": {
-              "end": 36,
-              "start": 30
-            },
-            "start": {
-              "column": 11,
-              "line": 1
-            },
+            "span": {"end":36,"start":30},
+            "start": {"column":11,"line":1},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-            "end": {
-              "column": 10,
-              "line": 5
-            },
+            "end": {"column":10,"line":5},
             "id": "c6ae3da429f0",
             "kind": "identifier",
             "language": "rust",
@@ -257,23 +105,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/origin.rs",
             "reason": "declaring",
             "role": "use",
-            "span": {
-              "end": 91,
-              "start": 85
-            },
-            "start": {
-              "column": 4,
-              "line": 5
-            },
+            "span": {"end":91,"start":85},
+            "start": {"column":4,"line":5},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
-            "end": {
-              "column": 35,
-              "line": 4
-            },
+            "end": {"column":35,"line":4},
             "id": "73ed69618dfd",
             "kind": "type_identifier",
             "language": "rust",
@@ -281,23 +120,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/bindings.rs",
             "reason": "imported",
             "role": "use",
-            "span": {
-              "end": 273,
-              "start": 267
-            },
-            "start": {
-              "column": 29,
-              "line": 4
-            },
+            "span": {"end":273,"start":267},
+            "start": {"column":29,"line":4},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-            "end": {
-              "column": 17,
-              "line": 1
-            },
+            "end": {"column":17,"line":1},
             "id": "12ec6ddf5daf",
             "kind": "type_identifier",
             "language": "rust",
@@ -305,23 +135,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/lexical.rs",
             "reason": "imported",
             "role": "use",
-            "span": {
-              "end": 44,
-              "start": 38
-            },
-            "start": {
-              "column": 11,
-              "line": 1
-            },
+            "span": {"end":44,"start":38},
+            "start": {"column":11,"line":1},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-            "end": {
-              "column": 32,
-              "line": 1
-            },
+            "end": {"column":32,"line":1},
             "id": "6ce959c3f0c3",
             "kind": "type_identifier",
             "language": "rust",
@@ -329,23 +150,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/lexical.rs",
             "reason": "imported",
             "role": "use",
-            "span": {
-              "end": 59,
-              "start": 53
-            },
-            "start": {
-              "column": 26,
-              "line": 1
-            },
+            "span": {"end":59,"start":53},
+            "start": {"column":26,"line":1},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-            "end": {
-              "column": 43,
-              "line": 1
-            },
+            "end": {"column":43,"line":1},
             "id": "cac1a4f68908",
             "kind": "type_identifier",
             "language": "rust",
@@ -353,23 +165,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/lexical.rs",
             "reason": "imported",
             "role": "use",
-            "span": {
-              "end": 70,
-              "start": 64
-            },
-            "start": {
-              "column": 37,
-              "line": 1
-            },
+            "span": {"end":70,"start":64},
+            "start": {"column":37,"line":1},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-            "end": {
-              "column": 23,
-              "line": 2
-            },
+            "end": {"column":23,"line":2},
             "id": "ccdba78166d1",
             "kind": "type_identifier",
             "language": "rust",
@@ -377,23 +180,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/lexical.rs",
             "reason": "imported",
             "role": "use",
-            "span": {
-              "end": 104,
-              "start": 98
-            },
-            "start": {
-              "column": 17,
-              "line": 2
-            },
+            "span": {"end":104,"start":98},
+            "start": {"column":17,"line":2},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-            "end": {
-              "column": 29,
-              "line": 8
-            },
+            "end": {"column":29,"line":8},
             "id": "3793dd625e3a",
             "kind": "type_identifier",
             "language": "rust",
@@ -401,23 +195,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/lexical.rs",
             "reason": "imported",
             "role": "use",
-            "span": {
-              "end": 273,
-              "start": 267
-            },
-            "start": {
-              "column": 23,
-              "line": 8
-            },
+            "span": {"end":273,"start":267},
+            "start": {"column":23,"line":8},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "5ee24e1ff338c2074c7395bc3ac0ada65dd3921c9220d11fe7cdfbc4b63a0d58",
-            "end": {
-              "column": 24,
-              "line": 1
-            },
+            "end": {"column":24,"line":1},
             "id": "12b65243b9f7",
             "kind": "type_identifier",
             "language": "rust",
@@ -425,23 +210,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/test/check.rs",
             "reason": "imported",
             "role": "use",
-            "span": {
-              "end": 51,
-              "start": 45
-            },
-            "start": {
-              "column": 18,
-              "line": 1
-            },
+            "span": {"end":51,"start":45},
+            "start": {"column":18,"line":1},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
-            "end": {
-              "column": 25,
-              "line": 3
-            },
+            "end": {"column":25,"line":3},
             "id": "4963ef949cb8",
             "kind": "identifier",
             "language": "rust",
@@ -449,23 +225,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/bindings.rs",
             "reason": "path",
             "role": "use",
-            "span": {
-              "end": 236,
-              "start": 230
-            },
-            "start": {
-              "column": 19,
-              "line": 3
-            },
+            "span": {"end":236,"start":230},
+            "start": {"column":19,"line":3},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "8eb2342d1e853309ccf6137ee0a9a61988957d9370d794e1512409c007aa10e9",
-            "end": {
-              "column": 29,
-              "line": 0
-            },
+            "end": {"column":29,"line":0},
             "id": "4ddbebae970a",
             "kind": "identifier",
             "language": "rust",
@@ -473,23 +240,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/bridge.rs",
             "reason": "path",
             "role": "use",
-            "span": {
-              "end": 29,
-              "start": 23
-            },
-            "start": {
-              "column": 23,
-              "line": 0
-            },
+            "span": {"end":29,"start":23},
+            "start": {"column":23,"line":0},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 25,
-              "line": 1
-            },
+            "end": {"column":25,"line":1},
             "id": "8d378e625e04",
             "kind": "identifier",
             "language": "rust",
@@ -497,23 +255,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "path",
             "role": "use",
-            "span": {
-              "end": 53,
-              "start": 47
-            },
-            "start": {
-              "column": 19,
-              "line": 1
-            },
+            "span": {"end":53,"start":47},
+            "start": {"column":19,"line":1},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-            "end": {
-              "column": 25,
-              "line": 0
-            },
+            "end": {"column":25,"line":0},
             "id": "d59edacd32ca",
             "kind": "identifier",
             "language": "rust",
@@ -521,23 +270,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/lexical.rs",
             "reason": "path",
             "role": "use",
-            "span": {
-              "end": 25,
-              "start": 19
-            },
-            "start": {
-              "column": 19,
-              "line": 0
-            },
+            "span": {"end":25,"start":19},
+            "start": {"column":19,"line":0},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "5ee24e1ff338c2074c7395bc3ac0ada65dd3921c9220d11fe7cdfbc4b63a0d58",
-            "end": {
-              "column": 25,
-              "line": 0
-            },
+            "end": {"column":25,"line":0},
             "id": "293496a39450",
             "kind": "identifier",
             "language": "rust",
@@ -545,23 +285,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/test/check.rs",
             "reason": "path",
             "role": "use",
-            "span": {
-              "end": 25,
-              "start": 19
-            },
-            "start": {
-              "column": 19,
-              "line": 0
-            },
+            "span": {"end":25,"start":19},
+            "start": {"column":19,"line":0},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "e420a8d9135d3e61beda41bcb2da44f883045decfc8cad4218d6db2946cb337b",
-            "end": {
-              "column": 31,
-              "line": 2
-            },
+            "end": {"column":31,"line":2},
             "id": "df75cf35c201",
             "kind": "type_identifier",
             "language": "rust",
@@ -569,23 +300,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/ambiguous.rs",
             "reason": "opened",
             "role": "use",
-            "span": {
-              "end": 74,
-              "start": 68
-            },
-            "start": {
-              "column": 25,
-              "line": 2
-            },
+            "span": {"end":74,"start":68},
+            "start": {"column":25,"line":2},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 18,
-              "line": 4
-            },
+            "end": {"column":18,"line":4},
             "id": "17ec32a07de2",
             "kind": "type_identifier",
             "language": "rust",
@@ -593,23 +315,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 91,
-              "start": 85
-            },
-            "start": {
-              "column": 12,
-              "line": 4
-            },
+            "span": {"end":91,"start":85},
+            "start": {"column":12,"line":4},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 31,
-              "line": 8
-            },
+            "end": {"column":31,"line":8},
             "id": "03429ce66df7",
             "kind": "type_identifier",
             "language": "rust",
@@ -617,23 +330,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 149,
-              "start": 143
-            },
-            "start": {
-              "column": 25,
-              "line": 8
-            },
+            "span": {"end":149,"start":143},
+            "start": {"column":25,"line":8},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 42,
-              "line": 8
-            },
+            "end": {"column":42,"line":8},
             "id": "a59a40673165",
             "kind": "type_identifier",
             "language": "rust",
@@ -641,23 +345,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 160,
-              "start": 154
-            },
-            "start": {
-              "column": 36,
-              "line": 8
-            },
+            "span": {"end":160,"start":154},
+            "start": {"column":36,"line":8},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 21,
-              "line": 9
-            },
+            "end": {"column":21,"line":9},
             "id": "6eecc55f507e",
             "kind": "type_identifier",
             "language": "rust",
@@ -665,23 +360,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 193,
-              "start": 187
-            },
-            "start": {
-              "column": 15,
-              "line": 9
-            },
+            "span": {"end":193,"start":187},
+            "start": {"column":15,"line":9},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 37,
-              "line": 9
-            },
+            "end": {"column":37,"line":9},
             "id": "b264ba6d6157",
             "kind": "type_identifier",
             "language": "rust",
@@ -689,23 +375,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 209,
-              "start": 203
-            },
-            "start": {
-              "column": 31,
-              "line": 9
-            },
+            "span": {"end":209,"start":203},
+            "start": {"column":31,"line":9},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 28,
-              "line": 10
-            },
+            "end": {"column":28,"line":10},
             "id": "8fd2e616dbcc",
             "kind": "type_identifier",
             "language": "rust",
@@ -713,23 +390,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 242,
-              "start": 236
-            },
-            "start": {
-              "column": 22,
-              "line": 10
-            },
+            "span": {"end":242,"start":236},
+            "start": {"column":22,"line":10},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 52,
-              "line": 10
-            },
+            "end": {"column":52,"line":10},
             "id": "667df796c88c",
             "kind": "type_identifier",
             "language": "rust",
@@ -737,23 +405,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 266,
-              "start": 260
-            },
-            "start": {
-              "column": 46,
-              "line": 10
-            },
+            "span": {"end":266,"start":260},
+            "start": {"column":46,"line":10},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 36,
-              "line": 11
-            },
+            "end": {"column":36,"line":11},
             "id": "7915766815d1",
             "kind": "type_identifier",
             "language": "rust",
@@ -761,23 +420,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 311,
-              "start": 305
-            },
-            "start": {
-              "column": 30,
-              "line": 11
-            },
+            "span": {"end":311,"start":305},
+            "start": {"column":30,"line":11},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 39,
-              "line": 13
-            },
+            "end": {"column":39,"line":13},
             "id": "cd4fffeff4a0",
             "kind": "type_identifier",
             "language": "rust",
@@ -785,23 +435,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 356,
-              "start": 350
-            },
-            "start": {
-              "column": 33,
-              "line": 13
-            },
+            "span": {"end":356,"start":350},
+            "start": {"column":33,"line":13},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 50,
-              "line": 13
-            },
+            "end": {"column":50,"line":13},
             "id": "628d040d837d",
             "kind": "type_identifier",
             "language": "rust",
@@ -809,23 +450,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 367,
-              "start": 361
-            },
-            "start": {
-              "column": 44,
-              "line": 13
-            },
+            "span": {"end":367,"start":361},
+            "start": {"column":44,"line":13},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
-            "end": {
-              "column": 24,
-              "line": 0
-            },
+            "end": {"column":24,"line":0},
             "id": "0d24ffdea591",
             "kind": "identifier",
             "language": "rust",
@@ -833,23 +465,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/namespaces.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 24,
-              "start": 18
-            },
-            "start": {
-              "column": 18,
-              "line": 0
-            },
+            "span": {"end":24,"start":18},
+            "start": {"column":18,"line":0},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
-            "end": {
-              "column": 17,
-              "line": 1
-            },
+            "end": {"column":17,"line":1},
             "id": "5d36cb6b251d",
             "kind": "type_identifier",
             "language": "rust",
@@ -857,23 +480,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/namespaces.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 43,
-              "start": 37
-            },
-            "start": {
-              "column": 11,
-              "line": 1
-            },
+            "span": {"end":43,"start":37},
+            "start": {"column":11,"line":1},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
-            "end": {
-              "column": 24,
-              "line": 2
-            },
+            "end": {"column":24,"line":2},
             "id": "f204ed27bc18",
             "kind": "type_identifier",
             "language": "rust",
@@ -881,23 +495,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/namespaces.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 88,
-              "start": 82
-            },
-            "start": {
-              "column": 18,
-              "line": 2
-            },
+            "span": {"end":88,"start":82},
+            "start": {"column":18,"line":2},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "7d5511427a8ff89cdc470bad81d45a4c7ad1752e9216998f8a1419b469b23d48",
-            "end": {
-              "column": 17,
-              "line": 0
-            },
+            "end": {"column":17,"line":0},
             "id": "9a693a45f70b",
             "kind": "type_identifier",
             "language": "rust",
@@ -905,23 +510,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/other.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 17,
-              "start": 11
-            },
-            "start": {
-              "column": 11,
-              "line": 0
-            },
+            "span": {"end":17,"start":11},
+            "start": {"column":11,"line":0},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "3df39cef199085c83090e083ce506ddea72e6a93d2b6c403dcd5b62297fb707b",
-            "end": {
-              "column": 13,
-              "line": 0
-            },
+            "end": {"column":13,"line":0},
             "id": "c66ec9c5b480",
             "kind": "identifier",
             "language": "rust",
@@ -929,14 +525,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/value.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 13,
-              "start": 7
-            },
-            "start": {
-              "column": 7,
-              "line": 0
-            },
+            "span": {"end":13,"start":7},
+            "start": {"column":7,"line":0},
             "text": "Engine"
           }
         ]
@@ -954,54 +544,24 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         "applied": false,
         "declarations": [
           {
-            "address": {
-              "package": "navigation",
-              "path": [
-                "origin",
-                "Engine"
-              ]
-            },
+            "address": {"package":"navigation","path":["origin","Engine"]},
             "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-            "end": {
-              "column": 1,
-              "line": 3
-            },
+            "end": {"column":1,"line":3},
             "id": "f2c97c3b389f",
             "kind": "struct_item",
             "language": "rust",
             "line": "pub struct Engine {",
             "path": "src/origin.rs",
             "role": "declaration",
-            "span": {
-              "end": 63,
-              "start": 19
-            },
-            "start": {
-              "column": 0,
-              "line": 1
-            },
+            "span": {"end":63,"start":19},
+            "start": {"column":0,"line":1},
             "symbol": {
-              "extent": {
-                "end": 63,
-                "start": 0
-              },
+              "extent": {"end":63,"start":0},
               "kind": "struct",
               "name": "Engine",
-              "name_span": {
-                "end": 36,
-                "start": 30
-              },
-              "span": {
-                "end": 63,
-                "start": 19
-              },
-              "visibility": {
-                "span": {
-                  "end": 22,
-                  "start": 19
-                },
-                "text": "pub"
-              }
+              "name_span": {"end":36,"start":30},
+              "span": {"end":63,"start":19},
+              "visibility": {"span":{"end":22,"start":19},"text":"pub"}
             },
             "text": "pub struct Engine {\n    pub running: bool,\n}"
           }
@@ -1009,166 +569,53 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         "files": [
           {
             "diff": "--- a/src/ambiguous.rs\n+++ b/src/ambiguous.rs\n@@ -1,3 +1,3 @@\n use crate::origin::*;\n use crate::other::*;\n-pub struct App { engine: Engine }\n+pub struct App { engine: Runtime }\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 74,
-                  "start": 68
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":74,"start":68}}],
             "path": "src/ambiguous.rs"
           },
           {
             "diff": "--- a/src/bindings.rs\n+++ b/src/bindings.rs\n@@ -1,5 +1,5 @@\n fn pairs((left, right): (u8, u8)) { consume(left); consume(right); }\n fn closure(value: u8) { let f = |value| value; consume(value); }\n fn destructure(pair: (u8, u8)) { let (left, right) = pair; consume(right); }\n-use crate::origin::Engine;\n-fn annotated() { let engine: Engine; }\n+use crate::origin::Runtime;\n+fn annotated() { let engine: Runtime; }\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 236,
-                  "start": 230
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 273,
-                  "start": 267
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":236,"start":230}},{"replacement":"Runtime","span":{"end":273,"start":267}}],
             "path": "src/bindings.rs"
           },
           {
             "diff": "--- a/src/bridge.rs\n+++ b/src/bridge.rs\n@@ -1 +1 @@\n-pub use crate::origin::Engine as Runtime;\n+pub use crate::origin::Runtime as Runtime;\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 29,
-                  "start": 23
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":29,"start":23}}],
             "path": "src/bridge.rs"
           },
           {
             "diff": "--- a/src/consumer.rs\n+++ b/src/consumer.rs\n@@ -1,5 +1,5 @@\n use crate::bridge::Runtime;\n-use crate::origin::Engine;\n+use crate::origin::Runtime;\n \n pub struct App {\n     engine: Engine,\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 53,
-                  "start": 47
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":53,"start":47}}],
             "path": "src/consumer.rs"
           },
           {
             "diff": "--- a/src/lexical.rs\n+++ b/src/lexical.rs\n@@ -1,9 +1,9 @@\n-use crate::origin::Engine;\n-fn generic<Engine>(value: Engine) -> Engine { value }\n-fn shadow(value: Engine) {\n+use crate::origin::Runtime;\n+fn generic<Runtime>(value: Runtime) -> Runtime { value }\n+fn shadow(value: Runtime) {\n     let value = value;\n     { let value = 1; consume(value); }\n     consume(value);\n }\n fn nested<T>(value: T) { fn inner() { let x: T; } }\n-fn destructured(value: Engine, (left, right): (u8, u8)) { consume(value); }\n+fn destructured(value: Runtime, (left, right): (u8, u8)) { consume(value); }\n",
             "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 25,
-                  "start": 19
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 44,
-                  "start": 38
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 59,
-                  "start": 53
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 70,
-                  "start": 64
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 104,
-                  "start": 98
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 273,
-                  "start": 267
-                }
-              }
+              {"replacement":"Runtime","span":{"end":25,"start":19}},
+              {"replacement":"Runtime","span":{"end":44,"start":38}},
+              {"replacement":"Runtime","span":{"end":59,"start":53}},
+              {"replacement":"Runtime","span":{"end":70,"start":64}},
+              {"replacement":"Runtime","span":{"end":104,"start":98}},
+              {"replacement":"Runtime","span":{"end":273,"start":267}}
             ],
             "path": "src/lexical.rs"
           },
           {
             "diff": "--- a/src/origin.rs\n+++ b/src/origin.rs\n@@ -1,8 +1,8 @@\n /// Runtime state.\n-pub struct Engine {\n+pub struct Runtime {\n     pub running: bool,\n }\n pub enum Error {\n-    Engine,\n+    Runtime,\n     Io,\n }\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 36,
-                  "start": 30
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 91,
-                  "start": 85
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":36,"start":30}},{"replacement":"Runtime","span":{"end":91,"start":85}}],
             "path": "src/origin.rs"
           },
           {
             "diff": "--- a/src/test/check.rs\n+++ b/src/test/check.rs\n@@ -1,2 +1,2 @@\n-use crate::origin::Engine;\n-fn related(value: Engine) {}\n+use crate::origin::Runtime;\n+fn related(value: Runtime) {}\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 25,
-                  "start": 19
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 51,
-                  "start": 45
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":25,"start":19}},{"replacement":"Runtime","span":{"end":51,"start":45}}],
             "path": "src/test/check.rs"
           }
         ],
-        "intent": {
-          "declared_in": "src/origin.rs",
-          "name": "Engine",
-          "symbol": "struct",
-          "to": "Runtime"
-        },
+        "intent": {"declared_in":"src/origin.rs","name":"Engine","symbol":"struct","to":"Runtime"},
         "occurrences": [
           {
             "confidence": "resolved",
             "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-            "end": {
-              "column": 17,
-              "line": 1
-            },
+            "end": {"column":17,"line":1},
             "id": "9d9176e29a8f",
             "kind": "type_identifier",
             "language": "rust",
@@ -1176,23 +623,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/origin.rs",
             "reason": "declaring",
             "role": "use",
-            "span": {
-              "end": 36,
-              "start": 30
-            },
-            "start": {
-              "column": 11,
-              "line": 1
-            },
+            "span": {"end":36,"start":30},
+            "start": {"column":11,"line":1},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-            "end": {
-              "column": 10,
-              "line": 5
-            },
+            "end": {"column":10,"line":5},
             "id": "c6ae3da429f0",
             "kind": "identifier",
             "language": "rust",
@@ -1200,23 +638,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/origin.rs",
             "reason": "declaring",
             "role": "use",
-            "span": {
-              "end": 91,
-              "start": 85
-            },
-            "start": {
-              "column": 4,
-              "line": 5
-            },
+            "span": {"end":91,"start":85},
+            "start": {"column":4,"line":5},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
-            "end": {
-              "column": 35,
-              "line": 4
-            },
+            "end": {"column":35,"line":4},
             "id": "73ed69618dfd",
             "kind": "type_identifier",
             "language": "rust",
@@ -1224,23 +653,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/bindings.rs",
             "reason": "imported",
             "role": "use",
-            "span": {
-              "end": 273,
-              "start": 267
-            },
-            "start": {
-              "column": 29,
-              "line": 4
-            },
+            "span": {"end":273,"start":267},
+            "start": {"column":29,"line":4},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-            "end": {
-              "column": 17,
-              "line": 1
-            },
+            "end": {"column":17,"line":1},
             "id": "12ec6ddf5daf",
             "kind": "type_identifier",
             "language": "rust",
@@ -1248,23 +668,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/lexical.rs",
             "reason": "imported",
             "role": "use",
-            "span": {
-              "end": 44,
-              "start": 38
-            },
-            "start": {
-              "column": 11,
-              "line": 1
-            },
+            "span": {"end":44,"start":38},
+            "start": {"column":11,"line":1},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-            "end": {
-              "column": 32,
-              "line": 1
-            },
+            "end": {"column":32,"line":1},
             "id": "6ce959c3f0c3",
             "kind": "type_identifier",
             "language": "rust",
@@ -1272,23 +683,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/lexical.rs",
             "reason": "imported",
             "role": "use",
-            "span": {
-              "end": 59,
-              "start": 53
-            },
-            "start": {
-              "column": 26,
-              "line": 1
-            },
+            "span": {"end":59,"start":53},
+            "start": {"column":26,"line":1},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-            "end": {
-              "column": 43,
-              "line": 1
-            },
+            "end": {"column":43,"line":1},
             "id": "cac1a4f68908",
             "kind": "type_identifier",
             "language": "rust",
@@ -1296,23 +698,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/lexical.rs",
             "reason": "imported",
             "role": "use",
-            "span": {
-              "end": 70,
-              "start": 64
-            },
-            "start": {
-              "column": 37,
-              "line": 1
-            },
+            "span": {"end":70,"start":64},
+            "start": {"column":37,"line":1},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-            "end": {
-              "column": 23,
-              "line": 2
-            },
+            "end": {"column":23,"line":2},
             "id": "ccdba78166d1",
             "kind": "type_identifier",
             "language": "rust",
@@ -1320,23 +713,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/lexical.rs",
             "reason": "imported",
             "role": "use",
-            "span": {
-              "end": 104,
-              "start": 98
-            },
-            "start": {
-              "column": 17,
-              "line": 2
-            },
+            "span": {"end":104,"start":98},
+            "start": {"column":17,"line":2},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-            "end": {
-              "column": 29,
-              "line": 8
-            },
+            "end": {"column":29,"line":8},
             "id": "3793dd625e3a",
             "kind": "type_identifier",
             "language": "rust",
@@ -1344,23 +728,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/lexical.rs",
             "reason": "imported",
             "role": "use",
-            "span": {
-              "end": 273,
-              "start": 267
-            },
-            "start": {
-              "column": 23,
-              "line": 8
-            },
+            "span": {"end":273,"start":267},
+            "start": {"column":23,"line":8},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "5ee24e1ff338c2074c7395bc3ac0ada65dd3921c9220d11fe7cdfbc4b63a0d58",
-            "end": {
-              "column": 24,
-              "line": 1
-            },
+            "end": {"column":24,"line":1},
             "id": "12b65243b9f7",
             "kind": "type_identifier",
             "language": "rust",
@@ -1368,23 +743,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/test/check.rs",
             "reason": "imported",
             "role": "use",
-            "span": {
-              "end": 51,
-              "start": 45
-            },
-            "start": {
-              "column": 18,
-              "line": 1
-            },
+            "span": {"end":51,"start":45},
+            "start": {"column":18,"line":1},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
-            "end": {
-              "column": 25,
-              "line": 3
-            },
+            "end": {"column":25,"line":3},
             "id": "4963ef949cb8",
             "kind": "identifier",
             "language": "rust",
@@ -1392,23 +758,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/bindings.rs",
             "reason": "path",
             "role": "use",
-            "span": {
-              "end": 236,
-              "start": 230
-            },
-            "start": {
-              "column": 19,
-              "line": 3
-            },
+            "span": {"end":236,"start":230},
+            "start": {"column":19,"line":3},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "8eb2342d1e853309ccf6137ee0a9a61988957d9370d794e1512409c007aa10e9",
-            "end": {
-              "column": 29,
-              "line": 0
-            },
+            "end": {"column":29,"line":0},
             "id": "4ddbebae970a",
             "kind": "identifier",
             "language": "rust",
@@ -1416,23 +773,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/bridge.rs",
             "reason": "path",
             "role": "use",
-            "span": {
-              "end": 29,
-              "start": 23
-            },
-            "start": {
-              "column": 23,
-              "line": 0
-            },
+            "span": {"end":29,"start":23},
+            "start": {"column":23,"line":0},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 25,
-              "line": 1
-            },
+            "end": {"column":25,"line":1},
             "id": "8d378e625e04",
             "kind": "identifier",
             "language": "rust",
@@ -1440,23 +788,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "path",
             "role": "use",
-            "span": {
-              "end": 53,
-              "start": 47
-            },
-            "start": {
-              "column": 19,
-              "line": 1
-            },
+            "span": {"end":53,"start":47},
+            "start": {"column":19,"line":1},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-            "end": {
-              "column": 25,
-              "line": 0
-            },
+            "end": {"column":25,"line":0},
             "id": "d59edacd32ca",
             "kind": "identifier",
             "language": "rust",
@@ -1464,23 +803,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/lexical.rs",
             "reason": "path",
             "role": "use",
-            "span": {
-              "end": 25,
-              "start": 19
-            },
-            "start": {
-              "column": 19,
-              "line": 0
-            },
+            "span": {"end":25,"start":19},
+            "start": {"column":19,"line":0},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "5ee24e1ff338c2074c7395bc3ac0ada65dd3921c9220d11fe7cdfbc4b63a0d58",
-            "end": {
-              "column": 25,
-              "line": 0
-            },
+            "end": {"column":25,"line":0},
             "id": "293496a39450",
             "kind": "identifier",
             "language": "rust",
@@ -1488,23 +818,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/test/check.rs",
             "reason": "path",
             "role": "use",
-            "span": {
-              "end": 25,
-              "start": 19
-            },
-            "start": {
-              "column": 19,
-              "line": 0
-            },
+            "span": {"end":25,"start":19},
+            "start": {"column":19,"line":0},
             "text": "Engine"
           },
           {
             "confidence": "resolved",
             "content": "e420a8d9135d3e61beda41bcb2da44f883045decfc8cad4218d6db2946cb337b",
-            "end": {
-              "column": 31,
-              "line": 2
-            },
+            "end": {"column":31,"line":2},
             "id": "df75cf35c201",
             "kind": "type_identifier",
             "language": "rust",
@@ -1512,23 +833,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/ambiguous.rs",
             "reason": "opened",
             "role": "use",
-            "span": {
-              "end": 74,
-              "start": 68
-            },
-            "start": {
-              "column": 25,
-              "line": 2
-            },
+            "span": {"end":74,"start":68},
+            "start": {"column":25,"line":2},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 18,
-              "line": 4
-            },
+            "end": {"column":18,"line":4},
             "id": "17ec32a07de2",
             "kind": "type_identifier",
             "language": "rust",
@@ -1536,23 +848,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 91,
-              "start": 85
-            },
-            "start": {
-              "column": 12,
-              "line": 4
-            },
+            "span": {"end":91,"start":85},
+            "start": {"column":12,"line":4},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 31,
-              "line": 8
-            },
+            "end": {"column":31,"line":8},
             "id": "03429ce66df7",
             "kind": "type_identifier",
             "language": "rust",
@@ -1560,23 +863,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 149,
-              "start": 143
-            },
-            "start": {
-              "column": 25,
-              "line": 8
-            },
+            "span": {"end":149,"start":143},
+            "start": {"column":25,"line":8},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 42,
-              "line": 8
-            },
+            "end": {"column":42,"line":8},
             "id": "a59a40673165",
             "kind": "type_identifier",
             "language": "rust",
@@ -1584,23 +878,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 160,
-              "start": 154
-            },
-            "start": {
-              "column": 36,
-              "line": 8
-            },
+            "span": {"end":160,"start":154},
+            "start": {"column":36,"line":8},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 21,
-              "line": 9
-            },
+            "end": {"column":21,"line":9},
             "id": "6eecc55f507e",
             "kind": "type_identifier",
             "language": "rust",
@@ -1608,23 +893,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 193,
-              "start": 187
-            },
-            "start": {
-              "column": 15,
-              "line": 9
-            },
+            "span": {"end":193,"start":187},
+            "start": {"column":15,"line":9},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 37,
-              "line": 9
-            },
+            "end": {"column":37,"line":9},
             "id": "b264ba6d6157",
             "kind": "type_identifier",
             "language": "rust",
@@ -1632,23 +908,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 209,
-              "start": 203
-            },
-            "start": {
-              "column": 31,
-              "line": 9
-            },
+            "span": {"end":209,"start":203},
+            "start": {"column":31,"line":9},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 28,
-              "line": 10
-            },
+            "end": {"column":28,"line":10},
             "id": "8fd2e616dbcc",
             "kind": "type_identifier",
             "language": "rust",
@@ -1656,23 +923,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 242,
-              "start": 236
-            },
-            "start": {
-              "column": 22,
-              "line": 10
-            },
+            "span": {"end":242,"start":236},
+            "start": {"column":22,"line":10},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 52,
-              "line": 10
-            },
+            "end": {"column":52,"line":10},
             "id": "667df796c88c",
             "kind": "type_identifier",
             "language": "rust",
@@ -1680,23 +938,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 266,
-              "start": 260
-            },
-            "start": {
-              "column": 46,
-              "line": 10
-            },
+            "span": {"end":266,"start":260},
+            "start": {"column":46,"line":10},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 36,
-              "line": 11
-            },
+            "end": {"column":36,"line":11},
             "id": "7915766815d1",
             "kind": "type_identifier",
             "language": "rust",
@@ -1704,23 +953,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 311,
-              "start": 305
-            },
-            "start": {
-              "column": 30,
-              "line": 11
-            },
+            "span": {"end":311,"start":305},
+            "start": {"column":30,"line":11},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 39,
-              "line": 13
-            },
+            "end": {"column":39,"line":13},
             "id": "cd4fffeff4a0",
             "kind": "type_identifier",
             "language": "rust",
@@ -1728,23 +968,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 356,
-              "start": 350
-            },
-            "start": {
-              "column": 33,
-              "line": 13
-            },
+            "span": {"end":356,"start":350},
+            "start": {"column":33,"line":13},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "end": {
-              "column": 50,
-              "line": 13
-            },
+            "end": {"column":50,"line":13},
             "id": "628d040d837d",
             "kind": "type_identifier",
             "language": "rust",
@@ -1752,23 +983,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/consumer.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 367,
-              "start": 361
-            },
-            "start": {
-              "column": 44,
-              "line": 13
-            },
+            "span": {"end":367,"start":361},
+            "start": {"column":44,"line":13},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
-            "end": {
-              "column": 24,
-              "line": 0
-            },
+            "end": {"column":24,"line":0},
             "id": "0d24ffdea591",
             "kind": "identifier",
             "language": "rust",
@@ -1776,23 +998,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/namespaces.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 24,
-              "start": 18
-            },
-            "start": {
-              "column": 18,
-              "line": 0
-            },
+            "span": {"end":24,"start":18},
+            "start": {"column":18,"line":0},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
-            "end": {
-              "column": 17,
-              "line": 1
-            },
+            "end": {"column":17,"line":1},
             "id": "5d36cb6b251d",
             "kind": "type_identifier",
             "language": "rust",
@@ -1800,23 +1013,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/namespaces.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 43,
-              "start": 37
-            },
-            "start": {
-              "column": 11,
-              "line": 1
-            },
+            "span": {"end":43,"start":37},
+            "start": {"column":11,"line":1},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
-            "end": {
-              "column": 24,
-              "line": 2
-            },
+            "end": {"column":24,"line":2},
             "id": "f204ed27bc18",
             "kind": "type_identifier",
             "language": "rust",
@@ -1824,23 +1028,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/namespaces.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 88,
-              "start": 82
-            },
-            "start": {
-              "column": 18,
-              "line": 2
-            },
+            "span": {"end":88,"start":82},
+            "start": {"column":18,"line":2},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "7d5511427a8ff89cdc470bad81d45a4c7ad1752e9216998f8a1419b469b23d48",
-            "end": {
-              "column": 17,
-              "line": 0
-            },
+            "end": {"column":17,"line":0},
             "id": "9a693a45f70b",
             "kind": "type_identifier",
             "language": "rust",
@@ -1848,23 +1043,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/other.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 17,
-              "start": 11
-            },
-            "start": {
-              "column": 11,
-              "line": 0
-            },
+            "span": {"end":17,"start":11},
+            "start": {"column":11,"line":0},
             "text": "Engine"
           },
           {
             "confidence": "other",
             "content": "3df39cef199085c83090e083ce506ddea72e6a93d2b6c403dcd5b62297fb707b",
-            "end": {
-              "column": 13,
-              "line": 0
-            },
+            "end": {"column":13,"line":0},
             "id": "c66ec9c5b480",
             "kind": "identifier",
             "language": "rust",
@@ -1872,14 +1058,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
             "path": "src/value.rs",
             "reason": "other-declaration",
             "role": "use",
-            "span": {
-              "end": 13,
-              "start": 7
-            },
-            "start": {
-              "column": 7,
-              "line": 0
-            },
+            "span": {"end":13,"start":7},
+            "start": {"column":7,"line":0},
             "text": "Engine"
           }
         ]
@@ -1892,34 +1072,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "files": [
-        {
-          "content": "52060753a9f5d068796c112590a9b2a0223b26c0eb359def5f9c8a19e7dbfc77",
-          "path": "src/ambiguous.rs"
-        },
-        {
-          "content": "fce9155dbb00bd055b7c0ecd48f0d3833f3d70b629cafa9216cc942e3511f124",
-          "path": "src/bindings.rs"
-        },
-        {
-          "content": "a69d3bd39dbc6e8fb29a02b99f944042350ec3a68f365323dc114b2dc4a3f6fb",
-          "path": "src/bridge.rs"
-        },
-        {
-          "content": "f4b4b556b79f7cc7054da080fcdb91b46360d60d7cf8f3728099449a69fa3811",
-          "path": "src/consumer.rs"
-        },
-        {
-          "content": "ea162d12329bef82f6edc569158973e1195c23d13922c1bf2134ad32f9e41401",
-          "path": "src/lexical.rs"
-        },
-        {
-          "content": "1b3a9b272ed340fb37fc53bcb9d7770f9c8adf5c29b999d2e8aaa63dfce999c6",
-          "path": "src/origin.rs"
-        },
-        {
-          "content": "23d68d180273d53278ea9bdd42ea4131c1a450b961dcbd243a1d6c1f0d4e85ab",
-          "path": "src/test/check.rs"
-        }
+        {"content":"52060753a9f5d068796c112590a9b2a0223b26c0eb359def5f9c8a19e7dbfc77","path":"src/ambiguous.rs"},
+        {"content":"fce9155dbb00bd055b7c0ecd48f0d3833f3d70b629cafa9216cc942e3511f124","path":"src/bindings.rs"},
+        {"content":"a69d3bd39dbc6e8fb29a02b99f944042350ec3a68f365323dc114b2dc4a3f6fb","path":"src/bridge.rs"},
+        {"content":"f4b4b556b79f7cc7054da080fcdb91b46360d60d7cf8f3728099449a69fa3811","path":"src/consumer.rs"},
+        {"content":"ea162d12329bef82f6edc569158973e1195c23d13922c1bf2134ad32f9e41401","path":"src/lexical.rs"},
+        {"content":"1b3a9b272ed340fb37fc53bcb9d7770f9c8adf5c29b999d2e8aaa63dfce999c6","path":"src/origin.rs"},
+        {"content":"23d68d180273d53278ea9bdd42ea4131c1a450b961dcbd243a1d6c1f0d4e85ab","path":"src/test/check.rs"}
       ],
       "history_id": 1,
       "plan_id": "cursor-1"
@@ -1930,34 +1089,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "files": [
-        {
-          "content": "52060753a9f5d068796c112590a9b2a0223b26c0eb359def5f9c8a19e7dbfc77",
-          "path": "src/ambiguous.rs"
-        },
-        {
-          "content": "fce9155dbb00bd055b7c0ecd48f0d3833f3d70b629cafa9216cc942e3511f124",
-          "path": "src/bindings.rs"
-        },
-        {
-          "content": "a69d3bd39dbc6e8fb29a02b99f944042350ec3a68f365323dc114b2dc4a3f6fb",
-          "path": "src/bridge.rs"
-        },
-        {
-          "content": "f4b4b556b79f7cc7054da080fcdb91b46360d60d7cf8f3728099449a69fa3811",
-          "path": "src/consumer.rs"
-        },
-        {
-          "content": "ea162d12329bef82f6edc569158973e1195c23d13922c1bf2134ad32f9e41401",
-          "path": "src/lexical.rs"
-        },
-        {
-          "content": "1b3a9b272ed340fb37fc53bcb9d7770f9c8adf5c29b999d2e8aaa63dfce999c6",
-          "path": "src/origin.rs"
-        },
-        {
-          "content": "23d68d180273d53278ea9bdd42ea4131c1a450b961dcbd243a1d6c1f0d4e85ab",
-          "path": "src/test/check.rs"
-        }
+        {"content":"52060753a9f5d068796c112590a9b2a0223b26c0eb359def5f9c8a19e7dbfc77","path":"src/ambiguous.rs"},
+        {"content":"fce9155dbb00bd055b7c0ecd48f0d3833f3d70b629cafa9216cc942e3511f124","path":"src/bindings.rs"},
+        {"content":"a69d3bd39dbc6e8fb29a02b99f944042350ec3a68f365323dc114b2dc4a3f6fb","path":"src/bridge.rs"},
+        {"content":"f4b4b556b79f7cc7054da080fcdb91b46360d60d7cf8f3728099449a69fa3811","path":"src/consumer.rs"},
+        {"content":"ea162d12329bef82f6edc569158973e1195c23d13922c1bf2134ad32f9e41401","path":"src/lexical.rs"},
+        {"content":"1b3a9b272ed340fb37fc53bcb9d7770f9c8adf5c29b999d2e8aaa63dfce999c6","path":"src/origin.rs"},
+        {"content":"23d68d180273d53278ea9bdd42ea4131c1a450b961dcbd243a1d6c1f0d4e85ab","path":"src/test/check.rs"}
       ],
       "history_id": 1,
       "plan_id": "cursor-1"
@@ -1971,34 +1109,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "plan_id": "cursor-1",
       "receipt": {
         "files": [
-          {
-            "content": "52060753a9f5d068796c112590a9b2a0223b26c0eb359def5f9c8a19e7dbfc77",
-            "path": "src/ambiguous.rs"
-          },
-          {
-            "content": "fce9155dbb00bd055b7c0ecd48f0d3833f3d70b629cafa9216cc942e3511f124",
-            "path": "src/bindings.rs"
-          },
-          {
-            "content": "a69d3bd39dbc6e8fb29a02b99f944042350ec3a68f365323dc114b2dc4a3f6fb",
-            "path": "src/bridge.rs"
-          },
-          {
-            "content": "f4b4b556b79f7cc7054da080fcdb91b46360d60d7cf8f3728099449a69fa3811",
-            "path": "src/consumer.rs"
-          },
-          {
-            "content": "ea162d12329bef82f6edc569158973e1195c23d13922c1bf2134ad32f9e41401",
-            "path": "src/lexical.rs"
-          },
-          {
-            "content": "1b3a9b272ed340fb37fc53bcb9d7770f9c8adf5c29b999d2e8aaa63dfce999c6",
-            "path": "src/origin.rs"
-          },
-          {
-            "content": "23d68d180273d53278ea9bdd42ea4131c1a450b961dcbd243a1d6c1f0d4e85ab",
-            "path": "src/test/check.rs"
-          }
+          {"content":"52060753a9f5d068796c112590a9b2a0223b26c0eb359def5f9c8a19e7dbfc77","path":"src/ambiguous.rs"},
+          {"content":"fce9155dbb00bd055b7c0ecd48f0d3833f3d70b629cafa9216cc942e3511f124","path":"src/bindings.rs"},
+          {"content":"a69d3bd39dbc6e8fb29a02b99f944042350ec3a68f365323dc114b2dc4a3f6fb","path":"src/bridge.rs"},
+          {"content":"f4b4b556b79f7cc7054da080fcdb91b46360d60d7cf8f3728099449a69fa3811","path":"src/consumer.rs"},
+          {"content":"ea162d12329bef82f6edc569158973e1195c23d13922c1bf2134ad32f9e41401","path":"src/lexical.rs"},
+          {"content":"1b3a9b272ed340fb37fc53bcb9d7770f9c8adf5c29b999d2e8aaa63dfce999c6","path":"src/origin.rs"},
+          {"content":"23d68d180273d53278ea9bdd42ea4131c1a450b961dcbd243a1d6c1f0d4e85ab","path":"src/test/check.rs"}
         ],
         "history_id": 1,
         "plan_id": "cursor-1"
@@ -2011,34 +1128,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "files": [
-        {
-          "content": "52060753a9f5d068796c112590a9b2a0223b26c0eb359def5f9c8a19e7dbfc77",
-          "path": "src/ambiguous.rs"
-        },
-        {
-          "content": "fce9155dbb00bd055b7c0ecd48f0d3833f3d70b629cafa9216cc942e3511f124",
-          "path": "src/bindings.rs"
-        },
-        {
-          "content": "a69d3bd39dbc6e8fb29a02b99f944042350ec3a68f365323dc114b2dc4a3f6fb",
-          "path": "src/bridge.rs"
-        },
-        {
-          "content": "f4b4b556b79f7cc7054da080fcdb91b46360d60d7cf8f3728099449a69fa3811",
-          "path": "src/consumer.rs"
-        },
-        {
-          "content": "ea162d12329bef82f6edc569158973e1195c23d13922c1bf2134ad32f9e41401",
-          "path": "src/lexical.rs"
-        },
-        {
-          "content": "1b3a9b272ed340fb37fc53bcb9d7770f9c8adf5c29b999d2e8aaa63dfce999c6",
-          "path": "src/origin.rs"
-        },
-        {
-          "content": "23d68d180273d53278ea9bdd42ea4131c1a450b961dcbd243a1d6c1f0d4e85ab",
-          "path": "src/test/check.rs"
-        }
+        {"content":"52060753a9f5d068796c112590a9b2a0223b26c0eb359def5f9c8a19e7dbfc77","path":"src/ambiguous.rs"},
+        {"content":"fce9155dbb00bd055b7c0ecd48f0d3833f3d70b629cafa9216cc942e3511f124","path":"src/bindings.rs"},
+        {"content":"a69d3bd39dbc6e8fb29a02b99f944042350ec3a68f365323dc114b2dc4a3f6fb","path":"src/bridge.rs"},
+        {"content":"f4b4b556b79f7cc7054da080fcdb91b46360d60d7cf8f3728099449a69fa3811","path":"src/consumer.rs"},
+        {"content":"ea162d12329bef82f6edc569158973e1195c23d13922c1bf2134ad32f9e41401","path":"src/lexical.rs"},
+        {"content":"1b3a9b272ed340fb37fc53bcb9d7770f9c8adf5c29b999d2e8aaa63dfce999c6","path":"src/origin.rs"},
+        {"content":"23d68d180273d53278ea9bdd42ea4131c1a450b961dcbd243a1d6c1f0d4e85ab","path":"src/test/check.rs"}
       ],
       "history_id": 1,
       "plan_id": "cursor-1"

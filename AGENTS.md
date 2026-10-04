@@ -158,8 +158,11 @@ docs/          architecture, guide, protocol, report
   `println!` in a reporter: write to its `out`/`err` so tests can capture it.
 - What a command _means_ changed (a verdict, an address, an edit) → the corpus gate
   changes: `crates/vvv/tests/corpus.rs` runs command cases over the registered workspaces
-  under `crates/vvv/tests/corpus/` and keeps the exact output in
-  `crates/vvv/tests/corpus/snapshots/`. Read the diff as the review of the change —
+  under `crates/vvv/tests/corpus/` and keeps exact human output and canonical JSON in
+  `crates/vvv/tests/corpus/snapshots/`. Complete source previews are shared once per
+  fixture/path; every response must match that value, even during snapshot updates.
+  Keep all JSON values and array ordering; only object ordering and layout are normalized.
+  Read the diff as the review of the change —
   every line that moved is a behaviour that moved — then accept with
   `INSTA_UPDATE=always cargo test -p vvv-rs --test corpus`. A new shape of code vvv
   should handle goes into the corpus first, with a case that shows it. The same file
@@ -187,4 +190,9 @@ docs/          architecture, guide, protocol, report
   embeds a path is asserted with `\` normalized to `/`. CI runs Windows, where a joined
   path spells its separator as `\`; `Path`'s `PartialEq` is component-wise, so
   `Path::new("a/b")` equals `Path::new("a\\b")` there.
+- Test the current implementation as the first release: no previous-format,
+  migration, or backward-compatibility tests. Give each behavior one primary test
+  owner. MCP tests cover transport and client workflows; grammar cases belong in
+  the language tests and corpus. Keep distinct invariants and failure scenarios,
+  rather than repeating them through every interface.
 - Commit only when asked.

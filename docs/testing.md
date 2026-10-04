@@ -11,9 +11,27 @@ Pick the layer that owns the behavior:
 | Does a key/event change the right state? | `vvv-tui/src/tests_<concern>.rs`                        | Pure `Action`/`Event` assertions                         |
 | What does an interface display?          | CLI human snapshots, TUI presentation tests             | Reviewed `insta` snapshots                               |
 
+Test the current implementation as the first release. Previous formats and
+migrations have no test contract. A test earns its place by protecting a distinct
+behavior, invariant, failure outcome, or interface contract:
+
+- Keep syntax details in language tests and the corpus. MCP tests cover protocol
+  negotiation, schema-valid responses, budgets, cancellation, and client workflows.
+- Keep source provenance, UTF-8 boundaries, ambiguity, rollback, and mutation laws.
+- Remove accessor checks, fixture demonstrations, and weaker duplicates when a
+  stronger test already exercises the same behavior.
+- Optional inputs and external protocol negotiation are current contracts;
+  accepting records from a previous vvv implementation is not.
+
+Ignored subprocess fixtures are invoked by validation workflow tests. Ignored
+performance workloads are manual diagnostics. Neither is an unfinished test.
+
 ## Focused runs
 
 ```console
+# Full gate with summaries instead of every passing test name.
+cargo test --workspace --all-features --no-fail-fast --quiet
+
 # List individual corpus commands; each runs human and JSON output.
 cargo test -p vvv-rs --test corpus -- --list
 cargo test -p vvv-rs --test corpus rust_golden::case_rename -- --exact
@@ -58,6 +76,15 @@ missing or duplicate cases so additions cannot silently go untested.
 Snapshots review presentation and command meaning. State transitions, selection,
 provenance, and rollback use focused assertions. Compare paths as `Path` values,
 never formatted separators. Review snapshot diffs before accepting them.
+
+Corpus human snapshots preserve exact text. JSON snapshots preserve every field,
+value, and array position, with sorted object keys and compact small records.
+Navigation cases reference a `__source__` snapshot containing the complete file
+preview: text, highlights, symbols, and identifiers. Each fixture/path has one such
+expectation; every response's full preview must equal it. Cases must also agree
+with each other when accepting updates, so accepting snapshots cannot conceal
+query-dependent source differences. `$snapshot` references exist only in tests;
+the actual CLI response is validated against its schema before factoring.
 
 These patterns use [Cargo's native test filtering](https://doc.rust-lang.org/cargo/commands/cargo-test.html),
 [`$0` fixture positions used by rust-analyzer](https://github.com/rust-lang/rust-analyzer/blob/master/crates/test-fixture/src/lib.rs),

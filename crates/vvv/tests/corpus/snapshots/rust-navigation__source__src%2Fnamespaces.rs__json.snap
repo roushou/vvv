@@ -1,0 +1,57 @@
+---
+source: crates/vvv/tests/common/corpus_snapshot.rs
+expression: JsonSnapshot(&self.value).to_string()
+---
+{
+  "highlights": [
+    {"kind":"keyword","span":{"end":3,"start":0}},
+    {"kind":"keyword","span":{"end":9,"start":4}},
+    {"kind":"keyword","span":{"end":29,"start":26}},
+    {"kind":"keyword","span":{"end":36,"start":30}},
+    {"kind":"type","span":{"end":43,"start":37}},
+    {"kind":"keyword","span":{"end":49,"start":46}},
+    {"kind":"type","span":{"end":61,"start":57}},
+    {"kind":"keyword","span":{"end":67,"start":64}},
+    {"kind":"keyword","span":{"end":70,"start":68}},
+    {"kind":"function","span":{"end":74,"start":71}},
+    {"kind":"type","span":{"end":88,"start":82}}
+  ],
+  "identifiers": [
+    {"content":"5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3","path":"src/namespaces.rs","span":{"end":16,"start":11}},
+    {"content":"5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3","path":"src/namespaces.rs","span":{"end":24,"start":18}},
+    {"content":"5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3","path":"src/namespaces.rs","span":{"end":43,"start":37}},
+    {"content":"5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3","path":"src/namespaces.rs","span":{"end":55,"start":50}},
+    {"content":"5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3","path":"src/namespaces.rs","span":{"end":74,"start":71}},
+    {"content":"5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3","path":"src/namespaces.rs","span":{"end":80,"start":75}},
+    {"content":"5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3","path":"src/namespaces.rs","span":{"end":88,"start":82}}
+  ],
+  "path": "src/namespaces.rs",
+  "symbols": [
+    {
+      "extent": {"end":63,"start":26},
+      "kind": "struct",
+      "name": "Engine",
+      "name_span": {"end":43,"start":37},
+      "span": {"end":63,"start":26},
+      "visibility": {"span":{"end":29,"start":26},"text":"pub"}
+    },
+    {
+      "extent": {"end":61,"start":46},
+      "kind": "field",
+      "name": "ready",
+      "name_span": {"end":55,"start":50},
+      "span": {"end":61,"start":46},
+      "visibility": {"span":{"end":49,"start":46},"text":"pub"}
+    },
+    {
+      "extent": {"end":92,"start":64},
+      "kind": "function",
+      "name": "run",
+      "name_span": {"end":74,"start":71},
+      "span": {"end":92,"start":64},
+      "visibility": {"span":{"end":67,"start":64},"text":"pub"}
+    },
+    {"extent":{"end":88,"start":75},"kind":"parameter","name":"value","name_span":{"end":80,"start":75},"span":{"end":88,"start":75}}
+  ],
+  "text": "use crate::value::Engine;\npub struct Engine { pub ready: bool }\npub fn run(value: Engine) {}\n"
+}

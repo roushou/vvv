@@ -1,132 +1,67 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "071fa5b7505ebfe687591a3d65ffea84c7cd88dfa90a97ffe66475127ce072dc",
-    "subject": {
-      "outcome": "resolved",
-      "target": {
-        "language": "typescript",
-        "declaration": {
-          "path": "src/locals.ts",
-          "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
-          "span": {
-            "start": 1275,
-            "end": 1344
-          }
-        },
-        "name_span": {
-          "start": 1291,
-          "end": 1299
-        },
-        "kind": "function"
-      },
-      "id": "8b84bca3cc33",
-      "name": "callable",
-      "start": {
-        "line": 57,
-        "column": 7
-      },
-      "evidence": {
-        "addresses": []
-      },
-      "container": {
-        "language": "typescript",
-        "declaration": {
-          "path": "src/locals.ts",
-          "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
-          "span": {
-            "start": 1275,
-            "end": 1344
-          }
-        },
-        "name_span": {
-          "start": 1291,
-          "end": 1299
-        },
-        "kind": "function"
-      }
-    },
-    "kind": "callees",
-    "scope": {
-      "paths": [],
-      "packages": []
+    "coverage": {
+      "files_remaining": 0,
+      "files_scanned": 1,
+      "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
+      "lookups": 1,
+      "omitted_items": 0,
+      "scan_complete": true,
+      "stopped_by": null,
+      "unresolved_imports": 0,
+      "unsupported_files": 0
     },
     "items": [
       {
-        "site": {
-          "path": "src/locals.ts",
-          "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
-          "span": {
-            "start": 1336,
-            "end": 1339
-          }
-        },
-        "start": {
-          "line": 59,
-          "column": 2
-        },
-        "spelling": "run",
-        "caller": {
+        "binding": {
+          "declaration": {"content":"d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f","path":"src/locals.ts","span":{"end":1332,"start":1317}},
+          "kind": "variable",
           "language": "typescript",
-          "declaration": {
-            "path": "src/locals.ts",
-            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
-            "span": {
-              "start": 1275,
-              "end": 1344
-            }
-          },
-          "name_span": {
-            "start": 1291,
-            "end": 1299
-          },
-          "kind": "function"
+          "name_span": {"end":1322,"start":1319}
         },
         "call": "direct",
-        "outcome": "indirect",
-        "binding": {
+        "caller": {
+          "declaration": {"content":"d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f","path":"src/locals.ts","span":{"end":1344,"start":1275}},
+          "kind": "function",
           "language": "typescript",
-          "declaration": {
-            "path": "src/locals.ts",
-            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
-            "span": {
-              "start": 1317,
-              "end": 1332
-            }
-          },
-          "name_span": {
-            "start": 1319,
-            "end": 1322
-          },
-          "kind": "variable"
-        }
+          "name_span": {"end":1299,"start":1291}
+        },
+        "outcome": "indirect",
+        "site": {"content":"d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f","path":"src/locals.ts","span":{"end":1339,"start":1336}},
+        "spelling": "run",
+        "start": {"column":2,"line":59}
       }
     ],
-    "coverage": {
-      "limitations": [
-        "receiver_types",
-        "indirect_targets",
-        "macro_expansion",
-        "anonymous_callers",
-        "unsupported_bindings",
-        "unenumerated_aliases"
-      ],
-      "files_scanned": 1,
-      "files_remaining": 0,
-      "lookups": 1,
-      "omitted_items": 0,
-      "stopped_by": null,
-      "unsupported_files": 0,
-      "unresolved_imports": 0,
-      "scan_complete": true
+    "kind": "callees",
+    "scope": {"packages":[],"paths":[]},
+    "snapshot": "071fa5b7505ebfe687591a3d65ffea84c7cd88dfa90a97ffe66475127ce072dc",
+    "subject": {
+      "container": {
+        "declaration": {"content":"d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f","path":"src/locals.ts","span":{"end":1344,"start":1275}},
+        "kind": "function",
+        "language": "typescript",
+        "name_span": {"end":1299,"start":1291}
+      },
+      "evidence": {"addresses":[]},
+      "id": "8b84bca3cc33",
+      "name": "callable",
+      "outcome": "resolved",
+      "start": {"column":7,"line":57},
+      "target": {
+        "declaration": {"content":"d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f","path":"src/locals.ts","span":{"end":1344,"start":1275}},
+        "kind": "function",
+        "language": "typescript",
+        "name_span": {"end":1299,"start":1291}
+      }
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

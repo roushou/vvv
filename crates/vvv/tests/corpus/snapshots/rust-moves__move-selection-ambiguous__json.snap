@@ -1,223 +1,100 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 1
 --- stdout ---
 {
-  "status": "error",
+  "code": "bad_selection",
+  "message": "select exactly one symbol-move declaration: 1: ec45f5ab12c9 src/selection.rs:3, 2: 4f139e06e574 src/selection.rs:6",
   "schema": 1,
+  "status": "error",
   "symbol_move_candidates": [
     {
       "declaration": {
         "content": "4b41069130957c60a1d572f934e9b6502f81430a31fcde904612b73241c21fd8",
+        "end": {"column":30,"line":2},
         "id": "ec45f5ab12c9",
-        "path": "src/selection.rs",
-        "language": "rust",
-        "span": {
-          "start": 69,
-          "end": 99
-        },
-        "start": {
-          "line": 2,
-          "column": 0
-        },
-        "end": {
-          "line": 2,
-          "column": 30
-        },
         "kind": "struct",
-        "text": "pub struct Selected<T>(pub T);",
+        "language": "rust",
         "line": "pub struct Selected<T>(pub T);",
+        "path": "src/selection.rs",
+        "role": "declaration",
+        "span": {"end":99,"start":69},
+        "start": {"column":0,"line":2},
         "symbol": {
+          "extent": {"end":99,"start":0},
           "kind": "struct",
           "name": "Selected",
-          "name_span": {
-            "start": 80,
-            "end": 88
-          },
-          "span": {
-            "start": 69,
-            "end": 99
-          },
-          "extent": {
-            "start": 0,
-            "end": 99
-          },
-          "visibility": {
-            "span": {
-              "start": 69,
-              "end": 72
-            },
-            "text": "pub"
-          }
+          "name_span": {"end":88,"start":80},
+          "span": {"end":99,"start":69},
+          "visibility": {"span":{"end":72,"start":69},"text":"pub"}
         },
-        "role": "declaration"
+        "text": "pub struct Selected<T>(pub T);"
       },
       "pieces": [
         {
+          "ownership": "declaration",
           "symbol": {
+            "extent": {"end":99,"start":0},
             "kind": "struct",
             "name": "Selected",
-            "name_span": {
-              "start": 80,
-              "end": 88
-            },
-            "span": {
-              "start": 69,
-              "end": 99
-            },
-            "extent": {
-              "start": 0,
-              "end": 99
-            },
-            "visibility": {
-              "span": {
-                "start": 69,
-                "end": 72
-              },
-              "text": "pub"
-            }
-          },
-          "ownership": "declaration"
+            "name_span": {"end":88,"start":80},
+            "span": {"end":99,"start":69},
+            "visibility": {"span":{"end":72,"start":69},"text":"pub"}
+          }
         },
         {
-          "symbol": {
-            "kind": "impl",
-            "name": "Selected",
-            "name_span": {
-              "start": 108,
-              "end": 116
-            },
-            "span": {
-              "start": 100,
-              "end": 161
-            },
-            "extent": {
-              "start": 100,
-              "end": 161
-            }
-          },
-          "ownership": "same_scope_target"
+          "ownership": "same_scope_target",
+          "symbol": {"extent":{"end":161,"start":100},"kind":"impl","name":"Selected","name_span":{"end":116,"start":108},"span":{"end":161,"start":100}}
         },
         {
-          "symbol": {
-            "kind": "impl",
-            "name": "Selected",
-            "name_span": {
-              "start": 191,
-              "end": 199
-            },
-            "span": {
-              "start": 162,
-              "end": 250
-            },
-            "extent": {
-              "start": 162,
-              "end": 250
-            }
-          },
-          "ownership": "same_scope_target"
+          "ownership": "same_scope_target",
+          "symbol": {"extent":{"end":250,"start":162},"kind":"impl","name":"Selected","name_span":{"end":199,"start":191},"span":{"end":250,"start":162}}
         }
       ]
     },
     {
       "declaration": {
         "content": "4b41069130957c60a1d572f934e9b6502f81430a31fcde904612b73241c21fd8",
+        "end": {"column":33,"line":5},
         "id": "4f139e06e574",
-        "path": "src/selection.rs",
-        "language": "rust",
-        "span": {
-          "start": 264,
-          "end": 284
-        },
-        "start": {
-          "line": 5,
-          "column": 13
-        },
-        "end": {
-          "line": 5,
-          "column": 33
-        },
         "kind": "struct",
-        "text": "pub struct Selected;",
+        "language": "rust",
         "line": "mod nested { pub struct Selected; impl Selected {} }",
+        "path": "src/selection.rs",
+        "role": "declaration",
+        "span": {"end":284,"start":264},
+        "start": {"column":13,"line":5},
         "symbol": {
+          "extent": {"end":284,"start":264},
           "kind": "struct",
           "name": "Selected",
-          "name_span": {
-            "start": 275,
-            "end": 283
-          },
-          "span": {
-            "start": 264,
-            "end": 284
-          },
-          "extent": {
-            "start": 264,
-            "end": 284
-          },
-          "visibility": {
-            "span": {
-              "start": 264,
-              "end": 267
-            },
-            "text": "pub"
-          }
+          "name_span": {"end":283,"start":275},
+          "span": {"end":284,"start":264},
+          "visibility": {"span":{"end":267,"start":264},"text":"pub"}
         },
-        "role": "declaration"
+        "text": "pub struct Selected;"
       },
       "pieces": [
         {
+          "ownership": "declaration",
           "symbol": {
+            "extent": {"end":284,"start":264},
             "kind": "struct",
             "name": "Selected",
-            "name_span": {
-              "start": 275,
-              "end": 283
-            },
-            "span": {
-              "start": 264,
-              "end": 284
-            },
-            "extent": {
-              "start": 264,
-              "end": 284
-            },
-            "visibility": {
-              "span": {
-                "start": 264,
-                "end": 267
-              },
-              "text": "pub"
-            }
-          },
-          "ownership": "declaration"
+            "name_span": {"end":283,"start":275},
+            "span": {"end":284,"start":264},
+            "visibility": {"span":{"end":267,"start":264},"text":"pub"}
+          }
         },
         {
-          "symbol": {
-            "kind": "impl",
-            "name": "Selected",
-            "name_span": {
-              "start": 290,
-              "end": 298
-            },
-            "span": {
-              "start": 285,
-              "end": 301
-            },
-            "extent": {
-              "start": 285,
-              "end": 301
-            }
-          },
-          "ownership": "same_scope_target"
+          "ownership": "same_scope_target",
+          "symbol": {"extent":{"end":301,"start":285},"kind":"impl","name":"Selected","name_span":{"end":298,"start":290},"span":{"end":301,"start":285}}
         }
       ],
       "unsupported": "nested_declaration"
     }
-  ],
-  "code": "bad_selection",
-  "message": "select exactly one symbol-move declaration: 1: ec45f5ab12c9 src/selection.rs:3, 2: 4f139e06e574 src/selection.rs:6"
+  ]
 }
 --- stderr ---

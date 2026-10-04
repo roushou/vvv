@@ -1,135 +1,63 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "fe776436581bedd926fc7b2374d8507bfad5e7213d63135336f4c6ce7b829d66",
-    "outcome": "ambiguous",
     "candidates": [
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/locals.ts",
-            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
-            "span": {
-              "start": 1387,
-              "end": 1407
-            }
-          },
-          "name_span": {
-            "start": 1388,
-            "end": 1392
-          },
-          "kind": "variable"
-        },
         "declaration": {
           "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+          "end": {"column":11,"line":62},
           "id": "e7ad7f17b2f1",
-          "path": "src/locals.ts",
-          "language": "typescript",
-          "span": {
-            "start": 1388,
-            "end": 1392
-          },
-          "start": {
-            "line": 62,
-            "column": 7
-          },
-          "end": {
-            "line": 62,
-            "column": 11
-          },
           "kind": "declaration",
-          "text": "same",
+          "language": "typescript",
           "line": "  let [same, same] = input;",
-          "symbol": {
-            "kind": "variable",
-            "name": "same",
-            "name_span": {
-              "start": 1388,
-              "end": 1392
-            },
-            "span": {
-              "start": 1387,
-              "end": 1407
-            },
-            "extent": {
-              "start": 1387,
-              "end": 1407
-            }
-          },
-          "role": "declaration"
+          "path": "src/locals.ts",
+          "role": "declaration",
+          "span": {"end":1392,"start":1388},
+          "start": {"column":7,"line":62},
+          "symbol": {"extent":{"end":1407,"start":1387},"kind":"variable","name":"same","name_span":{"end":1392,"start":1388},"span":{"end":1407,"start":1387}},
+          "text": "same"
         },
-        "evidence": {
-          "addresses": []
+        "evidence": {"addresses":[]},
+        "target": {
+          "declaration": {"content":"d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f","path":"src/locals.ts","span":{"end":1407,"start":1387}},
+          "kind": "variable",
+          "language": "typescript",
+          "name_span": {"end":1392,"start":1388}
         }
       },
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/locals.ts",
-            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
-            "span": {
-              "start": 1387,
-              "end": 1407
-            }
-          },
-          "name_span": {
-            "start": 1394,
-            "end": 1398
-          },
-          "kind": "variable"
-        },
         "declaration": {
           "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
+          "end": {"column":17,"line":62},
           "id": "eb97b48cdcc0",
-          "path": "src/locals.ts",
-          "language": "typescript",
-          "span": {
-            "start": 1394,
-            "end": 1398
-          },
-          "start": {
-            "line": 62,
-            "column": 13
-          },
-          "end": {
-            "line": 62,
-            "column": 17
-          },
           "kind": "declaration",
-          "text": "same",
+          "language": "typescript",
           "line": "  let [same, same] = input;",
-          "symbol": {
-            "kind": "variable",
-            "name": "same",
-            "name_span": {
-              "start": 1394,
-              "end": 1398
-            },
-            "span": {
-              "start": 1387,
-              "end": 1407
-            },
-            "extent": {
-              "start": 1387,
-              "end": 1407
-            }
-          },
-          "role": "declaration"
+          "path": "src/locals.ts",
+          "role": "declaration",
+          "span": {"end":1398,"start":1394},
+          "start": {"column":13,"line":62},
+          "symbol": {"extent":{"end":1407,"start":1387},"kind":"variable","name":"same","name_span":{"end":1398,"start":1394},"span":{"end":1407,"start":1387}},
+          "text": "same"
         },
-        "evidence": {
-          "addresses": []
+        "evidence": {"addresses":[]},
+        "target": {
+          "declaration": {"content":"d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f","path":"src/locals.ts","span":{"end":1407,"start":1387}},
+          "kind": "variable",
+          "language": "typescript",
+          "name_span": {"end":1398,"start":1394}
         }
       }
-    ]
-  }
+    ],
+    "outcome": "ambiguous",
+    "snapshot": "fe776436581bedd926fc7b2374d8507bfad5e7213d63135336f4c6ce7b829d66"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

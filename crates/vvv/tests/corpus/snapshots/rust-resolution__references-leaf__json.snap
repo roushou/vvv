@@ -1,239 +1,145 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "name": "Child",
     "declarations": [
       {
+        "address": {"package":"resolution_probe","path":["a","child","Child"]},
         "content": "85b33fa9dfdce6cf74eda26182d2633b82459512496a0cf48b3591f3cf00e023",
+        "end": {"column":17,"line":0},
         "id": "20458e1a3d34",
-        "path": "src/a/child.rs",
-        "language": "rust",
-        "span": {
-          "start": 0,
-          "end": 17
-        },
-        "start": {
-          "line": 0,
-          "column": 0
-        },
-        "end": {
-          "line": 0,
-          "column": 17
-        },
         "kind": "struct_item",
-        "text": "pub struct Child;",
+        "language": "rust",
         "line": "pub struct Child;",
+        "path": "src/a/child.rs",
+        "role": "declaration",
+        "span": {"end":17,"start":0},
+        "start": {"column":0,"line":0},
         "symbol": {
+          "extent": {"end":17,"start":0},
           "kind": "struct",
           "name": "Child",
-          "name_span": {
-            "start": 11,
-            "end": 16
-          },
-          "span": {
-            "start": 0,
-            "end": 17
-          },
-          "extent": {
-            "start": 0,
-            "end": 17
-          },
-          "visibility": {
-            "span": {
-              "start": 0,
-              "end": 3
-            },
-            "text": "pub"
-          }
+          "name_span": {"end":16,"start":11},
+          "span": {"end":17,"start":0},
+          "visibility": {"span":{"end":3,"start":0},"text":"pub"}
         },
-        "role": "declaration",
-        "address": {
-          "package": "resolution_probe",
-          "path": [
-            "a",
-            "child",
-            "Child"
-          ]
-        }
+        "text": "pub struct Child;"
       }
     ],
+    "name": "Child",
     "occurrences": [
       {
+        "confidence": "resolved",
         "content": "85b33fa9dfdce6cf74eda26182d2633b82459512496a0cf48b3591f3cf00e023",
+        "end": {"column":16,"line":0},
         "id": "28047cfd4e9c",
-        "path": "src/a/child.rs",
-        "language": "rust",
-        "span": {
-          "start": 11,
-          "end": 16
-        },
-        "start": {
-          "line": 0,
-          "column": 11
-        },
-        "end": {
-          "line": 0,
-          "column": 16
-        },
         "kind": "type_identifier",
-        "text": "Child",
+        "language": "rust",
         "line": "pub struct Child;",
+        "path": "src/a/child.rs",
+        "reason": "declaring",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "declaring"
+        "span": {"end":16,"start":11},
+        "start": {"column":11,"line":0},
+        "text": "Child"
       },
       {
+        "confidence": "resolved",
         "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
+        "end": {"column":36,"line":6},
         "id": "1b4b3997f70a",
-        "path": "src/consumer.rs",
-        "language": "rust",
-        "span": {
-          "start": 228,
-          "end": 233
-        },
-        "start": {
-          "line": 6,
-          "column": 31
-        },
-        "end": {
-          "line": 6,
-          "column": 36
-        },
         "kind": "type_identifier",
-        "text": "Child",
+        "language": "rust",
         "line": "pub fn grouped_path(_: Foo, _: Child) {}",
+        "path": "src/consumer.rs",
+        "reason": "imported",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "imported"
+        "span": {"end":233,"start":228},
+        "start": {"column":31,"line":6},
+        "text": "Child"
       },
       {
+        "confidence": "resolved",
         "content": "a57b78d505893391ffaf83410b468409cfced592c3a57d761b1d1e1e8cd6ad0f",
+        "end": {"column":22,"line":3},
         "id": "27984d04bd8f",
-        "path": "src/nested.rs",
-        "language": "rust",
-        "span": {
-          "start": 99,
-          "end": 104
-        },
-        "start": {
-          "line": 3,
-          "column": 17
-        },
-        "end": {
-          "line": 3,
-          "column": 22
-        },
         "kind": "type_identifier",
-        "text": "Child",
+        "language": "rust",
         "line": "pub fn nested(_: Child, _: Foo) { child_fn(); }",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "imported"
-      },
-      {
-        "content": "088949e453189839e0a8c137aedb9266d1a7f27a4138543c750097bb372e516f",
-        "id": "21ffb05e42c5",
-        "path": "src/chained.rs",
-        "language": "rust",
-        "span": {
-          "start": 133,
-          "end": 138
-        },
-        "start": {
-          "line": 5,
-          "column": 26
-        },
-        "end": {
-          "line": 5,
-          "column": 31
-        },
-        "kind": "type_identifier",
-        "text": "Child",
-        "line": "pub fn via_child(_: leaf::Child) {}",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "path"
-      },
-      {
-        "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
-        "id": "ba39459205c7",
-        "path": "src/consumer.rs",
-        "language": "rust",
-        "span": {
-          "start": 88,
-          "end": 93
-        },
-        "start": {
-          "line": 2,
-          "column": 31
-        },
-        "end": {
-          "line": 2,
-          "column": 36
-        },
-        "kind": "identifier",
-        "text": "Child",
-        "line": "use module_alias::{Foo, child::Child};",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "path"
-      },
-      {
-        "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
-        "id": "8e50a95dec75",
-        "path": "src/consumer.rs",
-        "language": "rust",
-        "span": {
-          "start": 187,
-          "end": 192
-        },
-        "start": {
-          "line": 5,
-          "column": 46
-        },
-        "end": {
-          "line": 5,
-          "column": 51
-        },
-        "kind": "type_identifier",
-        "text": "Child",
-        "line": "pub fn parent_path(_: parent_alias::a::child::Child) {}",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "path"
-      },
-      {
-        "content": "a57b78d505893391ffaf83410b468409cfced592c3a57d761b1d1e1e8cd6ad0f",
-        "id": "8fc65ee9e8c8",
         "path": "src/nested.rs",
-        "language": "rust",
-        "span": {
-          "start": 57,
-          "end": 62
-        },
-        "start": {
-          "line": 1,
-          "column": 27
-        },
-        "end": {
-          "line": 1,
-          "column": 32
-        },
-        "kind": "identifier",
-        "text": "Child",
-        "line": "use module_alias::{child::{Child, child_fn}, Foo};",
+        "reason": "imported",
         "role": "use",
+        "span": {"end":104,"start":99},
+        "start": {"column":17,"line":3},
+        "text": "Child"
+      },
+      {
         "confidence": "resolved",
-        "reason": "path"
+        "content": "088949e453189839e0a8c137aedb9266d1a7f27a4138543c750097bb372e516f",
+        "end": {"column":31,"line":5},
+        "id": "21ffb05e42c5",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "pub fn via_child(_: leaf::Child) {}",
+        "path": "src/chained.rs",
+        "reason": "path",
+        "role": "use",
+        "span": {"end":138,"start":133},
+        "start": {"column":26,"line":5},
+        "text": "Child"
+      },
+      {
+        "confidence": "resolved",
+        "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
+        "end": {"column":36,"line":2},
+        "id": "ba39459205c7",
+        "kind": "identifier",
+        "language": "rust",
+        "line": "use module_alias::{Foo, child::Child};",
+        "path": "src/consumer.rs",
+        "reason": "path",
+        "role": "use",
+        "span": {"end":93,"start":88},
+        "start": {"column":31,"line":2},
+        "text": "Child"
+      },
+      {
+        "confidence": "resolved",
+        "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
+        "end": {"column":51,"line":5},
+        "id": "8e50a95dec75",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "pub fn parent_path(_: parent_alias::a::child::Child) {}",
+        "path": "src/consumer.rs",
+        "reason": "path",
+        "role": "use",
+        "span": {"end":192,"start":187},
+        "start": {"column":46,"line":5},
+        "text": "Child"
+      },
+      {
+        "confidence": "resolved",
+        "content": "a57b78d505893391ffaf83410b468409cfced592c3a57d761b1d1e1e8cd6ad0f",
+        "end": {"column":32,"line":1},
+        "id": "8fc65ee9e8c8",
+        "kind": "identifier",
+        "language": "rust",
+        "line": "use module_alias::{child::{Child, child_fn}, Foo};",
+        "path": "src/nested.rs",
+        "reason": "path",
+        "role": "use",
+        "span": {"end":62,"start":57},
+        "start": {"column":27,"line":1},
+        "text": "Child"
       }
     ]
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

@@ -1,71 +1,31 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "be4e04474fec158f1085f089b7767e4610a8076d1eec93fa65f179446a1a81f8",
-    "outcome": "resolved",
-    "target": {
+    "container": {
+      "declaration": {"content":"cc6411456df3e72af40fdbe3a55b4920b55b95450a6470a0eb00cac134d5feeb","path":"src/lib.rs","span":{"end":206,"start":147}},
+      "kind": "enum",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "cc6411456df3e72af40fdbe3a55b4920b55b95450a6470a0eb00cac134d5feeb",
-        "span": {
-          "start": 172,
-          "end": 183
-        }
-      },
-      "name_span": {
-        "start": 172,
-        "end": 176
-      },
-      "kind": "variant"
+      "name_span": {"end":163,"start":156}
     },
+    "evidence": {"addresses":[{"package":"rust_pattern_references","path":["Payload"]},{"package":"rust_pattern_references","path":["values","Message","Data"]}]},
     "id": "899efeb25979",
     "name": "Data",
-    "start": {
-      "line": 5,
-      "column": 29
-    },
-    "evidence": {
-      "addresses": [
-        {
-          "package": "rust_pattern_references",
-          "path": [
-            "Payload"
-          ]
-        },
-        {
-          "package": "rust_pattern_references",
-          "path": [
-            "values",
-            "Message",
-            "Data"
-          ]
-        }
-      ]
-    },
-    "container": {
+    "outcome": "resolved",
+    "snapshot": "be4e04474fec158f1085f089b7767e4610a8076d1eec93fa65f179446a1a81f8",
+    "start": {"column":29,"line":5},
+    "target": {
+      "declaration": {"content":"cc6411456df3e72af40fdbe3a55b4920b55b95450a6470a0eb00cac134d5feeb","path":"src/lib.rs","span":{"end":183,"start":172}},
+      "kind": "variant",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "cc6411456df3e72af40fdbe3a55b4920b55b95450a6470a0eb00cac134d5feeb",
-        "span": {
-          "start": 147,
-          "end": 206
-        }
-      },
-      "name_span": {
-        "start": 156,
-        "end": 163
-      },
-      "kind": "enum"
+      "name_span": {"end":176,"start":172}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

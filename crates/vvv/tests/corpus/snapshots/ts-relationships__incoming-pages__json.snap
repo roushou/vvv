@@ -1,6 +1,6 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
+expression: "JsonSnapshot(&serde_json::to_value(&transcript.replies).unwrap()).to_string()"
 ---
 [
   {
@@ -8,14 +8,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 4,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -26,53 +19,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-1",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "3e450dada9d2b1a05e8be36f235e83aec3557be80e1083fe674595f10b0cd998",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "29c76dfc6edf",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 7,
-          "line": 0
-        },
+        "start": {"column":7,"line":0},
         "target": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         }
       }
     },
@@ -84,14 +49,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 4,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -103,99 +61,40 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": null,
           "caller": null,
-          "evidence": {
-            "addresses": [
-              {
-                "package": "",
-                "path": [
-                  "src",
-                  "origin.ts",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"","path":["src","origin.ts","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "c99a0f1f9edb240c3346e85cc334cbb461253e204e3fb4a853df0d20485c8a14",
-            "path": "src/bridge.ts",
-            "span": {
-              "end": 13,
-              "start": 9
-            }
-          },
+          "site": {"content":"c99a0f1f9edb240c3346e85cc334cbb461253e204e3fb4a853df0d20485c8a14","path":"src/bridge.ts","span":{"end":13,"start":9}},
           "spelling": "work",
-          "start": {
-            "column": 9,
-            "line": 0
-          },
+          "start": {"column":9,"line":0},
           "target": {
-            "declaration": {
-              "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-              "path": "src/origin.ts",
-              "span": {
-                "end": 25,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
             "kind": "function",
             "language": "typescript",
-            "name_span": {
-              "end": 20,
-              "start": 16
-            }
+            "name_span": {"end":20,"start":16}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-2",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "3e450dada9d2b1a05e8be36f235e83aec3557be80e1083fe674595f10b0cd998",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "29c76dfc6edf",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 7,
-          "line": 0
-        },
+        "start": {"column":7,"line":0},
         "target": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         }
       }
     },
@@ -207,14 +106,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 4,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -226,99 +118,40 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": null,
           "caller": null,
-          "evidence": {
-            "addresses": [
-              {
-                "package": "",
-                "path": [
-                  "src",
-                  "origin.ts",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"","path":["src","origin.ts","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "c99a0f1f9edb240c3346e85cc334cbb461253e204e3fb4a853df0d20485c8a14",
-            "path": "src/bridge.ts",
-            "span": {
-              "end": 21,
-              "start": 17
-            }
-          },
+          "site": {"content":"c99a0f1f9edb240c3346e85cc334cbb461253e204e3fb4a853df0d20485c8a14","path":"src/bridge.ts","span":{"end":21,"start":17}},
           "spelling": "task",
-          "start": {
-            "column": 17,
-            "line": 0
-          },
+          "start": {"column":17,"line":0},
           "target": {
-            "declaration": {
-              "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-              "path": "src/origin.ts",
-              "span": {
-                "end": 25,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
             "kind": "function",
             "language": "typescript",
-            "name_span": {
-              "end": 20,
-              "start": 16
-            }
+            "name_span": {"end":20,"start":16}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-3",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "3e450dada9d2b1a05e8be36f235e83aec3557be80e1083fe674595f10b0cd998",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "29c76dfc6edf",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 7,
-          "line": 0
-        },
+        "start": {"column":7,"line":0},
         "target": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         }
       }
     },
@@ -330,14 +163,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 3,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 0,
         "omitted_items": 0,
         "scan_complete": false,
@@ -348,53 +174,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-4",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "3e450dada9d2b1a05e8be36f235e83aec3557be80e1083fe674595f10b0cd998",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "29c76dfc6edf",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 7,
-          "line": 0
-        },
+        "start": {"column":7,"line":0},
         "target": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         }
       }
     },
@@ -406,14 +204,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 3,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -424,53 +215,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-5",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "3e450dada9d2b1a05e8be36f235e83aec3557be80e1083fe674595f10b0cd998",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "29c76dfc6edf",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 7,
-          "line": 0
-        },
+        "start": {"column":7,"line":0},
         "target": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         }
       }
     },
@@ -482,14 +245,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 3,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -501,107 +257,40 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": null,
           "caller": null,
-          "evidence": {
-            "addresses": [
-              {
-                "package": "",
-                "path": [
-                  "src",
-                  "bridge.ts",
-                  "task"
-                ]
-              },
-              {
-                "package": "",
-                "path": [
-                  "src",
-                  "origin.ts",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"","path":["src","bridge.ts","task"]},{"package":"","path":["src","origin.ts","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-            "path": "src/consumer.ts",
-            "span": {
-              "end": 24,
-              "start": 17
-            }
-          },
+          "site": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":24,"start":17}},
           "spelling": "execute",
-          "start": {
-            "column": 17,
-            "line": 0
-          },
+          "start": {"column":17,"line":0},
           "target": {
-            "declaration": {
-              "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-              "path": "src/origin.ts",
-              "span": {
-                "end": 25,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
             "kind": "function",
             "language": "typescript",
-            "name_span": {
-              "end": 20,
-              "start": 16
-            }
+            "name_span": {"end":20,"start":16}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-6",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "3e450dada9d2b1a05e8be36f235e83aec3557be80e1083fe674595f10b0cd998",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "29c76dfc6edf",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 7,
-          "line": 0
-        },
+        "start": {"column":7,"line":0},
         "target": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         }
       }
     },
@@ -613,14 +302,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 3,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -632,122 +314,45 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": "direct",
           "caller": {
-            "declaration": {
-              "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-              "path": "src/consumer.ts",
-              "span": {
-                "end": 136,
-                "start": 77
-              }
-            },
+            "declaration": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":136,"start":77}},
             "kind": "function",
             "language": "typescript",
-            "name_span": {
-              "end": 99,
-              "start": 93
-            }
+            "name_span": {"end":99,"start":93}
           },
-          "evidence": {
-            "addresses": [
-              {
-                "package": "",
-                "path": [
-                  "src",
-                  "bridge.ts",
-                  "task"
-                ]
-              },
-              {
-                "package": "",
-                "path": [
-                  "src",
-                  "origin.ts",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"","path":["src","bridge.ts","task"]},{"package":"","path":["src","origin.ts","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-            "path": "src/consumer.ts",
-            "span": {
-              "end": 115,
-              "start": 108
-            }
-          },
+          "site": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":115,"start":108}},
           "spelling": "execute",
-          "start": {
-            "column": 4,
-            "line": 3
-          },
+          "start": {"column":4,"line":3},
           "target": {
-            "declaration": {
-              "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-              "path": "src/origin.ts",
-              "span": {
-                "end": 25,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
             "kind": "function",
             "language": "typescript",
-            "name_span": {
-              "end": 20,
-              "start": 16
-            }
+            "name_span": {"end":20,"start":16}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-7",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "3e450dada9d2b1a05e8be36f235e83aec3557be80e1083fe674595f10b0cd998",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "29c76dfc6edf",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 7,
-          "line": 0
-        },
+        "start": {"column":7,"line":0},
         "target": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         }
       }
     },
@@ -759,14 +364,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 3,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -778,114 +376,45 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": "member",
           "caller": {
-            "declaration": {
-              "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-              "path": "src/consumer.ts",
-              "span": {
-                "end": 136,
-                "start": 77
-              }
-            },
+            "declaration": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":136,"start":77}},
             "kind": "function",
             "language": "typescript",
-            "name_span": {
-              "end": 99,
-              "start": 93
-            }
+            "name_span": {"end":99,"start":93}
           },
-          "evidence": {
-            "addresses": [
-              {
-                "package": "",
-                "path": [
-                  "src",
-                  "origin.ts",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"","path":["src","origin.ts","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-            "path": "src/consumer.ts",
-            "span": {
-              "end": 131,
-              "start": 127
-            }
-          },
+          "site": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":131,"start":127}},
           "spelling": "work",
-          "start": {
-            "column": 8,
-            "line": 4
-          },
+          "start": {"column":8,"line":4},
           "target": {
-            "declaration": {
-              "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-              "path": "src/origin.ts",
-              "span": {
-                "end": 25,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
             "kind": "function",
             "language": "typescript",
-            "name_span": {
-              "end": 20,
-              "start": 16
-            }
+            "name_span": {"end":20,"start":16}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-8",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "3e450dada9d2b1a05e8be36f235e83aec3557be80e1083fe674595f10b0cd998",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "29c76dfc6edf",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 7,
-          "line": 0
-        },
+        "start": {"column":7,"line":0},
         "target": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         }
       }
     },
@@ -897,14 +426,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 3,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -916,107 +438,40 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": "direct",
           "caller": null,
-          "evidence": {
-            "addresses": [
-              {
-                "package": "",
-                "path": [
-                  "src",
-                  "bridge.ts",
-                  "task"
-                ]
-              },
-              {
-                "package": "",
-                "path": [
-                  "src",
-                  "origin.ts",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"","path":["src","bridge.ts","task"]},{"package":"","path":["src","origin.ts","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-            "path": "src/consumer.ts",
-            "span": {
-              "end": 257,
-              "start": 250
-            }
-          },
+          "site": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":257,"start":250}},
           "spelling": "execute",
-          "start": {
-            "column": 46,
-            "line": 7
-          },
+          "start": {"column":46,"line":7},
           "target": {
-            "declaration": {
-              "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-              "path": "src/origin.ts",
-              "span": {
-                "end": 25,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
             "kind": "function",
             "language": "typescript",
-            "name_span": {
-              "end": 20,
-              "start": 16
-            }
+            "name_span": {"end":20,"start":16}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-9",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "3e450dada9d2b1a05e8be36f235e83aec3557be80e1083fe674595f10b0cd998",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "29c76dfc6edf",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 7,
-          "line": 0
-        },
+        "start": {"column":7,"line":0},
         "target": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         }
       }
     },
@@ -1028,14 +483,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 3,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -1047,122 +495,45 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": "direct",
           "caller": {
-            "declaration": {
-              "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-              "path": "src/consumer.ts",
-              "span": {
-                "end": 323,
-                "start": 291
-              }
-            },
+            "declaration": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":323,"start":291}},
             "kind": "function",
             "language": "typescript",
-            "name_span": {
-              "end": 306,
-              "start": 300
-            }
+            "name_span": {"end":306,"start":300}
           },
-          "evidence": {
-            "addresses": [
-              {
-                "package": "",
-                "path": [
-                  "src",
-                  "bridge.ts",
-                  "task"
-                ]
-              },
-              {
-                "package": "",
-                "path": [
-                  "src",
-                  "origin.ts",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"","path":["src","bridge.ts","task"]},{"package":"","path":["src","origin.ts","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-            "path": "src/consumer.ts",
-            "span": {
-              "end": 318,
-              "start": 311
-            }
-          },
+          "site": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":318,"start":311}},
           "spelling": "execute",
-          "start": {
-            "column": 48,
-            "line": 8
-          },
+          "start": {"column":48,"line":8},
           "target": {
-            "declaration": {
-              "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-              "path": "src/origin.ts",
-              "span": {
-                "end": 25,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
             "kind": "function",
             "language": "typescript",
-            "name_span": {
-              "end": 20,
-              "start": 16
-            }
+            "name_span": {"end":20,"start":16}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-10",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "3e450dada9d2b1a05e8be36f235e83aec3557be80e1083fe674595f10b0cd998",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "29c76dfc6edf",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 7,
-          "line": 0
-        },
+        "start": {"column":7,"line":0},
         "target": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         }
       }
     },
@@ -1174,14 +545,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 3,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -1193,87 +557,39 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": "member",
           "caller": {
-            "declaration": {
-              "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-              "path": "src/consumer.ts",
-              "span": {
-                "end": 391,
-                "start": 326
-              }
-            },
+            "declaration": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":391,"start":326}},
             "kind": "function",
             "language": "typescript",
-            "name_span": {
-              "end": 351,
-              "start": 342
-            }
+            "name_span": {"end":351,"start":342}
           },
           "outcome": "unavailable",
           "reason": "unsupported_context",
-          "site": {
-            "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-            "path": "src/consumer.ts",
-            "span": {
-              "end": 386,
-              "start": 382
-            }
-          },
+          "site": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":386,"start":382}},
           "spelling": "work",
-          "start": {
-            "column": 56,
-            "line": 9
-          }
+          "start": {"column":56,"line":9}
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-11",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "3e450dada9d2b1a05e8be36f235e83aec3557be80e1083fe674595f10b0cd998",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "29c76dfc6edf",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 7,
-          "line": 0
-        },
+        "start": {"column":7,"line":0},
         "target": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         }
       }
     },
@@ -1285,14 +601,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 2,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 0,
         "omitted_items": 0,
         "scan_complete": false,
@@ -1303,53 +612,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-12",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "3e450dada9d2b1a05e8be36f235e83aec3557be80e1083fe674595f10b0cd998",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "29c76dfc6edf",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 7,
-          "line": 0
-        },
+        "start": {"column":7,"line":0},
         "target": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         }
       }
     },
@@ -1361,14 +642,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 1,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 0,
         "omitted_items": 0,
         "scan_complete": false,
@@ -1379,53 +653,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-13",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "3e450dada9d2b1a05e8be36f235e83aec3557be80e1083fe674595f10b0cd998",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "29c76dfc6edf",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 7,
-          "line": 0
-        },
+        "start": {"column":7,"line":0},
         "target": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         }
       }
     },
@@ -1437,14 +683,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 1,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -1455,53 +694,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-14",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "3e450dada9d2b1a05e8be36f235e83aec3557be80e1083fe674595f10b0cd998",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "29c76dfc6edf",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 7,
-          "line": 0
-        },
+        "start": {"column":7,"line":0},
         "target": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         }
       }
     },
@@ -1513,14 +724,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 1,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -1532,107 +736,40 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": null,
           "caller": null,
-          "evidence": {
-            "addresses": [
-              {
-                "package": "",
-                "path": [
-                  "src",
-                  "bridge.ts",
-                  "task"
-                ]
-              },
-              {
-                "package": "",
-                "path": [
-                  "src",
-                  "origin.ts",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"","path":["src","bridge.ts","task"]},{"package":"","path":["src","origin.ts","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "9f7f9b4dfe1efaaad4193efe5a6ef9e206c37557f68a48c02ac5f60857e7bd22",
-            "path": "src/view.tsx",
-            "span": {
-              "end": 27,
-              "start": 17
-            }
-          },
+          "site": {"content":"9f7f9b4dfe1efaaad4193efe5a6ef9e206c37557f68a48c02ac5f60857e7bd22","path":"src/view.tsx","span":{"end":27,"start":17}},
           "spelling": "renderTask",
-          "start": {
-            "column": 17,
-            "line": 0
-          },
+          "start": {"column":17,"line":0},
           "target": {
-            "declaration": {
-              "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-              "path": "src/origin.ts",
-              "span": {
-                "end": 25,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
             "kind": "function",
             "language": "typescript",
-            "name_span": {
-              "end": 20,
-              "start": 16
-            }
+            "name_span": {"end":20,"start":16}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-15",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "3e450dada9d2b1a05e8be36f235e83aec3557be80e1083fe674595f10b0cd998",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "29c76dfc6edf",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 7,
-          "line": 0
-        },
+        "start": {"column":7,"line":0},
         "target": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         }
       }
     },
@@ -1644,14 +781,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 0,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": true,
@@ -1663,121 +793,44 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": "direct",
           "caller": {
-            "declaration": {
-              "content": "9f7f9b4dfe1efaaad4193efe5a6ef9e206c37557f68a48c02ac5f60857e7bd22",
-              "path": "src/view.tsx",
-              "span": {
-                "end": 103,
-                "start": 47
-              }
-            },
+            "declaration": {"content":"9f7f9b4dfe1efaaad4193efe5a6ef9e206c37557f68a48c02ac5f60857e7bd22","path":"src/view.tsx","span":{"end":103,"start":47}},
             "kind": "function",
             "language": "typescript",
-            "name_span": {
-              "end": 67,
-              "start": 63
-            }
+            "name_span": {"end":67,"start":63}
           },
-          "evidence": {
-            "addresses": [
-              {
-                "package": "",
-                "path": [
-                  "src",
-                  "bridge.ts",
-                  "task"
-                ]
-              },
-              {
-                "package": "",
-                "path": [
-                  "src",
-                  "origin.ts",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"","path":["src","bridge.ts","task"]},{"package":"","path":["src","origin.ts","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "9f7f9b4dfe1efaaad4193efe5a6ef9e206c37557f68a48c02ac5f60857e7bd22",
-            "path": "src/view.tsx",
-            "span": {
-              "end": 82,
-              "start": 72
-            }
-          },
+          "site": {"content":"9f7f9b4dfe1efaaad4193efe5a6ef9e206c37557f68a48c02ac5f60857e7bd22","path":"src/view.tsx","span":{"end":82,"start":72}},
           "spelling": "renderTask",
-          "start": {
-            "column": 25,
-            "line": 1
-          },
+          "start": {"column":25,"line":1},
           "target": {
-            "declaration": {
-              "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-              "path": "src/origin.ts",
-              "span": {
-                "end": 25,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
             "kind": "function",
             "language": "typescript",
-            "name_span": {
-              "end": 20,
-              "start": 16
-            }
+            "name_span": {"end":20,"start":16}
           }
         }
       ],
       "kind": "references",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "3e450dada9d2b1a05e8be36f235e83aec3557be80e1083fe674595f10b0cd998",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "29c76dfc6edf",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 7,
-          "line": 0
-        },
+        "start": {"column":7,"line":0},
         "target": {
-          "declaration": {
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 25,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
           "kind": "function",
           "language": "typescript",
-          "name_span": {
-            "end": 20,
-            "start": 16
-          }
+          "name_span": {"end":20,"start":16}
         }
       }
     },

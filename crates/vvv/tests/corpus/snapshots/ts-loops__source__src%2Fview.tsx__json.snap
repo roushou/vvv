@@ -1,0 +1,42 @@
+---
+source: crates/vvv/tests/common/corpus_snapshot.rs
+expression: JsonSnapshot(&self.value).to_string()
+---
+{
+  "highlights": [
+    {"kind":"keyword","span":{"end":6,"start":0}},
+    {"kind":"keyword","span":{"end":12,"start":7}},
+    {"kind":"type","span":{"end":17,"start":13}},
+    {"kind":"function","span":{"end":28,"start":22}},
+    {"kind":"keyword","span":{"end":47,"start":44}},
+    {"kind":"keyword","span":{"end":54,"start":49}},
+    {"kind":"keyword","span":{"end":67,"start":65}},
+    {"kind":"keyword","span":{"end":111,"start":105}}
+  ],
+  "identifiers": [
+    {"content":"596861ef3708c4305dd4db013c1ec7226c0b219a63d106577d7f31adfaf6c7a9","path":"src/view.tsx","span":{"end":17,"start":13}},
+    {"content":"596861ef3708c4305dd4db013c1ec7226c0b219a63d106577d7f31adfaf6c7a9","path":"src/view.tsx","span":{"end":28,"start":22}},
+    {"content":"596861ef3708c4305dd4db013c1ec7226c0b219a63d106577d7f31adfaf6c7a9","path":"src/view.tsx","span":{"end":36,"start":29}},
+    {"content":"596861ef3708c4305dd4db013c1ec7226c0b219a63d106577d7f31adfaf6c7a9","path":"src/view.tsx","span":{"end":62,"start":57}},
+    {"content":"596861ef3708c4305dd4db013c1ec7226c0b219a63d106577d7f31adfaf6c7a9","path":"src/view.tsx","span":{"end":75,"start":68}},
+    {"content":"596861ef3708c4305dd4db013c1ec7226c0b219a63d106577d7f31adfaf6c7a9","path":"src/view.tsx","span":{"end":83,"start":80}},
+    {"content":"596861ef3708c4305dd4db013c1ec7226c0b219a63d106577d7f31adfaf6c7a9","path":"src/view.tsx","span":{"end":90,"start":85}},
+    {"content":"596861ef3708c4305dd4db013c1ec7226c0b219a63d106577d7f31adfaf6c7a9","path":"src/view.tsx","span":{"end":96,"start":93}},
+    {"content":"596861ef3708c4305dd4db013c1ec7226c0b219a63d106577d7f31adfaf6c7a9","path":"src/view.tsx","span":{"end":119,"start":112}}
+  ],
+  "path": "src/view.tsx",
+  "symbols": [
+    {
+      "extent": {"end":126,"start":0},
+      "kind": "class",
+      "name": "View",
+      "name_span": {"end":17,"start":13},
+      "span": {"end":126,"start":7},
+      "visibility": {"span":{"end":6,"start":0},"text":"export"}
+    },
+    {"extent":{"end":124,"start":22},"kind":"method","name":"render","name_span":{"end":28,"start":22},"span":{"end":124,"start":22}},
+    {"extent":{"end":36,"start":29},"kind":"parameter","name":"entries","name_span":{"end":36,"start":29},"span":{"end":36,"start":29}},
+    {"extent":{"end":64,"start":55},"kind":"variable","name":"title","name_span":{"end":62,"start":57},"span":{"end":64,"start":55}}
+  ],
+  "text": "export class View {\n  render(entries) {\n    for (const { title } of entries) { <div>{title}</div>; }\n    return entries;\n  }\n}\n"
+}

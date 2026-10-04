@@ -163,7 +163,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn escaped_compatibility_text_fits_and_oversized_failures_are_replaced() {
+    fn escaped_text_and_structured_content_fit_and_oversized_failures_are_replaced() {
         for size in [100_000, McpOutput::MAX_ENVELOPE_BYTES] {
             let mut failure = Failure::from(&EngineError::ReadCancelled);
             failure.message = "\"\\\n".repeat(size);

@@ -1,23 +1,8 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
-{
-  "status": "ok",
-  "schema": 1,
-  "result": {
-    "name": "area",
-    "address": {
-      "package": "",
-      "path": [
-        "src",
-        "util.ts",
-        "area"
-      ]
-    },
-    "consumers": []
-  }
-}
+{"result":{"address":{"package":"","path":["src","util.ts","area"]},"consumers":[],"name":"area"},"schema":1,"status":"ok"}
 --- stderr ---

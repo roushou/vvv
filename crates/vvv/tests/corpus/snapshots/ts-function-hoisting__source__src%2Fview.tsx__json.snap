@@ -1,0 +1,38 @@
+---
+source: crates/vvv/tests/common/corpus_snapshot.rs
+expression: JsonSnapshot(&self.value).to_string()
+---
+{
+  "highlights": [
+    {"kind":"keyword","span":{"end":6,"start":0}},
+    {"kind":"keyword","span":{"end":12,"start":7}},
+    {"kind":"function","span":{"end":37,"start":32}},
+    {"kind":"keyword","span":{"end":51,"start":43}},
+    {"kind":"function","span":{"end":57,"start":52}},
+    {"kind":"keyword","span":{"end":68,"start":62}},
+    {"kind":"keyword","span":{"end":88,"start":82}},
+    {"kind":"function","span":{"end":104,"start":99}}
+  ],
+  "identifiers": [
+    {"content":"7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043","path":"src/view.tsx","span":{"end":19,"start":13}},
+    {"content":"7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043","path":"src/view.tsx","span":{"end":37,"start":32}},
+    {"content":"7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043","path":"src/view.tsx","span":{"end":57,"start":52}},
+    {"content":"7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043","path":"src/view.tsx","span":{"end":73,"start":70}},
+    {"content":"7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043","path":"src/view.tsx","span":{"end":97,"start":90}},
+    {"content":"7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043","path":"src/view.tsx","span":{"end":104,"start":99}},
+    {"content":"7999f752dea6987a0b603a083bcaf6e1b4d5f4bff1f1f395710420ad91b35043","path":"src/view.tsx","span":{"end":116,"start":109}}
+  ],
+  "path": "src/view.tsx",
+  "symbols": [
+    {
+      "extent": {"end":121,"start":0},
+      "kind": "variable",
+      "name": "render",
+      "name_span": {"end":19,"start":13},
+      "span": {"end":120,"start":13},
+      "visibility": {"span":{"end":6,"start":0},"text":"export"}
+    },
+    {"extent":{"end":79,"start":43},"kind":"function","name":"child","name_span":{"end":57,"start":52},"span":{"end":79,"start":43}}
+  ],
+  "text": "export const render = () => {\n  child();\n  function child() { return <div />; }\n  return <section>{child()}</section>;\n};\n"
+}

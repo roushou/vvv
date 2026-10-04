@@ -615,15 +615,6 @@ mod tests {
         assert_eq!(round_trip(PathSyntax::Scoped, "Foo").segments.len(), 1);
     }
 
-    /// The one platform that spells its separator differently must not reach
-    /// a workspace path: built by `join`, it is still shown with `/`.
-    #[test]
-    fn a_workspace_path_is_spelled_with_slashes() {
-        let native = PathBuf::from("a").join("b.rs");
-        assert_eq!(RelPath::new(&native).as_str(), "a/b.rs");
-        assert_eq!(RelPath::from(&native).to_string(), "a/b.rs");
-    }
-
     #[test]
     fn workspace_path_wire_round_trip_uses_the_constructor_policy() {
         let native = PathBuf::from("src").join("café").join("lib.rs");

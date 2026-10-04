@@ -1,66 +1,27 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "path": "app/src/main.rs",
-    "position": {
-      "line": 3,
-      "column": 23
-    },
-    "module": {
-      "package": "corpus_app",
-      "path": []
-    },
     "import": {
-      "span": {
-        "start": 63,
-        "end": 67
-      },
-      "path": "corpus_core::area",
-      "group": {
-        "prefix": "corpus_core",
-        "item": {
-          "start": 63,
-          "end": 67
-        },
-        "list": {
-          "start": 62,
-          "end": 82
-        },
-        "items": 3,
-        "statement": {
-          "start": 45,
-          "end": 83
-        },
-        "top_level": true
-      },
+      "address": {"package":"corpus_core","path":["area"]},
       "declares": true,
-      "start": {
-        "line": 3,
-        "column": 18
-      },
-      "address": {
-        "package": "corpus_core",
-        "path": [
-          "area"
-        ]
-      },
-      "origin": {
-        "package": "corpus_core",
-        "path": [
-          "util",
-          "area"
-        ]
-      },
-      "file": "core/src/util.rs"
+      "file": "core/src/util.rs",
+      "group": {"item":{"end":67,"start":63},"items":3,"list":{"end":82,"start":62},"prefix":"corpus_core","statement":{"end":83,"start":45},"top_level":true},
+      "origin": {"package":"corpus_core","path":["util","area"]},
+      "path": "corpus_core::area",
+      "span": {"end":67,"start":63},
+      "start": {"column":18,"line":3}
     },
-    "importers": []
-  }
+    "importers": [],
+    "module": {"package":"corpus_app","path":[]},
+    "path": "app/src/main.rs",
+    "position": {"column":23,"line":3}
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

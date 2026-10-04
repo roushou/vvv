@@ -1,65 +1,34 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "path": "src/app.ts",
-    "module": {
-      "package": "",
-      "path": [
-        "src",
-        "app.ts"
-      ]
-    },
+    "importers": [],
     "imports": [
       {
-        "span": {
-          "start": 29,
-          "end": 36
-        },
-        "path": "./index",
+        "address": {"package":"","path":["src","index.ts"]},
         "declares": true,
-        "start": {
-          "line": 0,
-          "column": 29
-        },
-        "address": {
-          "package": "",
-          "path": [
-            "src",
-            "index.ts"
-          ]
-        },
-        "file": "src/index.ts"
+        "file": "src/index.ts",
+        "path": "./index",
+        "span": {"end":36,"start":29},
+        "start": {"column":29,"line":0}
       },
       {
-        "span": {
-          "start": 66,
-          "end": 82
-        },
-        "path": "./geometry/shape",
+        "address": {"package":"","path":["src","geometry","shape.ts"]},
         "declares": true,
-        "start": {
-          "line": 1,
-          "column": 27
-        },
-        "address": {
-          "package": "",
-          "path": [
-            "src",
-            "geometry",
-            "shape.ts"
-          ]
-        },
-        "file": "src/geometry/shape.ts"
+        "file": "src/geometry/shape.ts",
+        "path": "./geometry/shape",
+        "span": {"end":82,"start":66},
+        "start": {"column":27,"line":1}
       }
     ],
-    "importers": []
-  }
+    "module": {"package":"","path":["src","app.ts"]},
+    "path": "src/app.ts"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

@@ -1,62 +1,33 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "6cc4666e0a52689567933171c74dcbfc9743c3511f232ca26917e7d222a7d1d0",
-    "outcome": "resolved",
     "items": [
       {
-        "target": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/origin.rs",
-            "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-            "span": {
-              "start": 0,
-              "end": 63
-            }
-          },
-          "name_span": {
-            "start": 30,
-            "end": 36
-          },
-          "kind": "struct"
-        },
+        "complete": true,
+        "excerpt": {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/origin.rs","span":{"end":63,"start":0}},
         "relation": "definition",
-        "via": null,
-        "excerpt": {
-          "path": "src/origin.rs",
-          "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-          "span": {
-            "start": 0,
-            "end": 63
-          }
-        },
-        "start": {
-          "line": 0,
-          "column": 0
+        "start": {"column":0,"line":0},
+        "target": {
+          "declaration": {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/origin.rs","span":{"end":63,"start":0}},
+          "kind": "struct",
+          "language": "rust",
+          "name_span": {"end":36,"start":30}
         },
         "text": "/// Runtime state.\npub struct Engine {\n    pub running: bool,\n}",
-        "complete": true
+        "via": null
       }
     ],
-    "omissions": {
-      "item_limit": 0,
-      "byte_limit": 0,
-      "lookup_limit": 0,
-      "file_limit": 0,
-      "ambiguous": 0,
-      "unavailable": 0,
-      "no_container": 0,
-      "unresolved_imports": 0
-    },
-    "references_by_name": false
-  }
+    "omissions": {"ambiguous":0,"byte_limit":0,"file_limit":0,"item_limit":0,"lookup_limit":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+    "outcome": "resolved",
+    "references_by_name": false,
+    "snapshot": "6cc4666e0a52689567933171c74dcbfc9743c3511f232ca26917e7d222a7d1d0"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

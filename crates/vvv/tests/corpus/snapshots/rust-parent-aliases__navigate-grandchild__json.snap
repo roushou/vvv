@@ -1,88 +1,38 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "556aa660596ebd998f6a399daa7efe302fa1aed46eee0ebe13ba8e42ca727a65",
-    "outcome": "resolved",
-    "target": {
+    "container": {
+      "declaration": {"content":"8afc91ecb07af25d02a126189ed5ca40d51f2f32e3767542f154782596fe38d9","path":"src/a.rs","span":{"end":15,"start":0}},
+      "kind": "struct",
       "language": "rust",
-      "declaration": {
-        "path": "src/a.rs",
-        "content": "8afc91ecb07af25d02a126189ed5ca40d51f2f32e3767542f154782596fe38d9",
-        "span": {
-          "start": 0,
-          "end": 15
-        }
-      },
-      "name_span": {
-        "start": 11,
-        "end": 14
-      },
-      "kind": "struct"
-    },
-    "id": "64cfbb15d00c",
-    "name": "Foo",
-    "start": {
-      "line": 0,
-      "column": 0
+      "name_span": {"end":14,"start":11}
     },
     "evidence": {
       "addresses": [
-        {
-          "package": "parent_alias_probe",
-          "path": [
-            "parent",
-            "nested",
-            "deeper",
-            "chain"
-          ]
-        },
-        {
-          "package": "parent_alias_probe",
-          "path": [
-            "parent",
-            "nested",
-            "local"
-          ]
-        },
-        {
-          "package": "parent_alias_probe",
-          "path": [
-            "parent",
-            "parent"
-          ]
-        },
-        {
-          "package": "parent_alias_probe",
-          "path": [
-            "a",
-            "Foo"
-          ]
-        }
+        {"package":"parent_alias_probe","path":["parent","nested","deeper","chain"]},
+        {"package":"parent_alias_probe","path":["parent","nested","local"]},
+        {"package":"parent_alias_probe","path":["parent","parent"]},
+        {"package":"parent_alias_probe","path":["a","Foo"]}
       ]
     },
-    "container": {
+    "id": "64cfbb15d00c",
+    "name": "Foo",
+    "outcome": "resolved",
+    "snapshot": "556aa660596ebd998f6a399daa7efe302fa1aed46eee0ebe13ba8e42ca727a65",
+    "start": {"column":0,"line":0},
+    "target": {
+      "declaration": {"content":"8afc91ecb07af25d02a126189ed5ca40d51f2f32e3767542f154782596fe38d9","path":"src/a.rs","span":{"end":15,"start":0}},
+      "kind": "struct",
       "language": "rust",
-      "declaration": {
-        "path": "src/a.rs",
-        "content": "8afc91ecb07af25d02a126189ed5ca40d51f2f32e3767542f154782596fe38d9",
-        "span": {
-          "start": 0,
-          "end": 15
-        }
-      },
-      "name_span": {
-        "start": 11,
-        "end": 14
-      },
-      "kind": "struct"
+      "name_span": {"end":14,"start":11}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

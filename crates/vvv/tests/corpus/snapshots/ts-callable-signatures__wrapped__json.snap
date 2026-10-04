@@ -1,73 +1,37 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "e0463928fde5bac0191c7934b5175cd83e28b145b5168dad83079dec7e1b724a",
-    "outcome": "resolved",
     "items": [
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/values.ts",
-            "content": "57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8",
-            "span": {
-              "start": 460,
-              "end": 510
-            }
-          },
-          "name_span": {
-            "start": 473,
-            "end": 480
-          },
-          "kind": "variable"
-        },
-        "relation": "definition",
-        "via": null,
-        "excerpt": {
-          "path": "src/values.ts",
-          "content": "57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8",
-          "span": {
-            "start": 460,
-            "end": 502
-          }
-        },
-        "start": {
-          "line": 11,
-          "column": 0
-        },
-        "text": "export const wrapped = ((value: number) =>",
         "complete": true,
+        "excerpt": {"content":"57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8","path":"src/values.ts","span":{"end":502,"start":460}},
+        "relation": "definition",
         "signature": {
           "outcome": "available",
-          "requested": {
-            "path": "src/values.ts",
-            "content": "57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8",
-            "span": {
-              "start": 460,
-              "end": 502
-            }
-          }
-        }
+          "requested": {"content":"57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8","path":"src/values.ts","span":{"end":502,"start":460}}
+        },
+        "start": {"column":0,"line":11},
+        "target": {
+          "declaration": {"content":"57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8","path":"src/values.ts","span":{"end":510,"start":460}},
+          "kind": "variable",
+          "language": "typescript",
+          "name_span": {"end":480,"start":473}
+        },
+        "text": "export const wrapped = ((value: number) =>",
+        "via": null
       }
     ],
-    "omissions": {
-      "item_limit": 0,
-      "byte_limit": 0,
-      "lookup_limit": 0,
-      "file_limit": 0,
-      "ambiguous": 0,
-      "unavailable": 0,
-      "no_container": 0,
-      "unresolved_imports": 0
-    },
-    "references_by_name": false
-  }
+    "omissions": {"ambiguous":0,"byte_limit":0,"file_limit":0,"item_limit":0,"lookup_limit":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+    "outcome": "resolved",
+    "references_by_name": false,
+    "snapshot": "e0463928fde5bac0191c7934b5175cd83e28b145b5168dad83079dec7e1b724a"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

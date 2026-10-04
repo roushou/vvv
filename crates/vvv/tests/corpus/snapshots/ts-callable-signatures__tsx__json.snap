@@ -1,73 +1,37 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "00ff6f4b71258c67cc69efa1ad5d042c7761e3d9c27a14a53a02095b416b37bb",
-    "outcome": "resolved",
     "items": [
       {
-        "target": {
-          "language": "tsx",
-          "declaration": {
-            "path": "src/view.tsx",
-            "content": "bd118d58f3b1ff7838a03ff4f0bd3fae187a93baf70db8a712e5c8426c8203f6",
-            "span": {
-              "start": 0,
-              "end": 75
-            }
-          },
-          "name_span": {
-            "start": 13,
-            "end": 19
-          },
-          "kind": "variable"
-        },
-        "relation": "definition",
-        "via": null,
-        "excerpt": {
-          "path": "src/view.tsx",
-          "content": "bd118d58f3b1ff7838a03ff4f0bd3fae187a93baf70db8a712e5c8426c8203f6",
-          "span": {
-            "start": 0,
-            "end": 55
-          }
-        },
-        "start": {
-          "line": 0,
-          "column": 0
-        },
-        "text": "export const render = ({ title }: { title: string }) =>",
         "complete": true,
+        "excerpt": {"content":"bd118d58f3b1ff7838a03ff4f0bd3fae187a93baf70db8a712e5c8426c8203f6","path":"src/view.tsx","span":{"end":55,"start":0}},
+        "relation": "definition",
         "signature": {
           "outcome": "available",
-          "requested": {
-            "path": "src/view.tsx",
-            "content": "bd118d58f3b1ff7838a03ff4f0bd3fae187a93baf70db8a712e5c8426c8203f6",
-            "span": {
-              "start": 0,
-              "end": 55
-            }
-          }
-        }
+          "requested": {"content":"bd118d58f3b1ff7838a03ff4f0bd3fae187a93baf70db8a712e5c8426c8203f6","path":"src/view.tsx","span":{"end":55,"start":0}}
+        },
+        "start": {"column":0,"line":0},
+        "target": {
+          "declaration": {"content":"bd118d58f3b1ff7838a03ff4f0bd3fae187a93baf70db8a712e5c8426c8203f6","path":"src/view.tsx","span":{"end":75,"start":0}},
+          "kind": "variable",
+          "language": "tsx",
+          "name_span": {"end":19,"start":13}
+        },
+        "text": "export const render = ({ title }: { title: string }) =>",
+        "via": null
       }
     ],
-    "omissions": {
-      "item_limit": 0,
-      "byte_limit": 0,
-      "lookup_limit": 0,
-      "file_limit": 0,
-      "ambiguous": 0,
-      "unavailable": 0,
-      "no_container": 0,
-      "unresolved_imports": 0
-    },
-    "references_by_name": false
-  }
+    "omissions": {"ambiguous":0,"byte_limit":0,"file_limit":0,"item_limit":0,"lookup_limit":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+    "outcome": "resolved",
+    "references_by_name": false,
+    "snapshot": "00ff6f4b71258c67cc69efa1ad5d042c7761e3d9c27a14a53a02095b416b37bb"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

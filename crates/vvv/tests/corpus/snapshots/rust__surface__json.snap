@@ -1,396 +1,138 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "package": "corpus_core",
     "items": [
       {
-        "path": "core/src/lib.rs",
+        "address": {"package":"corpus_core","path":["geometry"]},
+        "extent": {"end":167,"start":0},
+        "importers": 0,
         "kind": "module",
         "name": "geometry",
-        "name_span": {
-          "start": 158,
-          "end": 166
-        },
-        "span": {
-          "start": 150,
-          "end": 167
-        },
-        "extent": {
-          "start": 0,
-          "end": 167
-        },
-        "visibility": {
-          "span": {
-            "start": 150,
-            "end": 153
-          },
-          "text": "pub"
-        },
-        "start": {
-          "line": 3,
-          "column": 8
-        },
-        "address": {
-          "package": "corpus_core",
-          "path": [
-            "geometry"
-          ]
-        },
+        "name_span": {"end":166,"start":158},
+        "path": "core/src/lib.rs",
         "reach": "everyone",
-        "importers": 0
+        "span": {"end":167,"start":150},
+        "start": {"column":8,"line":3},
+        "visibility": {"span":{"end":153,"start":150},"text":"pub"}
       },
       {
-        "path": "core/src/geometry/mod.rs",
+        "address": {"package":"corpus_core","path":["geometry","origin"]},
+        "extent": {"end":99,"start":50},
+        "importers": 1,
         "kind": "function",
         "name": "origin",
-        "name_span": {
-          "start": 57,
-          "end": 63
-        },
-        "span": {
-          "start": 50,
-          "end": 99
-        },
-        "extent": {
-          "start": 50,
-          "end": 99
-        },
-        "visibility": {
-          "span": {
-            "start": 50,
-            "end": 53
-          },
-          "text": "pub"
-        },
-        "start": {
-          "line": 5,
-          "column": 7
-        },
-        "address": {
-          "package": "corpus_core",
-          "path": [
-            "geometry",
-            "origin"
-          ]
-        },
+        "name_span": {"end":63,"start":57},
+        "path": "core/src/geometry/mod.rs",
         "reach": "everyone",
-        "importers": 1
+        "span": {"end":99,"start":50},
+        "start": {"column":7,"line":5},
+        "visibility": {"span":{"end":53,"start":50},"text":"pub"}
       },
       {
-        "path": "core/src/geometry/point.rs",
+        "address": {"package":"corpus_core","path":["geometry","point","Point"]},
+        "extent": {"end":125,"start":0},
+        "importers": 4,
         "kind": "struct",
         "name": "Point",
-        "name_span": {
-          "start": 84,
-          "end": 89
-        },
-        "span": {
-          "start": 73,
-          "end": 125
-        },
-        "extent": {
-          "start": 0,
-          "end": 125
-        },
-        "visibility": {
-          "span": {
-            "start": 73,
-            "end": 76
-          },
-          "text": "pub"
-        },
-        "start": {
-          "line": 2,
-          "column": 11
-        },
-        "address": {
-          "package": "corpus_core",
-          "path": [
-            "geometry",
-            "point",
-            "Point"
-          ]
-        },
+        "name_span": {"end":89,"start":84},
+        "path": "core/src/geometry/point.rs",
         "reach": "everyone",
-        "via": [
-          {
-            "package": "corpus_core",
-            "path": [
-              "geometry",
-              "Point"
-            ]
-          },
-          {
-            "package": "corpus_core",
-            "path": [
-              "Point"
-            ]
-          }
-        ],
-        "importers": 4
+        "span": {"end":125,"start":73},
+        "start": {"column":11,"line":2},
+        "via": [{"package":"corpus_core","path":["geometry","Point"]},{"package":"corpus_core","path":["Point"]}],
+        "visibility": {"span":{"end":76,"start":73},"text":"pub"}
       },
       {
-        "path": "core/src/geometry/mod.rs",
+        "address": {"package":"corpus_core","path":["geometry","shape"]},
+        "extent": {"end":14,"start":0},
+        "importers": 0,
         "kind": "module",
         "name": "shape",
-        "name_span": {
-          "start": 8,
-          "end": 13
-        },
-        "span": {
-          "start": 0,
-          "end": 14
-        },
-        "extent": {
-          "start": 0,
-          "end": 14
-        },
-        "visibility": {
-          "span": {
-            "start": 0,
-            "end": 3
-          },
-          "text": "pub"
-        },
-        "start": {
-          "line": 0,
-          "column": 8
-        },
-        "address": {
-          "package": "corpus_core",
-          "path": [
-            "geometry",
-            "shape"
-          ]
-        },
+        "name_span": {"end":13,"start":8},
+        "path": "core/src/geometry/mod.rs",
         "reach": "everyone",
-        "importers": 0
+        "span": {"end":14,"start":0},
+        "start": {"column":8,"line":0},
+        "visibility": {"span":{"end":3,"start":0},"text":"pub"}
       },
       {
-        "path": "core/src/geometry/shape.rs",
+        "address": {"package":"corpus_core","path":["geometry","shape","Shape"]},
+        "extent": {"end":117,"start":42},
+        "importers": 3,
         "kind": "enum",
         "name": "Shape",
-        "name_span": {
-          "start": 51,
-          "end": 56
-        },
-        "span": {
-          "start": 42,
-          "end": 117
-        },
-        "extent": {
-          "start": 42,
-          "end": 117
-        },
-        "visibility": {
-          "span": {
-            "start": 42,
-            "end": 45
-          },
-          "text": "pub"
-        },
-        "start": {
-          "line": 3,
-          "column": 9
-        },
-        "address": {
-          "package": "corpus_core",
-          "path": [
-            "geometry",
-            "shape",
-            "Shape"
-          ]
-        },
+        "name_span": {"end":56,"start":51},
+        "path": "core/src/geometry/shape.rs",
         "reach": "everyone",
-        "via": [
-          {
-            "package": "corpus_core",
-            "path": [
-              "Shape"
-            ]
-          }
-        ],
-        "importers": 3
+        "span": {"end":117,"start":42},
+        "start": {"column":9,"line":3},
+        "via": [{"package":"corpus_core","path":["Shape"]}],
+        "visibility": {"span":{"end":45,"start":42},"text":"pub"}
       },
       {
-        "path": "core/src/internal.rs",
+        "address": {"package":"corpus_core","path":["internal","Secret"]},
+        "extent": {"end":18,"start":0},
+        "importers": 2,
         "kind": "struct",
         "name": "Secret",
-        "name_span": {
-          "start": 11,
-          "end": 17
-        },
-        "span": {
-          "start": 0,
-          "end": 18
-        },
-        "extent": {
-          "start": 0,
-          "end": 18
-        },
-        "visibility": {
-          "span": {
-            "start": 0,
-            "end": 3
-          },
-          "text": "pub"
-        },
-        "start": {
-          "line": 0,
-          "column": 11
-        },
-        "address": {
-          "package": "corpus_core",
-          "path": [
-            "internal",
-            "Secret"
-          ]
-        },
+        "name_span": {"end":17,"start":11},
+        "path": "core/src/internal.rs",
         "reach": "everyone",
-        "via": [
-          {
-            "package": "corpus_core",
-            "path": [
-              "Hidden"
-            ]
-          }
-        ],
-        "importers": 2
+        "span": {"end":18,"start":0},
+        "start": {"column":11,"line":0},
+        "via": [{"package":"corpus_core","path":["Hidden"]}],
+        "visibility": {"span":{"end":3,"start":0},"text":"pub"}
       },
       {
-        "path": "core/src/lib.rs",
+        "address": {"package":"corpus_core","path":["util"]},
+        "extent": {"end":181,"start":168},
+        "importers": 0,
         "kind": "module",
         "name": "util",
-        "name_span": {
-          "start": 176,
-          "end": 180
-        },
-        "span": {
-          "start": 168,
-          "end": 181
-        },
-        "extent": {
-          "start": 168,
-          "end": 181
-        },
-        "visibility": {
-          "span": {
-            "start": 168,
-            "end": 171
-          },
-          "text": "pub"
-        },
-        "start": {
-          "line": 4,
-          "column": 8
-        },
-        "address": {
-          "package": "corpus_core",
-          "path": [
-            "util"
-          ]
-        },
+        "name_span": {"end":180,"start":176},
+        "path": "core/src/lib.rs",
         "reach": "everyone",
-        "importers": 0
+        "span": {"end":181,"start":168},
+        "start": {"column":8,"line":4},
+        "visibility": {"span":{"end":171,"start":168},"text":"pub"}
       },
       {
-        "path": "core/src/util.rs",
+        "address": {"package":"corpus_core","path":["util","VERSION"]},
+        "extent": {"end":202,"start":175},
+        "importers": 0,
         "kind": "const",
         "name": "VERSION",
-        "name_span": {
-          "start": 185,
-          "end": 192
-        },
-        "span": {
-          "start": 175,
-          "end": 202
-        },
-        "extent": {
-          "start": 175,
-          "end": 202
-        },
-        "visibility": {
-          "span": {
-            "start": 175,
-            "end": 178
-          },
-          "text": "pub"
-        },
-        "start": {
-          "line": 14,
-          "column": 10
-        },
-        "address": {
-          "package": "corpus_core",
-          "path": [
-            "util",
-            "VERSION"
-          ]
-        },
+        "name_span": {"end":192,"start":185},
+        "path": "core/src/util.rs",
         "reach": "everyone",
-        "via": [
-          {
-            "package": "corpus_core",
-            "path": [
-              "VERSION"
-            ]
-          }
-        ],
-        "importers": 0
+        "span": {"end":202,"start":175},
+        "start": {"column":10,"line":14},
+        "via": [{"package":"corpus_core","path":["VERSION"]}],
+        "visibility": {"span":{"end":178,"start":175},"text":"pub"}
       },
       {
-        "path": "core/src/util.rs",
+        "address": {"package":"corpus_core","path":["util","area"]},
+        "extent": {"end":81,"start":32},
+        "importers": 2,
         "kind": "function",
         "name": "area",
-        "name_span": {
-          "start": 39,
-          "end": 43
-        },
-        "span": {
-          "start": 32,
-          "end": 81
-        },
-        "extent": {
-          "start": 32,
-          "end": 81
-        },
-        "visibility": {
-          "span": {
-            "start": 32,
-            "end": 35
-          },
-          "text": "pub"
-        },
-        "start": {
-          "line": 2,
-          "column": 7
-        },
-        "address": {
-          "package": "corpus_core",
-          "path": [
-            "util",
-            "area"
-          ]
-        },
+        "name_span": {"end":43,"start":39},
+        "path": "core/src/util.rs",
         "reach": "everyone",
-        "via": [
-          {
-            "package": "corpus_core",
-            "path": [
-              "area"
-            ]
-          }
-        ],
-        "importers": 2
+        "span": {"end":81,"start":32},
+        "start": {"column":7,"line":2},
+        "via": [{"package":"corpus_core","path":["area"]}],
+        "visibility": {"span":{"end":35,"start":32},"text":"pub"}
       }
-    ]
-  }
+    ],
+    "package": "corpus_core"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

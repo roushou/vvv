@@ -1,73 +1,37 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "2458318cfef4f2baf8092d3f4a989c896f2735fa6e4c0194fd679cdebeea9c96",
-    "outcome": "resolved",
     "items": [
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/values.ts",
-            "content": "57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8",
-            "span": {
-              "start": 358,
-              "end": 432
-            }
-          },
-          "name_span": {
-            "start": 371,
-            "end": 381
-          },
-          "kind": "variable"
-        },
-        "relation": "definition",
-        "via": null,
-        "excerpt": {
-          "path": "src/values.ts",
-          "content": "57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8",
-          "span": {
-            "start": 358,
-            "end": 425
-          }
-        },
-        "start": {
-          "line": 9,
-          "column": 0
-        },
-        "text": "export const asyncValue = async (value: number): Promise<number> =>",
         "complete": true,
+        "excerpt": {"content":"57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8","path":"src/values.ts","span":{"end":425,"start":358}},
+        "relation": "definition",
         "signature": {
           "outcome": "available",
-          "requested": {
-            "path": "src/values.ts",
-            "content": "57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8",
-            "span": {
-              "start": 358,
-              "end": 425
-            }
-          }
-        }
+          "requested": {"content":"57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8","path":"src/values.ts","span":{"end":425,"start":358}}
+        },
+        "start": {"column":0,"line":9},
+        "target": {
+          "declaration": {"content":"57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8","path":"src/values.ts","span":{"end":432,"start":358}},
+          "kind": "variable",
+          "language": "typescript",
+          "name_span": {"end":381,"start":371}
+        },
+        "text": "export const asyncValue = async (value: number): Promise<number> =>",
+        "via": null
       }
     ],
-    "omissions": {
-      "item_limit": 0,
-      "byte_limit": 0,
-      "lookup_limit": 0,
-      "file_limit": 0,
-      "ambiguous": 0,
-      "unavailable": 1,
-      "no_container": 0,
-      "unresolved_imports": 0
-    },
-    "references_by_name": false
-  }
+    "omissions": {"ambiguous":0,"byte_limit":0,"file_limit":0,"item_limit":0,"lookup_limit":0,"no_container":0,"unavailable":1,"unresolved_imports":0},
+    "outcome": "resolved",
+    "references_by_name": false,
+    "snapshot": "2458318cfef4f2baf8092d3f4a989c896f2735fa6e4c0194fd679cdebeea9c96"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

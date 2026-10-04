@@ -1,105 +1,32 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "name": "Point",
-    "address": {
-      "package": "corpus_core",
-      "path": [
-        "geometry",
-        "point",
-        "Point"
-      ]
-    },
+    "address": {"package":"corpus_core","path":["geometry","point","Point"]},
     "consumers": [
+      {"depth":1,"module":{"package":"corpus_app","path":[]},"path":"app/src/main.rs","through":{"package":"corpus_core","path":["geometry","point"]}},
       {
-        "module": {
-          "package": "corpus_app",
-          "path": []
-        },
-        "path": "app/src/main.rs",
         "depth": 1,
-        "through": {
-          "package": "corpus_core",
-          "path": [
-            "geometry",
-            "point"
-          ]
-        }
-      },
-      {
-        "module": {
-          "package": "corpus_core",
-          "path": [
-            "geometry"
-          ]
-        },
+        "module": {"package":"corpus_core","path":["geometry"]},
         "path": "core/src/geometry/mod.rs",
-        "depth": 1,
-        "through": {
-          "package": "corpus_core",
-          "path": [
-            "geometry",
-            "point"
-          ]
-        }
+        "through": {"package":"corpus_core","path":["geometry","point"]}
       },
       {
-        "module": {
-          "package": "corpus_core",
-          "path": [
-            "geometry",
-            "shape"
-          ]
-        },
+        "depth": 1,
+        "module": {"package":"corpus_core","path":["geometry","shape"]},
         "path": "core/src/geometry/shape.rs",
-        "depth": 1,
-        "through": {
-          "package": "corpus_core",
-          "path": [
-            "geometry",
-            "point"
-          ]
-        }
+        "through": {"package":"corpus_core","path":["geometry","point"]}
       },
-      {
-        "module": {
-          "package": "corpus_core",
-          "path": []
-        },
-        "path": "core/src/lib.rs",
-        "depth": 1,
-        "through": {
-          "package": "corpus_core",
-          "path": [
-            "geometry",
-            "point"
-          ]
-        }
-      },
-      {
-        "module": {
-          "package": "corpus_app",
-          "path": [
-            "cli"
-          ]
-        },
-        "path": "app/src/cli.rs",
-        "depth": 2,
-        "through": {
-          "package": "corpus_core",
-          "path": [
-            "geometry"
-          ]
-        }
-      }
-    ]
-  }
+      {"depth":1,"module":{"package":"corpus_core","path":[]},"path":"core/src/lib.rs","through":{"package":"corpus_core","path":["geometry","point"]}},
+      {"depth":2,"module":{"package":"corpus_app","path":["cli"]},"path":"app/src/cli.rs","through":{"package":"corpus_core","path":["geometry"]}}
+    ],
+    "name": "Point"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

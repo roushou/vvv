@@ -1,5 +1,7 @@
 //! Corpus workspaces under `tests/corpus/` cover Rust, TypeScript, moves, and
-//! import resolution. Command cases retain exact human and JSON snapshots.
+//! import resolution. Command cases retain exact human and canonical JSON
+//! snapshots. Complete source previews are checked once per fixture file and
+//! compared across every response that refers to them.
 //! Mutation cases check three properties: apply equals preview, undo restores
 //! the original tree, and batch equals sequential application.
 //! Changing what a command means changes a snapshot; review it, then
@@ -15,6 +17,10 @@ use vvv_engine::{
     Query, RenameIntent, Request, Retention, RewriteIntent, Vfs, Workspace,
 };
 use vvv_rs::Builtins;
+
+#[path = "common/corpus_snapshot.rs"]
+mod corpus_snapshot;
+use corpus_snapshot::{JsonSnapshot, SourceSnapshot};
 
 // Native libtest cases: each command can be listed, filtered, and rerun independently.
 macro_rules! corpus_cases {
@@ -765,8 +771,8 @@ impl Corpus {
             .join(self.name)
     }
 
-    /// The binary's exact output for `args`, stdout then stderr, with the
-    /// exit code; paths spelled with `/` whatever the host writes.
+    /// The binary's output for `args`, stdout then stderr, with the exit code.
+    /// JSON values are canonicalized; human text is exact. Paths use `/`.
     fn run(&self, args: &[&str], json: bool) -> String {
         let mut command = Command::new(env!("CARGO_BIN_EXE_vvv"));
         command
@@ -817,10 +823,16 @@ impl Corpus {
                 text.replace('\\', "/")
             }
         };
+        let stdout = text(output.stdout);
+        let stdout = if json {
+            self.json_snapshot(&stdout)
+        } else {
+            stdout
+        };
         format!(
             "exit {}\n--- stdout ---\n{}--- stderr ---\n{}",
             output.status.code().unwrap_or(-1),
-            text(output.stdout),
+            stdout,
             text(output.stderr)
         )
     }
@@ -986,6 +998,19 @@ fn intent_of(request: &Request) -> Intent {
 }
 
 impl Corpus {
+    fn json_snapshot(&self, output: &str) -> String {
+        let mut value: serde_json::Value =
+            serde_json::from_str(output).expect("CLI produces a JSON envelope");
+        if let Some(source) = value
+            .pointer_mut("/result/preview/source")
+            .filter(|source| source.is_object())
+        {
+            *source = SourceSnapshot::new(self.name, source.take()).reference();
+        }
+        value.sort_all_objects();
+        format!("{}\n", JsonSnapshot(&value))
+    }
+
     fn case(&self, name: &str) {
         let (_, args) = self
             .cases
@@ -993,7 +1018,9 @@ impl Corpus {
             .find(|(case, _)| *case == name)
             .expect("registered corpus case");
         let mut settings = insta::Settings::clone_current();
-        settings.set_snapshot_path("corpus/snapshots");
+        settings.set_snapshot_path(
+            Path::new(env!("CARGO_MANIFEST_DIR")).join("tests/corpus/snapshots"),
+        );
         settings.set_prepend_module_to_snapshot(false);
         settings.bind(|| {
             insta::assert_snapshot!(format!("{}__{name}__json", self.name), self.run(args, true));
@@ -2702,7 +2729,7 @@ impl PageTranscript {
         settings.bind(|| {
             insta::assert_snapshot!(
                 format!("{}__validation__json", corpus.name),
-                serde_json::to_string_pretty(&transcript.replies).unwrap()
+                JsonSnapshot(&serde_json::to_value(&transcript.replies).unwrap()).to_string()
             )
         });
     }
@@ -2771,7 +2798,7 @@ impl PageTranscript {
         settings.bind(|| {
             insta::assert_snapshot!(
                 format!("{}__retained-plan__json", corpus.name),
-                serde_json::to_string_pretty(&transcript.replies).unwrap()
+                JsonSnapshot(&serde_json::to_value(&transcript.replies).unwrap()).to_string()
             )
         });
     }
@@ -2840,7 +2867,7 @@ impl PageTranscript {
         settings.bind(|| {
             insta::assert_snapshot!(
                 format!("{}__retained-move__json", corpus.name),
-                serde_json::to_string_pretty(&transcript.replies).unwrap()
+                JsonSnapshot(&serde_json::to_value(&transcript.replies).unwrap()).to_string()
             )
         });
     }
@@ -2907,7 +2934,7 @@ impl PageTranscript {
         settings.bind(|| {
             insta::assert_snapshot!(
                 format!("{}__retained-rewrite__json", corpus.name),
-                serde_json::to_string_pretty(&transcript.replies).unwrap()
+                JsonSnapshot(&serde_json::to_value(&transcript.replies).unwrap()).to_string()
             )
         });
     }
@@ -2951,7 +2978,7 @@ impl PageTranscript {
         settings.bind(|| {
             insta::assert_snapshot!(
                 format!("{}__incoming-pages__json", corpus.name),
-                serde_json::to_string_pretty(&transcript.replies).unwrap()
+                JsonSnapshot(&serde_json::to_value(&transcript.replies).unwrap()).to_string()
             )
         });
     }
@@ -3015,7 +3042,7 @@ impl PageTranscript {
         settings.bind(|| {
             insta::assert_snapshot!(
                 format!("{}__pagination__json", corpus.name),
-                serde_json::to_string_pretty(&transcript.replies).unwrap()
+                JsonSnapshot(&serde_json::to_value(&transcript.replies).unwrap()).to_string()
             )
         });
     }

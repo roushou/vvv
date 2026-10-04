@@ -1,71 +1,41 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "507dcd4d6562bead6363a96ba8f60103ad83296acb2ff9e59c74c02f0d6a28df",
-    "outcome": "ambiguous",
     "candidates": [
       {
-        "target": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "f8858641e41d10441e926393feec89d831a820692d9c5ebe4c2b29937074e73e",
-            "span": {
-              "start": 114,
-              "end": 140
-            }
-          },
-          "name_span": {
-            "start": 119,
-            "end": 124
-          },
-          "kind": "variable"
-        },
+        "evidence": {"addresses":[]},
         "id": "3465b807156e",
         "name": "value",
-        "start": {
-          "line": 3,
-          "column": 13
-        },
-        "evidence": {
-          "addresses": []
+        "start": {"column":13,"line":3},
+        "target": {
+          "declaration": {"content":"f8858641e41d10441e926393feec89d831a820692d9c5ebe4c2b29937074e73e","path":"src/lib.rs","span":{"end":140,"start":114}},
+          "kind": "variable",
+          "language": "rust",
+          "name_span": {"end":124,"start":119}
         }
       },
       {
-        "target": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "f8858641e41d10441e926393feec89d831a820692d9c5ebe4c2b29937074e73e",
-            "span": {
-              "start": 114,
-              "end": 140
-            }
-          },
-          "name_span": {
-            "start": 134,
-            "end": 139
-          },
-          "kind": "variable"
-        },
+        "evidence": {"addresses":[]},
         "id": "c29feb507a5b",
         "name": "value",
-        "start": {
-          "line": 3,
-          "column": 28
-        },
-        "evidence": {
-          "addresses": []
+        "start": {"column":28,"line":3},
+        "target": {
+          "declaration": {"content":"f8858641e41d10441e926393feec89d831a820692d9c5ebe4c2b29937074e73e","path":"src/lib.rs","span":{"end":140,"start":114}},
+          "kind": "variable",
+          "language": "rust",
+          "name_span": {"end":139,"start":134}
         }
       }
-    ]
-  }
+    ],
+    "outcome": "ambiguous",
+    "snapshot": "507dcd4d6562bead6363a96ba8f60103ad83296acb2ff9e59c74c02f0d6a28df"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

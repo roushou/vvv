@@ -1,63 +1,26 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "path": "src/nested.rs",
-    "position": {
-      "line": 1,
-      "column": 34
-    },
-    "module": {
-      "package": "resolution_probe",
-      "path": [
-        "nested"
-      ]
-    },
     "import": {
-      "span": {
-        "start": 64,
-        "end": 72
-      },
-      "path": "module_alias::child::child_fn",
-      "group": {
-        "prefix": "module_alias::child",
-        "item": {
-          "start": 64,
-          "end": 72
-        },
-        "list": {
-          "start": 56,
-          "end": 73
-        },
-        "items": 2,
-        "statement": {
-          "start": 30,
-          "end": 80
-        },
-        "top_level": false
-      },
+      "address": {"package":"resolution_probe","path":["a","child","child_fn"]},
       "declares": true,
-      "start": {
-        "line": 1,
-        "column": 34
-      },
-      "address": {
-        "package": "resolution_probe",
-        "path": [
-          "a",
-          "child",
-          "child_fn"
-        ]
-      },
-      "file": "src/a/child.rs"
+      "file": "src/a/child.rs",
+      "group": {"item":{"end":72,"start":64},"items":2,"list":{"end":73,"start":56},"prefix":"module_alias::child","statement":{"end":80,"start":30},"top_level":false},
+      "path": "module_alias::child::child_fn",
+      "span": {"end":72,"start":64},
+      "start": {"column":34,"line":1}
     },
-    "importers": []
-  }
+    "importers": [],
+    "module": {"package":"resolution_probe","path":["nested"]},
+    "path": "src/nested.rs",
+    "position": {"column":34,"line":1}
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

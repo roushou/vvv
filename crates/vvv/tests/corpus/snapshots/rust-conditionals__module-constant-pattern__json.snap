@@ -1,63 +1,31 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "a5d6caab8bd4ca8e2ba06d1dd3c6a2feda29fc484e39aef67e48193fb36d4a3f",
-    "outcome": "resolved",
-    "target": {
+    "container": {
+      "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":1911,"start":1890}},
+      "kind": "const",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-        "span": {
-          "start": 1890,
-          "end": 1911
-        }
-      },
-      "name_span": {
-        "start": 1896,
-        "end": 1901
-      },
-      "kind": "const"
+      "name_span": {"end":1901,"start":1896}
     },
+    "evidence": {"addresses":[{"package":"rust_conditionals","path":["VALUE"]}]},
     "id": "8f5ea5f91573",
     "name": "VALUE",
-    "start": {
-      "line": 88,
-      "column": 0
-    },
-    "evidence": {
-      "addresses": [
-        {
-          "package": "rust_conditionals",
-          "path": [
-            "VALUE"
-          ]
-        }
-      ]
-    },
-    "container": {
+    "outcome": "resolved",
+    "snapshot": "a5d6caab8bd4ca8e2ba06d1dd3c6a2feda29fc484e39aef67e48193fb36d4a3f",
+    "start": {"column":0,"line":88},
+    "target": {
+      "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":1911,"start":1890}},
+      "kind": "const",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-        "span": {
-          "start": 1890,
-          "end": 1911
-        }
-      },
-      "name_span": {
-        "start": 1896,
-        "end": 1901
-      },
-      "kind": "const"
+      "name_span": {"end":1901,"start":1896}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

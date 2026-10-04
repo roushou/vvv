@@ -1,194 +1,86 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "8869f8b1acdd87942bb07cc07bb77f89e8d350bf5bd2f94dfc5e4e52f19e7a27",
-    "outcome": "ambiguous",
     "candidates": [
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/module.ts",
-            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
-            "span": {
-              "start": 271,
-              "end": 314
-            }
-          },
-          "name_span": {
-            "start": 280,
-            "end": 290
-          },
-          "kind": "function"
-        },
         "declaration": {
           "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+          "end": {"column":45,"line":15},
           "id": "ff8895fc58c5",
-          "path": "src/module.ts",
-          "language": "typescript",
-          "span": {
-            "start": 271,
-            "end": 314
-          },
-          "start": {
-            "line": 15,
-            "column": 2
-          },
-          "end": {
-            "line": 15,
-            "column": 45
-          },
           "kind": "declaration",
-          "text": "function overloaded(value: number): number;",
+          "language": "typescript",
           "line": "  function overloaded(value: number): number;",
-          "symbol": {
-            "kind": "function",
-            "name": "overloaded",
-            "name_span": {
-              "start": 280,
-              "end": 290
-            },
-            "span": {
-              "start": 271,
-              "end": 314
-            },
-            "extent": {
-              "start": 271,
-              "end": 314
-            }
-          },
-          "role": "declaration"
+          "path": "src/module.ts",
+          "role": "declaration",
+          "span": {"end":314,"start":271},
+          "start": {"column":2,"line":15},
+          "symbol": {"extent":{"end":314,"start":271},"kind":"function","name":"overloaded","name_span":{"end":290,"start":280},"span":{"end":314,"start":271}},
+          "text": "function overloaded(value: number): number;"
         },
-        "evidence": {
-          "addresses": []
+        "evidence": {"addresses":[]},
+        "target": {
+          "declaration": {"content":"522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b","path":"src/module.ts","span":{"end":314,"start":271}},
+          "kind": "function",
+          "language": "typescript",
+          "name_span": {"end":290,"start":280}
         }
       },
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/module.ts",
-            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
-            "span": {
-              "start": 317,
-              "end": 360
-            }
-          },
-          "name_span": {
-            "start": 326,
-            "end": 336
-          },
-          "kind": "function"
-        },
         "declaration": {
           "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+          "end": {"column":45,"line":16},
           "id": "77216129a54b",
-          "path": "src/module.ts",
-          "language": "typescript",
-          "span": {
-            "start": 317,
-            "end": 360
-          },
-          "start": {
-            "line": 16,
-            "column": 2
-          },
-          "end": {
-            "line": 16,
-            "column": 45
-          },
           "kind": "declaration",
-          "text": "function overloaded(value: string): string;",
+          "language": "typescript",
           "line": "  function overloaded(value: string): string;",
-          "symbol": {
-            "kind": "function",
-            "name": "overloaded",
-            "name_span": {
-              "start": 326,
-              "end": 336
-            },
-            "span": {
-              "start": 317,
-              "end": 360
-            },
-            "extent": {
-              "start": 317,
-              "end": 360
-            }
-          },
-          "role": "declaration"
+          "path": "src/module.ts",
+          "role": "declaration",
+          "span": {"end":360,"start":317},
+          "start": {"column":2,"line":16},
+          "symbol": {"extent":{"end":360,"start":317},"kind":"function","name":"overloaded","name_span":{"end":336,"start":326},"span":{"end":360,"start":317}},
+          "text": "function overloaded(value: string): string;"
         },
-        "evidence": {
-          "addresses": []
+        "evidence": {"addresses":[]},
+        "target": {
+          "declaration": {"content":"522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b","path":"src/module.ts","span":{"end":360,"start":317}},
+          "kind": "function",
+          "language": "typescript",
+          "name_span": {"end":336,"start":326}
         }
       },
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/module.ts",
-            "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
-            "span": {
-              "start": 363,
-              "end": 424
-            }
-          },
-          "name_span": {
-            "start": 372,
-            "end": 382
-          },
-          "kind": "function"
-        },
         "declaration": {
           "content": "522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b",
+          "end": {"column":63,"line":17},
           "id": "663767ce7a4b",
-          "path": "src/module.ts",
-          "language": "typescript",
-          "span": {
-            "start": 363,
-            "end": 424
-          },
-          "start": {
-            "line": 17,
-            "column": 2
-          },
-          "end": {
-            "line": 17,
-            "column": 63
-          },
           "kind": "declaration",
-          "text": "function overloaded(value: number | string) { return value; }",
+          "language": "typescript",
           "line": "  function overloaded(value: number | string) { return value; }",
-          "symbol": {
-            "kind": "function",
-            "name": "overloaded",
-            "name_span": {
-              "start": 372,
-              "end": 382
-            },
-            "span": {
-              "start": 363,
-              "end": 424
-            },
-            "extent": {
-              "start": 363,
-              "end": 424
-            }
-          },
-          "role": "declaration"
+          "path": "src/module.ts",
+          "role": "declaration",
+          "span": {"end":424,"start":363},
+          "start": {"column":2,"line":17},
+          "symbol": {"extent":{"end":424,"start":363},"kind":"function","name":"overloaded","name_span":{"end":382,"start":372},"span":{"end":424,"start":363}},
+          "text": "function overloaded(value: number | string) { return value; }"
         },
-        "evidence": {
-          "addresses": []
+        "evidence": {"addresses":[]},
+        "target": {
+          "declaration": {"content":"522b69bcc5ffbbf5165bc02f9ca968f2ad7a170653e2f8eb26ea2c90638d813b","path":"src/module.ts","span":{"end":424,"start":363}},
+          "kind": "function",
+          "language": "typescript",
+          "name_span": {"end":382,"start":372}
         }
       }
-    ]
-  }
+    ],
+    "outcome": "ambiguous",
+    "snapshot": "8869f8b1acdd87942bb07cc07bb77f89e8d350bf5bd2f94dfc5e4e52f19e7a27"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

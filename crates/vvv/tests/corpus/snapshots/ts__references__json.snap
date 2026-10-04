@@ -1,312 +1,190 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "name": "Point",
     "declarations": [
       {
+        "address": {"package":"","path":["src","geometry","point.ts","Point"]},
         "content": "acd0355551d105e0ae98250b0280e14d272ce398ab5b850caec828d77b4a70fe",
+        "end": {"column":1,"line":6},
         "id": "a0486a2d06cd",
-        "path": "src/geometry/point.ts",
-        "language": "typescript",
-        "span": {
-          "start": 7,
-          "end": 152
-        },
-        "start": {
-          "line": 0,
-          "column": 7
-        },
-        "end": {
-          "line": 6,
-          "column": 1
-        },
         "kind": "class_declaration",
-        "text": "class Point {\n  constructor(public x: number, public y: number) {}\n\n  shift(dx: number): Point {\n    return new Point(this.x + dx, this.y);\n  }\n}",
+        "language": "typescript",
         "line": "export class Point {",
+        "path": "src/geometry/point.ts",
+        "role": "declaration",
+        "span": {"end":152,"start":7},
+        "start": {"column":7,"line":0},
         "symbol": {
+          "extent": {"end":152,"start":0},
           "kind": "class",
           "name": "Point",
-          "name_span": {
-            "start": 13,
-            "end": 18
-          },
-          "span": {
-            "start": 7,
-            "end": 152
-          },
-          "extent": {
-            "start": 0,
-            "end": 152
-          },
-          "visibility": {
-            "span": {
-              "start": 0,
-              "end": 6
-            },
-            "text": "export"
-          }
+          "name_span": {"end":18,"start":13},
+          "span": {"end":152,"start":7},
+          "visibility": {"span":{"end":6,"start":0},"text":"export"}
         },
-        "role": "declaration",
-        "address": {
-          "package": "",
-          "path": [
-            "src",
-            "geometry",
-            "point.ts",
-            "Point"
-          ]
-        }
+        "text": "class Point {\n  constructor(public x: number, public y: number) {}\n\n  shift(dx: number): Point {\n    return new Point(this.x + dx, this.y);\n  }\n}"
       }
     ],
+    "name": "Point",
     "occurrences": [
       {
+        "confidence": "resolved",
         "content": "acd0355551d105e0ae98250b0280e14d272ce398ab5b850caec828d77b4a70fe",
+        "end": {"column":18,"line":0},
         "id": "cce75c58b026",
-        "path": "src/geometry/point.ts",
-        "language": "typescript",
-        "span": {
-          "start": 13,
-          "end": 18
-        },
-        "start": {
-          "line": 0,
-          "column": 13
-        },
-        "end": {
-          "line": 0,
-          "column": 18
-        },
         "kind": "type_identifier",
-        "text": "Point",
+        "language": "typescript",
         "line": "export class Point {",
+        "path": "src/geometry/point.ts",
+        "reason": "declaring",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "declaring"
+        "span": {"end":18,"start":13},
+        "start": {"column":13,"line":0},
+        "text": "Point"
       },
       {
+        "confidence": "resolved",
         "content": "acd0355551d105e0ae98250b0280e14d272ce398ab5b850caec828d77b4a70fe",
+        "end": {"column":26,"line":3},
         "id": "775d6e19bcbf",
-        "path": "src/geometry/point.ts",
-        "language": "typescript",
-        "span": {
-          "start": 96,
-          "end": 101
-        },
-        "start": {
-          "line": 3,
-          "column": 21
-        },
-        "end": {
-          "line": 3,
-          "column": 26
-        },
         "kind": "type_identifier",
-        "text": "Point",
+        "language": "typescript",
         "line": "  shift(dx: number): Point {",
+        "path": "src/geometry/point.ts",
+        "reason": "declaring",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "declaring"
+        "span": {"end":101,"start":96},
+        "start": {"column":21,"line":3},
+        "text": "Point"
       },
       {
+        "confidence": "resolved",
         "content": "acd0355551d105e0ae98250b0280e14d272ce398ab5b850caec828d77b4a70fe",
+        "end": {"column":20,"line":4},
         "id": "23917e32bc5b",
-        "path": "src/geometry/point.ts",
-        "language": "typescript",
-        "span": {
-          "start": 119,
-          "end": 124
-        },
-        "start": {
-          "line": 4,
-          "column": 15
-        },
-        "end": {
-          "line": 4,
-          "column": 20
-        },
         "kind": "identifier",
-        "text": "Point",
+        "language": "typescript",
         "line": "    return new Point(this.x + dx, this.y);",
+        "path": "src/geometry/point.ts",
+        "reason": "declaring",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "declaring"
+        "span": {"end":124,"start":119},
+        "start": {"column":15,"line":4},
+        "text": "Point"
       },
       {
+        "confidence": "resolved",
         "content": "acd0355551d105e0ae98250b0280e14d272ce398ab5b850caec828d77b4a70fe",
+        "end": {"column":31,"line":8},
         "id": "0f8b302ba45b",
-        "path": "src/geometry/point.ts",
-        "language": "typescript",
-        "span": {
-          "start": 180,
-          "end": 185
-        },
-        "start": {
-          "line": 8,
-          "column": 26
-        },
-        "end": {
-          "line": 8,
-          "column": 31
-        },
         "kind": "type_identifier",
-        "text": "Point",
+        "language": "typescript",
         "line": "export function origin(): Point {",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "declaring"
-      },
-      {
-        "content": "acd0355551d105e0ae98250b0280e14d272ce398ab5b850caec828d77b4a70fe",
-        "id": "bf6c2cdcaec4",
         "path": "src/geometry/point.ts",
-        "language": "typescript",
-        "span": {
-          "start": 201,
-          "end": 206
-        },
-        "start": {
-          "line": 9,
-          "column": 13
-        },
-        "end": {
-          "line": 9,
-          "column": 18
-        },
+        "reason": "declaring",
+        "role": "use",
+        "span": {"end":185,"start":180},
+        "start": {"column":26,"line":8},
+        "text": "Point"
+      },
+      {
+        "confidence": "resolved",
+        "content": "acd0355551d105e0ae98250b0280e14d272ce398ab5b850caec828d77b4a70fe",
+        "end": {"column":18,"line":9},
+        "id": "bf6c2cdcaec4",
         "kind": "identifier",
-        "text": "Point",
+        "language": "typescript",
         "line": "  return new Point(0, 0);",
+        "path": "src/geometry/point.ts",
+        "reason": "declaring",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "declaring"
+        "span": {"end":206,"start":201},
+        "start": {"column":13,"line":9},
+        "text": "Point"
       },
       {
+        "confidence": "resolved",
         "content": "0ff1464ffcb8c6b660379d84584b6996bf579363da7cd0c7c65b6c1be0bce7f2",
+        "end": {"column":14,"line":0},
         "id": "7efbdf1f1e54",
-        "path": "src/geometry/shape.ts",
-        "language": "typescript",
-        "span": {
-          "start": 9,
-          "end": 14
-        },
-        "start": {
-          "line": 0,
-          "column": 9
-        },
-        "end": {
-          "line": 0,
-          "column": 14
-        },
         "kind": "identifier",
-        "text": "Point",
+        "language": "typescript",
         "line": "import { Point } from './point';",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "opened"
-      },
-      {
-        "content": "0ff1464ffcb8c6b660379d84584b6996bf579363da7cd0c7c65b6c1be0bce7f2",
-        "id": "f3e7e5b67090",
         "path": "src/geometry/shape.ts",
-        "language": "typescript",
-        "span": {
-          "start": 101,
-          "end": 106
-        },
-        "start": {
-          "line": 4,
-          "column": 10
-        },
-        "end": {
-          "line": 4,
-          "column": 15
-        },
+        "reason": "opened",
+        "role": "use",
+        "span": {"end":14,"start":9},
+        "start": {"column":9,"line":0},
+        "text": "Point"
+      },
+      {
+        "confidence": "resolved",
+        "content": "0ff1464ffcb8c6b660379d84584b6996bf579363da7cd0c7c65b6c1be0bce7f2",
+        "end": {"column":15,"line":4},
+        "id": "f3e7e5b67090",
         "kind": "type_identifier",
-        "text": "Point",
+        "language": "typescript",
         "line": "  corner: Point;",
+        "path": "src/geometry/shape.ts",
+        "reason": "opened",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "opened"
+        "span": {"end":106,"start":101},
+        "start": {"column":10,"line":4},
+        "text": "Point"
       },
       {
+        "confidence": "resolved",
         "content": "e0a38fad2fc0af83dacfc30deec7a56037d25c9cf209f428df58b146f43713d9",
+        "end": {"column":14,"line":0},
         "id": "068da24d08e6",
-        "path": "src/index.ts",
-        "language": "typescript",
-        "span": {
-          "start": 9,
-          "end": 14
-        },
-        "start": {
-          "line": 0,
-          "column": 9
-        },
-        "end": {
-          "line": 0,
-          "column": 14
-        },
         "kind": "identifier",
-        "text": "Point",
+        "language": "typescript",
         "line": "export { Point, origin } from './geometry/point';",
+        "path": "src/index.ts",
+        "reason": "opened",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "opened"
+        "span": {"end":14,"start":9},
+        "start": {"column":9,"line":0},
+        "text": "Point"
       },
       {
+        "confidence": "unresolved",
         "content": "f3b72c0afa36850de48018fd2dce4f9a50a4428e6c4f60e3d183273e06aa548a",
+        "end": {"column":14,"line":0},
         "id": "fb9b85ee03c2",
-        "path": "src/app.ts",
-        "language": "typescript",
-        "span": {
-          "start": 9,
-          "end": 14
-        },
-        "start": {
-          "line": 0,
-          "column": 9
-        },
-        "end": {
-          "line": 0,
-          "column": 14
-        },
         "kind": "identifier",
-        "text": "Point",
+        "language": "typescript",
         "line": "import { Point, area } from './index';",
+        "path": "src/app.ts",
+        "reason": "unresolved",
         "role": "use",
-        "confidence": "unresolved",
-        "reason": "unresolved"
+        "span": {"end":14,"start":9},
+        "start": {"column":9,"line":0},
+        "text": "Point"
       },
       {
-        "content": "f3b72c0afa36850de48018fd2dce4f9a50a4428e6c4f60e3d183273e06aa548a",
-        "id": "dd3f84b8fd4f",
-        "path": "src/app.ts",
-        "language": "typescript",
-        "span": {
-          "start": 100,
-          "end": 105
-        },
-        "start": {
-          "line": 3,
-          "column": 14
-        },
-        "end": {
-          "line": 3,
-          "column": 19
-        },
-        "kind": "identifier",
-        "text": "Point",
-        "line": "const p = new Point(1, 2);",
-        "role": "use",
         "confidence": "unresolved",
-        "reason": "unresolved"
+        "content": "f3b72c0afa36850de48018fd2dce4f9a50a4428e6c4f60e3d183273e06aa548a",
+        "end": {"column":19,"line":3},
+        "id": "dd3f84b8fd4f",
+        "kind": "identifier",
+        "language": "typescript",
+        "line": "const p = new Point(1, 2);",
+        "path": "src/app.ts",
+        "reason": "unresolved",
+        "role": "use",
+        "span": {"end":105,"start":100},
+        "start": {"column":14,"line":3},
+        "text": "Point"
       }
     ]
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

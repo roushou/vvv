@@ -1,135 +1,63 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "5fe23ae9df6617cf65c03751a19e10d724fc7b0e9abf5dce199a1941a2835a53",
-    "outcome": "ambiguous",
     "candidates": [
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/scopes.ts",
-            "content": "dc37120072e5a407c5ff3a0e483f1f22d14016b40cc57fb78ffc336b8a389c56",
-            "span": {
-              "start": 815,
-              "end": 854
-            }
-          },
-          "name_span": {
-            "start": 824,
-            "end": 830
-          },
-          "kind": "function"
-        },
         "declaration": {
           "content": "dc37120072e5a407c5ff3a0e483f1f22d14016b40cc57fb78ffc336b8a389c56",
+          "end": {"column":41,"line":37},
           "id": "b736fe8eb687",
-          "path": "src/scopes.ts",
-          "language": "typescript",
-          "span": {
-            "start": 815,
-            "end": 854
-          },
-          "start": {
-            "line": 37,
-            "column": 2
-          },
-          "end": {
-            "line": 37,
-            "column": 41
-          },
           "kind": "declaration",
-          "text": "function helper(value: number): number;",
+          "language": "typescript",
           "line": "  function helper(value: number): number;",
-          "symbol": {
-            "kind": "function",
-            "name": "helper",
-            "name_span": {
-              "start": 824,
-              "end": 830
-            },
-            "span": {
-              "start": 815,
-              "end": 854
-            },
-            "extent": {
-              "start": 815,
-              "end": 854
-            }
-          },
-          "role": "declaration"
+          "path": "src/scopes.ts",
+          "role": "declaration",
+          "span": {"end":854,"start":815},
+          "start": {"column":2,"line":37},
+          "symbol": {"extent":{"end":854,"start":815},"kind":"function","name":"helper","name_span":{"end":830,"start":824},"span":{"end":854,"start":815}},
+          "text": "function helper(value: number): number;"
         },
-        "evidence": {
-          "addresses": []
+        "evidence": {"addresses":[]},
+        "target": {
+          "declaration": {"content":"dc37120072e5a407c5ff3a0e483f1f22d14016b40cc57fb78ffc336b8a389c56","path":"src/scopes.ts","span":{"end":854,"start":815}},
+          "kind": "function",
+          "language": "typescript",
+          "name_span": {"end":830,"start":824}
         }
       },
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/scopes.ts",
-            "content": "dc37120072e5a407c5ff3a0e483f1f22d14016b40cc57fb78ffc336b8a389c56",
-            "span": {
-              "start": 857,
-              "end": 905
-            }
-          },
-          "name_span": {
-            "start": 866,
-            "end": 872
-          },
-          "kind": "function"
-        },
         "declaration": {
           "content": "dc37120072e5a407c5ff3a0e483f1f22d14016b40cc57fb78ffc336b8a389c56",
+          "end": {"column":50,"line":38},
           "id": "85472d2b65c8",
-          "path": "src/scopes.ts",
-          "language": "typescript",
-          "span": {
-            "start": 857,
-            "end": 905
-          },
-          "start": {
-            "line": 38,
-            "column": 2
-          },
-          "end": {
-            "line": 38,
-            "column": 50
-          },
           "kind": "declaration",
-          "text": "function helper(value: number) { return value; }",
+          "language": "typescript",
           "line": "  function helper(value: number) { return value; }",
-          "symbol": {
-            "kind": "function",
-            "name": "helper",
-            "name_span": {
-              "start": 866,
-              "end": 872
-            },
-            "span": {
-              "start": 857,
-              "end": 905
-            },
-            "extent": {
-              "start": 857,
-              "end": 905
-            }
-          },
-          "role": "declaration"
+          "path": "src/scopes.ts",
+          "role": "declaration",
+          "span": {"end":905,"start":857},
+          "start": {"column":2,"line":38},
+          "symbol": {"extent":{"end":905,"start":857},"kind":"function","name":"helper","name_span":{"end":872,"start":866},"span":{"end":905,"start":857}},
+          "text": "function helper(value: number) { return value; }"
         },
-        "evidence": {
-          "addresses": []
+        "evidence": {"addresses":[]},
+        "target": {
+          "declaration": {"content":"dc37120072e5a407c5ff3a0e483f1f22d14016b40cc57fb78ffc336b8a389c56","path":"src/scopes.ts","span":{"end":905,"start":857}},
+          "kind": "function",
+          "language": "typescript",
+          "name_span": {"end":872,"start":866}
         }
       }
-    ]
-  }
+    ],
+    "outcome": "ambiguous",
+    "snapshot": "5fe23ae9df6617cf65c03751a19e10d724fc7b0e9abf5dce199a1941a2835a53"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

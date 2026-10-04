@@ -1,0 +1,74 @@
+---
+source: crates/vvv/tests/common/corpus_snapshot.rs
+expression: JsonSnapshot(&self.value).to_string()
+---
+{
+  "highlights": [
+    {"kind":"keyword","span":{"end":6,"start":0}},
+    {"kind":"keyword","span":{"end":12,"start":7}},
+    {"kind":"number","span":{"end":21,"start":20}},
+    {"kind":"keyword","span":{"end":29,"start":23}},
+    {"kind":"keyword","span":{"end":35,"start":30}},
+    {"kind":"number","span":{"end":45,"start":44}},
+    {"kind":"keyword","span":{"end":53,"start":47}},
+    {"kind":"keyword","span":{"end":59,"start":54}},
+    {"kind":"number","span":{"end":69,"start":68}},
+    {"kind":"keyword","span":{"end":77,"start":71}},
+    {"kind":"keyword","span":{"end":83,"start":78}},
+    {"kind":"number","span":{"end":96,"start":95}},
+    {"kind":"keyword","span":{"end":104,"start":98}},
+    {"kind":"keyword","span":{"end":113,"start":105}},
+    {"kind":"function","span":{"end":117,"start":114}}
+  ],
+  "identifiers": [
+    {"content":"d3662481bfe150469305f402c95d0ff8e00f66f125ba18968b9eb2c9ce48dfaf","path":"src/origin.ts","span":{"end":17,"start":13}},
+    {"content":"d3662481bfe150469305f402c95d0ff8e00f66f125ba18968b9eb2c9ce48dfaf","path":"src/origin.ts","span":{"end":41,"start":36}},
+    {"content":"d3662481bfe150469305f402c95d0ff8e00f66f125ba18968b9eb2c9ce48dfaf","path":"src/origin.ts","span":{"end":65,"start":60}},
+    {"content":"d3662481bfe150469305f402c95d0ff8e00f66f125ba18968b9eb2c9ce48dfaf","path":"src/origin.ts","span":{"end":92,"start":84}},
+    {"content":"d3662481bfe150469305f402c95d0ff8e00f66f125ba18968b9eb2c9ce48dfaf","path":"src/origin.ts","span":{"end":117,"start":114}}
+  ],
+  "path": "src/origin.ts",
+  "symbols": [
+    {
+      "extent": {"end":22,"start":0},
+      "kind": "variable",
+      "name": "seed",
+      "name_span": {"end":17,"start":13},
+      "span": {"end":21,"start":13},
+      "visibility": {"span":{"end":6,"start":0},"text":"export"}
+    },
+    {
+      "extent": {"end":46,"start":23},
+      "kind": "variable",
+      "name": "later",
+      "name_span": {"end":41,"start":36},
+      "span": {"end":45,"start":36},
+      "visibility": {"span":{"end":29,"start":23},"text":"export"}
+    },
+    {
+      "extent": {"end":70,"start":47},
+      "kind": "variable",
+      "name": "first",
+      "name_span": {"end":65,"start":60},
+      "span": {"end":69,"start":60},
+      "visibility": {"span":{"end":53,"start":47},"text":"export"}
+    },
+    {
+      "extent": {"end":97,"start":71},
+      "kind": "variable",
+      "name": "original",
+      "name_span": {"end":92,"start":84},
+      "span": {"end":96,"start":84},
+      "visibility": {"span":{"end":77,"start":71},"text":"export"}
+    },
+    {
+      "extent": {"end":122,"start":98},
+      "kind": "function",
+      "name": "run",
+      "name_span": {"end":117,"start":114},
+      "span": {"end":122,"start":105},
+      "visibility": {"span":{"end":104,"start":98},"text":"export"}
+    }
+  ],
+  "text": "export const seed = 1;\nexport const later = 2;\nexport const first = 3;\nexport const original = 4;\nexport function run() {}\n"
+}

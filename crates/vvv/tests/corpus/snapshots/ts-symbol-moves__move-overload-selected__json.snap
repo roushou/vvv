@@ -1,14 +1,14 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 1
 --- stdout ---
 {
-  "status": "error",
-  "schema": 1,
-  "symbol_move_unsupported": "competing_binding",
   "code": "unmovable",
-  "message": "selected declaration cannot be moved: several declarations share this module and name"
+  "message": "selected declaration cannot be moved: several declarations share this module and name",
+  "schema": 1,
+  "status": "error",
+  "symbol_move_unsupported": "competing_binding"
 }
 --- stderr ---

@@ -1,70 +1,31 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "5eed1c1782abdda81e7f7a0454e8cb305d80507a9a4da8281ac020eaf655508e",
-    "outcome": "resolved",
-    "target": {
+    "container": {
+      "declaration": {"content":"6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6","path":"src/lib.rs","span":{"end":48,"start":32}},
+      "kind": "struct",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
-        "span": {
-          "start": 32,
-          "end": 48
-        }
-      },
-      "name_span": {
-        "start": 43,
-        "end": 47
-      },
-      "kind": "struct"
+      "name_span": {"end":47,"start":43}
     },
+    "evidence": {"addresses":[{"package":"local_imports","path":["Item"]},{"package":"local_imports","path":["a","Data"]}]},
     "id": "4723f175136b",
     "name": "Data",
-    "start": {
-      "line": 2,
-      "column": 4
-    },
-    "evidence": {
-      "addresses": [
-        {
-          "package": "local_imports",
-          "path": [
-            "Item"
-          ]
-        },
-        {
-          "package": "local_imports",
-          "path": [
-            "a",
-            "Data"
-          ]
-        }
-      ]
-    },
-    "container": {
+    "outcome": "resolved",
+    "snapshot": "5eed1c1782abdda81e7f7a0454e8cb305d80507a9a4da8281ac020eaf655508e",
+    "start": {"column":4,"line":2},
+    "target": {
+      "declaration": {"content":"6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6","path":"src/lib.rs","span":{"end":48,"start":32}},
+      "kind": "struct",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
-        "span": {
-          "start": 32,
-          "end": 48
-        }
-      },
-      "name_span": {
-        "start": 43,
-        "end": 47
-      },
-      "kind": "struct"
+      "name_span": {"end":47,"start":43}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

@@ -1,559 +1,206 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "1720e81cdb52f350c137f8e4b89d60b93415a3bdea1279d689ce4af51cd4d4f9",
-    "subject": {
-      "outcome": "resolved",
-      "target": {
-        "language": "rust",
-        "declaration": {
-          "path": "src/lib.rs",
-          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-          "span": {
-            "start": 14,
-            "end": 30
-          }
-        },
-        "name_span": {
-          "start": 21,
-          "end": 25
-        },
-        "kind": "function"
-      },
-      "id": "dfb8c5d735e7",
-      "name": "work",
-      "start": {
-        "line": 1,
-        "column": 4
-      },
-      "evidence": {
-        "addresses": []
-      },
-      "container": {
-        "language": "rust",
-        "declaration": {
-          "path": "src/lib.rs",
-          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-          "span": {
-            "start": 14,
-            "end": 30
-          }
-        },
-        "name_span": {
-          "start": 21,
-          "end": 25
-        },
-        "kind": "function"
-      }
-    },
-    "kind": "callers",
-    "scope": {
-      "paths": [],
-      "packages": []
+    "coverage": {
+      "files_remaining": 0,
+      "files_scanned": 1,
+      "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
+      "lookups": 7,
+      "omitted_items": 0,
+      "scan_complete": true,
+      "stopped_by": null,
+      "unresolved_imports": 0,
+      "unsupported_files": 0
     },
     "items": [
       {
-        "site": {
-          "path": "src/lib.rs",
-          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-          "span": {
-            "start": 592,
-            "end": 596
-          }
-        },
-        "start": {
-          "line": 28,
-          "column": 8
-        },
-        "spelling": "work",
-        "caller": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-            "span": {
-              "start": 495,
-              "end": 812
-            }
-          },
-          "name_span": {
-            "start": 498,
-            "end": 505
-          },
-          "kind": "function"
-        },
         "call": "direct",
-        "outcome": "confirmed",
-        "target": {
+        "caller": {
+          "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":812,"start":495}},
+          "kind": "function",
           "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-            "span": {
-              "start": 14,
-              "end": 30
-            }
-          },
-          "name_span": {
-            "start": 21,
-            "end": 25
-          },
-          "kind": "function"
+          "name_span": {"end":505,"start":498}
         },
-        "evidence": {
-          "addresses": [
-            {
-              "package": "rust_conditionals",
-              "path": [
-                "work"
-              ]
-            },
-            {
-              "package": "rust_conditionals",
-              "path": [
-                "api",
-                "work"
-              ]
-            }
-          ]
+        "evidence": {"addresses":[{"package":"rust_conditionals","path":["work"]},{"package":"rust_conditionals","path":["api","work"]}]},
+        "outcome": "confirmed",
+        "site": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":596,"start":592}},
+        "spelling": "work",
+        "start": {"column":8,"line":28},
+        "target": {
+          "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":30,"start":14}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":25,"start":21}
         }
       },
       {
-        "site": {
-          "path": "src/lib.rs",
-          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-          "span": {
-            "start": 654,
-            "end": 658
-          }
-        },
-        "start": {
-          "line": 31,
-          "column": 8
-        },
-        "spelling": "work",
-        "caller": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-            "span": {
-              "start": 495,
-              "end": 812
-            }
-          },
-          "name_span": {
-            "start": 498,
-            "end": 505
-          },
-          "kind": "function"
-        },
         "call": "direct",
-        "outcome": "confirmed",
-        "target": {
+        "caller": {
+          "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":812,"start":495}},
+          "kind": "function",
           "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-            "span": {
-              "start": 14,
-              "end": 30
-            }
-          },
-          "name_span": {
-            "start": 21,
-            "end": 25
-          },
-          "kind": "function"
+          "name_span": {"end":505,"start":498}
         },
-        "evidence": {
-          "addresses": [
-            {
-              "package": "rust_conditionals",
-              "path": [
-                "work"
-              ]
-            },
-            {
-              "package": "rust_conditionals",
-              "path": [
-                "api",
-                "work"
-              ]
-            }
-          ]
+        "evidence": {"addresses":[{"package":"rust_conditionals","path":["work"]},{"package":"rust_conditionals","path":["api","work"]}]},
+        "outcome": "confirmed",
+        "site": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":658,"start":654}},
+        "spelling": "work",
+        "start": {"column":8,"line":31},
+        "target": {
+          "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":30,"start":14}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":25,"start":21}
         }
       },
       {
-        "site": {
-          "path": "src/lib.rs",
-          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-          "span": {
-            "start": 709,
-            "end": 713
-          }
-        },
-        "start": {
-          "line": 34,
-          "column": 8
-        },
-        "spelling": "work",
-        "caller": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-            "span": {
-              "start": 495,
-              "end": 812
-            }
-          },
-          "name_span": {
-            "start": 498,
-            "end": 505
-          },
-          "kind": "function"
-        },
         "call": "direct",
-        "outcome": "confirmed",
-        "target": {
+        "caller": {
+          "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":812,"start":495}},
+          "kind": "function",
           "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-            "span": {
-              "start": 14,
-              "end": 30
-            }
-          },
-          "name_span": {
-            "start": 21,
-            "end": 25
-          },
-          "kind": "function"
+          "name_span": {"end":505,"start":498}
         },
-        "evidence": {
-          "addresses": [
-            {
-              "package": "rust_conditionals",
-              "path": [
-                "work"
-              ]
-            },
-            {
-              "package": "rust_conditionals",
-              "path": [
-                "api",
-                "work"
-              ]
-            }
-          ]
+        "evidence": {"addresses":[{"package":"rust_conditionals","path":["work"]},{"package":"rust_conditionals","path":["api","work"]}]},
+        "outcome": "confirmed",
+        "site": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":713,"start":709}},
+        "spelling": "work",
+        "start": {"column":8,"line":34},
+        "target": {
+          "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":30,"start":14}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":25,"start":21}
         }
       },
       {
-        "site": {
-          "path": "src/lib.rs",
-          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-          "span": {
-            "start": 892,
-            "end": 896
-          }
-        },
-        "start": {
-          "line": 42,
-          "column": 8
-        },
-        "spelling": "work",
-        "caller": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-            "span": {
-              "start": 813,
-              "end": 981
-            }
-          },
-          "name_span": {
-            "start": 816,
-            "end": 828
-          },
-          "kind": "function"
-        },
-        "call": "direct",
-        "outcome": "indirect",
         "binding": {
+          "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":881,"start":859}},
+          "kind": "variable",
           "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-            "span": {
-              "start": 859,
-              "end": 881
-            }
-          },
-          "name_span": {
-            "start": 868,
-            "end": 872
-          },
-          "kind": "variable"
-        }
-      },
-      {
-        "site": {
-          "path": "src/lib.rs",
-          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-          "span": {
-            "start": 956,
-            "end": 960
-          }
-        },
-        "start": {
-          "line": 45,
-          "column": 12
-        },
-        "spelling": "work",
-        "caller": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-            "span": {
-              "start": 813,
-              "end": 981
-            }
-          },
-          "name_span": {
-            "start": 816,
-            "end": 828
-          },
-          "kind": "function"
+          "name_span": {"end":872,"start":868}
         },
         "call": "direct",
+        "caller": {
+          "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":981,"start":813}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":828,"start":816}
+        },
+        "outcome": "indirect",
+        "site": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":896,"start":892}},
+        "spelling": "work",
+        "start": {"column":8,"line":42}
+      },
+      {
+        "call": "direct",
+        "caller": {
+          "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":981,"start":813}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":828,"start":816}
+        },
+        "evidence": {"addresses":[{"package":"rust_conditionals","path":["work"]},{"package":"rust_conditionals","path":["api","work"]}]},
         "outcome": "confirmed",
+        "site": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":960,"start":956}},
+        "spelling": "work",
+        "start": {"column":12,"line":45},
         "target": {
+          "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":30,"start":14}},
+          "kind": "function",
           "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-            "span": {
-              "start": 14,
-              "end": 30
-            }
-          },
-          "name_span": {
-            "start": 21,
-            "end": 25
-          },
-          "kind": "function"
-        },
-        "evidence": {
-          "addresses": [
-            {
-              "package": "rust_conditionals",
-              "path": [
-                "work"
-              ]
-            },
-            {
-              "package": "rust_conditionals",
-              "path": [
-                "api",
-                "work"
-              ]
-            }
-          ]
+          "name_span": {"end":25,"start":21}
         }
       },
       {
-        "site": {
-          "path": "src/lib.rs",
-          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-          "span": {
-            "start": 1625,
-            "end": 1629
-          }
-        },
-        "start": {
-          "line": 73,
-          "column": 20
-        },
-        "spelling": "work",
-        "caller": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-            "span": {
-              "start": 1435,
-              "end": 1640
-            }
-          },
-          "name_span": {
-            "start": 1438,
-            "end": 1450
-          },
-          "kind": "function"
-        },
         "call": "direct",
+        "caller": {
+          "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":1640,"start":1435}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":1450,"start":1438}
+        },
+        "evidence": {"addresses":[{"package":"rust_conditionals","path":["api","work"]}]},
         "outcome": "confirmed",
+        "site": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":1629,"start":1625}},
+        "spelling": "work",
+        "start": {"column":20,"line":73},
         "target": {
+          "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":30,"start":14}},
+          "kind": "function",
           "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-            "span": {
-              "start": 14,
-              "end": 30
-            }
-          },
-          "name_span": {
-            "start": 21,
-            "end": 25
-          },
-          "kind": "function"
-        },
-        "evidence": {
-          "addresses": [
-            {
-              "package": "rust_conditionals",
-              "path": [
-                "api",
-                "work"
-              ]
-            }
-          ]
+          "name_span": {"end":25,"start":21}
         }
       },
       {
-        "site": {
-          "path": "src/lib.rs",
-          "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-          "span": {
-            "start": 2271,
-            "end": 2275
-          }
-        },
-        "start": {
-          "line": 104,
-          "column": 8
-        },
-        "spelling": "work",
-        "caller": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-            "span": {
-              "start": 2169,
-              "end": 2286
-            }
-          },
-          "name_span": {
-            "start": 2172,
-            "end": 2181
-          },
-          "kind": "function"
-        },
         "call": "direct",
-        "outcome": "ambiguous",
+        "caller": {
+          "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":2286,"start":2169}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":2181,"start":2172}
+        },
         "candidates": [
           {
-            "target": {
-              "language": "rust",
-              "declaration": {
-                "path": "src/lib.rs",
-                "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-                "span": {
-                  "start": 14,
-                  "end": 30
-                }
-              },
-              "name_span": {
-                "start": 21,
-                "end": 25
-              },
-              "kind": "function"
-            },
+            "evidence": {"addresses":[{"package":"rust_conditionals","path":["work"]},{"package":"rust_conditionals","path":["api","work"]}]},
             "id": "dfb8c5d735e7",
             "name": "work",
-            "start": {
-              "line": 1,
-              "column": 4
-            },
-            "evidence": {
-              "addresses": [
-                {
-                  "package": "rust_conditionals",
-                  "path": [
-                    "work"
-                  ]
-                },
-                {
-                  "package": "rust_conditionals",
-                  "path": [
-                    "api",
-                    "work"
-                  ]
-                }
-              ]
+            "start": {"column":4,"line":1},
+            "target": {
+              "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":30,"start":14}},
+              "kind": "function",
+              "language": "rust",
+              "name_span": {"end":25,"start":21}
             }
           },
           {
-            "target": {
-              "language": "rust",
-              "declaration": {
-                "path": "src/lib.rs",
-                "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-                "span": {
-                  "start": 2250,
-                  "end": 2262
-                }
-              },
-              "name_span": {
-                "start": 2253,
-                "end": 2257
-              },
-              "kind": "function"
-            },
+            "evidence": {"addresses":[]},
             "id": "11dc99c4a585",
             "name": "work",
-            "start": {
-              "line": 103,
-              "column": 8
-            },
-            "evidence": {
-              "addresses": []
+            "start": {"column":8,"line":103},
+            "target": {
+              "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":2262,"start":2250}},
+              "kind": "function",
+              "language": "rust",
+              "name_span": {"end":2257,"start":2253}
             }
           }
-        ]
+        ],
+        "outcome": "ambiguous",
+        "site": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":2275,"start":2271}},
+        "spelling": "work",
+        "start": {"column":8,"line":104}
       }
     ],
-    "coverage": {
-      "limitations": [
-        "receiver_types",
-        "indirect_targets",
-        "macro_expansion",
-        "anonymous_callers",
-        "unsupported_bindings",
-        "unenumerated_aliases"
-      ],
-      "files_scanned": 1,
-      "files_remaining": 0,
-      "lookups": 7,
-      "omitted_items": 0,
-      "stopped_by": null,
-      "unsupported_files": 0,
-      "unresolved_imports": 0,
-      "scan_complete": true
+    "kind": "callers",
+    "scope": {"packages":[],"paths":[]},
+    "snapshot": "1720e81cdb52f350c137f8e4b89d60b93415a3bdea1279d689ce4af51cd4d4f9",
+    "subject": {
+      "container": {
+        "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":30,"start":14}},
+        "kind": "function",
+        "language": "rust",
+        "name_span": {"end":25,"start":21}
+      },
+      "evidence": {"addresses":[]},
+      "id": "dfb8c5d735e7",
+      "name": "work",
+      "outcome": "resolved",
+      "start": {"column":4,"line":1},
+      "target": {
+        "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":30,"start":14}},
+        "kind": "function",
+        "language": "rust",
+        "name_span": {"end":25,"start":21}
+      }
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

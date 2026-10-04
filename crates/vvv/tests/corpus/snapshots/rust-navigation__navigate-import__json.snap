@@ -1,341 +1,57 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "a1f32c4ccce121194779a3e2275d4f272c86bda8a55a79c3a3113503e4213568",
+    "evidence": {"addresses":[{"package":"navigation","path":["origin","Engine"]}]},
     "outcome": "resolved",
-    "target": {
-      "language": "rust",
-      "declaration": {
-        "path": "src/origin.rs",
-        "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-        "span": {
-          "start": 0,
-          "end": 63
-        }
-      },
-      "name_span": {
-        "start": 30,
-        "end": 36
-      },
-      "kind": "struct"
-    },
-    "evidence": {
-      "addresses": [
-        {
-          "package": "navigation",
-          "path": [
-            "origin",
-            "Engine"
-          ]
-        }
-      ]
-    },
     "preview": {
       "container": {
+        "declaration": {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/origin.rs","span":{"end":63,"start":0}},
+        "kind": "struct",
         "language": "rust",
-        "declaration": {
-          "path": "src/origin.rs",
-          "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-          "span": {
-            "start": 0,
-            "end": 63
-          }
-        },
-        "name_span": {
-          "start": 30,
-          "end": 36
-        },
-        "kind": "struct"
+        "name_span": {"end":36,"start":30}
       },
       "declaration": {
         "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
+        "end": {"column":1,"line":3},
         "id": "f2c97c3b389f",
-        "path": "src/origin.rs",
-        "language": "rust",
-        "span": {
-          "start": 19,
-          "end": 63
-        },
-        "start": {
-          "line": 1,
-          "column": 0
-        },
-        "end": {
-          "line": 3,
-          "column": 1
-        },
         "kind": "declaration",
-        "text": "pub struct Engine {\n    pub running: bool,\n}",
+        "language": "rust",
         "line": "pub struct Engine {",
+        "path": "src/origin.rs",
+        "role": "declaration",
+        "span": {"end":63,"start":19},
+        "start": {"column":0,"line":1},
         "symbol": {
+          "extent": {"end":63,"start":0},
           "kind": "struct",
           "name": "Engine",
-          "name_span": {
-            "start": 30,
-            "end": 36
-          },
-          "span": {
-            "start": 19,
-            "end": 63
-          },
-          "extent": {
-            "start": 0,
-            "end": 63
-          },
-          "visibility": {
-            "span": {
-              "start": 19,
-              "end": 22
-            },
-            "text": "pub"
-          }
+          "name_span": {"end":36,"start":30},
+          "span": {"end":63,"start":19},
+          "visibility": {"span":{"end":22,"start":19},"text":"pub"}
         },
-        "role": "declaration"
-      },
-      "source": {
-        "path": "src/origin.rs",
-        "text": "/// Runtime state.\npub struct Engine {\n    pub running: bool,\n}\npub enum Error {\n    Engine,\n    Io,\n}\n",
-        "highlights": [
-          {
-            "span": {
-              "start": 0,
-              "end": 19
-            },
-            "kind": "comment"
-          },
-          {
-            "span": {
-              "start": 19,
-              "end": 22
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 23,
-              "end": 29
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 30,
-              "end": 36
-            },
-            "kind": "type"
-          },
-          {
-            "span": {
-              "start": 43,
-              "end": 46
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 56,
-              "end": 60
-            },
-            "kind": "type"
-          },
-          {
-            "span": {
-              "start": 64,
-              "end": 67
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 68,
-              "end": 72
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 73,
-              "end": 78
-            },
-            "kind": "type"
-          }
-        ],
-        "symbols": [
-          {
-            "kind": "struct",
-            "name": "Engine",
-            "name_span": {
-              "start": 30,
-              "end": 36
-            },
-            "span": {
-              "start": 19,
-              "end": 63
-            },
-            "extent": {
-              "start": 0,
-              "end": 63
-            },
-            "visibility": {
-              "span": {
-                "start": 19,
-                "end": 22
-              },
-              "text": "pub"
-            }
-          },
-          {
-            "kind": "field",
-            "name": "running",
-            "name_span": {
-              "start": 47,
-              "end": 54
-            },
-            "span": {
-              "start": 43,
-              "end": 60
-            },
-            "extent": {
-              "start": 43,
-              "end": 60
-            },
-            "visibility": {
-              "span": {
-                "start": 43,
-                "end": 46
-              },
-              "text": "pub"
-            }
-          },
-          {
-            "kind": "enum",
-            "name": "Error",
-            "name_span": {
-              "start": 73,
-              "end": 78
-            },
-            "span": {
-              "start": 64,
-              "end": 102
-            },
-            "extent": {
-              "start": 64,
-              "end": 102
-            },
-            "visibility": {
-              "span": {
-                "start": 64,
-                "end": 67
-              },
-              "text": "pub"
-            }
-          },
-          {
-            "kind": "variant",
-            "name": "Engine",
-            "name_span": {
-              "start": 85,
-              "end": 91
-            },
-            "span": {
-              "start": 85,
-              "end": 91
-            },
-            "extent": {
-              "start": 85,
-              "end": 91
-            }
-          },
-          {
-            "kind": "variant",
-            "name": "Io",
-            "name_span": {
-              "start": 97,
-              "end": 99
-            },
-            "span": {
-              "start": 97,
-              "end": 99
-            },
-            "extent": {
-              "start": 97,
-              "end": 99
-            }
-          }
-        ],
-        "identifiers": [
-          {
-            "path": "src/origin.rs",
-            "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-            "span": {
-              "start": 30,
-              "end": 36
-            }
-          },
-          {
-            "path": "src/origin.rs",
-            "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-            "span": {
-              "start": 47,
-              "end": 54
-            }
-          },
-          {
-            "path": "src/origin.rs",
-            "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-            "span": {
-              "start": 73,
-              "end": 78
-            }
-          },
-          {
-            "path": "src/origin.rs",
-            "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-            "span": {
-              "start": 85,
-              "end": 91
-            }
-          },
-          {
-            "path": "src/origin.rs",
-            "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-            "span": {
-              "start": 97,
-              "end": 99
-            }
-          }
-        ]
-      },
-      "selection": {
-        "start": 30,
-        "end": 36
+        "text": "pub struct Engine {\n    pub running: bool,\n}"
       },
       "identifiers": [
-        {
-          "path": "src/origin.rs",
-          "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-          "span": {
-            "start": 30,
-            "end": 36
-          }
-        },
-        {
-          "path": "src/origin.rs",
-          "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-          "span": {
-            "start": 47,
-            "end": 54
-          }
-        }
-      ]
+        {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/origin.rs","span":{"end":36,"start":30}},
+        {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/origin.rs","span":{"end":54,"start":47}}
+      ],
+      "selection": {"end":36,"start":30},
+      "source": {"$snapshot":"rust-navigation__source__src%2Forigin.rs__json.snap"}
+    },
+    "snapshot": "a1f32c4ccce121194779a3e2275d4f272c86bda8a55a79c3a3113503e4213568",
+    "target": {
+      "declaration": {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/origin.rs","span":{"end":63,"start":0}},
+      "kind": "struct",
+      "language": "rust",
+      "name_span": {"end":36,"start":30}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

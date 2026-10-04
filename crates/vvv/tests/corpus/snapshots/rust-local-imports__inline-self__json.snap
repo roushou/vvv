@@ -1,71 +1,31 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "5eed1c1782abdda81e7f7a0454e8cb305d80507a9a4da8281ac020eaf655508e",
-    "outcome": "resolved",
-    "target": {
+    "container": {
+      "declaration": {"content":"6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6","path":"src/lib.rs","span":{"end":1187,"start":1174}},
+      "kind": "function",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
-        "span": {
-          "start": 1174,
-          "end": 1187
-        }
-      },
-      "name_span": {
-        "start": 1177,
-        "end": 1182
-      },
-      "kind": "function"
+      "name_span": {"end":1182,"start":1177}
     },
+    "evidence": {"addresses":[{"package":"local_imports","path":["inline","work"]},{"package":"local_imports","path":["inline","local"]}]},
     "id": "cd24cb002917",
     "name": "local",
-    "start": {
-      "line": 73,
-      "column": 4
-    },
-    "evidence": {
-      "addresses": [
-        {
-          "package": "local_imports",
-          "path": [
-            "inline",
-            "work"
-          ]
-        },
-        {
-          "package": "local_imports",
-          "path": [
-            "inline",
-            "local"
-          ]
-        }
-      ]
-    },
-    "container": {
+    "outcome": "resolved",
+    "snapshot": "5eed1c1782abdda81e7f7a0454e8cb305d80507a9a4da8281ac020eaf655508e",
+    "start": {"column":4,"line":73},
+    "target": {
+      "declaration": {"content":"6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6","path":"src/lib.rs","span":{"end":1187,"start":1174}},
+      "kind": "function",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
-        "span": {
-          "start": 1174,
-          "end": 1187
-        }
-      },
-      "name_span": {
-        "start": 1177,
-        "end": 1182
-      },
-      "kind": "function"
+      "name_span": {"end":1182,"start":1177}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

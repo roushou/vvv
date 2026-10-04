@@ -1,6 +1,6 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
+expression: "JsonSnapshot(&serde_json::to_value(&transcript.replies).unwrap()).to_string()"
 ---
 [
   {
@@ -8,14 +8,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 6,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -26,53 +19,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-1",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -84,14 +49,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 6,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -103,98 +61,40 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": null,
           "caller": null,
-          "evidence": {
-            "addresses": [
-              {
-                "package": "relationships",
-                "path": [
-                  "origin",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"relationships","path":["origin","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "9c9f902d47557cd3ed78e061c712a25ac0b597a6d4cfd440ea0afd289a245dd7",
-            "path": "src/bridge.rs",
-            "span": {
-              "end": 27,
-              "start": 23
-            }
-          },
+          "site": {"content":"9c9f902d47557cd3ed78e061c712a25ac0b597a6d4cfd440ea0afd289a245dd7","path":"src/bridge.rs","span":{"end":27,"start":23}},
           "spelling": "work",
-          "start": {
-            "column": 23,
-            "line": 0
-          },
+          "start": {"column":23,"line":0},
           "target": {
-            "declaration": {
-              "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-              "path": "src/origin.rs",
-              "span": {
-                "end": 16,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 11,
-              "start": 7
-            }
+            "name_span": {"end":11,"start":7}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-2",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -206,14 +106,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 6,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -225,105 +118,40 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": null,
           "caller": null,
-          "evidence": {
-            "addresses": [
-              {
-                "package": "relationships",
-                "path": [
-                  "bridge",
-                  "task"
-                ]
-              },
-              {
-                "package": "relationships",
-                "path": [
-                  "origin",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"relationships","path":["bridge","task"]},{"package":"relationships","path":["origin","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "9c9f902d47557cd3ed78e061c712a25ac0b597a6d4cfd440ea0afd289a245dd7",
-            "path": "src/bridge.rs",
-            "span": {
-              "end": 35,
-              "start": 31
-            }
-          },
+          "site": {"content":"9c9f902d47557cd3ed78e061c712a25ac0b597a6d4cfd440ea0afd289a245dd7","path":"src/bridge.rs","span":{"end":35,"start":31}},
           "spelling": "task",
-          "start": {
-            "column": 31,
-            "line": 0
-          },
+          "start": {"column":31,"line":0},
           "target": {
-            "declaration": {
-              "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-              "path": "src/origin.rs",
-              "span": {
-                "end": 16,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 11,
-              "start": 7
-            }
+            "name_span": {"end":11,"start":7}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-3",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -335,14 +163,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 5,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 0,
         "omitted_items": 0,
         "scan_complete": false,
@@ -353,53 +174,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-4",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -411,14 +204,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 5,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -429,53 +215,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-5",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -487,14 +245,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 5,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -505,53 +256,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-6",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -563,14 +286,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 5,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -581,53 +297,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-7",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -639,14 +327,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 5,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -657,53 +338,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-8",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -715,14 +368,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 5,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -736,110 +382,44 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "caller": null,
           "evidence": {
             "addresses": [
-              {
-                "package": "relationships",
-                "path": [
-                  "consumer",
-                  "execute"
-                ]
-              },
-              {
-                "package": "relationships",
-                "path": [
-                  "bridge",
-                  "task"
-                ]
-              },
-              {
-                "package": "relationships",
-                "path": [
-                  "origin",
-                  "work"
-                ]
-              }
+              {"package":"relationships","path":["consumer","execute"]},
+              {"package":"relationships","path":["bridge","task"]},
+              {"package":"relationships","path":["origin","work"]}
             ]
           },
           "outcome": "confirmed",
-          "site": {
-            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 34,
-              "start": 27
-            }
-          },
+          "site": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":34,"start":27}},
           "spelling": "execute",
-          "start": {
-            "column": 27,
-            "line": 0
-          },
+          "start": {"column":27,"line":0},
           "target": {
-            "declaration": {
-              "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-              "path": "src/origin.rs",
-              "span": {
-                "end": 16,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 11,
-              "start": 7
-            }
+            "name_span": {"end":11,"start":7}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-9",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -851,14 +431,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 5,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -870,127 +443,51 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": "direct",
           "caller": {
-            "declaration": {
-              "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-              "path": "src/consumer.rs",
-              "span": {
-                "end": 256,
-                "start": 62
-              }
-            },
+            "declaration": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":256,"start":62}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 75,
-              "start": 69
-            }
+            "name_span": {"end":75,"start":69}
           },
           "evidence": {
             "addresses": [
-              {
-                "package": "relationships",
-                "path": [
-                  "consumer",
-                  "execute"
-                ]
-              },
-              {
-                "package": "relationships",
-                "path": [
-                  "bridge",
-                  "task"
-                ]
-              },
-              {
-                "package": "relationships",
-                "path": [
-                  "origin",
-                  "work"
-                ]
-              }
+              {"package":"relationships","path":["consumer","execute"]},
+              {"package":"relationships","path":["bridge","task"]},
+              {"package":"relationships","path":["origin","work"]}
             ]
           },
           "outcome": "confirmed",
-          "site": {
-            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 91,
-              "start": 84
-            }
-          },
+          "site": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":91,"start":84}},
           "spelling": "execute",
-          "start": {
-            "column": 4,
-            "line": 3
-          },
+          "start": {"column":4,"line":3},
           "target": {
-            "declaration": {
-              "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-              "path": "src/origin.rs",
-              "span": {
-                "end": 16,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 11,
-              "start": 7
-            }
+            "name_span": {"end":11,"start":7}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-10",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -1002,14 +499,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 5,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -1021,113 +511,45 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": "direct",
           "caller": {
-            "declaration": {
-              "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-              "path": "src/consumer.rs",
-              "span": {
-                "end": 256,
-                "start": 62
-              }
-            },
+            "declaration": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":256,"start":62}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 75,
-              "start": 69
-            }
+            "name_span": {"end":75,"start":69}
           },
-          "evidence": {
-            "addresses": [
-              {
-                "package": "relationships",
-                "path": [
-                  "origin",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"relationships","path":["origin","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 118,
-              "start": 114
-            }
-          },
+          "site": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":118,"start":114}},
           "spelling": "work",
-          "start": {
-            "column": 19,
-            "line": 4
-          },
+          "start": {"column":19,"line":4},
           "target": {
-            "declaration": {
-              "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-              "path": "src/origin.rs",
-              "span": {
-                "end": 16,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 11,
-              "start": 7
-            }
+            "name_span": {"end":11,"start":7}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-11",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -1139,14 +561,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 5,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -1160,110 +575,44 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "caller": null,
           "evidence": {
             "addresses": [
-              {
-                "package": "relationships",
-                "path": [
-                  "consumer",
-                  "execute"
-                ]
-              },
-              {
-                "package": "relationships",
-                "path": [
-                  "bridge",
-                  "task"
-                ]
-              },
-              {
-                "package": "relationships",
-                "path": [
-                  "origin",
-                  "work"
-                ]
-              }
+              {"package":"relationships","path":["consumer","execute"]},
+              {"package":"relationships","path":["bridge","task"]},
+              {"package":"relationships","path":["origin","work"]}
             ]
           },
           "outcome": "confirmed",
-          "site": {
-            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 148,
-              "start": 141
-            }
-          },
+          "site": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":148,"start":141}},
           "spelling": "execute",
-          "start": {
-            "column": 19,
-            "line": 5
-          },
+          "start": {"column":19,"line":5},
           "target": {
-            "declaration": {
-              "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-              "path": "src/origin.rs",
-              "span": {
-                "end": 16,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 11,
-              "start": 7
-            }
+            "name_span": {"end":11,"start":7}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-12",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -1275,14 +624,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 5,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -1296,110 +638,44 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "caller": null,
           "evidence": {
             "addresses": [
-              {
-                "package": "relationships",
-                "path": [
-                  "consumer",
-                  "execute"
-                ]
-              },
-              {
-                "package": "relationships",
-                "path": [
-                  "bridge",
-                  "task"
-                ]
-              },
-              {
-                "package": "relationships",
-                "path": [
-                  "origin",
-                  "work"
-                ]
-              }
+              {"package":"relationships","path":["consumer","execute"]},
+              {"package":"relationships","path":["bridge","task"]},
+              {"package":"relationships","path":["origin","work"]}
             ]
           },
           "outcome": "confirmed",
-          "site": {
-            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 208,
-              "start": 201
-            }
-          },
+          "site": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":208,"start":201}},
           "spelling": "execute",
-          "start": {
-            "column": 22,
-            "line": 8
-          },
+          "start": {"column":22,"line":8},
           "target": {
-            "declaration": {
-              "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-              "path": "src/origin.rs",
-              "span": {
-                "end": 16,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 11,
-              "start": 7
-            }
+            "name_span": {"end":11,"start":7}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-13",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -1411,14 +687,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 5,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -1430,113 +699,45 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": "direct",
           "caller": {
-            "declaration": {
-              "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-              "path": "src/consumer.rs",
-              "span": {
-                "end": 254,
-                "start": 216
-              }
-            },
+            "declaration": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":254,"start":216}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 225,
-              "start": 219
-            }
+            "name_span": {"end":225,"start":219}
           },
-          "evidence": {
-            "addresses": [
-              {
-                "package": "relationships",
-                "path": [
-                  "origin",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"relationships","path":["origin","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 249,
-              "start": 245
-            }
-          },
+          "site": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":249,"start":245}},
           "spelling": "work",
-          "start": {
-            "column": 33,
-            "line": 9
-          },
+          "start": {"column":33,"line":9},
           "target": {
-            "declaration": {
-              "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-              "path": "src/origin.rs",
-              "span": {
-                "end": 16,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 11,
-              "start": 7
-            }
+            "name_span": {"end":11,"start":7}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-14",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -1548,14 +749,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 5,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -1567,87 +761,39 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": "member",
           "caller": {
-            "declaration": {
-              "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-              "path": "src/consumer.rs",
-              "span": {
-                "end": 313,
-                "start": 257
-              }
-            },
+            "declaration": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":313,"start":257}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 273,
-              "start": 264
-            }
+            "name_span": {"end":273,"start":264}
           },
           "outcome": "unavailable",
           "reason": "unsupported_context",
-          "site": {
-            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 308,
-              "start": 304
-            }
-          },
+          "site": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":308,"start":304}},
           "spelling": "work",
-          "start": {
-            "column": 47,
-            "line": 11
-          }
+          "start": {"column":47,"line":11}
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-15",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -1659,14 +805,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 5,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -1678,98 +817,40 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": null,
           "caller": null,
-          "evidence": {
-            "addresses": [
-              {
-                "package": "relationships",
-                "path": [
-                  "origin",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"relationships","path":["origin","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 365,
-              "start": 361
-            }
-          },
+          "site": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":365,"start":361}},
           "spelling": "work",
-          "start": {
-            "column": 23,
-            "line": 13
-          },
+          "start": {"column":23,"line":13},
           "target": {
-            "declaration": {
-              "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-              "path": "src/origin.rs",
-              "span": {
-                "end": 16,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 11,
-              "start": 7
-            }
+            "name_span": {"end":11,"start":7}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-16",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -1781,14 +862,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 5,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -1800,105 +874,40 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": null,
           "caller": null,
-          "evidence": {
-            "addresses": [
-              {
-                "package": "relationships",
-                "path": [
-                  "consumer",
-                  "local_work"
-                ]
-              },
-              {
-                "package": "relationships",
-                "path": [
-                  "origin",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"relationships","path":["consumer","local_work"]},{"package":"relationships","path":["origin","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 379,
-              "start": 369
-            }
-          },
+          "site": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":379,"start":369}},
           "spelling": "local_work",
-          "start": {
-            "column": 31,
-            "line": 13
-          },
+          "start": {"column":31,"line":13},
           "target": {
-            "declaration": {
-              "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-              "path": "src/origin.rs",
-              "span": {
-                "end": 16,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 11,
-              "start": 7
-            }
+            "name_span": {"end":11,"start":7}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-17",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -1910,14 +919,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 5,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -1929,120 +931,45 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": "direct",
           "caller": {
-            "declaration": {
-              "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-              "path": "src/consumer.rs",
-              "span": {
-                "end": 400,
-                "start": 314
-              }
-            },
+            "declaration": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":400,"start":314}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 333,
-              "start": 321
-            }
+            "name_span": {"end":333,"start":321}
           },
-          "evidence": {
-            "addresses": [
-              {
-                "package": "relationships",
-                "path": [
-                  "consumer",
-                  "local_work"
-                ]
-              },
-              {
-                "package": "relationships",
-                "path": [
-                  "origin",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"relationships","path":["consumer","local_work"]},{"package":"relationships","path":["origin","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 395,
-              "start": 385
-            }
-          },
+          "site": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":395,"start":385}},
           "spelling": "local_work",
-          "start": {
-            "column": 4,
-            "line": 14
-          },
+          "start": {"column":4,"line":14},
           "target": {
-            "declaration": {
-              "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-              "path": "src/origin.rs",
-              "span": {
-                "end": 16,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 11,
-              "start": 7
-            }
+            "name_span": {"end":11,"start":7}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-18",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -2054,14 +981,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 5,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -2073,98 +993,40 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": null,
           "caller": null,
-          "evidence": {
-            "addresses": [
-              {
-                "package": "relationships",
-                "path": [
-                  "origin",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"relationships","path":["origin","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 442,
-              "start": 438
-            }
-          },
+          "site": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":442,"start":438}},
           "spelling": "work",
-          "start": {
-            "column": 23,
-            "line": 17
-          },
+          "start": {"column":23,"line":17},
           "target": {
-            "declaration": {
-              "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-              "path": "src/origin.rs",
-              "span": {
-                "end": 16,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 11,
-              "start": 7
-            }
+            "name_span": {"end":11,"start":7}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-19",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -2176,14 +1038,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 5,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -2195,106 +1050,40 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": null,
           "caller": null,
-          "evidence": {
-            "addresses": [
-              {
-                "package": "relationships",
-                "path": [
-                  "consumer",
-                  "helpers",
-                  "scoped_work"
-                ]
-              },
-              {
-                "package": "relationships",
-                "path": [
-                  "origin",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"relationships","path":["consumer","helpers","scoped_work"]},{"package":"relationships","path":["origin","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 457,
-              "start": 446
-            }
-          },
+          "site": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":457,"start":446}},
           "spelling": "scoped_work",
-          "start": {
-            "column": 31,
-            "line": 17
-          },
+          "start": {"column":31,"line":17},
           "target": {
-            "declaration": {
-              "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-              "path": "src/origin.rs",
-              "span": {
-                "end": 16,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 11,
-              "start": 7
-            }
+            "name_span": {"end":11,"start":7}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-20",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -2306,14 +1095,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 5,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -2325,121 +1107,45 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         {
           "call": "direct",
           "caller": {
-            "declaration": {
-              "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-              "path": "src/consumer.rs",
-              "span": {
-                "end": 498,
-                "start": 463
-              }
-            },
+            "declaration": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":498,"start":463}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 477,
-              "start": 470
-            }
+            "name_span": {"end":477,"start":470}
           },
-          "evidence": {
-            "addresses": [
-              {
-                "package": "relationships",
-                "path": [
-                  "consumer",
-                  "helpers",
-                  "scoped_work"
-                ]
-              },
-              {
-                "package": "relationships",
-                "path": [
-                  "origin",
-                  "work"
-                ]
-              }
-            ]
-          },
+          "evidence": {"addresses":[{"package":"relationships","path":["consumer","helpers","scoped_work"]},{"package":"relationships","path":["origin","work"]}]},
           "outcome": "confirmed",
-          "site": {
-            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 493,
-              "start": 482
-            }
-          },
+          "site": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":493,"start":482}},
           "spelling": "scoped_work",
-          "start": {
-            "column": 23,
-            "line": 18
-          },
+          "start": {"column":23,"line":18},
           "target": {
-            "declaration": {
-              "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-              "path": "src/origin.rs",
-              "span": {
-                "end": 16,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 11,
-              "start": 7
-            }
+            "name_span": {"end":11,"start":7}
           }
         }
       ],
       "kind": "references",
       "next_cursor": "cursor-21",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -2451,14 +1157,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 4,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 0,
         "omitted_items": 0,
         "scan_complete": false,
@@ -2469,53 +1168,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-22",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -2527,14 +1198,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 3,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 0,
         "omitted_items": 0,
         "scan_complete": false,
@@ -2545,53 +1209,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-23",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -2603,14 +1239,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 2,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 0,
         "omitted_items": 0,
         "scan_complete": false,
@@ -2621,53 +1250,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-24",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -2679,14 +1280,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 2,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -2697,53 +1291,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-25",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -2755,14 +1321,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 2,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -2773,53 +1332,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-26",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -2831,14 +1362,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 1,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -2849,53 +1373,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-27",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -2907,14 +1403,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 1,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": false,
@@ -2925,53 +1414,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [],
       "kind": "references",
       "next_cursor": "cursor-28",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },
@@ -2983,14 +1444,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "coverage": {
         "files_remaining": 0,
         "files_scanned": 1,
-        "limitations": [
-          "receiver_types",
-          "indirect_targets",
-          "macro_expansion",
-          "anonymous_callers",
-          "unsupported_bindings",
-          "unenumerated_aliases"
-        ],
+        "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
         "lookups": 1,
         "omitted_items": 0,
         "scan_complete": true,
@@ -3000,53 +1454,25 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       },
       "items": [],
       "kind": "references",
-      "scope": {
-        "packages": [],
-        "paths": []
-      },
+      "scope": {"packages":[],"paths":[]},
       "snapshot": "5a805eb15e532174b8d1341caa729ffc5c76efbdec9890a43ccb5ab07d15337d",
       "subject": {
         "container": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         },
-        "evidence": {
-          "addresses": []
-        },
+        "evidence": {"addresses":[]},
         "id": "e13ad7d38ae1",
         "name": "work",
         "outcome": "resolved",
-        "start": {
-          "column": 0,
-          "line": 0
-        },
+        "start": {"column":0,"line":0},
         "target": {
-          "declaration": {
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 16,
-              "start": 0
-            }
-          },
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
           "kind": "function",
           "language": "rust",
-          "name_span": {
-            "end": 11,
-            "start": 7
-          }
+          "name_span": {"end":11,"start":7}
         }
       }
     },

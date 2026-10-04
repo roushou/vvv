@@ -1,89 +1,43 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "e0463928fde5bac0191c7934b5175cd83e28b145b5168dad83079dec7e1b724a",
-    "outcome": "resolved",
+    "enclosing": {
+      "declaration": {"content":"57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8","path":"src/values.ts","span":{"end":816,"start":701}},
+      "kind": "function",
+      "language": "typescript",
+      "name_span": {"end":723,"start":717}
+    },
     "items": [
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/values.ts",
-            "content": "57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8",
-            "span": {
-              "start": 749,
-              "end": 797
-            }
-          },
-          "name_span": {
-            "start": 749,
-            "end": 754
-          },
-          "kind": "variable"
-        },
-        "relation": "definition",
-        "via": null,
-        "excerpt": {
-          "path": "src/values.ts",
-          "content": "57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8",
-          "span": {
-            "start": 749,
-            "end": 783
-          }
-        },
-        "start": {
-          "line": 18,
-          "column": 8
-        },
-        "text": "local = (value: number): number =>",
         "complete": true,
+        "excerpt": {"content":"57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8","path":"src/values.ts","span":{"end":783,"start":749}},
+        "relation": "definition",
         "signature": {
           "outcome": "available",
-          "requested": {
-            "path": "src/values.ts",
-            "content": "57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8",
-            "span": {
-              "start": 749,
-              "end": 783
-            }
-          }
-        }
+          "requested": {"content":"57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8","path":"src/values.ts","span":{"end":783,"start":749}}
+        },
+        "start": {"column":8,"line":18},
+        "target": {
+          "declaration": {"content":"57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8","path":"src/values.ts","span":{"end":797,"start":749}},
+          "kind": "variable",
+          "language": "typescript",
+          "name_span": {"end":754,"start":749}
+        },
+        "text": "local = (value: number): number =>",
+        "via": null
       }
     ],
-    "enclosing": {
-      "language": "typescript",
-      "declaration": {
-        "path": "src/values.ts",
-        "content": "57ad5793111024f5e3ac39dd8d6797a8eb494f0be17e591e3491c2980a5b22c8",
-        "span": {
-          "start": 701,
-          "end": 816
-        }
-      },
-      "name_span": {
-        "start": 717,
-        "end": 723
-      },
-      "kind": "function"
-    },
-    "omissions": {
-      "item_limit": 0,
-      "byte_limit": 0,
-      "lookup_limit": 0,
-      "file_limit": 0,
-      "ambiguous": 0,
-      "unavailable": 0,
-      "no_container": 0,
-      "unresolved_imports": 0
-    },
-    "references_by_name": false
-  }
+    "omissions": {"ambiguous":0,"byte_limit":0,"file_limit":0,"item_limit":0,"lookup_limit":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+    "outcome": "resolved",
+    "references_by_name": false,
+    "snapshot": "e0463928fde5bac0191c7934b5175cd83e28b145b5168dad83079dec7e1b724a"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

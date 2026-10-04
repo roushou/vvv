@@ -261,7 +261,7 @@ mod tests {
     use serde_json::json;
 
     #[test]
-    fn mutation_states_keep_the_existing_wire_fields() {
+    fn mutation_states_round_trip_with_history_only_when_applied() {
         for (state, wire) in [
             (MutationState::Preview, json!({"applied": false})),
             (

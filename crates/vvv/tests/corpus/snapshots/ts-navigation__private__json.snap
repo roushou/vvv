@@ -1,16 +1,12 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
+  "result": {"outcome":"unavailable","reason":"unresolved","snapshot":"5171d076a12e5199fef61e60dae488429b903c4c3f9c0bcac1cc8b88f7a16c2f"},
   "schema": 1,
-  "result": {
-    "snapshot": "5171d076a12e5199fef61e60dae488429b903c4c3f9c0bcac1cc8b88f7a16c2f",
-    "outcome": "unavailable",
-    "reason": "unresolved"
-  }
+  "status": "ok"
 }
 --- stderr ---

@@ -1,14 +1,11 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "id": "urn:vvv:schema:1:history:arguments:c25e2767619054110dab6753f461574ebebbc91dd79bdacf1051b05091c16f8d",
     "document": {
       "$id": "urn:vvv:schema:1:history:arguments:c25e2767619054110dab6753f461574ebebbc91dd79bdacf1051b05091c16f8d",
       "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -16,7 +13,10 @@ exit 0
       "required": [],
       "title": "history arguments",
       "type": "object"
-    }
-  }
+    },
+    "id": "urn:vvv:schema:1:history:arguments:c25e2767619054110dab6753f461574ebebbc91dd79bdacf1051b05091c16f8d"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

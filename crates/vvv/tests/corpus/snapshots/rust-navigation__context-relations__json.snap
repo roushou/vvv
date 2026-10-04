@@ -1,144 +1,61 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "7823aca7bdac12d9c8ee93bf39fe9bc5cfec750b08cdf99a3c4a0eb0937acc11",
-    "outcome": "resolved",
     "items": [
       {
-        "target": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/consumer.rs",
-            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "span": {
-              "start": 56,
-              "end": 116
-            }
-          },
-          "name_span": {
-            "start": 67,
-            "end": 70
-          },
-          "kind": "struct"
-        },
+        "complete": true,
+        "excerpt": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":116,"start":56}},
         "relation": "definition",
-        "via": null,
-        "excerpt": {
-          "path": "src/consumer.rs",
-          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-          "span": {
-            "start": 56,
-            "end": 116
-          }
-        },
-        "start": {
-          "line": 3,
-          "column": 0
+        "start": {"column":0,"line":3},
+        "target": {
+          "declaration": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":116,"start":56}},
+          "kind": "struct",
+          "language": "rust",
+          "name_span": {"end":70,"start":67}
         },
         "text": "pub struct App {\n    engine: Engine,\n    runtime: Runtime,\n}",
-        "complete": true
+        "via": null
       },
       {
-        "target": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/origin.rs",
-            "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-            "span": {
-              "start": 0,
-              "end": 63
-            }
-          },
-          "name_span": {
-            "start": 30,
-            "end": 36
-          },
-          "kind": "struct"
-        },
+        "complete": true,
+        "excerpt": {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/origin.rs","span":{"end":63,"start":0}},
         "relation": "referenced_definition",
-        "via": {
-          "path": "src/consumer.rs",
-          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-          "span": {
-            "start": 85,
-            "end": 91
-          }
-        },
-        "excerpt": {
-          "path": "src/origin.rs",
-          "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-          "span": {
-            "start": 0,
-            "end": 63
-          }
-        },
-        "start": {
-          "line": 0,
-          "column": 0
+        "start": {"column":0,"line":0},
+        "target": {
+          "declaration": {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/origin.rs","span":{"end":63,"start":0}},
+          "kind": "struct",
+          "language": "rust",
+          "name_span": {"end":36,"start":30}
         },
         "text": "/// Runtime state.\npub struct Engine {\n    pub running: bool,\n}",
-        "complete": true
+        "via": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":91,"start":85}}
       },
       {
-        "target": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/consumer.rs",
-            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "span": {
-              "start": 317,
-              "end": 380
-            }
-          },
-          "name_span": {
-            "start": 322,
-            "end": 325
-          },
-          "kind": "impl"
-        },
+        "complete": true,
+        "excerpt": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":380,"start":317}},
         "relation": "reference",
-        "via": {
-          "path": "src/consumer.rs",
-          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-          "span": {
-            "start": 322,
-            "end": 325
-          }
-        },
-        "excerpt": {
-          "path": "src/consumer.rs",
-          "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-          "span": {
-            "start": 317,
-            "end": 380
-          }
-        },
-        "start": {
-          "line": 13,
-          "column": 0
+        "start": {"column":0,"line":13},
+        "target": {
+          "declaration": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":380,"start":317}},
+          "kind": "impl",
+          "language": "rust",
+          "name_span": {"end":325,"start":322}
         },
         "text": "impl App { pub fn method(engine: Engine) -> Engine { engine } }",
-        "complete": true
+        "via": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":325,"start":322}}
       }
     ],
-    "omissions": {
-      "item_limit": 0,
-      "byte_limit": 0,
-      "lookup_limit": 0,
-      "file_limit": 0,
-      "ambiguous": 0,
-      "unavailable": 0,
-      "no_container": 0,
-      "unresolved_imports": 1
-    },
-    "references_by_name": true
-  }
+    "omissions": {"ambiguous":0,"byte_limit":0,"file_limit":0,"item_limit":0,"lookup_limit":0,"no_container":0,"unavailable":0,"unresolved_imports":1},
+    "outcome": "resolved",
+    "references_by_name": true,
+    "snapshot": "7823aca7bdac12d9c8ee93bf39fe9bc5cfec750b08cdf99a3c4a0eb0937acc11"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

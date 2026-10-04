@@ -5,9 +5,7 @@ mod common;
 use common::Fake;
 use common::fixture::EngineFixture;
 use vvv_core::{Facts, FactsError, RawMatch, SearchError, Span, SpanError};
-use vvv_engine::{
-    EngineError, ErrorCode, FileQuery, NavigationOutcome, NavigationQuery, Query, RewriteIntent,
-};
+use vvv_engine::{EngineError, ErrorCode, FileQuery, Query, RewriteIntent};
 
 #[test]
 fn invalid_plugin_matches_are_typed_conflicts_and_never_write() {
@@ -51,21 +49,4 @@ fn invalid_plugin_facts_are_rejected_before_source_coordinates_are_read() {
         }
     ));
     assert_eq!(error.code(), ErrorCode::Conflict);
-}
-
-#[test]
-fn source_markers_keep_navigation_tests_independent_of_line_and_byte_counts() {
-    let fixture = EngineFixture::marked(&[
-        ("package", "ws"),
-        ("a.p", "def Engine"),
-        ("use.p", "// café\nuse a.p/Engine\n$0Engine"),
-    ]);
-    let reply = NavigationQuery::at("use.p", fixture.cursor("use.p"))
-        .execute(&fixture.engine)
-        .unwrap();
-    assert!(
-        matches!(reply.outcome, NavigationOutcome::Resolved { target, .. }
-        if target.declaration.path.as_path() == std::path::Path::new("a.p"))
-    );
-    assert!(!fixture.read("use.p").contains("$0"));
 }

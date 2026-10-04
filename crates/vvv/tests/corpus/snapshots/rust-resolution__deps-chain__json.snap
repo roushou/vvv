@@ -1,82 +1,45 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "path": "src/chained.rs",
-    "module": {
-      "package": "resolution_probe",
-      "path": [
-        "chained"
-      ]
-    },
+    "importers": [],
     "imports": [
       {
-        "span": {
-          "start": 4,
-          "end": 9
-        },
-        "path": "crate",
-        "declares": true,
+        "address": {"package":"resolution_probe","path":[]},
         "alias": "root",
-        "start": {
-          "line": 0,
-          "column": 4
-        },
-        "address": {
-          "package": "resolution_probe",
-          "path": []
-        },
-        "file": "src/lib.rs"
+        "declares": true,
+        "file": "src/lib.rs",
+        "path": "crate",
+        "span": {"end":9,"start":4},
+        "start": {"column":4,"line":0}
       },
       {
-        "span": {
-          "start": 23,
-          "end": 30
-        },
-        "path": "root::a",
-        "declares": true,
+        "address": {"package":"resolution_probe","path":["a"]},
         "alias": "parent",
-        "start": {
-          "line": 1,
-          "column": 4
-        },
-        "address": {
-          "package": "resolution_probe",
-          "path": [
-            "a"
-          ]
-        },
-        "file": "src/a.rs"
+        "declares": true,
+        "file": "src/a.rs",
+        "path": "root::a",
+        "span": {"end":30,"start":23},
+        "start": {"column":4,"line":1}
       },
       {
-        "span": {
-          "start": 46,
-          "end": 59
-        },
-        "path": "parent::child",
-        "declares": true,
+        "address": {"package":"resolution_probe","path":["a","child"]},
         "alias": "leaf",
-        "start": {
-          "line": 2,
-          "column": 4
-        },
-        "address": {
-          "package": "resolution_probe",
-          "path": [
-            "a",
-            "child"
-          ]
-        },
-        "file": "src/a/child.rs"
+        "declares": true,
+        "file": "src/a/child.rs",
+        "path": "parent::child",
+        "span": {"end":59,"start":46},
+        "start": {"column":4,"line":2}
       }
     ],
-    "importers": []
-  }
+    "module": {"package":"resolution_probe","path":["chained"]},
+    "path": "src/chained.rs"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

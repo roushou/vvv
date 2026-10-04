@@ -280,17 +280,6 @@ fn source_wire_types_and_output_requirements_match_serde() {
     let wire = serde_json::to_value(answer).unwrap();
     schema.accepts(&wire);
     assert!(wire["matches"][0]["content"].is_string());
-    let mut legacy = wire["matches"][0].clone();
-    legacy.as_object_mut().unwrap().remove("content");
-    let match_input = schemars::generate::SchemaSettings::draft2020_12()
-        .into_generator()
-        .into_root_schema_for::<vvv_engine::Match>()
-        .to_value();
-    Contract {
-        validator: jsonschema::validator_for(&match_input).unwrap(),
-    }
-    .accepts(&legacy);
-    serde_json::from_value::<vvv_engine::Match>(legacy).unwrap();
     let path = schemars::schema_for!(vvv_engine::ModulePath).to_value();
     let schema = Contract {
         validator: jsonschema::validator_for(&path).unwrap(),

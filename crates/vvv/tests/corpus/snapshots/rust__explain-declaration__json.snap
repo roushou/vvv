@@ -1,84 +1,30 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
+    "address": {"package":"corpus_core","path":["geometry","point","Point"]},
+    "declared": {"column":11,"line":2},
+    "importers": ["app/src/main.rs","core/src/geometry/mod.rs","core/src/geometry/shape.rs","core/src/lib.rs","core/src/lib.rs"],
+    "line": "pub struct Point {",
+    "module": {"package":"corpus_core","path":["geometry","point"]},
     "path": "core/src/geometry/point.rs",
-    "position": {
-      "line": 2,
-      "column": 11
-    },
+    "position": {"column":11,"line":2},
+    "reach": "everyone",
     "symbol": {
+      "extent": {"end":125,"start":0},
       "kind": "struct",
       "name": "Point",
-      "name_span": {
-        "start": 84,
-        "end": 89
-      },
-      "span": {
-        "start": 73,
-        "end": 125
-      },
-      "extent": {
-        "start": 0,
-        "end": 125
-      },
-      "visibility": {
-        "span": {
-          "start": 73,
-          "end": 76
-        },
-        "text": "pub"
-      }
+      "name_span": {"end":89,"start":84},
+      "span": {"end":125,"start":73},
+      "visibility": {"span":{"end":76,"start":73},"text":"pub"}
     },
-    "declared": {
-      "line": 2,
-      "column": 11
-    },
-    "line": "pub struct Point {",
-    "module": {
-      "package": "corpus_core",
-      "path": [
-        "geometry",
-        "point"
-      ]
-    },
-    "address": {
-      "package": "corpus_core",
-      "path": [
-        "geometry",
-        "point",
-        "Point"
-      ]
-    },
-    "reach": "everyone",
-    "via": [
-      {
-        "package": "corpus_core",
-        "path": [
-          "geometry",
-          "Point"
-        ]
-      },
-      {
-        "package": "corpus_core",
-        "path": [
-          "Point"
-        ]
-      }
-    ],
-    "importers": [
-      "app/src/main.rs",
-      "core/src/geometry/mod.rs",
-      "core/src/geometry/shape.rs",
-      "core/src/lib.rs",
-      "core/src/lib.rs"
-    ]
-  }
+    "via": [{"package":"corpus_core","path":["geometry","Point"]},{"package":"corpus_core","path":["Point"]}]
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

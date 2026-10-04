@@ -1,0 +1,54 @@
+---
+source: crates/vvv/tests/common/corpus_snapshot.rs
+expression: JsonSnapshot(&self.value).to_string()
+---
+{
+  "highlights": [
+    {"kind":"comment","span":{"end":19,"start":0}},
+    {"kind":"keyword","span":{"end":22,"start":19}},
+    {"kind":"keyword","span":{"end":29,"start":23}},
+    {"kind":"type","span":{"end":36,"start":30}},
+    {"kind":"keyword","span":{"end":46,"start":43}},
+    {"kind":"type","span":{"end":60,"start":56}},
+    {"kind":"keyword","span":{"end":67,"start":64}},
+    {"kind":"keyword","span":{"end":72,"start":68}},
+    {"kind":"type","span":{"end":78,"start":73}}
+  ],
+  "identifiers": [
+    {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/origin.rs","span":{"end":36,"start":30}},
+    {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/origin.rs","span":{"end":54,"start":47}},
+    {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/origin.rs","span":{"end":78,"start":73}},
+    {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/origin.rs","span":{"end":91,"start":85}},
+    {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/origin.rs","span":{"end":99,"start":97}}
+  ],
+  "path": "src/origin.rs",
+  "symbols": [
+    {
+      "extent": {"end":63,"start":0},
+      "kind": "struct",
+      "name": "Engine",
+      "name_span": {"end":36,"start":30},
+      "span": {"end":63,"start":19},
+      "visibility": {"span":{"end":22,"start":19},"text":"pub"}
+    },
+    {
+      "extent": {"end":60,"start":43},
+      "kind": "field",
+      "name": "running",
+      "name_span": {"end":54,"start":47},
+      "span": {"end":60,"start":43},
+      "visibility": {"span":{"end":46,"start":43},"text":"pub"}
+    },
+    {
+      "extent": {"end":102,"start":64},
+      "kind": "enum",
+      "name": "Error",
+      "name_span": {"end":78,"start":73},
+      "span": {"end":102,"start":64},
+      "visibility": {"span":{"end":67,"start":64},"text":"pub"}
+    },
+    {"extent":{"end":91,"start":85},"kind":"variant","name":"Engine","name_span":{"end":91,"start":85},"span":{"end":91,"start":85}},
+    {"extent":{"end":99,"start":97},"kind":"variant","name":"Io","name_span":{"end":99,"start":97},"span":{"end":99,"start":97}}
+  ],
+  "text": "/// Runtime state.\npub struct Engine {\n    pub running: bool,\n}\npub enum Error {\n    Engine,\n    Io,\n}\n"
+}

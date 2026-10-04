@@ -1,89 +1,43 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "2c3c48af4c8119c348584160367e191b431d77e60a63d44f15ad84749064f622",
-    "outcome": "resolved",
+    "enclosing": {
+      "declaration": {"content":"dc37120072e5a407c5ff3a0e483f1f22d14016b40cc57fb78ffc336b8a389c56","path":"src/scopes.ts","span":{"end":267,"start":36}},
+      "kind": "function",
+      "language": "typescript",
+      "name_span": {"end":59,"start":52}
+    },
     "items": [
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/scopes.ts",
-            "content": "dc37120072e5a407c5ff3a0e483f1f22d14016b40cc57fb78ffc336b8a389c56",
-            "span": {
-              "start": 93,
-              "end": 161
-            }
-          },
-          "name_span": {
-            "start": 102,
-            "end": 108
-          },
-          "kind": "function"
-        },
-        "relation": "definition",
-        "via": null,
-        "excerpt": {
-          "path": "src/scopes.ts",
-          "content": "dc37120072e5a407c5ff3a0e483f1f22d14016b40cc57fb78ffc336b8a389c56",
-          "span": {
-            "start": 93,
-            "end": 119
-          }
-        },
-        "start": {
-          "line": 3,
-          "column": 2
-        },
-        "text": "function helper(value = 1)",
         "complete": true,
+        "excerpt": {"content":"dc37120072e5a407c5ff3a0e483f1f22d14016b40cc57fb78ffc336b8a389c56","path":"src/scopes.ts","span":{"end":119,"start":93}},
+        "relation": "definition",
         "signature": {
           "outcome": "available",
-          "requested": {
-            "path": "src/scopes.ts",
-            "content": "dc37120072e5a407c5ff3a0e483f1f22d14016b40cc57fb78ffc336b8a389c56",
-            "span": {
-              "start": 93,
-              "end": 119
-            }
-          }
-        }
+          "requested": {"content":"dc37120072e5a407c5ff3a0e483f1f22d14016b40cc57fb78ffc336b8a389c56","path":"src/scopes.ts","span":{"end":119,"start":93}}
+        },
+        "start": {"column":2,"line":3},
+        "target": {
+          "declaration": {"content":"dc37120072e5a407c5ff3a0e483f1f22d14016b40cc57fb78ffc336b8a389c56","path":"src/scopes.ts","span":{"end":161,"start":93}},
+          "kind": "function",
+          "language": "typescript",
+          "name_span": {"end":108,"start":102}
+        },
+        "text": "function helper(value = 1)",
+        "via": null
       }
     ],
-    "enclosing": {
-      "language": "typescript",
-      "declaration": {
-        "path": "src/scopes.ts",
-        "content": "dc37120072e5a407c5ff3a0e483f1f22d14016b40cc57fb78ffc336b8a389c56",
-        "span": {
-          "start": 36,
-          "end": 267
-        }
-      },
-      "name_span": {
-        "start": 52,
-        "end": 59
-      },
-      "kind": "function"
-    },
-    "omissions": {
-      "item_limit": 0,
-      "byte_limit": 0,
-      "lookup_limit": 0,
-      "file_limit": 0,
-      "ambiguous": 0,
-      "unavailable": 0,
-      "no_container": 0,
-      "unresolved_imports": 0
-    },
-    "references_by_name": false
-  }
+    "omissions": {"ambiguous":0,"byte_limit":0,"file_limit":0,"item_limit":0,"lookup_limit":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+    "outcome": "resolved",
+    "references_by_name": false,
+    "snapshot": "2c3c48af4c8119c348584160367e191b431d77e60a63d44f15ad84749064f622"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

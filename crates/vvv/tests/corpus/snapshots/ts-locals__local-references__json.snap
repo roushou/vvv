@@ -1,159 +1,78 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "fbd0704649f4ead497bc21c4d8501164aaa1353b2d801c337240ca89af2ed81a",
-    "subject": {
-      "outcome": "resolved",
-      "target": {
-        "language": "typescript",
-        "declaration": {
-          "path": "src/locals.ts",
-          "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
-          "span": {
-            "start": 92,
-            "end": 105
-          }
-        },
-        "name_span": {
-          "start": 92,
-          "end": 97
-        },
-        "kind": "variable"
-      },
-      "id": "a29bbac3ada8",
-      "name": "local",
-      "start": {
-        "line": 2,
-        "column": 8
-      },
-      "evidence": {
-        "addresses": []
-      },
-      "container": {
-        "language": "typescript",
-        "declaration": {
-          "path": "src/locals.ts",
-          "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
-          "span": {
-            "start": 92,
-            "end": 105
-          }
-        },
-        "name_span": {
-          "start": 92,
-          "end": 97
-        },
-        "kind": "variable"
-      }
-    },
-    "kind": "references",
-    "scope": {
-      "paths": [
-        "src/locals.ts"
-      ],
-      "packages": []
+    "coverage": {
+      "files_remaining": 0,
+      "files_scanned": 1,
+      "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
+      "lookups": 13,
+      "omitted_items": 0,
+      "scan_complete": true,
+      "stopped_by": null,
+      "unresolved_imports": 0,
+      "unsupported_files": 0
     },
     "items": [
       {
-        "site": {
-          "path": "src/locals.ts",
-          "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
-          "span": {
-            "start": 128,
-            "end": 133
-          }
-        },
-        "start": {
-          "line": 4,
-          "column": 9
-        },
-        "spelling": "local",
-        "caller": null,
         "call": null,
+        "caller": null,
+        "evidence": {"addresses":[]},
         "outcome": "confirmed",
+        "site": {"content":"d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f","path":"src/locals.ts","span":{"end":133,"start":128}},
+        "spelling": "local",
+        "start": {"column":9,"line":4},
         "target": {
+          "declaration": {"content":"d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f","path":"src/locals.ts","span":{"end":105,"start":92}},
+          "kind": "variable",
           "language": "typescript",
-          "declaration": {
-            "path": "src/locals.ts",
-            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
-            "span": {
-              "start": 92,
-              "end": 105
-            }
-          },
-          "name_span": {
-            "start": 92,
-            "end": 97
-          },
-          "kind": "variable"
-        },
-        "evidence": {
-          "addresses": []
+          "name_span": {"end":97,"start":92}
         }
       },
       {
-        "site": {
-          "path": "src/locals.ts",
-          "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
-          "span": {
-            "start": 152,
-            "end": 157
-          }
-        },
-        "start": {
-          "line": 5,
-          "column": 17
-        },
-        "spelling": "local",
-        "caller": null,
         "call": null,
+        "caller": null,
+        "evidence": {"addresses":[]},
         "outcome": "confirmed",
+        "site": {"content":"d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f","path":"src/locals.ts","span":{"end":157,"start":152}},
+        "spelling": "local",
+        "start": {"column":17,"line":5},
         "target": {
+          "declaration": {"content":"d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f","path":"src/locals.ts","span":{"end":105,"start":92}},
+          "kind": "variable",
           "language": "typescript",
-          "declaration": {
-            "path": "src/locals.ts",
-            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
-            "span": {
-              "start": 92,
-              "end": 105
-            }
-          },
-          "name_span": {
-            "start": 92,
-            "end": 97
-          },
-          "kind": "variable"
-        },
-        "evidence": {
-          "addresses": []
+          "name_span": {"end":97,"start":92}
         }
       }
     ],
-    "coverage": {
-      "limitations": [
-        "receiver_types",
-        "indirect_targets",
-        "macro_expansion",
-        "anonymous_callers",
-        "unsupported_bindings",
-        "unenumerated_aliases"
-      ],
-      "files_scanned": 1,
-      "files_remaining": 0,
-      "lookups": 13,
-      "omitted_items": 0,
-      "stopped_by": null,
-      "unsupported_files": 0,
-      "unresolved_imports": 0,
-      "scan_complete": true
+    "kind": "references",
+    "scope": {"packages":[],"paths":["src/locals.ts"]},
+    "snapshot": "fbd0704649f4ead497bc21c4d8501164aaa1353b2d801c337240ca89af2ed81a",
+    "subject": {
+      "container": {
+        "declaration": {"content":"d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f","path":"src/locals.ts","span":{"end":105,"start":92}},
+        "kind": "variable",
+        "language": "typescript",
+        "name_span": {"end":97,"start":92}
+      },
+      "evidence": {"addresses":[]},
+      "id": "a29bbac3ada8",
+      "name": "local",
+      "outcome": "resolved",
+      "start": {"column":8,"line":2},
+      "target": {
+        "declaration": {"content":"d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f","path":"src/locals.ts","span":{"end":105,"start":92}},
+        "kind": "variable",
+        "language": "typescript",
+        "name_span": {"end":97,"start":92}
+      }
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

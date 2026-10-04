@@ -1,70 +1,31 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "5eed1c1782abdda81e7f7a0454e8cb305d80507a9a4da8281ac020eaf655508e",
-    "outcome": "resolved",
-    "target": {
+    "container": {
+      "declaration": {"content":"6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6","path":"src/lib.rs","span":{"end":27,"start":12}},
+      "kind": "function",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
-        "span": {
-          "start": 12,
-          "end": 27
-        }
-      },
-      "name_span": {
-        "start": 19,
-        "end": 22
-      },
-      "kind": "function"
+      "name_span": {"end":22,"start":19}
     },
+    "evidence": {"addresses":[{"package":"local_imports","path":["work"]},{"package":"local_imports","path":["a","run"]}]},
     "id": "56b175291930",
     "name": "run",
-    "start": {
-      "line": 1,
-      "column": 4
-    },
-    "evidence": {
-      "addresses": [
-        {
-          "package": "local_imports",
-          "path": [
-            "work"
-          ]
-        },
-        {
-          "package": "local_imports",
-          "path": [
-            "a",
-            "run"
-          ]
-        }
-      ]
-    },
-    "container": {
+    "outcome": "resolved",
+    "snapshot": "5eed1c1782abdda81e7f7a0454e8cb305d80507a9a4da8281ac020eaf655508e",
+    "start": {"column":4,"line":1},
+    "target": {
+      "declaration": {"content":"6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6","path":"src/lib.rs","span":{"end":27,"start":12}},
+      "kind": "function",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
-        "span": {
-          "start": 12,
-          "end": 27
-        }
-      },
-      "name_span": {
-        "start": 19,
-        "end": 22
-      },
-      "kind": "function"
+      "name_span": {"end":22,"start":19}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

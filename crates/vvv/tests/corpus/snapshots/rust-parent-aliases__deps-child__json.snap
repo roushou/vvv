@@ -1,44 +1,27 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "path": "src/parent/nested.rs",
-    "module": {
-      "package": "parent_alias_probe",
-      "path": [
-        "parent",
-        "nested"
-      ]
-    },
+    "importers": [],
     "imports": [
       {
-        "span": {
-          "start": 4,
-          "end": 17
-        },
-        "path": "super::parent",
-        "declares": true,
+        "address": {"package":"parent_alias_probe","path":["a"]},
         "alias": "local",
-        "start": {
-          "line": 0,
-          "column": 4
-        },
-        "address": {
-          "package": "parent_alias_probe",
-          "path": [
-            "a"
-          ]
-        },
-        "file": "src/a.rs"
+        "declares": true,
+        "file": "src/a.rs",
+        "path": "super::parent",
+        "span": {"end":17,"start":4},
+        "start": {"column":4,"line":0}
       }
     ],
-    "importers": []
-  }
+    "module": {"package":"parent_alias_probe","path":["parent","nested"]},
+    "path": "src/parent/nested.rs"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

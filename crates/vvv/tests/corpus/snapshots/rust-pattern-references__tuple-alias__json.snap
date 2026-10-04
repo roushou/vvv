@@ -1,70 +1,31 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "be4e04474fec158f1085f089b7767e4610a8076d1eec93fa65f179446a1a81f8",
-    "outcome": "resolved",
-    "target": {
+    "container": {
+      "declaration": {"content":"cc6411456df3e72af40fdbe3a55b4920b55b95450a6470a0eb00cac134d5feeb","path":"src/lib.rs","span":{"end":104,"start":77}},
+      "kind": "struct",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "cc6411456df3e72af40fdbe3a55b4920b55b95450a6470a0eb00cac134d5feeb",
-        "span": {
-          "start": 77,
-          "end": 104
-        }
-      },
-      "name_span": {
-        "start": 88,
-        "end": 92
-      },
-      "kind": "struct"
+      "name_span": {"end":92,"start":88}
     },
+    "evidence": {"addresses":[{"package":"rust_pattern_references","path":["Wrap"]},{"package":"rust_pattern_references","path":["values","Pair"]}]},
     "id": "1118d65fe31d",
     "name": "Pair",
-    "start": {
-      "line": 3,
-      "column": 4
-    },
-    "evidence": {
-      "addresses": [
-        {
-          "package": "rust_pattern_references",
-          "path": [
-            "Wrap"
-          ]
-        },
-        {
-          "package": "rust_pattern_references",
-          "path": [
-            "values",
-            "Pair"
-          ]
-        }
-      ]
-    },
-    "container": {
+    "outcome": "resolved",
+    "snapshot": "be4e04474fec158f1085f089b7767e4610a8076d1eec93fa65f179446a1a81f8",
+    "start": {"column":4,"line":3},
+    "target": {
+      "declaration": {"content":"cc6411456df3e72af40fdbe3a55b4920b55b95450a6470a0eb00cac134d5feeb","path":"src/lib.rs","span":{"end":104,"start":77}},
+      "kind": "struct",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "cc6411456df3e72af40fdbe3a55b4920b55b95450a6470a0eb00cac134d5feeb",
-        "span": {
-          "start": 77,
-          "end": 104
-        }
-      },
-      "name_span": {
-        "start": 88,
-        "end": 92
-      },
-      "kind": "struct"
+      "name_span": {"end":92,"start":88}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

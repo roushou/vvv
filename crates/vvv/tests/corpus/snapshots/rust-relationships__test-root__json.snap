@@ -1,137 +1,68 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "a191142db199675f2de6930dc440d85dbb210ed2b7426461151aed4dfeccba0c",
-    "subject": {
-      "outcome": "resolved",
-      "target": {
-        "language": "rust",
-        "declaration": {
-          "path": "tests/local.rs",
-          "content": "c683131d64f02163b0dc713a5d49581a9c48b90c7aa40ea3d9aee0f7b2f7082a",
-          "span": {
-            "start": 0,
-            "end": 12
-          }
-        },
-        "name_span": {
-          "start": 3,
-          "end": 7
-        },
-        "kind": "function"
-      },
-      "id": "aca9ff3cce95",
-      "name": "work",
-      "start": {
-        "line": 0,
-        "column": 0
-      },
-      "evidence": {
-        "addresses": []
-      },
-      "container": {
-        "language": "rust",
-        "declaration": {
-          "path": "tests/local.rs",
-          "content": "c683131d64f02163b0dc713a5d49581a9c48b90c7aa40ea3d9aee0f7b2f7082a",
-          "span": {
-            "start": 0,
-            "end": 12
-          }
-        },
-        "name_span": {
-          "start": 3,
-          "end": 7
-        },
-        "kind": "function"
-      }
-    },
-    "kind": "callers",
-    "scope": {
-      "paths": [
-        "tests/local.rs"
-      ],
-      "packages": []
+    "coverage": {
+      "files_remaining": 0,
+      "files_scanned": 1,
+      "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
+      "lookups": 1,
+      "omitted_items": 0,
+      "scan_complete": true,
+      "stopped_by": null,
+      "unresolved_imports": 0,
+      "unsupported_files": 0
     },
     "items": [
       {
-        "site": {
-          "path": "tests/local.rs",
-          "content": "c683131d64f02163b0dc713a5d49581a9c48b90c7aa40ea3d9aee0f7b2f7082a",
-          "span": {
-            "start": 27,
-            "end": 31
-          }
-        },
-        "start": {
-          "line": 1,
-          "column": 14
-        },
-        "spelling": "work",
-        "caller": {
-          "language": "rust",
-          "declaration": {
-            "path": "tests/local.rs",
-            "content": "c683131d64f02163b0dc713a5d49581a9c48b90c7aa40ea3d9aee0f7b2f7082a",
-            "span": {
-              "start": 13,
-              "end": 36
-            }
-          },
-          "name_span": {
-            "start": 16,
-            "end": 22
-          },
-          "kind": "function"
-        },
         "call": "direct",
-        "outcome": "confirmed",
-        "target": {
+        "caller": {
+          "declaration": {"content":"c683131d64f02163b0dc713a5d49581a9c48b90c7aa40ea3d9aee0f7b2f7082a","path":"tests/local.rs","span":{"end":36,"start":13}},
+          "kind": "function",
           "language": "rust",
-          "declaration": {
-            "path": "tests/local.rs",
-            "content": "c683131d64f02163b0dc713a5d49581a9c48b90c7aa40ea3d9aee0f7b2f7082a",
-            "span": {
-              "start": 0,
-              "end": 12
-            }
-          },
-          "name_span": {
-            "start": 3,
-            "end": 7
-          },
-          "kind": "function"
+          "name_span": {"end":22,"start":16}
         },
-        "evidence": {
-          "addresses": []
+        "evidence": {"addresses":[]},
+        "outcome": "confirmed",
+        "site": {"content":"c683131d64f02163b0dc713a5d49581a9c48b90c7aa40ea3d9aee0f7b2f7082a","path":"tests/local.rs","span":{"end":31,"start":27}},
+        "spelling": "work",
+        "start": {"column":14,"line":1},
+        "target": {
+          "declaration": {"content":"c683131d64f02163b0dc713a5d49581a9c48b90c7aa40ea3d9aee0f7b2f7082a","path":"tests/local.rs","span":{"end":12,"start":0}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":7,"start":3}
         }
       }
     ],
-    "coverage": {
-      "limitations": [
-        "receiver_types",
-        "indirect_targets",
-        "macro_expansion",
-        "anonymous_callers",
-        "unsupported_bindings",
-        "unenumerated_aliases"
-      ],
-      "files_scanned": 1,
-      "files_remaining": 0,
-      "lookups": 1,
-      "omitted_items": 0,
-      "stopped_by": null,
-      "unsupported_files": 0,
-      "unresolved_imports": 0,
-      "scan_complete": true
+    "kind": "callers",
+    "scope": {"packages":[],"paths":["tests/local.rs"]},
+    "snapshot": "a191142db199675f2de6930dc440d85dbb210ed2b7426461151aed4dfeccba0c",
+    "subject": {
+      "container": {
+        "declaration": {"content":"c683131d64f02163b0dc713a5d49581a9c48b90c7aa40ea3d9aee0f7b2f7082a","path":"tests/local.rs","span":{"end":12,"start":0}},
+        "kind": "function",
+        "language": "rust",
+        "name_span": {"end":7,"start":3}
+      },
+      "evidence": {"addresses":[]},
+      "id": "aca9ff3cce95",
+      "name": "work",
+      "outcome": "resolved",
+      "start": {"column":0,"line":0},
+      "target": {
+        "declaration": {"content":"c683131d64f02163b0dc713a5d49581a9c48b90c7aa40ea3d9aee0f7b2f7082a","path":"tests/local.rs","span":{"end":12,"start":0}},
+        "kind": "function",
+        "language": "rust",
+        "name_span": {"end":7,"start":3}
+      }
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

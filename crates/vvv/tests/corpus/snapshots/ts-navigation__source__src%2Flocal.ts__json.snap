@@ -1,0 +1,22 @@
+---
+source: crates/vvv/tests/common/corpus_snapshot.rs
+expression: JsonSnapshot(&self.value).to_string()
+---
+{
+  "highlights": [
+    {"kind":"keyword","span":{"end":5,"start":0}},
+    {"kind":"type","span":{"end":12,"start":6}},
+    {"kind":"keyword","span":{"end":22,"start":16}},
+    {"kind":"keyword","span":{"end":34,"start":32}},
+    {"kind":"keyword","span":{"end":57,"start":51}}
+  ],
+  "identifiers": [
+    {"content":"c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10","path":"src/local.ts","span":{"end":12,"start":6}},
+    {"content":"c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10","path":"src/local.ts","span":{"end":31,"start":25}},
+    {"content":"c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10","path":"src/local.ts","span":{"end":47,"start":35}},
+    {"content":"c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10","path":"src/local.ts","span":{"end":66,"start":60}}
+  ],
+  "path": "src/local.ts",
+  "symbols": [{"extent":{"end":15,"start":0},"kind":"class","name":"Engine","name_span":{"end":12,"start":6},"span":{"end":15,"start":0}}],
+  "text": "class Engine {}\nexport { Engine as PublicEngine };\nexport { Engine };\n"
+}

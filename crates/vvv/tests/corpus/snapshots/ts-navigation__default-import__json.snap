@@ -1,189 +1,54 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "82627ef87a8ac0eba5e8737936ae882fae1d1952a1887ef5a7dc967f74efea1c",
+    "evidence": {"addresses":[{"package":"","path":["src","default.ts","default"]}]},
     "outcome": "resolved",
-    "target": {
-      "language": "typescript",
-      "declaration": {
-        "path": "src/default.ts",
-        "content": "43b550a61a81b09d367686b6fbde10e80ad8fc8bf1177d30c2cc7418ec95ed80",
-        "span": {
-          "start": 0,
-          "end": 37
-        }
-      },
-      "name_span": {
-        "start": 21,
-        "end": 34
-      },
-      "kind": "class"
-    },
-    "evidence": {
-      "addresses": [
-        {
-          "package": "",
-          "path": [
-            "src",
-            "default.ts",
-            "default"
-          ]
-        }
-      ]
-    },
     "preview": {
       "container": {
+        "declaration": {"content":"43b550a61a81b09d367686b6fbde10e80ad8fc8bf1177d30c2cc7418ec95ed80","path":"src/default.ts","span":{"end":37,"start":0}},
+        "kind": "class",
         "language": "typescript",
-        "declaration": {
-          "path": "src/default.ts",
-          "content": "43b550a61a81b09d367686b6fbde10e80ad8fc8bf1177d30c2cc7418ec95ed80",
-          "span": {
-            "start": 0,
-            "end": 37
-          }
-        },
-        "name_span": {
-          "start": 21,
-          "end": 34
-        },
-        "kind": "class"
+        "name_span": {"end":34,"start":21}
       },
       "declaration": {
         "content": "43b550a61a81b09d367686b6fbde10e80ad8fc8bf1177d30c2cc7418ec95ed80",
+        "end": {"column":37,"line":0},
         "id": "94716306feb1",
-        "path": "src/default.ts",
-        "language": "typescript",
-        "span": {
-          "start": 15,
-          "end": 37
-        },
-        "start": {
-          "line": 0,
-          "column": 15
-        },
-        "end": {
-          "line": 0,
-          "column": 37
-        },
         "kind": "declaration",
-        "text": "class DefaultEngine {}",
+        "language": "typescript",
         "line": "export default class DefaultEngine {}",
+        "path": "src/default.ts",
+        "role": "declaration",
+        "span": {"end":37,"start":15},
+        "start": {"column":15,"line":0},
         "symbol": {
+          "extent": {"end":37,"start":0},
           "kind": "class",
           "name": "DefaultEngine",
-          "name_span": {
-            "start": 21,
-            "end": 34
-          },
-          "span": {
-            "start": 15,
-            "end": 37
-          },
-          "extent": {
-            "start": 0,
-            "end": 37
-          },
-          "visibility": {
-            "span": {
-              "start": 0,
-              "end": 14
-            },
-            "text": "export default"
-          }
+          "name_span": {"end":34,"start":21},
+          "span": {"end":37,"start":15},
+          "visibility": {"span":{"end":14,"start":0},"text":"export default"}
         },
-        "role": "declaration"
+        "text": "class DefaultEngine {}"
       },
-      "source": {
-        "path": "src/default.ts",
-        "text": "export default class DefaultEngine {}\n",
-        "highlights": [
-          {
-            "span": {
-              "start": 0,
-              "end": 6
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 7,
-              "end": 14
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 15,
-              "end": 20
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 21,
-              "end": 34
-            },
-            "kind": "type"
-          }
-        ],
-        "symbols": [
-          {
-            "kind": "class",
-            "name": "DefaultEngine",
-            "name_span": {
-              "start": 21,
-              "end": 34
-            },
-            "span": {
-              "start": 15,
-              "end": 37
-            },
-            "extent": {
-              "start": 0,
-              "end": 37
-            },
-            "visibility": {
-              "span": {
-                "start": 0,
-                "end": 14
-              },
-              "text": "export default"
-            }
-          }
-        ],
-        "identifiers": [
-          {
-            "path": "src/default.ts",
-            "content": "43b550a61a81b09d367686b6fbde10e80ad8fc8bf1177d30c2cc7418ec95ed80",
-            "span": {
-              "start": 21,
-              "end": 34
-            }
-          }
-        ]
-      },
-      "selection": {
-        "start": 21,
-        "end": 34
-      },
-      "identifiers": [
-        {
-          "path": "src/default.ts",
-          "content": "43b550a61a81b09d367686b6fbde10e80ad8fc8bf1177d30c2cc7418ec95ed80",
-          "span": {
-            "start": 21,
-            "end": 34
-          }
-        }
-      ]
+      "identifiers": [{"content":"43b550a61a81b09d367686b6fbde10e80ad8fc8bf1177d30c2cc7418ec95ed80","path":"src/default.ts","span":{"end":34,"start":21}}],
+      "selection": {"end":34,"start":21},
+      "source": {"$snapshot":"ts-navigation__source__src%2Fdefault.ts__json.snap"}
+    },
+    "snapshot": "82627ef87a8ac0eba5e8737936ae882fae1d1952a1887ef5a7dc967f74efea1c",
+    "target": {
+      "declaration": {"content":"43b550a61a81b09d367686b6fbde10e80ad8fc8bf1177d30c2cc7418ec95ed80","path":"src/default.ts","span":{"end":37,"start":0}},
+      "kind": "class",
+      "language": "typescript",
+      "name_span": {"end":34,"start":21}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

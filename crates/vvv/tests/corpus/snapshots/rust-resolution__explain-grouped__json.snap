@@ -1,63 +1,26 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "path": "src/consumer.rs",
-    "position": {
-      "line": 2,
-      "column": 30
-    },
-    "module": {
-      "package": "resolution_probe",
-      "path": [
-        "consumer"
-      ]
-    },
     "import": {
-      "span": {
-        "start": 81,
-        "end": 93
-      },
-      "path": "module_alias::child::Child",
-      "group": {
-        "prefix": "module_alias",
-        "item": {
-          "start": 81,
-          "end": 93
-        },
-        "list": {
-          "start": 75,
-          "end": 94
-        },
-        "items": 2,
-        "statement": {
-          "start": 57,
-          "end": 95
-        },
-        "top_level": true
-      },
+      "address": {"package":"resolution_probe","path":["a","child","Child"]},
       "declares": true,
-      "start": {
-        "line": 2,
-        "column": 24
-      },
-      "address": {
-        "package": "resolution_probe",
-        "path": [
-          "a",
-          "child",
-          "Child"
-        ]
-      },
-      "file": "src/a/child.rs"
+      "file": "src/a/child.rs",
+      "group": {"item":{"end":93,"start":81},"items":2,"list":{"end":94,"start":75},"prefix":"module_alias","statement":{"end":95,"start":57},"top_level":true},
+      "path": "module_alias::child::Child",
+      "span": {"end":93,"start":81},
+      "start": {"column":24,"line":2}
     },
-    "importers": []
-  }
+    "importers": [],
+    "module": {"package":"resolution_probe","path":["consumer"]},
+    "path": "src/consumer.rs",
+    "position": {"column":30,"line":2}
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

@@ -1,226 +1,89 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "1062c57253709fa448ea138e73bd31e1b133104ee9c973bbd716ad0ac6aa9bf6",
-    "outcome": "resolved",
     "items": [
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/origin.ts",
-            "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-            "span": {
-              "start": 0,
-              "end": 25
-            }
-          },
-          "name_span": {
-            "start": 16,
-            "end": 20
-          },
-          "kind": "function"
-        },
+        "complete": true,
+        "excerpt": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
         "relation": "definition",
-        "via": null,
-        "excerpt": {
-          "path": "src/origin.ts",
-          "content": "b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691",
-          "span": {
-            "start": 0,
-            "end": 25
-          }
-        },
-        "start": {
-          "line": 0,
-          "column": 0
+        "start": {"column":0,"line":0},
+        "target": {
+          "declaration": {"content":"b1bc825217bdac49b36283d7a9765182224cc2e10926559973281cec8ea5a691","path":"src/origin.ts","span":{"end":25,"start":0}},
+          "kind": "function",
+          "language": "typescript",
+          "name_span": {"end":20,"start":16}
         },
         "text": "export function work() {}",
-        "complete": true
+        "via": null
       },
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/consumer.ts",
-            "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-            "span": {
-              "start": 77,
-              "end": 136
-            }
-          },
-          "name_span": {
-            "start": 93,
-            "end": 99
-          },
-          "kind": "function"
-        },
+        "complete": true,
+        "excerpt": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":136,"start":77}},
         "relation": "reference",
-        "via": {
-          "path": "src/consumer.ts",
-          "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-          "span": {
-            "start": 108,
-            "end": 115
-          }
-        },
-        "excerpt": {
-          "path": "src/consumer.ts",
-          "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-          "span": {
-            "start": 77,
-            "end": 136
-          }
-        },
-        "start": {
-          "line": 2,
-          "column": 0
+        "start": {"column":0,"line":2},
+        "target": {
+          "declaration": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":136,"start":77}},
+          "kind": "function",
+          "language": "typescript",
+          "name_span": {"end":99,"start":93}
         },
         "text": "export function caller() {\n    execute();\n    api.work();\n}",
-        "complete": true
+        "via": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":115,"start":108}}
       },
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/consumer.ts",
-            "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-            "span": {
-              "start": 239,
-              "end": 259
-            }
-          },
-          "name_span": {
-            "start": 239,
-            "end": 241
-          },
-          "kind": "variable"
-        },
+        "complete": true,
+        "excerpt": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":259,"start":239}},
         "relation": "reference",
-        "via": {
-          "path": "src/consumer.ts",
-          "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-          "span": {
-            "start": 250,
-            "end": 257
-          }
-        },
-        "excerpt": {
-          "path": "src/consumer.ts",
-          "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-          "span": {
-            "start": 239,
-            "end": 259
-          }
-        },
-        "start": {
-          "line": 7,
-          "column": 35
+        "start": {"column":35,"line":7},
+        "target": {
+          "declaration": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":259,"start":239}},
+          "kind": "variable",
+          "language": "typescript",
+          "name_span": {"end":241,"start":239}
         },
         "text": "cb = () => execute()",
-        "complete": true
+        "via": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":257,"start":250}}
       },
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/consumer.ts",
-            "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-            "span": {
-              "start": 291,
-              "end": 323
-            }
-          },
-          "name_span": {
-            "start": 300,
-            "end": 306
-          },
-          "kind": "function"
-        },
+        "complete": true,
+        "excerpt": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":323,"start":291}},
         "relation": "reference",
-        "via": {
-          "path": "src/consumer.ts",
-          "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-          "span": {
-            "start": 311,
-            "end": 318
-          }
-        },
-        "excerpt": {
-          "path": "src/consumer.ts",
-          "content": "be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1",
-          "span": {
-            "start": 291,
-            "end": 323
-          }
-        },
-        "start": {
-          "line": 8,
-          "column": 28
+        "start": {"column":28,"line":8},
+        "target": {
+          "declaration": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":323,"start":291}},
+          "kind": "function",
+          "language": "typescript",
+          "name_span": {"end":306,"start":300}
         },
         "text": "function nested() { execute(); }",
-        "complete": true
+        "via": {"content":"be91222efa32ff15be03789220b22f89e3c98f3e9a4c0cb9fac69aa1cbad16c1","path":"src/consumer.ts","span":{"end":318,"start":311}}
       },
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/view.tsx",
-            "content": "9f7f9b4dfe1efaaad4193efe5a6ef9e206c37557f68a48c02ac5f60857e7bd22",
-            "span": {
-              "start": 47,
-              "end": 103
-            }
-          },
-          "name_span": {
-            "start": 63,
-            "end": 67
-          },
-          "kind": "function"
-        },
+        "complete": true,
+        "excerpt": {"content":"9f7f9b4dfe1efaaad4193efe5a6ef9e206c37557f68a48c02ac5f60857e7bd22","path":"src/view.tsx","span":{"end":103,"start":47}},
         "relation": "reference",
-        "via": {
-          "path": "src/view.tsx",
-          "content": "9f7f9b4dfe1efaaad4193efe5a6ef9e206c37557f68a48c02ac5f60857e7bd22",
-          "span": {
-            "start": 72,
-            "end": 82
-          }
-        },
-        "excerpt": {
-          "path": "src/view.tsx",
-          "content": "9f7f9b4dfe1efaaad4193efe5a6ef9e206c37557f68a48c02ac5f60857e7bd22",
-          "span": {
-            "start": 47,
-            "end": 103
-          }
-        },
-        "start": {
-          "line": 1,
-          "column": 0
+        "start": {"column":0,"line":1},
+        "target": {
+          "declaration": {"content":"9f7f9b4dfe1efaaad4193efe5a6ef9e206c37557f68a48c02ac5f60857e7bd22","path":"src/view.tsx","span":{"end":103,"start":47}},
+          "kind": "function",
+          "language": "typescript",
+          "name_span": {"end":67,"start":63}
         },
         "text": "export function view() { renderTask(); return <main/>; }",
-        "complete": true
+        "via": {"content":"9f7f9b4dfe1efaaad4193efe5a6ef9e206c37557f68a48c02ac5f60857e7bd22","path":"src/view.tsx","span":{"end":82,"start":72}}
       }
     ],
-    "omissions": {
-      "item_limit": 0,
-      "byte_limit": 0,
-      "lookup_limit": 0,
-      "file_limit": 0,
-      "ambiguous": 0,
-      "unavailable": 1,
-      "no_container": 4,
-      "unresolved_imports": 0
-    },
-    "references_by_name": true
-  }
+    "omissions": {"ambiguous":0,"byte_limit":0,"file_limit":0,"item_limit":0,"lookup_limit":0,"no_container":4,"unavailable":1,"unresolved_imports":0},
+    "outcome": "resolved",
+    "references_by_name": true,
+    "snapshot": "1062c57253709fa448ea138e73bd31e1b133104ee9c973bbd716ad0ac6aa9bf6"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

@@ -1,99 +1,41 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "5eed1c1782abdda81e7f7a0454e8cb305d80507a9a4da8281ac020eaf655508e",
-    "outcome": "ambiguous",
     "candidates": [
       {
-        "target": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
-            "span": {
-              "start": 12,
-              "end": 27
-            }
-          },
-          "name_span": {
-            "start": 19,
-            "end": 22
-          },
-          "kind": "function"
-        },
+        "evidence": {"addresses":[{"package":"local_imports","path":["work"]},{"package":"local_imports","path":["a","run"]}]},
         "id": "56b175291930",
         "name": "run",
-        "start": {
-          "line": 1,
-          "column": 4
-        },
-        "evidence": {
-          "addresses": [
-            {
-              "package": "local_imports",
-              "path": [
-                "work"
-              ]
-            },
-            {
-              "package": "local_imports",
-              "path": [
-                "a",
-                "run"
-              ]
-            }
-          ]
+        "start": {"column":4,"line":1},
+        "target": {
+          "declaration": {"content":"6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6","path":"src/lib.rs","span":{"end":27,"start":12}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":22,"start":19}
         }
       },
       {
-        "target": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
-            "span": {
-              "start": 59,
-              "end": 74
-            }
-          },
-          "name_span": {
-            "start": 66,
-            "end": 69
-          },
-          "kind": "function"
-        },
+        "evidence": {"addresses":[{"package":"local_imports","path":["work"]},{"package":"local_imports","path":["b","run"]}]},
         "id": "1ab526dd6af1",
         "name": "run",
-        "start": {
-          "line": 4,
-          "column": 8
-        },
-        "evidence": {
-          "addresses": [
-            {
-              "package": "local_imports",
-              "path": [
-                "work"
-              ]
-            },
-            {
-              "package": "local_imports",
-              "path": [
-                "b",
-                "run"
-              ]
-            }
-          ]
+        "start": {"column":8,"line":4},
+        "target": {
+          "declaration": {"content":"6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6","path":"src/lib.rs","span":{"end":74,"start":59}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":69,"start":66}
         }
       }
-    ]
-  }
+    ],
+    "outcome": "ambiguous",
+    "snapshot": "5eed1c1782abdda81e7f7a0454e8cb305d80507a9a4da8281ac020eaf655508e"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

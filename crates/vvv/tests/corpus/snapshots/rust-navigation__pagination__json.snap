@@ -1,24 +1,15 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
+expression: "JsonSnapshot(&serde_json::to_value(&transcript.replies).unwrap()).to_string()"
 ---
 [
   {
     "result": {
       "items": [
         {
-          "address": {
-            "package": "navigation",
-            "path": [
-              "consumer",
-              "Engine"
-            ]
-          },
+          "address": {"package":"navigation","path":["consumer","Engine"]},
           "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-          "end": {
-            "column": 28,
-            "line": 10
-          },
+          "end": {"column":28,"line":10},
           "id": "8fd2e616dbcc",
           "kind": "type_identifier",
           "language": "rust",
@@ -26,38 +17,15 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 1,
           "path": "src/consumer.rs",
           "role": "declaration",
-          "span": {
-            "end": 242,
-            "start": 236
-          },
-          "start": {
-            "column": 22,
-            "line": 10
-          },
-          "symbol": {
-            "extent": {
-              "end": 248,
-              "start": 231
-            },
-            "kind": "type-alias",
-            "name": "Engine",
-            "name_span": {
-              "end": 242,
-              "start": 236
-            },
-            "span": {
-              "end": 248,
-              "start": 231
-            }
-          },
+          "span": {"end":242,"start":236},
+          "start": {"column":22,"line":10},
+          "symbol": {"extent":{"end":248,"start":231},"kind":"type-alias","name":"Engine","name_span":{"end":242,"start":236},"span":{"end":248,"start":231}},
           "text": "Engine"
         }
       ],
       "kind": "search",
       "next_cursor": "cursor-1",
-      "query": {
-        "pattern": "Engine"
-      },
+      "query": {"pattern":"Engine"},
       "skipped": [],
       "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
@@ -69,18 +37,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
     "result": {
       "items": [
         {
-          "address": {
-            "package": "navigation",
-            "path": [
-              "namespaces",
-              "Engine"
-            ]
-          },
+          "address": {"package":"navigation","path":["namespaces","Engine"]},
           "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
-          "end": {
-            "column": 17,
-            "line": 1
-          },
+          "end": {"column":17,"line":1},
           "id": "5d36cb6b251d",
           "kind": "type_identifier",
           "language": "rust",
@@ -88,52 +47,22 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 2,
           "path": "src/namespaces.rs",
           "role": "declaration",
-          "span": {
-            "end": 43,
-            "start": 37
-          },
-          "start": {
-            "column": 11,
-            "line": 1
-          },
+          "span": {"end":43,"start":37},
+          "start": {"column":11,"line":1},
           "symbol": {
-            "extent": {
-              "end": 63,
-              "start": 26
-            },
+            "extent": {"end":63,"start":26},
             "kind": "struct",
             "name": "Engine",
-            "name_span": {
-              "end": 43,
-              "start": 37
-            },
-            "span": {
-              "end": 63,
-              "start": 26
-            },
-            "visibility": {
-              "span": {
-                "end": 29,
-                "start": 26
-              },
-              "text": "pub"
-            }
+            "name_span": {"end":43,"start":37},
+            "span": {"end":63,"start":26},
+            "visibility": {"span":{"end":29,"start":26},"text":"pub"}
           },
           "text": "Engine"
         },
         {
-          "address": {
-            "package": "navigation",
-            "path": [
-              "origin",
-              "Engine"
-            ]
-          },
+          "address": {"package":"navigation","path":["origin","Engine"]},
           "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-          "end": {
-            "column": 17,
-            "line": 1
-          },
+          "end": {"column":17,"line":1},
           "id": "9d9176e29a8f",
           "kind": "type_identifier",
           "language": "rust",
@@ -141,45 +70,21 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 3,
           "path": "src/origin.rs",
           "role": "declaration",
-          "span": {
-            "end": 36,
-            "start": 30
-          },
-          "start": {
-            "column": 11,
-            "line": 1
-          },
+          "span": {"end":36,"start":30},
+          "start": {"column":11,"line":1},
           "symbol": {
-            "extent": {
-              "end": 63,
-              "start": 0
-            },
+            "extent": {"end":63,"start":0},
             "kind": "struct",
             "name": "Engine",
-            "name_span": {
-              "end": 36,
-              "start": 30
-            },
-            "span": {
-              "end": 63,
-              "start": 19
-            },
-            "visibility": {
-              "span": {
-                "end": 22,
-                "start": 19
-              },
-              "text": "pub"
-            }
+            "name_span": {"end":36,"start":30},
+            "span": {"end":63,"start":19},
+            "visibility": {"span":{"end":22,"start":19},"text":"pub"}
           },
           "text": "Engine"
         },
         {
           "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-          "end": {
-            "column": 10,
-            "line": 5
-          },
+          "end": {"column":10,"line":5},
           "id": "c6ae3da429f0",
           "kind": "identifier",
           "language": "rust",
@@ -187,38 +92,15 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 4,
           "path": "src/origin.rs",
           "role": "declaration",
-          "span": {
-            "end": 91,
-            "start": 85
-          },
-          "start": {
-            "column": 4,
-            "line": 5
-          },
-          "symbol": {
-            "extent": {
-              "end": 91,
-              "start": 85
-            },
-            "kind": "variant",
-            "name": "Engine",
-            "name_span": {
-              "end": 91,
-              "start": 85
-            },
-            "span": {
-              "end": 91,
-              "start": 85
-            }
-          },
+          "span": {"end":91,"start":85},
+          "start": {"column":4,"line":5},
+          "symbol": {"extent":{"end":91,"start":85},"kind":"variant","name":"Engine","name_span":{"end":91,"start":85},"span":{"end":91,"start":85}},
           "text": "Engine"
         }
       ],
       "kind": "search",
       "next_cursor": "cursor-2",
-      "query": {
-        "pattern": "Engine"
-      },
+      "query": {"pattern":"Engine"},
       "skipped": [],
       "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
@@ -230,18 +112,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
     "result": {
       "items": [
         {
-          "address": {
-            "package": "navigation",
-            "path": [
-              "other",
-              "Engine"
-            ]
-          },
+          "address": {"package":"navigation","path":["other","Engine"]},
           "content": "7d5511427a8ff89cdc470bad81d45a4c7ad1752e9216998f8a1419b469b23d48",
-          "end": {
-            "column": 17,
-            "line": 0
-          },
+          "end": {"column":17,"line":0},
           "id": "9a693a45f70b",
           "kind": "type_identifier",
           "language": "rust",
@@ -249,52 +122,22 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 5,
           "path": "src/other.rs",
           "role": "declaration",
-          "span": {
-            "end": 17,
-            "start": 11
-          },
-          "start": {
-            "column": 11,
-            "line": 0
-          },
+          "span": {"end":17,"start":11},
+          "start": {"column":11,"line":0},
           "symbol": {
-            "extent": {
-              "end": 18,
-              "start": 0
-            },
+            "extent": {"end":18,"start":0},
             "kind": "struct",
             "name": "Engine",
-            "name_span": {
-              "end": 17,
-              "start": 11
-            },
-            "span": {
-              "end": 18,
-              "start": 0
-            },
-            "visibility": {
-              "span": {
-                "end": 3,
-                "start": 0
-              },
-              "text": "pub"
-            }
+            "name_span": {"end":17,"start":11},
+            "span": {"end":18,"start":0},
+            "visibility": {"span":{"end":3,"start":0},"text":"pub"}
           },
           "text": "Engine"
         },
         {
-          "address": {
-            "package": "navigation",
-            "path": [
-              "value",
-              "Engine"
-            ]
-          },
+          "address": {"package":"navigation","path":["value","Engine"]},
           "content": "3df39cef199085c83090e083ce506ddea72e6a93d2b6c403dcd5b62297fb707b",
-          "end": {
-            "column": 13,
-            "line": 0
-          },
+          "end": {"column":13,"line":0},
           "id": "c66ec9c5b480",
           "kind": "identifier",
           "language": "rust",
@@ -302,45 +145,21 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 6,
           "path": "src/value.rs",
           "role": "declaration",
-          "span": {
-            "end": 13,
-            "start": 7
-          },
-          "start": {
-            "column": 7,
-            "line": 0
-          },
+          "span": {"end":13,"start":7},
+          "start": {"column":7,"line":0},
           "symbol": {
-            "extent": {
-              "end": 18,
-              "start": 0
-            },
+            "extent": {"end":18,"start":0},
             "kind": "function",
             "name": "Engine",
-            "name_span": {
-              "end": 13,
-              "start": 7
-            },
-            "span": {
-              "end": 18,
-              "start": 0
-            },
-            "visibility": {
-              "span": {
-                "end": 3,
-                "start": 0
-              },
-              "text": "pub"
-            }
+            "name_span": {"end":13,"start":7},
+            "span": {"end":18,"start":0},
+            "visibility": {"span":{"end":3,"start":0},"text":"pub"}
           },
           "text": "Engine"
         },
         {
           "content": "e420a8d9135d3e61beda41bcb2da44f883045decfc8cad4218d6db2946cb337b",
-          "end": {
-            "column": 31,
-            "line": 2
-          },
+          "end": {"column":31,"line":2},
           "id": "df75cf35c201",
           "kind": "type_identifier",
           "language": "rust",
@@ -348,22 +167,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 7,
           "path": "src/ambiguous.rs",
           "role": "use",
-          "span": {
-            "end": 74,
-            "start": 68
-          },
-          "start": {
-            "column": 25,
-            "line": 2
-          },
+          "span": {"end":74,"start":68},
+          "start": {"column":25,"line":2},
           "text": "Engine"
         }
       ],
       "kind": "search",
       "next_cursor": "cursor-3",
-      "query": {
-        "pattern": "Engine"
-      },
+      "query": {"pattern":"Engine"},
       "skipped": [],
       "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
@@ -376,10 +187,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
-          "end": {
-            "column": 25,
-            "line": 3
-          },
+          "end": {"column":25,"line":3},
           "id": "4963ef949cb8",
           "kind": "identifier",
           "language": "rust",
@@ -387,22 +195,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 8,
           "path": "src/bindings.rs",
           "role": "import",
-          "span": {
-            "end": 236,
-            "start": 230
-          },
-          "start": {
-            "column": 19,
-            "line": 3
-          },
+          "span": {"end":236,"start":230},
+          "start": {"column":19,"line":3},
           "text": "Engine"
         },
         {
           "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
-          "end": {
-            "column": 35,
-            "line": 4
-          },
+          "end": {"column":35,"line":4},
           "id": "73ed69618dfd",
           "kind": "type_identifier",
           "language": "rust",
@@ -410,22 +209,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 9,
           "path": "src/bindings.rs",
           "role": "use",
-          "span": {
-            "end": 273,
-            "start": 267
-          },
-          "start": {
-            "column": 29,
-            "line": 4
-          },
+          "span": {"end":273,"start":267},
+          "start": {"column":29,"line":4},
           "text": "Engine"
         },
         {
           "content": "8eb2342d1e853309ccf6137ee0a9a61988957d9370d794e1512409c007aa10e9",
-          "end": {
-            "column": 29,
-            "line": 0
-          },
+          "end": {"column":29,"line":0},
           "id": "4ddbebae970a",
           "kind": "identifier",
           "language": "rust",
@@ -433,22 +223,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 10,
           "path": "src/bridge.rs",
           "role": "import",
-          "span": {
-            "end": 29,
-            "start": 23
-          },
-          "start": {
-            "column": 23,
-            "line": 0
-          },
+          "span": {"end":29,"start":23},
+          "start": {"column":23,"line":0},
           "text": "Engine"
         }
       ],
       "kind": "search",
       "next_cursor": "cursor-4",
-      "query": {
-        "pattern": "Engine"
-      },
+      "query": {"pattern":"Engine"},
       "skipped": [],
       "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
@@ -461,10 +243,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-          "end": {
-            "column": 25,
-            "line": 1
-          },
+          "end": {"column":25,"line":1},
           "id": "8d378e625e04",
           "kind": "identifier",
           "language": "rust",
@@ -472,22 +251,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 11,
           "path": "src/consumer.rs",
           "role": "import",
-          "span": {
-            "end": 53,
-            "start": 47
-          },
-          "start": {
-            "column": 19,
-            "line": 1
-          },
+          "span": {"end":53,"start":47},
+          "start": {"column":19,"line":1},
           "text": "Engine"
         },
         {
           "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-          "end": {
-            "column": 18,
-            "line": 4
-          },
+          "end": {"column":18,"line":4},
           "id": "17ec32a07de2",
           "kind": "type_identifier",
           "language": "rust",
@@ -495,22 +265,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 12,
           "path": "src/consumer.rs",
           "role": "use",
-          "span": {
-            "end": 91,
-            "start": 85
-          },
-          "start": {
-            "column": 12,
-            "line": 4
-          },
+          "span": {"end":91,"start":85},
+          "start": {"column":12,"line":4},
           "text": "Engine"
         },
         {
           "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-          "end": {
-            "column": 31,
-            "line": 8
-          },
+          "end": {"column":31,"line":8},
           "id": "03429ce66df7",
           "kind": "type_identifier",
           "language": "rust",
@@ -518,22 +279,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 13,
           "path": "src/consumer.rs",
           "role": "use",
-          "span": {
-            "end": 149,
-            "start": 143
-          },
-          "start": {
-            "column": 25,
-            "line": 8
-          },
+          "span": {"end":149,"start":143},
+          "start": {"column":25,"line":8},
           "text": "Engine"
         }
       ],
       "kind": "search",
       "next_cursor": "cursor-5",
-      "query": {
-        "pattern": "Engine"
-      },
+      "query": {"pattern":"Engine"},
       "skipped": [],
       "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
@@ -546,10 +299,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-          "end": {
-            "column": 42,
-            "line": 8
-          },
+          "end": {"column":42,"line":8},
           "id": "a59a40673165",
           "kind": "type_identifier",
           "language": "rust",
@@ -557,22 +307,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 14,
           "path": "src/consumer.rs",
           "role": "use",
-          "span": {
-            "end": 160,
-            "start": 154
-          },
-          "start": {
-            "column": 36,
-            "line": 8
-          },
+          "span": {"end":160,"start":154},
+          "start": {"column":36,"line":8},
           "text": "Engine"
         },
         {
           "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-          "end": {
-            "column": 21,
-            "line": 9
-          },
+          "end": {"column":21,"line":9},
           "id": "6eecc55f507e",
           "kind": "type_identifier",
           "language": "rust",
@@ -580,22 +321,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 15,
           "path": "src/consumer.rs",
           "role": "use",
-          "span": {
-            "end": 193,
-            "start": 187
-          },
-          "start": {
-            "column": 15,
-            "line": 9
-          },
+          "span": {"end":193,"start":187},
+          "start": {"column":15,"line":9},
           "text": "Engine"
         },
         {
           "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-          "end": {
-            "column": 37,
-            "line": 9
-          },
+          "end": {"column":37,"line":9},
           "id": "b264ba6d6157",
           "kind": "type_identifier",
           "language": "rust",
@@ -603,22 +335,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 16,
           "path": "src/consumer.rs",
           "role": "use",
-          "span": {
-            "end": 209,
-            "start": 203
-          },
-          "start": {
-            "column": 31,
-            "line": 9
-          },
+          "span": {"end":209,"start":203},
+          "start": {"column":31,"line":9},
           "text": "Engine"
         }
       ],
       "kind": "search",
       "next_cursor": "cursor-6",
-      "query": {
-        "pattern": "Engine"
-      },
+      "query": {"pattern":"Engine"},
       "skipped": [],
       "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
@@ -631,10 +355,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-          "end": {
-            "column": 52,
-            "line": 10
-          },
+          "end": {"column":52,"line":10},
           "id": "667df796c88c",
           "kind": "type_identifier",
           "language": "rust",
@@ -642,22 +363,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 17,
           "path": "src/consumer.rs",
           "role": "use",
-          "span": {
-            "end": 266,
-            "start": 260
-          },
-          "start": {
-            "column": 46,
-            "line": 10
-          },
+          "span": {"end":266,"start":260},
+          "start": {"column":46,"line":10},
           "text": "Engine"
         },
         {
           "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-          "end": {
-            "column": 36,
-            "line": 11
-          },
+          "end": {"column":36,"line":11},
           "id": "7915766815d1",
           "kind": "type_identifier",
           "language": "rust",
@@ -665,22 +377,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 18,
           "path": "src/consumer.rs",
           "role": "use",
-          "span": {
-            "end": 311,
-            "start": 305
-          },
-          "start": {
-            "column": 30,
-            "line": 11
-          },
+          "span": {"end":311,"start":305},
+          "start": {"column":30,"line":11},
           "text": "Engine"
         },
         {
           "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-          "end": {
-            "column": 39,
-            "line": 13
-          },
+          "end": {"column":39,"line":13},
           "id": "cd4fffeff4a0",
           "kind": "type_identifier",
           "language": "rust",
@@ -688,22 +391,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 19,
           "path": "src/consumer.rs",
           "role": "use",
-          "span": {
-            "end": 356,
-            "start": 350
-          },
-          "start": {
-            "column": 33,
-            "line": 13
-          },
+          "span": {"end":356,"start":350},
+          "start": {"column":33,"line":13},
           "text": "Engine"
         }
       ],
       "kind": "search",
       "next_cursor": "cursor-7",
-      "query": {
-        "pattern": "Engine"
-      },
+      "query": {"pattern":"Engine"},
       "skipped": [],
       "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
@@ -716,10 +411,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-          "end": {
-            "column": 50,
-            "line": 13
-          },
+          "end": {"column":50,"line":13},
           "id": "628d040d837d",
           "kind": "type_identifier",
           "language": "rust",
@@ -727,22 +419,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 20,
           "path": "src/consumer.rs",
           "role": "use",
-          "span": {
-            "end": 367,
-            "start": 361
-          },
-          "start": {
-            "column": 44,
-            "line": 13
-          },
+          "span": {"end":367,"start":361},
+          "start": {"column":44,"line":13},
           "text": "Engine"
         },
         {
           "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-          "end": {
-            "column": 25,
-            "line": 0
-          },
+          "end": {"column":25,"line":0},
           "id": "d59edacd32ca",
           "kind": "identifier",
           "language": "rust",
@@ -750,22 +433,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 21,
           "path": "src/lexical.rs",
           "role": "import",
-          "span": {
-            "end": 25,
-            "start": 19
-          },
-          "start": {
-            "column": 19,
-            "line": 0
-          },
+          "span": {"end":25,"start":19},
+          "start": {"column":19,"line":0},
           "text": "Engine"
         },
         {
           "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-          "end": {
-            "column": 17,
-            "line": 1
-          },
+          "end": {"column":17,"line":1},
           "id": "12ec6ddf5daf",
           "kind": "type_identifier",
           "language": "rust",
@@ -773,22 +447,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 22,
           "path": "src/lexical.rs",
           "role": "use",
-          "span": {
-            "end": 44,
-            "start": 38
-          },
-          "start": {
-            "column": 11,
-            "line": 1
-          },
+          "span": {"end":44,"start":38},
+          "start": {"column":11,"line":1},
           "text": "Engine"
         }
       ],
       "kind": "search",
       "next_cursor": "cursor-8",
-      "query": {
-        "pattern": "Engine"
-      },
+      "query": {"pattern":"Engine"},
       "skipped": [],
       "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
@@ -801,10 +467,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-          "end": {
-            "column": 32,
-            "line": 1
-          },
+          "end": {"column":32,"line":1},
           "id": "6ce959c3f0c3",
           "kind": "type_identifier",
           "language": "rust",
@@ -812,22 +475,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 23,
           "path": "src/lexical.rs",
           "role": "use",
-          "span": {
-            "end": 59,
-            "start": 53
-          },
-          "start": {
-            "column": 26,
-            "line": 1
-          },
+          "span": {"end":59,"start":53},
+          "start": {"column":26,"line":1},
           "text": "Engine"
         },
         {
           "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-          "end": {
-            "column": 43,
-            "line": 1
-          },
+          "end": {"column":43,"line":1},
           "id": "cac1a4f68908",
           "kind": "type_identifier",
           "language": "rust",
@@ -835,22 +489,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 24,
           "path": "src/lexical.rs",
           "role": "use",
-          "span": {
-            "end": 70,
-            "start": 64
-          },
-          "start": {
-            "column": 37,
-            "line": 1
-          },
+          "span": {"end":70,"start":64},
+          "start": {"column":37,"line":1},
           "text": "Engine"
         },
         {
           "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-          "end": {
-            "column": 23,
-            "line": 2
-          },
+          "end": {"column":23,"line":2},
           "id": "ccdba78166d1",
           "kind": "type_identifier",
           "language": "rust",
@@ -858,22 +503,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 25,
           "path": "src/lexical.rs",
           "role": "use",
-          "span": {
-            "end": 104,
-            "start": 98
-          },
-          "start": {
-            "column": 17,
-            "line": 2
-          },
+          "span": {"end":104,"start":98},
+          "start": {"column":17,"line":2},
           "text": "Engine"
         }
       ],
       "kind": "search",
       "next_cursor": "cursor-9",
-      "query": {
-        "pattern": "Engine"
-      },
+      "query": {"pattern":"Engine"},
       "skipped": [],
       "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
@@ -886,10 +523,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-          "end": {
-            "column": 29,
-            "line": 8
-          },
+          "end": {"column":29,"line":8},
           "id": "3793dd625e3a",
           "kind": "type_identifier",
           "language": "rust",
@@ -897,22 +531,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 26,
           "path": "src/lexical.rs",
           "role": "use",
-          "span": {
-            "end": 273,
-            "start": 267
-          },
-          "start": {
-            "column": 23,
-            "line": 8
-          },
+          "span": {"end":273,"start":267},
+          "start": {"column":23,"line":8},
           "text": "Engine"
         },
         {
           "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
-          "end": {
-            "column": 24,
-            "line": 0
-          },
+          "end": {"column":24,"line":0},
           "id": "0d24ffdea591",
           "kind": "identifier",
           "language": "rust",
@@ -920,22 +545,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 27,
           "path": "src/namespaces.rs",
           "role": "import",
-          "span": {
-            "end": 24,
-            "start": 18
-          },
-          "start": {
-            "column": 18,
-            "line": 0
-          },
+          "span": {"end":24,"start":18},
+          "start": {"column":18,"line":0},
           "text": "Engine"
         },
         {
           "content": "5bde38aedca273201a832245af812270e28db8d9c83ee48336ee24d793ccf0a3",
-          "end": {
-            "column": 24,
-            "line": 2
-          },
+          "end": {"column":24,"line":2},
           "id": "f204ed27bc18",
           "kind": "type_identifier",
           "language": "rust",
@@ -943,22 +559,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 28,
           "path": "src/namespaces.rs",
           "role": "use",
-          "span": {
-            "end": 88,
-            "start": 82
-          },
-          "start": {
-            "column": 18,
-            "line": 2
-          },
+          "span": {"end":88,"start":82},
+          "start": {"column":18,"line":2},
           "text": "Engine"
         }
       ],
       "kind": "search",
       "next_cursor": "cursor-10",
-      "query": {
-        "pattern": "Engine"
-      },
+      "query": {"pattern":"Engine"},
       "skipped": [],
       "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
@@ -971,10 +579,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "content": "5ee24e1ff338c2074c7395bc3ac0ada65dd3921c9220d11fe7cdfbc4b63a0d58",
-          "end": {
-            "column": 25,
-            "line": 0
-          },
+          "end": {"column":25,"line":0},
           "id": "293496a39450",
           "kind": "identifier",
           "language": "rust",
@@ -982,22 +587,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 29,
           "path": "src/test/check.rs",
           "role": "import",
-          "span": {
-            "end": 25,
-            "start": 19
-          },
-          "start": {
-            "column": 19,
-            "line": 0
-          },
+          "span": {"end":25,"start":19},
+          "start": {"column":19,"line":0},
           "text": "Engine"
         },
         {
           "content": "5ee24e1ff338c2074c7395bc3ac0ada65dd3921c9220d11fe7cdfbc4b63a0d58",
-          "end": {
-            "column": 24,
-            "line": 1
-          },
+          "end": {"column":24,"line":1},
           "id": "12b65243b9f7",
           "kind": "type_identifier",
           "language": "rust",
@@ -1005,22 +601,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 30,
           "path": "src/test/check.rs",
           "role": "use",
-          "span": {
-            "end": 51,
-            "start": 45
-          },
-          "start": {
-            "column": 18,
-            "line": 1
-          },
+          "span": {"end":51,"start":45},
+          "start": {"column":18,"line":1},
           "text": "Engine"
         }
       ],
       "kind": "search",
       "next_cursor": null,
-      "query": {
-        "pattern": "Engine"
-      },
+      "query": {"pattern":"Engine"},
       "skipped": [],
       "snapshot": "fab4bcbd91f03da2012041100e74e345bb8855ebd89bb332e58f0a61f1458b2e",
       "total_items": 30
@@ -1033,35 +621,15 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "complete": true,
-          "excerpt": {
-            "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-            "path": "src/origin.rs",
-            "span": {
-              "end": 63,
-              "start": 0
-            }
-          },
+          "excerpt": {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/origin.rs","span":{"end":63,"start":0}},
           "expansion": null,
           "relation": "definition",
-          "start": {
-            "column": 0,
-            "line": 0
-          },
+          "start": {"column":0,"line":0},
           "target": {
-            "declaration": {
-              "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-              "path": "src/origin.rs",
-              "span": {
-                "end": 63,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/origin.rs","span":{"end":63,"start":0}},
             "kind": "struct",
             "language": "rust",
-            "name_span": {
-              "end": 36,
-              "start": 30
-            }
+            "name_span": {"end":36,"start":30}
           },
           "text": "/// Runtime state.\npub struct Engine {\n    pub running: bool,\n}",
           "via": null
@@ -1073,16 +641,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 0,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 0,
-        "lookups": 0
-      }
+      "unresolved": {"ambiguous":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":0,"lookups":0}
     },
     "schema": 1,
     "status": "ok"
@@ -1092,45 +652,18 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "complete": true,
-          "excerpt": {
-            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
-            "path": "src/bindings.rs",
-            "span": {
-              "end": 276,
-              "start": 238
-            }
-          },
+          "excerpt": {"content":"44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658","path":"src/bindings.rs","span":{"end":276,"start":238}},
           "expansion": null,
           "relation": "reference",
-          "start": {
-            "column": 0,
-            "line": 4
-          },
+          "start": {"column":0,"line":4},
           "target": {
-            "declaration": {
-              "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
-              "path": "src/bindings.rs",
-              "span": {
-                "end": 276,
-                "start": 238
-              }
-            },
+            "declaration": {"content":"44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658","path":"src/bindings.rs","span":{"end":276,"start":238}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 250,
-              "start": 241
-            }
+            "name_span": {"end":250,"start":241}
           },
           "text": "fn annotated() { let engine: Engine; }",
-          "via": {
-            "content": "44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658",
-            "path": "src/bindings.rs",
-            "span": {
-              "end": 273,
-              "start": 267
-            }
-          }
+          "via": {"content":"44641e568198818e01f49e69f4f22236dcc6dd7ccf446ae61b93ffd62ea17658","path":"src/bindings.rs","span":{"end":273,"start":267}}
         }
       ],
       "kind": "context",
@@ -1139,16 +672,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 1,
-        "no_container": 1,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 2,
-        "lookups": 4
-      }
+      "unresolved": {"ambiguous":1,"no_container":1,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":2,"lookups":4}
     },
     "schema": 1,
     "status": "ok"
@@ -1162,16 +687,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 2,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 2,
-        "lookups": 4
-      }
+      "unresolved": {"ambiguous":0,"no_container":2,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":2,"lookups":4}
     },
     "schema": 1,
     "status": "ok"
@@ -1181,87 +698,33 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "complete": true,
-          "excerpt": {
-            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 91,
-              "start": 77
-            }
-          },
+          "excerpt": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":91,"start":77}},
           "expansion": null,
           "relation": "reference",
-          "start": {
-            "column": 4,
-            "line": 4
-          },
+          "start": {"column":4,"line":4},
           "target": {
-            "declaration": {
-              "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-              "path": "src/consumer.rs",
-              "span": {
-                "end": 91,
-                "start": 77
-              }
-            },
+            "declaration": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":91,"start":77}},
             "kind": "field",
             "language": "rust",
-            "name_span": {
-              "end": 83,
-              "start": 77
-            }
+            "name_span": {"end":83,"start":77}
           },
           "text": "engine: Engine",
-          "via": {
-            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 91,
-              "start": 85
-            }
-          }
+          "via": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":91,"start":85}}
         },
         {
           "complete": true,
-          "excerpt": {
-            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 113,
-              "start": 97
-            }
-          },
+          "excerpt": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":113,"start":97}},
           "expansion": null,
           "relation": "reference",
-          "start": {
-            "column": 4,
-            "line": 5
-          },
+          "start": {"column":4,"line":5},
           "target": {
-            "declaration": {
-              "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-              "path": "src/consumer.rs",
-              "span": {
-                "end": 113,
-                "start": 97
-              }
-            },
+            "declaration": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":113,"start":97}},
             "kind": "field",
             "language": "rust",
-            "name_span": {
-              "end": 104,
-              "start": 97
-            }
+            "name_span": {"end":104,"start":97}
           },
           "text": "runtime: Runtime",
-          "via": {
-            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 113,
-              "start": 106
-            }
-          }
+          "via": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":113,"start":106}}
         }
       ],
       "kind": "context",
@@ -1270,16 +733,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 2,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 1,
-        "lookups": 4
-      }
+      "unresolved": {"ambiguous":0,"no_container":2,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":1,"lookups":4}
     },
     "schema": 1,
     "status": "ok"
@@ -1289,45 +744,18 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "complete": true,
-          "excerpt": {
-            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 171,
-              "start": 118
-            }
-          },
+          "excerpt": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":171,"start":118}},
           "expansion": null,
           "relation": "reference",
-          "start": {
-            "column": 0,
-            "line": 8
-          },
+          "start": {"column":0,"line":8},
           "target": {
-            "declaration": {
-              "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-              "path": "src/consumer.rs",
-              "span": {
-                "end": 171,
-                "start": 118
-              }
-            },
+            "declaration": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":171,"start":118}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 134,
-              "start": 125
-            }
+            "name_span": {"end":134,"start":125}
           },
           "text": "pub fn roundtrip(engine: Engine) -> Engine { engine }",
-          "via": {
-            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 149,
-              "start": 143
-            }
-          }
+          "via": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":149,"start":143}}
         }
       ],
       "kind": "context",
@@ -1336,16 +764,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 0,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 1,
-        "lookups": 4
-      }
+      "unresolved": {"ambiguous":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":1,"lookups":4}
     },
     "schema": 1,
     "status": "ok"
@@ -1355,87 +775,33 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "complete": true,
-          "excerpt": {
-            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 315,
-              "start": 274
-            }
-          },
+          "excerpt": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":315,"start":274}},
           "expansion": null,
           "relation": "reference",
-          "start": {
-            "column": 0,
-            "line": 11
-          },
+          "start": {"column":0,"line":11},
           "target": {
-            "declaration": {
-              "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-              "path": "src/consumer.rs",
-              "span": {
-                "end": 315,
-                "start": 274
-              }
-            },
+            "declaration": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":315,"start":274}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 288,
-              "start": 281
-            }
+            "name_span": {"end":288,"start":281}
           },
           "text": "pub fn unicode(é: u8, engine: Engine) {}",
-          "via": {
-            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 311,
-              "start": 305
-            }
-          }
+          "via": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":311,"start":305}}
         },
         {
           "complete": true,
-          "excerpt": {
-            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 378,
-              "start": 328
-            }
-          },
+          "excerpt": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":378,"start":328}},
           "expansion": null,
           "relation": "reference",
-          "start": {
-            "column": 11,
-            "line": 13
-          },
+          "start": {"column":11,"line":13},
           "target": {
-            "declaration": {
-              "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-              "path": "src/consumer.rs",
-              "span": {
-                "end": 378,
-                "start": 328
-              }
-            },
+            "declaration": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":378,"start":328}},
             "kind": "method",
             "language": "rust",
-            "name_span": {
-              "end": 341,
-              "start": 335
-            }
+            "name_span": {"end":341,"start":335}
           },
           "text": "pub fn method(engine: Engine) -> Engine { engine }",
-          "via": {
-            "content": "039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 356,
-              "start": 350
-            }
-          }
+          "via": {"content":"039fc516b30a009fca8d9923ab6630baf2fbe3b4fc687af801d255cdb30b3b97","path":"src/consumer.rs","span":{"end":356,"start":350}}
         }
       ],
       "kind": "context",
@@ -1444,16 +810,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 0,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 1,
-        "lookups": 4
-      }
+      "unresolved": {"ambiguous":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":1,"lookups":4}
     },
     "schema": 1,
     "status": "ok"
@@ -1467,16 +825,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 0,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 2,
-        "lookups": 1
-      }
+      "unresolved": {"ambiguous":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":2,"lookups":1}
     },
     "schema": 1,
     "status": "ok"
@@ -1490,16 +840,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 0,
-        "unavailable": 0,
-        "unresolved_imports": 1
-      },
-      "work": {
-        "files": 2,
-        "lookups": 1
-      }
+      "unresolved": {"ambiguous":0,"no_container":0,"unavailable":0,"unresolved_imports":1},
+      "work": {"files":2,"lookups":1}
     },
     "schema": 1,
     "status": "ok"
@@ -1513,16 +855,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 1,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 1,
-        "lookups": 4
-      }
+      "unresolved": {"ambiguous":0,"no_container":1,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":1,"lookups":4}
     },
     "schema": 1,
     "status": "ok"
@@ -1532,87 +866,33 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "complete": true,
-          "excerpt": {
-            "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-            "path": "src/lexical.rs",
-            "span": {
-              "end": 191,
-              "start": 81
-            }
-          },
+          "excerpt": {"content":"0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588","path":"src/lexical.rs","span":{"end":191,"start":81}},
           "expansion": null,
           "relation": "reference",
-          "start": {
-            "column": 0,
-            "line": 2
-          },
+          "start": {"column":0,"line":2},
           "target": {
-            "declaration": {
-              "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-              "path": "src/lexical.rs",
-              "span": {
-                "end": 191,
-                "start": 81
-              }
-            },
+            "declaration": {"content":"0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588","path":"src/lexical.rs","span":{"end":191,"start":81}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 90,
-              "start": 84
-            }
+            "name_span": {"end":90,"start":84}
           },
           "text": "fn shadow(value: Engine) {\n    let value = value;\n    { let value = 1; consume(value); }\n    consume(value);\n}",
-          "via": {
-            "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-            "path": "src/lexical.rs",
-            "span": {
-              "end": 104,
-              "start": 98
-            }
-          }
+          "via": {"content":"0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588","path":"src/lexical.rs","span":{"end":104,"start":98}}
         },
         {
           "complete": true,
-          "excerpt": {
-            "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-            "path": "src/lexical.rs",
-            "span": {
-              "end": 319,
-              "start": 244
-            }
-          },
+          "excerpt": {"content":"0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588","path":"src/lexical.rs","span":{"end":319,"start":244}},
           "expansion": null,
           "relation": "reference",
-          "start": {
-            "column": 0,
-            "line": 8
-          },
+          "start": {"column":0,"line":8},
           "target": {
-            "declaration": {
-              "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-              "path": "src/lexical.rs",
-              "span": {
-                "end": 319,
-                "start": 244
-              }
-            },
+            "declaration": {"content":"0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588","path":"src/lexical.rs","span":{"end":319,"start":244}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 259,
-              "start": 247
-            }
+            "name_span": {"end":259,"start":247}
           },
           "text": "fn destructured(value: Engine, (left, right): (u8, u8)) { consume(value); }",
-          "via": {
-            "content": "0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588",
-            "path": "src/lexical.rs",
-            "span": {
-              "end": 273,
-              "start": 267
-            }
-          }
+          "via": {"content":"0c5e8934c1254ba511b058d5041744ab39430dcb64cb2bde1668c3ce6a93f588","path":"src/lexical.rs","span":{"end":273,"start":267}}
         }
       ],
       "kind": "context",
@@ -1621,16 +901,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 0,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 1,
-        "lookups": 2
-      }
+      "unresolved": {"ambiguous":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":1,"lookups":2}
     },
     "schema": 1,
     "status": "ok"
@@ -1644,16 +916,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 0,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 2,
-        "lookups": 0
-      }
+      "unresolved": {"ambiguous":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":2,"lookups":0}
     },
     "schema": 1,
     "status": "ok"
@@ -1667,16 +931,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 0,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 2,
-        "lookups": 4
-      }
+      "unresolved": {"ambiguous":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":2,"lookups":4}
     },
     "schema": 1,
     "status": "ok"
@@ -1690,16 +946,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 0,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 2,
-        "lookups": 1
-      }
+      "unresolved": {"ambiguous":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":2,"lookups":1}
     },
     "schema": 1,
     "status": "ok"
@@ -1709,45 +957,18 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "complete": true,
-          "excerpt": {
-            "content": "5ee24e1ff338c2074c7395bc3ac0ada65dd3921c9220d11fe7cdfbc4b63a0d58",
-            "path": "src/test/check.rs",
-            "span": {
-              "end": 55,
-              "start": 27
-            }
-          },
+          "excerpt": {"content":"5ee24e1ff338c2074c7395bc3ac0ada65dd3921c9220d11fe7cdfbc4b63a0d58","path":"src/test/check.rs","span":{"end":55,"start":27}},
           "expansion": null,
           "relation": "reference_in_test_path",
-          "start": {
-            "column": 0,
-            "line": 1
-          },
+          "start": {"column":0,"line":1},
           "target": {
-            "declaration": {
-              "content": "5ee24e1ff338c2074c7395bc3ac0ada65dd3921c9220d11fe7cdfbc4b63a0d58",
-              "path": "src/test/check.rs",
-              "span": {
-                "end": 55,
-                "start": 27
-              }
-            },
+            "declaration": {"content":"5ee24e1ff338c2074c7395bc3ac0ada65dd3921c9220d11fe7cdfbc4b63a0d58","path":"src/test/check.rs","span":{"end":55,"start":27}},
             "kind": "function",
             "language": "rust",
-            "name_span": {
-              "end": 37,
-              "start": 30
-            }
+            "name_span": {"end":37,"start":30}
           },
           "text": "fn related(value: Engine) {}",
-          "via": {
-            "content": "5ee24e1ff338c2074c7395bc3ac0ada65dd3921c9220d11fe7cdfbc4b63a0d58",
-            "path": "src/test/check.rs",
-            "span": {
-              "end": 51,
-              "start": 45
-            }
-          }
+          "via": {"content":"5ee24e1ff338c2074c7395bc3ac0ada65dd3921c9220d11fe7cdfbc4b63a0d58","path":"src/test/check.rs","span":{"end":51,"start":45}}
         }
       ],
       "kind": "context",
@@ -1756,16 +977,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "437ce7218c9bdb2bc745dbcbf4a943feb20ccd3718b19ff2ffa6d4f7b0066241",
       "traversal_complete": true,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 1,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 2,
-        "lookups": 3
-      }
+      "unresolved": {"ambiguous":0,"no_container":1,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":2,"lookups":3}
     },
     "schema": 1,
     "status": "ok"

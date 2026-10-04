@@ -1,13 +1,8 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 1
 --- stdout ---
-{
-  "status": "error",
-  "schema": 1,
-  "code": "bad_selection",
-  "message": "no match numbered 3; the search found 2"
-}
+{"code":"bad_selection","message":"no match numbered 3; the search found 2","schema":1,"status":"error"}
 --- stderr ---

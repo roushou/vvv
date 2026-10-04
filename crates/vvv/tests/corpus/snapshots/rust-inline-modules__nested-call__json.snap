@@ -1,72 +1,31 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "be9a2d0650d4b2f0fa0e7e4e703538d2b6c555ae0a728746938bffb4ba7cb9a0",
-    "outcome": "resolved",
-    "target": {
+    "container": {
+      "declaration": {"content":"1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a","path":"src/lib.rs","span":{"end":198,"start":146}},
+      "kind": "function",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a",
-        "span": {
-          "start": 146,
-          "end": 198
-        }
-      },
-      "name_span": {
-        "start": 153,
-        "end": 157
-      },
-      "kind": "function"
+      "name_span": {"end":157,"start":153}
     },
+    "evidence": {"addresses":[{"package":"inline_navigation","path":["inline","nested","make"]},{"package":"inline_navigation","path":["inline","make"]}]},
     "id": "8b3d9c1f79ee",
     "name": "make",
-    "start": {
-      "line": 5,
-      "column": 4
-    },
-    "evidence": {
-      "addresses": [
-        {
-          "package": "inline_navigation",
-          "path": [
-            "inline",
-            "nested",
-            "make"
-          ]
-        },
-        {
-          "package": "inline_navigation",
-          "path": [
-            "inline",
-            "make"
-          ]
-        }
-      ]
-    },
-    "container": {
+    "outcome": "resolved",
+    "snapshot": "be9a2d0650d4b2f0fa0e7e4e703538d2b6c555ae0a728746938bffb4ba7cb9a0",
+    "start": {"column":4,"line":5},
+    "target": {
+      "declaration": {"content":"1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a","path":"src/lib.rs","span":{"end":198,"start":146}},
+      "kind": "function",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a",
-        "span": {
-          "start": 146,
-          "end": 198
-        }
-      },
-      "name_span": {
-        "start": 153,
-        "end": 157
-      },
-      "kind": "function"
+      "name_span": {"end":157,"start":153}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

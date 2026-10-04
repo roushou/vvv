@@ -1,73 +1,37 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "9baf7343dcd8e2e7cc64f444ca563669a84fdfe45564f3feb8f171df3f1be109",
-    "outcome": "resolved",
     "items": [
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/signatures.ts",
-            "content": "39e33edb490eed44c6a1b7d87db97f505968081dd685540b3a442f73684a146a",
-            "span": {
-              "start": 171,
-              "end": 220
-            }
-          },
-          "name_span": {
-            "start": 184,
-            "end": 191
-          },
-          "kind": "variable"
-        },
-        "relation": "definition",
-        "via": null,
-        "excerpt": {
-          "path": "src/signatures.ts",
-          "content": "39e33edb490eed44c6a1b7d87db97f505968081dd685540b3a442f73684a146a",
-          "span": {
-            "start": 171,
-            "end": 199
-          }
-        },
-        "start": {
-          "line": 4,
-          "column": 0
-        },
-        "text": "export const factory = () =>",
         "complete": true,
+        "excerpt": {"content":"39e33edb490eed44c6a1b7d87db97f505968081dd685540b3a442f73684a146a","path":"src/signatures.ts","span":{"end":199,"start":171}},
+        "relation": "definition",
         "signature": {
           "outcome": "available",
-          "requested": {
-            "path": "src/signatures.ts",
-            "content": "39e33edb490eed44c6a1b7d87db97f505968081dd685540b3a442f73684a146a",
-            "span": {
-              "start": 171,
-              "end": 199
-            }
-          }
-        }
+          "requested": {"content":"39e33edb490eed44c6a1b7d87db97f505968081dd685540b3a442f73684a146a","path":"src/signatures.ts","span":{"end":199,"start":171}}
+        },
+        "start": {"column":0,"line":4},
+        "target": {
+          "declaration": {"content":"39e33edb490eed44c6a1b7d87db97f505968081dd685540b3a442f73684a146a","path":"src/signatures.ts","span":{"end":220,"start":171}},
+          "kind": "variable",
+          "language": "typescript",
+          "name_span": {"end":191,"start":184}
+        },
+        "text": "export const factory = () =>",
+        "via": null
       }
     ],
-    "omissions": {
-      "item_limit": 0,
-      "byte_limit": 0,
-      "lookup_limit": 0,
-      "file_limit": 0,
-      "ambiguous": 0,
-      "unavailable": 0,
-      "no_container": 0,
-      "unresolved_imports": 0
-    },
-    "references_by_name": false
-  }
+    "omissions": {"ambiguous":0,"byte_limit":0,"file_limit":0,"item_limit":0,"lookup_limit":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+    "outcome": "resolved",
+    "references_by_name": false,
+    "snapshot": "9baf7343dcd8e2e7cc64f444ca563669a84fdfe45564f3feb8f171df3f1be109"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

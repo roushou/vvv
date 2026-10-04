@@ -1,80 +1,42 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
     "name": "area",
     "sites": [
       {
+        "address": {"package":"","path":["src","util.ts","area"]},
         "declaration": {
+          "address": {"package":"","path":["src","util.ts","area"]},
           "content": "d7846b5e7265a7381f2c3cb20f74bd308ba7731226d103105d22b714c8d9c4db",
+          "end": {"column":1,"line":2},
           "id": "adb7a8431dd3",
-          "path": "src/util.ts",
-          "language": "typescript",
-          "span": {
-            "start": 7,
-            "end": 68
-          },
-          "start": {
-            "line": 0,
-            "column": 7
-          },
-          "end": {
-            "line": 2,
-            "column": 1
-          },
           "kind": "function_declaration",
-          "text": "function area(side: number): number {\n  return side * side;\n}",
+          "language": "typescript",
           "line": "export function area(side: number): number {",
+          "path": "src/util.ts",
+          "role": "declaration",
+          "span": {"end":68,"start":7},
+          "start": {"column":7,"line":0},
           "symbol": {
+            "extent": {"end":68,"start":0},
             "kind": "function",
             "name": "area",
-            "name_span": {
-              "start": 16,
-              "end": 20
-            },
-            "span": {
-              "start": 7,
-              "end": 68
-            },
-            "extent": {
-              "start": 0,
-              "end": 68
-            },
-            "visibility": {
-              "span": {
-                "start": 0,
-                "end": 6
-              },
-              "text": "export"
-            }
+            "name_span": {"end":20,"start":16},
+            "span": {"end":68,"start":7},
+            "visibility": {"span":{"end":6,"start":0},"text":"export"}
           },
-          "role": "declaration",
-          "address": {
-            "package": "",
-            "path": [
-              "src",
-              "util.ts",
-              "area"
-            ]
-          }
-        },
-        "address": {
-          "package": "",
-          "path": [
-            "src",
-            "util.ts",
-            "area"
-          ]
+          "text": "function area(side: number): number {\n  return side * side;\n}"
         },
         "import": "import { area } from './util.ts/area';"
       }
     ]
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

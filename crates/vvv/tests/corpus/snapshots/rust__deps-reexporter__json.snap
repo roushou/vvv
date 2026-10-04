@@ -1,112 +1,35 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "path": "core/src/geometry/point.rs",
-    "module": {
-      "package": "corpus_core",
-      "path": [
-        "geometry",
-        "point"
-      ]
-    },
-    "imports": [],
     "importers": [
       {
-        "path": "app/src/main.rs",
-        "span": {
-          "start": 69,
-          "end": 74
-        },
+        "declares": true,
+        "group": {"item":{"end":74,"start":69},"items":3,"list":{"end":82,"start":62},"prefix":"corpus_core","statement":{"end":83,"start":45},"top_level":true},
         "path": "corpus_core::Point",
-        "group": {
-          "prefix": "corpus_core",
-          "item": {
-            "start": 69,
-            "end": 74
-          },
-          "list": {
-            "start": 62,
-            "end": 82
-          },
-          "items": 3,
-          "statement": {
-            "start": 45,
-            "end": 83
-          },
-          "top_level": true
-        },
-        "declares": true,
-        "start": {
-          "line": 3,
-          "column": 24
-        }
+        "span": {"end":74,"start":69},
+        "start": {"column":24,"line":3}
       },
+      {"declares":true,"path":"point::Point","reexport":true,"span":{"end":47,"start":35},"start":{"column":8,"line":3}},
+      {"declares":true,"path":"super::Point","span":{"end":16,"start":4},"start":{"column":4,"line":0}},
       {
-        "path": "core/src/geometry/mod.rs",
-        "span": {
-          "start": 35,
-          "end": 47
-        },
-        "path": "point::Point",
         "declares": true,
-        "reexport": true,
-        "start": {
-          "line": 3,
-          "column": 8
-        }
-      },
-      {
-        "path": "core/src/geometry/shape.rs",
-        "span": {
-          "start": 4,
-          "end": 16
-        },
-        "path": "super::Point",
-        "declares": true,
-        "start": {
-          "line": 0,
-          "column": 4
-        }
-      },
-      {
-        "path": "core/src/lib.rs",
-        "span": {
-          "start": 230,
-          "end": 235
-        },
+        "group": {"item":{"end":235,"start":230},"items":2,"list":{"end":236,"start":215},"prefix":"geometry","statement":{"end":237,"start":197},"top_level":true},
         "path": "geometry::Point",
-        "group": {
-          "prefix": "geometry",
-          "item": {
-            "start": 230,
-            "end": 235
-          },
-          "list": {
-            "start": 215,
-            "end": 236
-          },
-          "items": 2,
-          "statement": {
-            "start": 197,
-            "end": 237
-          },
-          "top_level": true
-        },
-        "declares": true,
         "reexport": true,
-        "start": {
-          "line": 7,
-          "column": 33
-        }
+        "span": {"end":235,"start":230},
+        "start": {"column":33,"line":7}
       }
-    ]
-  }
+    ],
+    "imports": [],
+    "module": {"package":"corpus_core","path":["geometry","point"]},
+    "path": "core/src/geometry/point.rs"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

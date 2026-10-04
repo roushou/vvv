@@ -1,141 +1,63 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "intent": {
-      "name": "needed",
-      "from": "src/origin.rs",
-      "to": "src/cleanup.rs"
-    },
+    "applied": false,
     "declaration": {
       "content": "fe52f362c29faa20a5a9e2867ef10365facd9f7117b06aedf832a12455f9d749",
+      "end": {"column":18,"line":5},
       "id": "5366e6f2eb21",
-      "path": "src/origin.rs",
-      "language": "rust",
-      "span": {
-        "start": 74,
-        "end": 92
-      },
-      "start": {
-        "line": 5,
-        "column": 0
-      },
-      "end": {
-        "line": 5,
-        "column": 18
-      },
       "kind": "function",
-      "text": "pub fn needed() {}",
+      "language": "rust",
       "line": "pub fn needed() {}",
+      "path": "src/origin.rs",
+      "role": "declaration",
+      "span": {"end":92,"start":74},
+      "start": {"column":0,"line":5},
       "symbol": {
+        "extent": {"end":92,"start":74},
         "kind": "function",
         "name": "needed",
-        "name_span": {
-          "start": 81,
-          "end": 87
-        },
-        "span": {
-          "start": 74,
-          "end": 92
-        },
-        "extent": {
-          "start": 74,
-          "end": 92
-        },
-        "visibility": {
-          "span": {
-            "start": 74,
-            "end": 77
-          },
-          "text": "pub"
-        }
+        "name_span": {"end":87,"start":81},
+        "span": {"end":92,"start":74},
+        "visibility": {"span":{"end":77,"start":74},"text":"pub"}
       },
-      "role": "declaration"
-    },
-    "pieces": [
-      {
-        "symbol": {
-          "kind": "function",
-          "name": "needed",
-          "name_span": {
-            "start": 81,
-            "end": 87
-          },
-          "span": {
-            "start": 74,
-            "end": 92
-          },
-          "extent": {
-            "start": 74,
-            "end": 92
-          },
-          "visibility": {
-            "span": {
-              "start": 74,
-              "end": 77
-            },
-            "text": "pub"
-          }
-        },
-        "ownership": "declaration"
-      }
-    ],
-    "applied": false,
-    "from": {
-      "package": "corpus_moves",
-      "path": [
-        "origin",
-        "needed"
-      ]
-    },
-    "to": {
-      "package": "corpus_moves",
-      "path": [
-        "cleanup",
-        "needed"
-      ]
+      "text": "pub fn needed() {}"
     },
     "files": [
       {
-        "path": "src/cleanup.rs",
-        "edits": [
-          {
-            "span": {
-              "start": 28,
-              "end": 47
-            },
-            "replacement": ""
-          },
-          {
-            "span": {
-              "start": 76,
-              "end": 76
-            },
-            "replacement": "\npub fn needed() {}\n"
-          }
-        ],
-        "diff": "--- a/src/cleanup.rs\n+++ b/src/cleanup.rs\n@@ -1,4 +1,5 @@\n use crate::origin as alias;\n-use alias::needed;\n \n pub fn call() { needed(); }\n+\n+pub fn needed() {}\n"
+        "diff": "--- a/src/cleanup.rs\n+++ b/src/cleanup.rs\n@@ -1,4 +1,5 @@\n use crate::origin as alias;\n-use alias::needed;\n \n pub fn call() { needed(); }\n+\n+pub fn needed() {}\n",
+        "edits": [{"replacement":"","span":{"end":47,"start":28}},{"replacement":"\npub fn needed() {}\n","span":{"end":76,"start":76}}],
+        "path": "src/cleanup.rs"
       },
       {
-        "path": "src/origin.rs",
-        "edits": [
-          {
-            "span": {
-              "start": 74,
-              "end": 93
-            },
-            "replacement": ""
-          }
-        ],
-        "diff": "--- a/src/origin.rs\n+++ b/src/origin.rs\n@@ -3,4 +3,3 @@\n \n pub fn moved(_: Dep) {}\n \n-pub fn needed() {}\n"
+        "diff": "--- a/src/origin.rs\n+++ b/src/origin.rs\n@@ -3,4 +3,3 @@\n \n pub fn moved(_: Dep) {}\n \n-pub fn needed() {}\n",
+        "edits": [{"replacement":"","span":{"end":93,"start":74}}],
+        "path": "src/origin.rs"
       }
-    ]
-  }
+    ],
+    "from": {"package":"corpus_moves","path":["origin","needed"]},
+    "intent": {"from":"src/origin.rs","name":"needed","to":"src/cleanup.rs"},
+    "pieces": [
+      {
+        "ownership": "declaration",
+        "symbol": {
+          "extent": {"end":92,"start":74},
+          "kind": "function",
+          "name": "needed",
+          "name_span": {"end":87,"start":81},
+          "span": {"end":92,"start":74},
+          "visibility": {"span":{"end":77,"start":74},"text":"pub"}
+        }
+      }
+    ],
+    "to": {"package":"corpus_moves","path":["cleanup","needed"]}
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

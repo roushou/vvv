@@ -1,0 +1,48 @@
+---
+source: crates/vvv/tests/common/corpus_snapshot.rs
+expression: JsonSnapshot(&self.value).to_string()
+---
+{
+  "highlights": [
+    {"kind":"keyword","span":{"end":8,"start":0}},
+    {"kind":"function","span":{"end":15,"start":9}},
+    {"kind":"keyword","span":{"end":32,"start":24}},
+    {"kind":"function","span":{"end":39,"start":33}},
+    {"kind":"function","span":{"end":55,"start":49}},
+    {"kind":"keyword","span":{"end":69,"start":61}},
+    {"kind":"function","span":{"end":76,"start":70}},
+    {"kind":"string","span":{"end":95,"start":83}},
+    {"kind":"function","span":{"end":106,"start":101}},
+    {"kind":"keyword","span":{"end":118,"start":110}},
+    {"kind":"function","span":{"end":124,"start":119}},
+    {"kind":"function","span":{"end":138,"start":134}},
+    {"kind":"keyword","span":{"end":150,"start":142}},
+    {"kind":"function","span":{"end":155,"start":151}},
+    {"kind":"keyword","span":{"end":164,"start":161}},
+    {"kind":"keyword","span":{"end":178,"start":175}}
+  ],
+  "identifiers": [
+    {"content":"6bc4ba59c256d1942a9008f06ccc4ebbda793cb296cd0246287c3578cf493912","path":"src/script.ts","span":{"end":15,"start":9}},
+    {"content":"6bc4ba59c256d1942a9008f06ccc4ebbda793cb296cd0246287c3578cf493912","path":"src/script.ts","span":{"end":39,"start":33}},
+    {"content":"6bc4ba59c256d1942a9008f06ccc4ebbda793cb296cd0246287c3578cf493912","path":"src/script.ts","span":{"end":55,"start":49}},
+    {"content":"6bc4ba59c256d1942a9008f06ccc4ebbda793cb296cd0246287c3578cf493912","path":"src/script.ts","span":{"end":76,"start":70}},
+    {"content":"6bc4ba59c256d1942a9008f06ccc4ebbda793cb296cd0246287c3578cf493912","path":"src/script.ts","span":{"end":106,"start":101}},
+    {"content":"6bc4ba59c256d1942a9008f06ccc4ebbda793cb296cd0246287c3578cf493912","path":"src/script.ts","span":{"end":124,"start":119}},
+    {"content":"6bc4ba59c256d1942a9008f06ccc4ebbda793cb296cd0246287c3578cf493912","path":"src/script.ts","span":{"end":138,"start":134}},
+    {"content":"6bc4ba59c256d1942a9008f06ccc4ebbda793cb296cd0246287c3578cf493912","path":"src/script.ts","span":{"end":155,"start":151}},
+    {"content":"6bc4ba59c256d1942a9008f06ccc4ebbda793cb296cd0246287c3578cf493912","path":"src/script.ts","span":{"end":173,"start":165}},
+    {"content":"6bc4ba59c256d1942a9008f06ccc4ebbda793cb296cd0246287c3578cf493912","path":"src/script.ts","span":{"end":187,"start":179}},
+    {"content":"6bc4ba59c256d1942a9008f06ccc4ebbda793cb296cd0246287c3578cf493912","path":"src/script.ts","span":{"end":197,"start":189}}
+  ],
+  "path": "src/script.ts",
+  "symbols": [
+    {"extent":{"end":60,"start":0},"kind":"function","name":"script","name_span":{"end":15,"start":9},"span":{"end":60,"start":0}},
+    {"extent":{"end":44,"start":24},"kind":"function","name":"legacy","name_span":{"end":39,"start":33},"span":{"end":44,"start":24}},
+    {"extent":{"end":133,"start":61},"kind":"function","name":"strict","name_span":{"end":76,"start":70},"span":{"end":133,"start":61}},
+    {"extent":{"end":129,"start":110},"kind":"function","name":"inner","name_span":{"end":124,"start":119},"span":{"end":129,"start":110}},
+    {"extent":{"end":160,"start":142},"kind":"function","name":"root","name_span":{"end":155,"start":151},"span":{"end":160,"start":142}},
+    {"extent":{"end":173,"start":165},"kind":"variable","name":"repeated","name_span":{"end":173,"start":165},"span":{"end":173,"start":165}},
+    {"extent":{"end":187,"start":179},"kind":"variable","name":"repeated","name_span":{"end":187,"start":179},"span":{"end":187,"start":179}}
+  ],
+  "text": "function script() {\n  { function legacy() {} }\n  legacy();\n}\nfunction strict() {\n  'use strict';\n  { inner(); function inner() {} }\n}\nroot();\nfunction root() {}\nvar repeated;\nvar repeated;\nrepeated;\n"
+}

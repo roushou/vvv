@@ -1,136 +1,63 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "intent": {
-      "name": "Widget",
-      "from": "src/move_selection.ts",
-      "to": "src/move_destination.ts"
-    },
+    "applied": false,
     "declaration": {
       "content": "91b0ce28e17aa567a6e99969a3ba013c02ff4f26f5cee7048b267b435cd01c2b",
+      "end": {"column":46,"line":1},
       "id": "a6b8c5fc33fb",
-      "path": "src/move_selection.ts",
-      "language": "typescript",
-      "span": {
-        "start": 40,
-        "end": 79
-      },
-      "start": {
-        "line": 1,
-        "column": 7
-      },
-      "end": {
-        "line": 1,
-        "column": 46
-      },
       "kind": "class",
-      "text": "class Widget { value() { return 42; } }",
+      "language": "typescript",
       "line": "export class Widget { value() { return 42; } }",
+      "path": "src/move_selection.ts",
+      "role": "declaration",
+      "span": {"end":79,"start":40},
+      "start": {"column":7,"line":1},
       "symbol": {
+        "extent": {"end":79,"start":0},
         "kind": "class",
         "name": "Widget",
-        "name_span": {
-          "start": 46,
-          "end": 52
-        },
-        "span": {
-          "start": 40,
-          "end": 79
-        },
-        "extent": {
-          "start": 0,
-          "end": 79
-        },
-        "visibility": {
-          "span": {
-            "start": 33,
-            "end": 39
-          },
-          "text": "export"
-        }
+        "name_span": {"end":52,"start":46},
+        "span": {"end":79,"start":40},
+        "visibility": {"span":{"end":39,"start":33},"text":"export"}
       },
-      "role": "declaration"
-    },
-    "pieces": [
-      {
-        "symbol": {
-          "kind": "class",
-          "name": "Widget",
-          "name_span": {
-            "start": 46,
-            "end": 52
-          },
-          "span": {
-            "start": 40,
-            "end": 79
-          },
-          "extent": {
-            "start": 0,
-            "end": 79
-          },
-          "visibility": {
-            "span": {
-              "start": 33,
-              "end": 39
-            },
-            "text": "export"
-          }
-        },
-        "ownership": "declaration"
-      }
-    ],
-    "applied": false,
-    "from": {
-      "package": "",
-      "path": [
-        "src",
-        "move_selection.ts",
-        "Widget"
-      ]
-    },
-    "to": {
-      "package": "",
-      "path": [
-        "src",
-        "move_destination.ts",
-        "Widget"
-      ]
+      "text": "class Widget { value() { return 42; } }"
     },
     "files": [
       {
-        "path": "src/move_destination.ts",
-        "edits": [
-          {
-            "span": {
-              "start": 31,
-              "end": 31
-            },
-            "replacement": "\n/** Selected wrapper travels. */\nexport class Widget { value() { return 42; } }\n"
-          }
-        ],
-        "diff": "--- a/src/move_destination.ts\n+++ b/src/move_destination.ts\n@@ -1 +1,4 @@\n export function untouched() {}\n+\n+/** Selected wrapper travels. */\n+export class Widget { value() { return 42; } }\n"
+        "diff": "--- a/src/move_destination.ts\n+++ b/src/move_destination.ts\n@@ -1 +1,4 @@\n export function untouched() {}\n+\n+/** Selected wrapper travels. */\n+export class Widget { value() { return 42; } }\n",
+        "edits": [{"replacement":"\n/** Selected wrapper travels. */\nexport class Widget { value() { return 42; } }\n","span":{"end":31,"start":31}}],
+        "path": "src/move_destination.ts"
       },
       {
-        "path": "src/move_selection.ts",
-        "edits": [
-          {
-            "span": {
-              "start": 0,
-              "end": 80
-            },
-            "replacement": ""
-          }
-        ],
-        "diff": "--- a/src/move_selection.ts\n+++ b/src/move_selection.ts\n@@ -1,5 +1,3 @@\n-/** Selected wrapper travels. */\n-export class Widget { value() { return 42; } }\n export function overloaded(value: string): string;\n export function overloaded(value: number): number;\n export function overloaded(value: string | number) { return value; }\n"
+        "diff": "--- a/src/move_selection.ts\n+++ b/src/move_selection.ts\n@@ -1,5 +1,3 @@\n-/** Selected wrapper travels. */\n-export class Widget { value() { return 42; } }\n export function overloaded(value: string): string;\n export function overloaded(value: number): number;\n export function overloaded(value: string | number) { return value; }\n",
+        "edits": [{"replacement":"","span":{"end":80,"start":0}}],
+        "path": "src/move_selection.ts"
       }
-    ]
-  }
+    ],
+    "from": {"package":"","path":["src","move_selection.ts","Widget"]},
+    "intent": {"from":"src/move_selection.ts","name":"Widget","to":"src/move_destination.ts"},
+    "pieces": [
+      {
+        "ownership": "declaration",
+        "symbol": {
+          "extent": {"end":79,"start":0},
+          "kind": "class",
+          "name": "Widget",
+          "name_span": {"end":52,"start":46},
+          "span": {"end":79,"start":40},
+          "visibility": {"span":{"end":39,"start":33},"text":"export"}
+        }
+      }
+    ],
+    "to": {"package":"","path":["src","move_destination.ts","Widget"]}
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

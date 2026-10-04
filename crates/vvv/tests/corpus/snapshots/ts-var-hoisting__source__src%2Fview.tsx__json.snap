@@ -1,0 +1,37 @@
+---
+source: crates/vvv/tests/common/corpus_snapshot.rs
+expression: JsonSnapshot(&self.value).to_string()
+---
+{
+  "highlights": [
+    {"kind":"keyword","span":{"end":6,"start":0}},
+    {"kind":"keyword","span":{"end":12,"start":7}},
+    {"kind":"type","span":{"end":36,"start":30}},
+    {"kind":"keyword","span":{"end":57,"start":54}},
+    {"kind":"keyword","span":{"end":94,"start":88}}
+  ],
+  "identifiers": [
+    {"content":"2aa60d286a4e6143aa6ce2119945780080370dc76cf4bdd2668bc2e3fde6c277","path":"src/view.tsx","span":{"end":19,"start":13}},
+    {"content":"2aa60d286a4e6143aa6ce2119945780080370dc76cf4bdd2668bc2e3fde6c277","path":"src/view.tsx","span":{"end":28,"start":23}},
+    {"content":"2aa60d286a4e6143aa6ce2119945780080370dc76cf4bdd2668bc2e3fde6c277","path":"src/view.tsx","span":{"end":50,"start":45}},
+    {"content":"2aa60d286a4e6143aa6ce2119945780080370dc76cf4bdd2668bc2e3fde6c277","path":"src/view.tsx","span":{"end":63,"start":58}},
+    {"content":"2aa60d286a4e6143aa6ce2119945780080370dc76cf4bdd2668bc2e3fde6c277","path":"src/view.tsx","span":{"end":70,"start":67}},
+    {"content":"2aa60d286a4e6143aa6ce2119945780080370dc76cf4bdd2668bc2e3fde6c277","path":"src/view.tsx","span":{"end":77,"start":72}},
+    {"content":"2aa60d286a4e6143aa6ce2119945780080370dc76cf4bdd2668bc2e3fde6c277","path":"src/view.tsx","span":{"end":83,"start":80}},
+    {"content":"2aa60d286a4e6143aa6ce2119945780080370dc76cf4bdd2668bc2e3fde6c277","path":"src/view.tsx","span":{"end":100,"start":95}}
+  ],
+  "path": "src/view.tsx",
+  "symbols": [
+    {
+      "extent": {"end":104,"start":0},
+      "kind": "variable",
+      "name": "render",
+      "name_span": {"end":19,"start":13},
+      "span": {"end":103,"start":13},
+      "visibility": {"span":{"end":6,"start":0},"text":"export"}
+    },
+    {"extent":{"end":84,"start":58},"kind":"variable","name":"value","name_span":{"end":63,"start":58},"span":{"end":84,"start":58}},
+    {"extent":{"end":36,"start":23},"kind":"parameter","name":"title","name_span":{"end":28,"start":23},"span":{"end":36,"start":23}}
+  ],
+  "text": "export const render = (title: string) => {\n  value;\n  var value = <div>{title}</div>;\n  return value;\n};\n"
+}

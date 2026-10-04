@@ -1,369 +1,50 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "d34cdbd8466f9506d35e17179391c02a6b0139e82aebe8a4123b39e79990c15f",
+    "evidence": {"addresses":[]},
     "outcome": "resolved",
-    "target": {
-      "language": "tsx",
-      "declaration": {
-        "path": "src/view.tsx",
-        "content": "fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f",
-        "span": {
-          "start": 66,
-          "end": 78
-        }
-      },
-      "name_span": {
-        "start": 68,
-        "end": 73
-      },
-      "kind": "parameter"
-    },
-    "evidence": {
-      "addresses": []
-    },
     "preview": {
       "container": {
+        "declaration": {"content":"fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f","path":"src/view.tsx","span":{"end":78,"start":66}},
+        "kind": "parameter",
         "language": "tsx",
-        "declaration": {
-          "path": "src/view.tsx",
-          "content": "fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f",
-          "span": {
-            "start": 66,
-            "end": 78
-          }
-        },
-        "name_span": {
-          "start": 68,
-          "end": 73
-        },
-        "kind": "parameter"
+        "name_span": {"end":73,"start":68}
       },
       "declaration": {
         "content": "fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f",
+        "end": {"column":38,"line":2},
         "id": "be3dd9eb5b70",
-        "path": "src/view.tsx",
-        "language": "tsx",
-        "span": {
-          "start": 66,
-          "end": 78
-        },
-        "start": {
-          "line": 2,
-          "column": 26
-        },
-        "end": {
-          "line": 2,
-          "column": 38
-        },
         "kind": "declaration",
-        "text": "{ title }: T",
+        "language": "tsx",
         "line": "    const callback = <T,>({ title }: T) => <div>{title}</div>;",
-        "symbol": {
-          "kind": "parameter",
-          "name": "title",
-          "name_span": {
-            "start": 68,
-            "end": 73
-          },
-          "span": {
-            "start": 66,
-            "end": 78
-          },
-          "extent": {
-            "start": 66,
-            "end": 78
-          }
-        },
-        "role": "declaration"
-      },
-      "source": {
         "path": "src/view.tsx",
-        "text": "export class View {\n  render(entries) {\n    const callback = <T,>({ title }: T) => <div>{title}</div>;\n    return entries;\n  }\n}\n",
-        "highlights": [
-          {
-            "span": {
-              "start": 0,
-              "end": 6
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 7,
-              "end": 12
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 13,
-              "end": 17
-            },
-            "kind": "type"
-          },
-          {
-            "span": {
-              "start": 22,
-              "end": 28
-            },
-            "kind": "function"
-          },
-          {
-            "span": {
-              "start": 44,
-              "end": 49
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 62,
-              "end": 63
-            },
-            "kind": "type"
-          },
-          {
-            "span": {
-              "start": 77,
-              "end": 78
-            },
-            "kind": "type"
-          },
-          {
-            "span": {
-              "start": 107,
-              "end": 113
-            },
-            "kind": "keyword"
-          }
-        ],
-        "symbols": [
-          {
-            "kind": "class",
-            "name": "View",
-            "name_span": {
-              "start": 13,
-              "end": 17
-            },
-            "span": {
-              "start": 7,
-              "end": 128
-            },
-            "extent": {
-              "start": 0,
-              "end": 128
-            },
-            "visibility": {
-              "span": {
-                "start": 0,
-                "end": 6
-              },
-              "text": "export"
-            }
-          },
-          {
-            "kind": "method",
-            "name": "render",
-            "name_span": {
-              "start": 22,
-              "end": 28
-            },
-            "span": {
-              "start": 22,
-              "end": 126
-            },
-            "extent": {
-              "start": 22,
-              "end": 126
-            }
-          },
-          {
-            "kind": "variable",
-            "name": "callback",
-            "name_span": {
-              "start": 50,
-              "end": 58
-            },
-            "span": {
-              "start": 50,
-              "end": 101
-            },
-            "extent": {
-              "start": 50,
-              "end": 101
-            }
-          },
-          {
-            "kind": "parameter",
-            "name": "entries",
-            "name_span": {
-              "start": 29,
-              "end": 36
-            },
-            "span": {
-              "start": 29,
-              "end": 36
-            },
-            "extent": {
-              "start": 29,
-              "end": 36
-            }
-          },
-          {
-            "kind": "type-parameter",
-            "name": "T",
-            "name_span": {
-              "start": 62,
-              "end": 63
-            },
-            "span": {
-              "start": 62,
-              "end": 63
-            },
-            "extent": {
-              "start": 62,
-              "end": 63
-            }
-          },
-          {
-            "kind": "parameter",
-            "name": "title",
-            "name_span": {
-              "start": 68,
-              "end": 73
-            },
-            "span": {
-              "start": 66,
-              "end": 78
-            },
-            "extent": {
-              "start": 66,
-              "end": 78
-            }
-          }
-        ],
-        "identifiers": [
-          {
-            "path": "src/view.tsx",
-            "content": "fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f",
-            "span": {
-              "start": 13,
-              "end": 17
-            }
-          },
-          {
-            "path": "src/view.tsx",
-            "content": "fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f",
-            "span": {
-              "start": 22,
-              "end": 28
-            }
-          },
-          {
-            "path": "src/view.tsx",
-            "content": "fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f",
-            "span": {
-              "start": 29,
-              "end": 36
-            }
-          },
-          {
-            "path": "src/view.tsx",
-            "content": "fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f",
-            "span": {
-              "start": 50,
-              "end": 58
-            }
-          },
-          {
-            "path": "src/view.tsx",
-            "content": "fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f",
-            "span": {
-              "start": 62,
-              "end": 63
-            }
-          },
-          {
-            "path": "src/view.tsx",
-            "content": "fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f",
-            "span": {
-              "start": 68,
-              "end": 73
-            }
-          },
-          {
-            "path": "src/view.tsx",
-            "content": "fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f",
-            "span": {
-              "start": 77,
-              "end": 78
-            }
-          },
-          {
-            "path": "src/view.tsx",
-            "content": "fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f",
-            "span": {
-              "start": 84,
-              "end": 87
-            }
-          },
-          {
-            "path": "src/view.tsx",
-            "content": "fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f",
-            "span": {
-              "start": 89,
-              "end": 94
-            }
-          },
-          {
-            "path": "src/view.tsx",
-            "content": "fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f",
-            "span": {
-              "start": 97,
-              "end": 100
-            }
-          },
-          {
-            "path": "src/view.tsx",
-            "content": "fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f",
-            "span": {
-              "start": 114,
-              "end": 121
-            }
-          }
-        ]
-      },
-      "selection": {
-        "start": 68,
-        "end": 73
+        "role": "declaration",
+        "span": {"end":78,"start":66},
+        "start": {"column":26,"line":2},
+        "symbol": {"extent":{"end":78,"start":66},"kind":"parameter","name":"title","name_span":{"end":73,"start":68},"span":{"end":78,"start":66}},
+        "text": "{ title }: T"
       },
       "identifiers": [
-        {
-          "path": "src/view.tsx",
-          "content": "fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f",
-          "span": {
-            "start": 68,
-            "end": 73
-          }
-        },
-        {
-          "path": "src/view.tsx",
-          "content": "fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f",
-          "span": {
-            "start": 77,
-            "end": 78
-          }
-        }
-      ]
+        {"content":"fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f","path":"src/view.tsx","span":{"end":73,"start":68}},
+        {"content":"fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f","path":"src/view.tsx","span":{"end":78,"start":77}}
+      ],
+      "selection": {"end":73,"start":68},
+      "source": {"$snapshot":"ts-scopes__source__src%2Fview.tsx__json.snap"}
+    },
+    "snapshot": "d34cdbd8466f9506d35e17179391c02a6b0139e82aebe8a4123b39e79990c15f",
+    "target": {
+      "declaration": {"content":"fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f","path":"src/view.tsx","span":{"end":78,"start":66}},
+      "kind": "parameter",
+      "language": "tsx",
+      "name_span": {"end":73,"start":68}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

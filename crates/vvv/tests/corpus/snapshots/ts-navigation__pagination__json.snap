@@ -1,25 +1,15 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
+expression: "JsonSnapshot(&serde_json::to_value(&transcript.replies).unwrap()).to_string()"
 ---
 [
   {
     "result": {
       "items": [
         {
-          "address": {
-            "package": "",
-            "path": [
-              "src",
-              "local.ts",
-              "Engine"
-            ]
-          },
+          "address": {"package":"","path":["src","local.ts","Engine"]},
           "content": "c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10",
-          "end": {
-            "column": 12,
-            "line": 0
-          },
+          "end": {"column":12,"line":0},
           "id": "9c91a3755f32",
           "kind": "type_identifier",
           "language": "typescript",
@@ -27,38 +17,15 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 1,
           "path": "src/local.ts",
           "role": "declaration",
-          "span": {
-            "end": 12,
-            "start": 6
-          },
-          "start": {
-            "column": 6,
-            "line": 0
-          },
-          "symbol": {
-            "extent": {
-              "end": 15,
-              "start": 0
-            },
-            "kind": "class",
-            "name": "Engine",
-            "name_span": {
-              "end": 12,
-              "start": 6
-            },
-            "span": {
-              "end": 15,
-              "start": 0
-            }
-          },
+          "span": {"end":12,"start":6},
+          "start": {"column":6,"line":0},
+          "symbol": {"extent":{"end":15,"start":0},"kind":"class","name":"Engine","name_span":{"end":12,"start":6},"span":{"end":15,"start":0}},
           "text": "Engine"
         }
       ],
       "kind": "search",
       "next_cursor": "cursor-1",
-      "query": {
-        "pattern": "Engine"
-      },
+      "query": {"pattern":"Engine"},
       "skipped": [],
       "snapshot": "de8407994a5a6d41d5540dceab42ffe0d2a88a0ce656856d6875789b03fdbafa",
       "total_items": 14
@@ -70,19 +37,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
     "result": {
       "items": [
         {
-          "address": {
-            "package": "",
-            "path": [
-              "src",
-              "origin.ts",
-              "Engine"
-            ]
-          },
+          "address": {"package":"","path":["src","origin.ts","Engine"]},
           "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
-          "end": {
-            "column": 19,
-            "line": 0
-          },
+          "end": {"column":19,"line":0},
           "id": "403fe879d616",
           "kind": "type_identifier",
           "language": "typescript",
@@ -90,53 +47,22 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 2,
           "path": "src/origin.ts",
           "role": "declaration",
-          "span": {
-            "end": 19,
-            "start": 13
-          },
-          "start": {
-            "column": 13,
-            "line": 0
-          },
+          "span": {"end":19,"start":13},
+          "start": {"column":13,"line":0},
           "symbol": {
-            "extent": {
-              "end": 45,
-              "start": 0
-            },
+            "extent": {"end":45,"start":0},
             "kind": "class",
             "name": "Engine",
-            "name_span": {
-              "end": 19,
-              "start": 13
-            },
-            "span": {
-              "end": 45,
-              "start": 7
-            },
-            "visibility": {
-              "span": {
-                "end": 6,
-                "start": 0
-              },
-              "text": "export"
-            }
+            "name_span": {"end":19,"start":13},
+            "span": {"end":45,"start":7},
+            "visibility": {"span":{"end":6,"start":0},"text":"export"}
           },
           "text": "Engine"
         },
         {
-          "address": {
-            "package": "",
-            "path": [
-              "src",
-              "other.ts",
-              "Engine"
-            ]
-          },
+          "address": {"package":"","path":["src","other.ts","Engine"]},
           "content": "e7468058b8510dee8d46d90044a4ba40bd208e55b7b3846c8ebee792f1cbde5c",
-          "end": {
-            "column": 19,
-            "line": 0
-          },
+          "end": {"column":19,"line":0},
           "id": "df45e449feae",
           "kind": "type_identifier",
           "language": "typescript",
@@ -144,45 +70,21 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 3,
           "path": "src/other.ts",
           "role": "declaration",
-          "span": {
-            "end": 19,
-            "start": 13
-          },
-          "start": {
-            "column": 13,
-            "line": 0
-          },
+          "span": {"end":19,"start":13},
+          "start": {"column":13,"line":0},
           "symbol": {
-            "extent": {
-              "end": 22,
-              "start": 0
-            },
+            "extent": {"end":22,"start":0},
             "kind": "class",
             "name": "Engine",
-            "name_span": {
-              "end": 19,
-              "start": 13
-            },
-            "span": {
-              "end": 22,
-              "start": 7
-            },
-            "visibility": {
-              "span": {
-                "end": 6,
-                "start": 0
-              },
-              "text": "export"
-            }
+            "name_span": {"end":19,"start":13},
+            "span": {"end":22,"start":7},
+            "visibility": {"span":{"end":6,"start":0},"text":"export"}
           },
           "text": "Engine"
         },
         {
           "content": "3b4afc4cde0d20b760c6a9d645bec9256487d91a2b23d4fcf42a8904755903d8",
-          "end": {
-            "column": 15,
-            "line": 0
-          },
+          "end": {"column":15,"line":0},
           "id": "52c6f701950a",
           "kind": "identifier",
           "language": "typescript",
@@ -190,22 +92,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 4,
           "path": "src/barrel.ts",
           "role": "import",
-          "span": {
-            "end": 15,
-            "start": 9
-          },
-          "start": {
-            "column": 9,
-            "line": 0
-          },
+          "span": {"end":15,"start":9},
+          "start": {"column":9,"line":0},
           "text": "Engine"
         }
       ],
       "kind": "search",
       "next_cursor": "cursor-2",
-      "query": {
-        "pattern": "Engine"
-      },
+      "query": {"pattern":"Engine"},
       "skipped": [],
       "snapshot": "de8407994a5a6d41d5540dceab42ffe0d2a88a0ce656856d6875789b03fdbafa",
       "total_items": 14
@@ -218,10 +112,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
-          "end": {
-            "column": 30,
-            "line": 4
-          },
+          "end": {"column":30,"line":4},
           "id": "17b4721a5b3c",
           "kind": "type_identifier",
           "language": "typescript",
@@ -229,22 +120,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 5,
           "path": "src/bindings.ts",
           "role": "use",
-          "span": {
-            "end": 163,
-            "start": 157
-          },
-          "start": {
-            "column": 24,
-            "line": 4
-          },
+          "span": {"end":163,"start":157},
+          "start": {"column":24,"line":4},
           "text": "Engine"
         },
         {
           "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
-          "end": {
-            "column": 15,
-            "line": 6
-          },
+          "end": {"column":15,"line":6},
           "id": "7c3731360989",
           "kind": "identifier",
           "language": "typescript",
@@ -252,22 +134,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 6,
           "path": "src/bindings.ts",
           "role": "import",
-          "span": {
-            "end": 216,
-            "start": 210
-          },
-          "start": {
-            "column": 9,
-            "line": 6
-          },
+          "span": {"end":216,"start":210},
+          "start": {"column":9,"line":6},
           "text": "Engine"
         },
         {
           "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
-          "end": {
-            "column": 31,
-            "line": 7
-          },
+          "end": {"column":31,"line":7},
           "id": "8d32a4492c60",
           "kind": "type_identifier",
           "language": "typescript",
@@ -275,22 +148,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 7,
           "path": "src/bindings.ts",
           "role": "use",
-          "span": {
-            "end": 266,
-            "start": 260
-          },
-          "start": {
-            "column": 25,
-            "line": 7
-          },
+          "span": {"end":266,"start":260},
+          "start": {"column":25,"line":7},
           "text": "Engine"
         }
       ],
       "kind": "search",
       "next_cursor": "cursor-3",
-      "query": {
-        "pattern": "Engine"
-      },
+      "query": {"pattern":"Engine"},
       "skipped": [],
       "snapshot": "de8407994a5a6d41d5540dceab42ffe0d2a88a0ce656856d6875789b03fdbafa",
       "total_items": 14
@@ -303,10 +168,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
-          "end": {
-            "column": 15,
-            "line": 10
-          },
+          "end": {"column":15,"line":10},
           "id": "2aa4fdabc017",
           "kind": "identifier",
           "language": "typescript",
@@ -314,22 +176,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 8,
           "path": "src/bindings.ts",
           "role": "import",
-          "span": {
-            "end": 335,
-            "start": 329
-          },
-          "start": {
-            "column": 9,
-            "line": 10
-          },
+          "span": {"end":335,"start":329},
+          "start": {"column":9,"line":10},
           "text": "Engine"
         },
         {
           "content": "5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af",
-          "end": {
-            "column": 21,
-            "line": 4
-          },
+          "end": {"column":21,"line":4},
           "id": "fd8c7270b5fc",
           "kind": "type_identifier",
           "language": "typescript",
@@ -337,22 +190,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 9,
           "path": "src/consumer.ts",
           "role": "use",
-          "span": {
-            "end": 155,
-            "start": 149
-          },
-          "start": {
-            "column": 15,
-            "line": 4
-          },
+          "span": {"end":155,"start":149},
+          "start": {"column":15,"line":4},
           "text": "Engine"
         },
         {
           "content": "238c14eb7df369418419fdfd7b3c149af998421315327c41f19cd9ca1760d4ff",
-          "end": {
-            "column": 15,
-            "line": 0
-          },
+          "end": {"column":15,"line":0},
           "id": "7070690144d7",
           "kind": "identifier",
           "language": "typescript",
@@ -360,22 +204,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 10,
           "path": "src/forward.ts",
           "role": "import",
-          "span": {
-            "end": 15,
-            "start": 9
-          },
-          "start": {
-            "column": 9,
-            "line": 0
-          },
+          "span": {"end":15,"start":9},
+          "start": {"column":9,"line":0},
           "text": "Engine"
         }
       ],
       "kind": "search",
       "next_cursor": "cursor-4",
-      "query": {
-        "pattern": "Engine"
-      },
+      "query": {"pattern":"Engine"},
       "skipped": [],
       "snapshot": "de8407994a5a6d41d5540dceab42ffe0d2a88a0ce656856d6875789b03fdbafa",
       "total_items": 14
@@ -388,10 +224,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "content": "238c14eb7df369418419fdfd7b3c149af998421315327c41f19cd9ca1760d4ff",
-          "end": {
-            "column": 15,
-            "line": 1
-          },
+          "end": {"column":15,"line":1},
           "id": "81963eb3f6ba",
           "kind": "identifier",
           "language": "typescript",
@@ -399,22 +232,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 11,
           "path": "src/forward.ts",
           "role": "use",
-          "span": {
-            "end": 50,
-            "start": 44
-          },
-          "start": {
-            "column": 9,
-            "line": 1
-          },
+          "span": {"end":50,"start":44},
+          "start": {"column":9,"line":1},
           "text": "Engine"
         },
         {
           "content": "c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10",
-          "end": {
-            "column": 15,
-            "line": 1
-          },
+          "end": {"column":15,"line":1},
           "id": "3ec079752241",
           "kind": "identifier",
           "language": "typescript",
@@ -422,22 +246,13 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 12,
           "path": "src/local.ts",
           "role": "use",
-          "span": {
-            "end": 31,
-            "start": 25
-          },
-          "start": {
-            "column": 9,
-            "line": 1
-          },
+          "span": {"end":31,"start":25},
+          "start": {"column":9,"line":1},
           "text": "Engine"
         },
         {
           "content": "c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10",
-          "end": {
-            "column": 15,
-            "line": 2
-          },
+          "end": {"column":15,"line":2},
           "id": "fe8ed6f85ce9",
           "kind": "identifier",
           "language": "typescript",
@@ -445,22 +260,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 13,
           "path": "src/local.ts",
           "role": "use",
-          "span": {
-            "end": 66,
-            "start": 60
-          },
-          "start": {
-            "column": 9,
-            "line": 2
-          },
+          "span": {"end":66,"start":60},
+          "start": {"column":9,"line":2},
           "text": "Engine"
         }
       ],
       "kind": "search",
       "next_cursor": "cursor-5",
-      "query": {
-        "pattern": "Engine"
-      },
+      "query": {"pattern":"Engine"},
       "skipped": [],
       "snapshot": "de8407994a5a6d41d5540dceab42ffe0d2a88a0ce656856d6875789b03fdbafa",
       "total_items": 14
@@ -473,10 +280,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
-          "end": {
-            "column": 39,
-            "line": 1
-          },
+          "end": {"column":39,"line":1},
           "id": "5eb68c7607ea",
           "kind": "type_identifier",
           "language": "typescript",
@@ -484,22 +288,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "ordinal": 14,
           "path": "src/origin.ts",
           "role": "use",
-          "span": {
-            "end": 85,
-            "start": 79
-          },
-          "start": {
-            "column": 33,
-            "line": 1
-          },
+          "span": {"end":85,"start":79},
+          "start": {"column":33,"line":1},
           "text": "Engine"
         }
       ],
       "kind": "search",
       "next_cursor": null,
-      "query": {
-        "pattern": "Engine"
-      },
+      "query": {"pattern":"Engine"},
       "skipped": [],
       "snapshot": "de8407994a5a6d41d5540dceab42ffe0d2a88a0ce656856d6875789b03fdbafa",
       "total_items": 14
@@ -512,35 +308,15 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "complete": true,
-          "excerpt": {
-            "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 45,
-              "start": 0
-            }
-          },
+          "excerpt": {"content":"396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c","path":"src/origin.ts","span":{"end":45,"start":0}},
           "expansion": null,
           "relation": "definition",
-          "start": {
-            "column": 0,
-            "line": 0
-          },
+          "start": {"column":0,"line":0},
           "target": {
-            "declaration": {
-              "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
-              "path": "src/origin.ts",
-              "span": {
-                "end": 45,
-                "start": 0
-              }
-            },
+            "declaration": {"content":"396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c","path":"src/origin.ts","span":{"end":45,"start":0}},
             "kind": "class",
             "language": "typescript",
-            "name_span": {
-              "end": 19,
-              "start": 13
-            }
+            "name_span": {"end":19,"start":13}
           },
           "text": "export class Engine { public run(): void {} }",
           "via": null
@@ -552,16 +328,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 0,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 0,
-        "lookups": 0
-      }
+      "unresolved": {"ambiguous":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":0,"lookups":0}
     },
     "schema": 1,
     "status": "ok"
@@ -575,16 +343,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 2,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 2,
-        "lookups": 4
-      }
+      "unresolved": {"ambiguous":0,"no_container":2,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":2,"lookups":4}
     },
     "schema": 1,
     "status": "ok"
@@ -594,45 +354,18 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "complete": true,
-          "excerpt": {
-            "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
-            "path": "src/bindings.ts",
-            "span": {
-              "end": 164,
-              "start": 133
-            }
-          },
+          "excerpt": {"content":"dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4","path":"src/bindings.ts","span":{"end":164,"start":133}},
           "expansion": null,
           "relation": "reference",
-          "start": {
-            "column": 0,
-            "line": 4
-          },
+          "start": {"column":0,"line":4},
           "target": {
-            "declaration": {
-              "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
-              "path": "src/bindings.ts",
-              "span": {
-                "end": 164,
-                "start": 133
-              }
-            },
+            "declaration": {"content":"dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4","path":"src/bindings.ts","span":{"end":164,"start":133}},
             "kind": "type-alias",
             "language": "typescript",
-            "name_span": {
-              "end": 150,
-              "start": 138
-            }
+            "name_span": {"end":150,"start":138}
           },
           "text": "type NamespaceUse = API.Engine;",
-          "via": {
-            "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
-            "path": "src/bindings.ts",
-            "span": {
-              "end": 163,
-              "start": 157
-            }
-          }
+          "via": {"content":"dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4","path":"src/bindings.ts","span":{"end":163,"start":157}}
         }
       ],
       "kind": "context",
@@ -641,16 +374,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 0,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 1,
-        "lookups": 4
-      }
+      "unresolved": {"ambiguous":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":1,"lookups":4}
     },
     "schema": 1,
     "status": "ok"
@@ -664,16 +389,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 1,
-        "no_container": 1,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 1,
-        "lookups": 4
-      }
+      "unresolved": {"ambiguous":1,"no_container":1,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":1,"lookups":4}
     },
     "schema": 1,
     "status": "ok"
@@ -683,45 +400,18 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "complete": true,
-          "excerpt": {
-            "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
-            "path": "src/bindings.ts",
-            "span": {
-              "end": 394,
-              "start": 369
-            }
-          },
+          "excerpt": {"content":"dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4","path":"src/bindings.ts","span":{"end":394,"start":369}},
           "expansion": null,
           "relation": "reference",
-          "start": {
-            "column": 0,
-            "line": 11
-          },
+          "start": {"column":0,"line":11},
           "target": {
-            "declaration": {
-              "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
-              "path": "src/bindings.ts",
-              "span": {
-                "end": 394,
-                "start": 369
-              }
-            },
+            "declaration": {"content":"dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4","path":"src/bindings.ts","span":{"end":394,"start":369}},
             "kind": "type-alias",
             "language": "typescript",
-            "name_span": {
-              "end": 381,
-              "start": 374
-            }
+            "name_span": {"end":381,"start":374}
           },
           "text": "type Forward = Forwarded;",
-          "via": {
-            "content": "dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4",
-            "path": "src/bindings.ts",
-            "span": {
-              "end": 393,
-              "start": 384
-            }
-          }
+          "via": {"content":"dff2cc5ef0415cef2621a51a39aa5c62d53339f8afa3628d03f4f2f89366f1a4","path":"src/bindings.ts","span":{"end":393,"start":384}}
         }
       ],
       "kind": "context",
@@ -730,16 +420,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 0,
-        "unavailable": 0,
-        "unresolved_imports": 2
-      },
-      "work": {
-        "files": 2,
-        "lookups": 4
-      }
+      "unresolved": {"ambiguous":0,"no_container":0,"unavailable":0,"unresolved_imports":2},
+      "work": {"files":2,"lookups":4}
     },
     "schema": 1,
     "status": "ok"
@@ -749,45 +431,18 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "complete": true,
-          "excerpt": {
-            "content": "5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af",
-            "path": "src/consumer.ts",
-            "span": {
-              "end": 133,
-              "start": 114
-            }
-          },
+          "excerpt": {"content":"5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af","path":"src/consumer.ts","span":{"end":133,"start":114}},
           "expansion": null,
           "relation": "reference",
-          "start": {
-            "column": 0,
-            "line": 3
-          },
+          "start": {"column":0,"line":3},
           "target": {
-            "declaration": {
-              "content": "5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af",
-              "path": "src/consumer.ts",
-              "span": {
-                "end": 133,
-                "start": 114
-              }
-            },
+            "declaration": {"content":"5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af","path":"src/consumer.ts","span":{"end":133,"start":114}},
             "kind": "type-alias",
             "language": "typescript",
-            "name_span": {
-              "end": 122,
-              "start": 119
-            }
+            "name_span": {"end":122,"start":119}
           },
           "text": "type App = Runtime;",
-          "via": {
-            "content": "5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af",
-            "path": "src/consumer.ts",
-            "span": {
-              "end": 132,
-              "start": 125
-            }
-          }
+          "via": {"content":"5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af","path":"src/consumer.ts","span":{"end":132,"start":125}}
         }
       ],
       "kind": "context",
@@ -796,16 +451,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 1,
-        "unavailable": 1,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 1,
-        "lookups": 4
-      }
+      "unresolved": {"ambiguous":0,"no_container":1,"unavailable":1,"unresolved_imports":0},
+      "work": {"files":1,"lookups":4}
     },
     "schema": 1,
     "status": "ok"
@@ -815,45 +462,18 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "complete": true,
-          "excerpt": {
-            "content": "5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af",
-            "path": "src/consumer.ts",
-            "span": {
-              "end": 279,
-              "start": 265
-            }
-          },
+          "excerpt": {"content":"5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af","path":"src/consumer.ts","span":{"end":279,"start":265}},
           "expansion": null,
           "relation": "reference",
-          "start": {
-            "column": 16,
-            "line": 7
-          },
+          "start": {"column":16,"line":7},
           "target": {
-            "declaration": {
-              "content": "5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af",
-              "path": "src/consumer.ts",
-              "span": {
-                "end": 279,
-                "start": 265
-              }
-            },
+            "declaration": {"content":"5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af","path":"src/consumer.ts","span":{"end":279,"start":265}},
             "kind": "field",
             "language": "typescript",
-            "name_span": {
-              "end": 270,
-              "start": 265
-            }
+            "name_span": {"end":270,"start":265}
           },
           "text": "value: Runtime",
-          "via": {
-            "content": "5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af",
-            "path": "src/consumer.ts",
-            "span": {
-              "end": 279,
-              "start": 272
-            }
-          }
+          "via": {"content":"5be2e2654b458fac77f228036306fa41fdf944f0a598345b3aec36b4dc54e0af","path":"src/consumer.ts","span":{"end":279,"start":272}}
         }
       ],
       "kind": "context",
@@ -862,16 +482,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 0,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 2,
-        "lookups": 4
-      }
+      "unresolved": {"ambiguous":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":2,"lookups":4}
     },
     "schema": 1,
     "status": "ok"
@@ -885,16 +497,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 2,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 2,
-        "lookups": 4
-      }
+      "unresolved": {"ambiguous":0,"no_container":2,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":2,"lookups":4}
     },
     "schema": 1,
     "status": "ok"
@@ -904,45 +508,18 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "items": [
         {
           "complete": true,
-          "excerpt": {
-            "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 85,
-              "start": 71
-            }
-          },
+          "excerpt": {"content":"396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c","path":"src/origin.ts","span":{"end":85,"start":71}},
           "expansion": null,
           "relation": "reference",
-          "start": {
-            "column": 25,
-            "line": 1
-          },
+          "start": {"column":25,"line":1},
           "target": {
-            "declaration": {
-              "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
-              "path": "src/origin.ts",
-              "span": {
-                "end": 85,
-                "start": 71
-              }
-            },
+            "declaration": {"content":"396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c","path":"src/origin.ts","span":{"end":85,"start":71}},
             "kind": "field",
             "language": "typescript",
-            "name_span": {
-              "end": 77,
-              "start": 71
-            }
+            "name_span": {"end":77,"start":71}
           },
           "text": "engine: Engine",
-          "via": {
-            "content": "396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c",
-            "path": "src/origin.ts",
-            "span": {
-              "end": 85,
-              "start": 79
-            }
-          }
+          "via": {"content":"396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c","path":"src/origin.ts","span":{"end":85,"start":79}}
         }
       ],
       "kind": "context",
@@ -951,16 +528,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
       "traversal_complete": false,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 0,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 2,
-        "lookups": 3
-      }
+      "unresolved": {"ambiguous":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":2,"lookups":3}
     },
     "schema": 1,
     "status": "ok"
@@ -974,16 +543,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "references_by_name": true,
       "snapshot": "ea3ab4b42a478c849f59bafd356be0c242f4439deb16ff0886e52772929d6b58",
       "traversal_complete": true,
-      "unresolved": {
-        "ambiguous": 0,
-        "no_container": 0,
-        "unavailable": 0,
-        "unresolved_imports": 0
-      },
-      "work": {
-        "files": 2,
-        "lookups": 1
-      }
+      "unresolved": {"ambiguous":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+      "work": {"files":2,"lookups":1}
     },
     "schema": 1,
     "status": "ok"

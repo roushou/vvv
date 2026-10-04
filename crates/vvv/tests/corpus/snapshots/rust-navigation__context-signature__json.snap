@@ -1,73 +1,37 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "49754661397416674bc6b2d11cc9ba6a8f990648d39e961453622b5ec05ce6a8",
-    "outcome": "resolved",
     "items": [
       {
-        "target": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/signatures.rs",
-            "content": "ab68eeda52e4a41e9b385356db70141a66e9293ab2915f42dcb8aa27f2c5e284",
-            "span": {
-              "start": 0,
-              "end": 190
-            }
-          },
-          "name_span": {
-            "start": 78,
-            "end": 83
-          },
-          "kind": "function"
-        },
-        "relation": "definition",
-        "via": null,
-        "excerpt": {
-          "path": "src/signatures.rs",
-          "content": "ab68eeda52e4a41e9b385356db70141a66e9293ab2915f42dcb8aa27f2c5e284",
-          "span": {
-            "start": 0,
-            "end": 156
-          }
-        },
-        "start": {
-          "line": 0,
-          "column": 0
-        },
-        "text": "/// Build an array without including implementation context.\n#[inline]\npub fn build<const N: usize>(input: [u8; { 2 }]) -> [u8; N]\nwhere\n    [u8; N]: Sized,",
         "complete": true,
+        "excerpt": {"content":"ab68eeda52e4a41e9b385356db70141a66e9293ab2915f42dcb8aa27f2c5e284","path":"src/signatures.rs","span":{"end":156,"start":0}},
+        "relation": "definition",
         "signature": {
           "outcome": "available",
-          "requested": {
-            "path": "src/signatures.rs",
-            "content": "ab68eeda52e4a41e9b385356db70141a66e9293ab2915f42dcb8aa27f2c5e284",
-            "span": {
-              "start": 0,
-              "end": 156
-            }
-          }
-        }
+          "requested": {"content":"ab68eeda52e4a41e9b385356db70141a66e9293ab2915f42dcb8aa27f2c5e284","path":"src/signatures.rs","span":{"end":156,"start":0}}
+        },
+        "start": {"column":0,"line":0},
+        "target": {
+          "declaration": {"content":"ab68eeda52e4a41e9b385356db70141a66e9293ab2915f42dcb8aa27f2c5e284","path":"src/signatures.rs","span":{"end":190,"start":0}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":83,"start":78}
+        },
+        "text": "/// Build an array without including implementation context.\n#[inline]\npub fn build<const N: usize>(input: [u8; { 2 }]) -> [u8; N]\nwhere\n    [u8; N]: Sized,",
+        "via": null
       }
     ],
-    "omissions": {
-      "item_limit": 0,
-      "byte_limit": 0,
-      "lookup_limit": 0,
-      "file_limit": 0,
-      "ambiguous": 0,
-      "unavailable": 5,
-      "no_container": 0,
-      "unresolved_imports": 0
-    },
-    "references_by_name": false
-  }
+    "omissions": {"ambiguous":0,"byte_limit":0,"file_limit":0,"item_limit":0,"lookup_limit":0,"no_container":0,"unavailable":5,"unresolved_imports":0},
+    "outcome": "resolved",
+    "references_by_name": false,
+    "snapshot": "49754661397416674bc6b2d11cc9ba6a8f990648d39e961453622b5ec05ce6a8"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

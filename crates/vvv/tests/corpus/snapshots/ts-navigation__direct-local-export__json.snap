@@ -1,206 +1,47 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "8e3e395c645a9a5ba6af24d799f1b46b7b29ae34a55cd02e3142338c402049f1",
+    "evidence": {"addresses":[{"package":"","path":["src","local.ts","Engine"]}]},
     "outcome": "resolved",
-    "target": {
-      "language": "typescript",
-      "declaration": {
-        "path": "src/local.ts",
-        "content": "c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10",
-        "span": {
-          "start": 0,
-          "end": 15
-        }
-      },
-      "name_span": {
-        "start": 6,
-        "end": 12
-      },
-      "kind": "class"
-    },
-    "evidence": {
-      "addresses": [
-        {
-          "package": "",
-          "path": [
-            "src",
-            "local.ts",
-            "Engine"
-          ]
-        }
-      ]
-    },
     "preview": {
       "container": {
+        "declaration": {"content":"c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10","path":"src/local.ts","span":{"end":15,"start":0}},
+        "kind": "class",
         "language": "typescript",
-        "declaration": {
-          "path": "src/local.ts",
-          "content": "c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10",
-          "span": {
-            "start": 0,
-            "end": 15
-          }
-        },
-        "name_span": {
-          "start": 6,
-          "end": 12
-        },
-        "kind": "class"
+        "name_span": {"end":12,"start":6}
       },
       "declaration": {
         "content": "c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10",
+        "end": {"column":15,"line":0},
         "id": "0feefc560f9f",
-        "path": "src/local.ts",
-        "language": "typescript",
-        "span": {
-          "start": 0,
-          "end": 15
-        },
-        "start": {
-          "line": 0,
-          "column": 0
-        },
-        "end": {
-          "line": 0,
-          "column": 15
-        },
         "kind": "declaration",
-        "text": "class Engine {}",
+        "language": "typescript",
         "line": "class Engine {}",
-        "symbol": {
-          "kind": "class",
-          "name": "Engine",
-          "name_span": {
-            "start": 6,
-            "end": 12
-          },
-          "span": {
-            "start": 0,
-            "end": 15
-          },
-          "extent": {
-            "start": 0,
-            "end": 15
-          }
-        },
-        "role": "declaration"
-      },
-      "source": {
         "path": "src/local.ts",
-        "text": "class Engine {}\nexport { Engine as PublicEngine };\nexport { Engine };\n",
-        "highlights": [
-          {
-            "span": {
-              "start": 0,
-              "end": 5
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 6,
-              "end": 12
-            },
-            "kind": "type"
-          },
-          {
-            "span": {
-              "start": 16,
-              "end": 22
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 32,
-              "end": 34
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 51,
-              "end": 57
-            },
-            "kind": "keyword"
-          }
-        ],
-        "symbols": [
-          {
-            "kind": "class",
-            "name": "Engine",
-            "name_span": {
-              "start": 6,
-              "end": 12
-            },
-            "span": {
-              "start": 0,
-              "end": 15
-            },
-            "extent": {
-              "start": 0,
-              "end": 15
-            }
-          }
-        ],
-        "identifiers": [
-          {
-            "path": "src/local.ts",
-            "content": "c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10",
-            "span": {
-              "start": 6,
-              "end": 12
-            }
-          },
-          {
-            "path": "src/local.ts",
-            "content": "c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10",
-            "span": {
-              "start": 25,
-              "end": 31
-            }
-          },
-          {
-            "path": "src/local.ts",
-            "content": "c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10",
-            "span": {
-              "start": 35,
-              "end": 47
-            }
-          },
-          {
-            "path": "src/local.ts",
-            "content": "c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10",
-            "span": {
-              "start": 60,
-              "end": 66
-            }
-          }
-        ]
+        "role": "declaration",
+        "span": {"end":15,"start":0},
+        "start": {"column":0,"line":0},
+        "symbol": {"extent":{"end":15,"start":0},"kind":"class","name":"Engine","name_span":{"end":12,"start":6},"span":{"end":15,"start":0}},
+        "text": "class Engine {}"
       },
-      "selection": {
-        "start": 6,
-        "end": 12
-      },
-      "identifiers": [
-        {
-          "path": "src/local.ts",
-          "content": "c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10",
-          "span": {
-            "start": 6,
-            "end": 12
-          }
-        }
-      ]
+      "identifiers": [{"content":"c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10","path":"src/local.ts","span":{"end":12,"start":6}}],
+      "selection": {"end":12,"start":6},
+      "source": {"$snapshot":"ts-navigation__source__src%2Flocal.ts__json.snap"}
+    },
+    "snapshot": "8e3e395c645a9a5ba6af24d799f1b46b7b29ae34a55cd02e3142338c402049f1",
+    "target": {
+      "declaration": {"content":"c0e3a34b3ae88de539cbbdeba2182343d4112eb2e660be8c2f9c62deb2f66f10","path":"src/local.ts","span":{"end":15,"start":0}},
+      "kind": "class",
+      "language": "typescript",
+      "name_span": {"end":12,"start":6}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

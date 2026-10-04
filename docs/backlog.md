@@ -11,8 +11,8 @@ the crate root and `protocol::`, while `Rename`, `RenameIntent`, `Move`,
 `MoveIntent`, `MoveSymbol`, and `MoveSymbolIntent` are root-only. The evidence is
 [protocol's query re-exports](../crates/vvv-engine/src/protocol/mod.rs) and
 [the root exports and negative API doctests](../crates/vvv-engine/src/lib.rs).
-Define one public-path policy, with explicit compatibility decisions and
-compile-time checks. Serialized requests and answers must remain independent of
+Define one public-path policy and update callers and compile-time checks.
+Serialized requests and answers must remain independent of
 Rust import paths.
 
 ## Structured error hints
@@ -23,7 +23,7 @@ strings on the shared wire. The [serve tests](../crates/vvv/src/cli/commands/ser
 assert this JSON hint, while the [TUI worker](../crates/vvv-tui/src/worker.rs)
 reduces failures to messages. Represent suggested actions as structured data owned
 by the error so clients can act on them, and let each interface select its wording.
-Specify wire compatibility for `Failure.hint` and preserve `Failure.recovery`.
+Specify the structured `Failure.hint` contract and preserve `Failure.recovery`.
 
 ## Distinct capability errors
 
@@ -61,6 +61,14 @@ previews, input, effects, plans, history entries, reports, and anchored states.
 Other test suites also contain free fixture helpers. Give these helpers
 owners that retain the fixture data, following `Layers` and `FrameFixture`, and
 preserve assertions and snapshots. `#[test]` functions remain exempt.
+
+## Corpus feature isolation
+
+The complete corpus expects both languages and schemas. Base Rust/TypeScript cases
+and schema-case registrations are not consistently feature-gated; discovery and
+relationship expectations also depend on the registered language set. Define which
+cases support reduced builds before adding an isolated corpus gate. The existing
+feature gate uses CLI builds, isolated language tests, and parser-free engine tests.
 
 ## Navigation coverage
 

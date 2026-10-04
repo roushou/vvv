@@ -1,0 +1,26 @@
+---
+source: crates/vvv/tests/common/corpus_snapshot.rs
+expression: JsonSnapshot(&self.value).to_string()
+---
+{
+  "highlights": [
+    {"kind":"keyword","span":{"end":6,"start":0}},
+    {"kind":"keyword","span":{"end":15,"start":7}},
+    {"kind":"function","span":{"end":22,"start":16}},
+    {"kind":"keyword","span":{"end":33,"start":27}},
+    {"kind":"number","span":{"end":36,"start":34}}
+  ],
+  "identifiers": [{"content":"f22a669a2e0b56ea02e0c2b2c8d9dce3b3b85791952dcd6fc31047fc1aa6d96d","path":"src/helpers.ts","span":{"end":22,"start":16}}],
+  "path": "src/helpers.ts",
+  "symbols": [
+    {
+      "extent": {"end":39,"start":0},
+      "kind": "function",
+      "name": "helper",
+      "name_span": {"end":22,"start":16},
+      "span": {"end":39,"start":7},
+      "visibility": {"span":{"end":6,"start":0},"text":"export"}
+    }
+  ],
+  "text": "export function helper() { return 99; }\n"
+}

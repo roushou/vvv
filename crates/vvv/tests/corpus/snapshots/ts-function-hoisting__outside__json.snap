@@ -1,196 +1,54 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "bed6cfd8603c274ba89cc0f675ad8882e43dc2b80e718f1969018c51a009177b",
+    "evidence": {"addresses":[{"package":"","path":["src","helpers.ts","helper"]}]},
     "outcome": "resolved",
-    "target": {
-      "language": "typescript",
-      "declaration": {
-        "path": "src/helpers.ts",
-        "content": "f22a669a2e0b56ea02e0c2b2c8d9dce3b3b85791952dcd6fc31047fc1aa6d96d",
-        "span": {
-          "start": 0,
-          "end": 39
-        }
-      },
-      "name_span": {
-        "start": 16,
-        "end": 22
-      },
-      "kind": "function"
-    },
-    "evidence": {
-      "addresses": [
-        {
-          "package": "",
-          "path": [
-            "src",
-            "helpers.ts",
-            "helper"
-          ]
-        }
-      ]
-    },
     "preview": {
       "container": {
+        "declaration": {"content":"f22a669a2e0b56ea02e0c2b2c8d9dce3b3b85791952dcd6fc31047fc1aa6d96d","path":"src/helpers.ts","span":{"end":39,"start":0}},
+        "kind": "function",
         "language": "typescript",
-        "declaration": {
-          "path": "src/helpers.ts",
-          "content": "f22a669a2e0b56ea02e0c2b2c8d9dce3b3b85791952dcd6fc31047fc1aa6d96d",
-          "span": {
-            "start": 0,
-            "end": 39
-          }
-        },
-        "name_span": {
-          "start": 16,
-          "end": 22
-        },
-        "kind": "function"
+        "name_span": {"end":22,"start":16}
       },
       "declaration": {
         "content": "f22a669a2e0b56ea02e0c2b2c8d9dce3b3b85791952dcd6fc31047fc1aa6d96d",
+        "end": {"column":39,"line":0},
         "id": "47777116e19e",
-        "path": "src/helpers.ts",
-        "language": "typescript",
-        "span": {
-          "start": 7,
-          "end": 39
-        },
-        "start": {
-          "line": 0,
-          "column": 7
-        },
-        "end": {
-          "line": 0,
-          "column": 39
-        },
         "kind": "declaration",
-        "text": "function helper() { return 99; }",
+        "language": "typescript",
         "line": "export function helper() { return 99; }",
+        "path": "src/helpers.ts",
+        "role": "declaration",
+        "span": {"end":39,"start":7},
+        "start": {"column":7,"line":0},
         "symbol": {
+          "extent": {"end":39,"start":0},
           "kind": "function",
           "name": "helper",
-          "name_span": {
-            "start": 16,
-            "end": 22
-          },
-          "span": {
-            "start": 7,
-            "end": 39
-          },
-          "extent": {
-            "start": 0,
-            "end": 39
-          },
-          "visibility": {
-            "span": {
-              "start": 0,
-              "end": 6
-            },
-            "text": "export"
-          }
+          "name_span": {"end":22,"start":16},
+          "span": {"end":39,"start":7},
+          "visibility": {"span":{"end":6,"start":0},"text":"export"}
         },
-        "role": "declaration"
+        "text": "function helper() { return 99; }"
       },
-      "source": {
-        "path": "src/helpers.ts",
-        "text": "export function helper() { return 99; }\n",
-        "highlights": [
-          {
-            "span": {
-              "start": 0,
-              "end": 6
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 7,
-              "end": 15
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 16,
-              "end": 22
-            },
-            "kind": "function"
-          },
-          {
-            "span": {
-              "start": 27,
-              "end": 33
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 34,
-              "end": 36
-            },
-            "kind": "number"
-          }
-        ],
-        "symbols": [
-          {
-            "kind": "function",
-            "name": "helper",
-            "name_span": {
-              "start": 16,
-              "end": 22
-            },
-            "span": {
-              "start": 7,
-              "end": 39
-            },
-            "extent": {
-              "start": 0,
-              "end": 39
-            },
-            "visibility": {
-              "span": {
-                "start": 0,
-                "end": 6
-              },
-              "text": "export"
-            }
-          }
-        ],
-        "identifiers": [
-          {
-            "path": "src/helpers.ts",
-            "content": "f22a669a2e0b56ea02e0c2b2c8d9dce3b3b85791952dcd6fc31047fc1aa6d96d",
-            "span": {
-              "start": 16,
-              "end": 22
-            }
-          }
-        ]
-      },
-      "selection": {
-        "start": 16,
-        "end": 22
-      },
-      "identifiers": [
-        {
-          "path": "src/helpers.ts",
-          "content": "f22a669a2e0b56ea02e0c2b2c8d9dce3b3b85791952dcd6fc31047fc1aa6d96d",
-          "span": {
-            "start": 16,
-            "end": 22
-          }
-        }
-      ]
+      "identifiers": [{"content":"f22a669a2e0b56ea02e0c2b2c8d9dce3b3b85791952dcd6fc31047fc1aa6d96d","path":"src/helpers.ts","span":{"end":22,"start":16}}],
+      "selection": {"end":22,"start":16},
+      "source": {"$snapshot":"ts-function-hoisting__source__src%2Fhelpers.ts__json.snap"}
+    },
+    "snapshot": "bed6cfd8603c274ba89cc0f675ad8882e43dc2b80e718f1969018c51a009177b",
+    "target": {
+      "declaration": {"content":"f22a669a2e0b56ea02e0c2b2c8d9dce3b3b85791952dcd6fc31047fc1aa6d96d","path":"src/helpers.ts","span":{"end":39,"start":0}},
+      "kind": "function",
+      "language": "typescript",
+      "name_span": {"end":22,"start":16}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

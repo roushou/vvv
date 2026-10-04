@@ -1,14 +1,14 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 1
 --- stdout ---
 {
-  "status": "error",
-  "schema": 1,
   "code": "no_such_symbol",
+  "hint": "declarations are matched by exact name; `vvv search --name Nope` shows what exists",
   "message": "no symbol named `Nope`",
-  "hint": "declarations are matched by exact name; `vvv search --name Nope` shows what exists"
+  "schema": 1,
+  "status": "error"
 }
 --- stderr ---

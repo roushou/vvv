@@ -158,7 +158,7 @@ impl NavigationProvider for Provider {
 }
 
 #[test]
-fn semantic_targets_are_versioned_validated_and_separate_from_the_legacy_oracle() {
+fn semantic_targets_are_versioned_validated_and_separate_from_the_rename_oracle() {
     let f = Fixture::new();
     let provider = f.provider(Behavior::Normal);
     let reply = f

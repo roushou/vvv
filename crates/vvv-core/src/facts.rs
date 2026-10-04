@@ -380,19 +380,6 @@ mod tests {
     }
 
     #[test]
-    fn older_facts_keep_pattern_evidence_empty() {
-        let mut encoded = serde_json::to_value(Facts::default()).unwrap();
-        encoded.as_object_mut().unwrap().remove("patterns");
-        encoded
-            .as_object_mut()
-            .unwrap()
-            .remove("pattern_constructors");
-        let facts: Facts = serde_json::from_value(encoded).unwrap();
-        assert!(facts.patterns.is_empty());
-        assert!(facts.pattern_constructors.is_empty());
-    }
-
-    #[test]
     fn tokens_are_interned_and_found_by_name() {
         let mut facts = Facts::default();
         facts.push_token("foo", "identifier", Span::new(0, 3));

@@ -1,169 +1,69 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "intent": {
-      "name": "area",
-      "from": "core/src/util.rs",
-      "to": "core/src/geometry/mod.rs"
-    },
+    "applied": false,
     "declaration": {
       "content": "2dec45417c4094592bf5b6158fd1efbbc2ce9350841e716ac62e58628e842d3a",
+      "end": {"column":1,"line":4},
       "id": "3a3b9573ec14",
-      "path": "core/src/util.rs",
-      "language": "rust",
-      "span": {
-        "start": 32,
-        "end": 81
-      },
-      "start": {
-        "line": 2,
-        "column": 0
-      },
-      "end": {
-        "line": 4,
-        "column": 1
-      },
       "kind": "function",
-      "text": "pub fn area(side: u32) -> u32 {\n    side * side\n}",
+      "language": "rust",
       "line": "pub fn area(side: u32) -> u32 {",
+      "path": "core/src/util.rs",
+      "role": "declaration",
+      "span": {"end":81,"start":32},
+      "start": {"column":0,"line":2},
       "symbol": {
+        "extent": {"end":81,"start":32},
         "kind": "function",
         "name": "area",
-        "name_span": {
-          "start": 39,
-          "end": 43
-        },
-        "span": {
-          "start": 32,
-          "end": 81
-        },
-        "extent": {
-          "start": 32,
-          "end": 81
-        },
-        "visibility": {
-          "span": {
-            "start": 32,
-            "end": 35
-          },
-          "text": "pub"
-        }
+        "name_span": {"end":43,"start":39},
+        "span": {"end":81,"start":32},
+        "visibility": {"span":{"end":35,"start":32},"text":"pub"}
       },
-      "role": "declaration"
+      "text": "pub fn area(side: u32) -> u32 {\n    side * side\n}"
     },
-    "pieces": [
-      {
-        "symbol": {
-          "kind": "function",
-          "name": "area",
-          "name_span": {
-            "start": 39,
-            "end": 43
-          },
-          "span": {
-            "start": 32,
-            "end": 81
-          },
-          "extent": {
-            "start": 32,
-            "end": 81
-          },
-          "visibility": {
-            "span": {
-              "start": 32,
-              "end": 35
-            },
-            "text": "pub"
-          }
-        },
-        "ownership": "declaration"
-      }
-    ],
-    "applied": false,
-    "from": {
-      "package": "corpus_core",
-      "path": [
-        "util",
-        "area"
-      ]
-    },
-    "to": {
-      "package": "corpus_core",
-      "path": [
-        "geometry",
-        "area"
-      ]
-    },
-    "respellings": [
-      {
-        "path": "core/src/geometry/shape.rs",
-        "span": {
-          "start": 22,
-          "end": 39
-        },
-        "start": {
-          "line": 1,
-          "column": 4
-        },
-        "from": "crate::util::area",
-        "to": "crate::geometry::area"
-      }
-    ],
     "files": [
       {
-        "path": "core/src/geometry/mod.rs",
-        "edits": [
-          {
-            "span": {
-              "start": 100,
-              "end": 100
-            },
-            "replacement": "\npub fn area(side: u32) -> u32 {\n    side * side\n}\n"
-          }
-        ],
-        "diff": "--- a/core/src/geometry/mod.rs\n+++ b/core/src/geometry/mod.rs\n@@ -6,3 +6,7 @@\n pub fn origin() -> Point {\n     Point::new(0, 0)\n }\n+\n+pub fn area(side: u32) -> u32 {\n+    side * side\n+}\n"
+        "diff": "--- a/core/src/geometry/mod.rs\n+++ b/core/src/geometry/mod.rs\n@@ -6,3 +6,7 @@\n pub fn origin() -> Point {\n     Point::new(0, 0)\n }\n+\n+pub fn area(side: u32) -> u32 {\n+    side * side\n+}\n",
+        "edits": [{"replacement":"\npub fn area(side: u32) -> u32 {\n    side * side\n}\n","span":{"end":100,"start":100}}],
+        "path": "core/src/geometry/mod.rs"
       },
       {
-        "path": "core/src/geometry/shape.rs",
-        "edits": [
-          {
-            "span": {
-              "start": 22,
-              "end": 39
-            },
-            "replacement": "crate::geometry::area"
-          }
-        ],
-        "diff": "--- a/core/src/geometry/shape.rs\n+++ b/core/src/geometry/shape.rs\n@@ -1,5 +1,5 @@\n use super::Point;\n-use crate::util::area;\n+use crate::geometry::area;\n \n pub enum Shape {\n     Dot(Point),\n"
+        "diff": "--- a/core/src/geometry/shape.rs\n+++ b/core/src/geometry/shape.rs\n@@ -1,5 +1,5 @@\n use super::Point;\n-use crate::util::area;\n+use crate::geometry::area;\n \n pub enum Shape {\n     Dot(Point),\n",
+        "edits": [{"replacement":"crate::geometry::area","span":{"end":39,"start":22}}],
+        "path": "core/src/geometry/shape.rs"
       },
       {
-        "path": "core/src/util.rs",
-        "edits": [
-          {
-            "span": {
-              "start": 31,
-              "end": 31
-            },
-            "replacement": "use crate::geometry::area;\n"
-          },
-          {
-            "span": {
-              "start": 32,
-              "end": 83
-            },
-            "replacement": ""
-          }
-        ],
-        "diff": "--- a/core/src/util.rs\n+++ b/core/src/util.rs\n@@ -1,8 +1,5 @@\n use std::collections::HashMap;\n-\n-pub fn area(side: u32) -> u32 {\n-    side * side\n-}\n+use crate::geometry::area;\n \n pub(crate) fn helper() -> u32 {\n     area(1)\n"
+        "diff": "--- a/core/src/util.rs\n+++ b/core/src/util.rs\n@@ -1,8 +1,5 @@\n use std::collections::HashMap;\n-\n-pub fn area(side: u32) -> u32 {\n-    side * side\n-}\n+use crate::geometry::area;\n \n pub(crate) fn helper() -> u32 {\n     area(1)\n",
+        "edits": [{"replacement":"use crate::geometry::area;\n","span":{"end":31,"start":31}},{"replacement":"","span":{"end":83,"start":32}}],
+        "path": "core/src/util.rs"
       }
-    ]
-  }
+    ],
+    "from": {"package":"corpus_core","path":["util","area"]},
+    "intent": {"from":"core/src/util.rs","name":"area","to":"core/src/geometry/mod.rs"},
+    "pieces": [
+      {
+        "ownership": "declaration",
+        "symbol": {
+          "extent": {"end":81,"start":32},
+          "kind": "function",
+          "name": "area",
+          "name_span": {"end":43,"start":39},
+          "span": {"end":81,"start":32},
+          "visibility": {"span":{"end":35,"start":32},"text":"pub"}
+        }
+      }
+    ],
+    "respellings": [{"from":"crate::util::area","path":"core/src/geometry/shape.rs","span":{"end":39,"start":22},"start":{"column":4,"line":1},"to":"crate::geometry::area"}],
+    "to": {"package":"corpus_core","path":["geometry","area"]}
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

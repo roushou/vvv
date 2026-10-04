@@ -1,0 +1,46 @@
+---
+source: crates/vvv/tests/common/corpus_snapshot.rs
+expression: JsonSnapshot(&self.value).to_string()
+---
+{
+  "highlights": [
+    {"kind":"keyword","span":{"end":6,"start":0}},
+    {"kind":"keyword","span":{"end":12,"start":7}},
+    {"kind":"type","span":{"end":17,"start":13}},
+    {"kind":"function","span":{"end":28,"start":22}},
+    {"kind":"keyword","span":{"end":49,"start":44}},
+    {"kind":"type","span":{"end":63,"start":62}},
+    {"kind":"type","span":{"end":78,"start":77}},
+    {"kind":"keyword","span":{"end":113,"start":107}}
+  ],
+  "identifiers": [
+    {"content":"fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f","path":"src/view.tsx","span":{"end":17,"start":13}},
+    {"content":"fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f","path":"src/view.tsx","span":{"end":28,"start":22}},
+    {"content":"fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f","path":"src/view.tsx","span":{"end":36,"start":29}},
+    {"content":"fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f","path":"src/view.tsx","span":{"end":58,"start":50}},
+    {"content":"fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f","path":"src/view.tsx","span":{"end":63,"start":62}},
+    {"content":"fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f","path":"src/view.tsx","span":{"end":73,"start":68}},
+    {"content":"fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f","path":"src/view.tsx","span":{"end":78,"start":77}},
+    {"content":"fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f","path":"src/view.tsx","span":{"end":87,"start":84}},
+    {"content":"fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f","path":"src/view.tsx","span":{"end":94,"start":89}},
+    {"content":"fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f","path":"src/view.tsx","span":{"end":100,"start":97}},
+    {"content":"fbd66f2f5b9f82ad8b8a4b5f005a73379f902deef7eed7b21cf3710d9c69e39f","path":"src/view.tsx","span":{"end":121,"start":114}}
+  ],
+  "path": "src/view.tsx",
+  "symbols": [
+    {
+      "extent": {"end":128,"start":0},
+      "kind": "class",
+      "name": "View",
+      "name_span": {"end":17,"start":13},
+      "span": {"end":128,"start":7},
+      "visibility": {"span":{"end":6,"start":0},"text":"export"}
+    },
+    {"extent":{"end":126,"start":22},"kind":"method","name":"render","name_span":{"end":28,"start":22},"span":{"end":126,"start":22}},
+    {"extent":{"end":101,"start":50},"kind":"variable","name":"callback","name_span":{"end":58,"start":50},"span":{"end":101,"start":50}},
+    {"extent":{"end":36,"start":29},"kind":"parameter","name":"entries","name_span":{"end":36,"start":29},"span":{"end":36,"start":29}},
+    {"extent":{"end":63,"start":62},"kind":"type-parameter","name":"T","name_span":{"end":63,"start":62},"span":{"end":63,"start":62}},
+    {"extent":{"end":78,"start":66},"kind":"parameter","name":"title","name_span":{"end":73,"start":68},"span":{"end":78,"start":66}}
+  ],
+  "text": "export class View {\n  render(entries) {\n    const callback = <T,>({ title }: T) => <div>{title}</div>;\n    return entries;\n  }\n}\n"
+}

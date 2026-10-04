@@ -237,7 +237,7 @@ mod initialization_tests {
     use super::*;
 
     #[test]
-    fn initialization_regions_preserve_ownership_and_older_serialized_facts() {
+    fn initialization_regions_preserve_binding_ownership() {
         let mut binding = LexicalBinding {
             symbol: Symbol::plain(SymbolKind::Variable, "x", Span::new(5, 6), Span::new(5, 9)),
             scope: Span::new(0, 20),
@@ -247,10 +247,7 @@ mod initialization_tests {
             namespace: BindingNamespace::Value,
             explicit: true,
         };
-        let serialized = serde_json::to_value(&binding).unwrap();
-        assert!(serialized.get("uninitialized").is_none());
-        let older: LexicalBinding = serde_json::from_value(serialized).unwrap();
-        assert!(older.initialized(Span::new(2, 3)));
+        assert!(binding.initialized(Span::new(2, 3)));
         binding.uninitialized.push(Span::new(0, 5));
         assert!(binding.visible("x", Span::new(2, 3), BindingNamespace::Value));
         assert!(!binding.initialized(Span::new(2, 3)));

@@ -1,57 +1,20 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
+expression: "JsonSnapshot(&serde_json::to_value(&transcript.replies).unwrap()).to_string()"
 ---
 [
   {
     "result": {
-      "intent": {
-        "command": "move",
-        "from": "src/origin.rs",
-        "to": "src/relocated.rs"
-      },
+      "intent": {"command":"move","from":"src/origin.rs","to":"src/relocated.rs"},
       "items": [
         {
           "index": 0,
           "kind": "metadata",
           "section": "move",
-          "value": {
-            "from": "",
-            "from_address": {
-              "package": "navigation",
-              "path": [
-                "origin"
-              ]
-            },
-            "to": "",
-            "to_address": {
-              "package": "navigation",
-              "path": [
-                "relocated"
-              ]
-            }
-          }
+          "value": {"from":"","from_address":{"package":"navigation","path":["origin"]},"to":"","to_address":{"package":"navigation","path":["relocated"]}}
         },
-        {
-          "complete": true,
-          "field": "/from",
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "move",
-          "text": "src/origin.rs",
-          "total_bytes": 13
-        },
-        {
-          "complete": true,
-          "field": "/to",
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "move",
-          "text": "src/relocated.rs",
-          "total_bytes": 16
-        }
+        {"complete":true,"field":"/from","index":0,"kind":"text","offset":0,"section":"move","text":"src/origin.rs","total_bytes":13},
+        {"complete":true,"field":"/to","index":0,"kind":"text","offset":0,"section":"move","text":"src/relocated.rs","total_bytes":16}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -59,13 +22,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-1",
       "plan_id": "cursor-2",
       "review_id": "acddb8bfc0c63dea1a7f1179846fe8ed87ade5d8b6b69db2b3a5c9d7b18cd527",
-      "totals": {
-        "declarations": 0,
-        "edits": 7,
-        "files": 8,
-        "occurrences": 0,
-        "respellings": 6
-      }
+      "totals": {"declarations":0,"edits":7,"files":8,"occurrences":0,"respellings":6}
     },
     "schema": 1,
     "status": "ok"
@@ -77,40 +34,10 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "index": 0,
           "kind": "metadata",
           "section": "respelling",
-          "value": {
-            "from": "",
-            "path": "src/ambiguous.rs",
-            "span": {
-              "end": 17,
-              "start": 4
-            },
-            "start": {
-              "column": 4,
-              "line": 0
-            },
-            "to": ""
-          }
+          "value": {"from":"","path":"src/ambiguous.rs","span":{"end":17,"start":4},"start":{"column":4,"line":0},"to":""}
         },
-        {
-          "complete": true,
-          "field": "/from",
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "respelling",
-          "text": "crate::origin",
-          "total_bytes": 13
-        },
-        {
-          "complete": true,
-          "field": "/to",
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "respelling",
-          "text": "crate::relocated",
-          "total_bytes": 16
-        }
+        {"complete":true,"field":"/from","index":0,"kind":"text","offset":0,"section":"respelling","text":"crate::origin","total_bytes":13},
+        {"complete":true,"field":"/to","index":0,"kind":"text","offset":0,"section":"respelling","text":"crate::relocated","total_bytes":16}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -118,13 +45,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-3",
       "plan_id": "cursor-2",
       "review_id": "acddb8bfc0c63dea1a7f1179846fe8ed87ade5d8b6b69db2b3a5c9d7b18cd527",
-      "totals": {
-        "declarations": 0,
-        "edits": 7,
-        "files": 8,
-        "occurrences": 0,
-        "respellings": 6
-      }
+      "totals": {"declarations":0,"edits":7,"files":8,"occurrences":0,"respellings":6}
     },
     "schema": 1,
     "status": "ok"
@@ -136,40 +57,10 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "index": 1,
           "kind": "metadata",
           "section": "respelling",
-          "value": {
-            "from": "",
-            "path": "src/bindings.rs",
-            "span": {
-              "end": 236,
-              "start": 215
-            },
-            "start": {
-              "column": 4,
-              "line": 3
-            },
-            "to": ""
-          }
+          "value": {"from":"","path":"src/bindings.rs","span":{"end":236,"start":215},"start":{"column":4,"line":3},"to":""}
         },
-        {
-          "complete": true,
-          "field": "/from",
-          "index": 1,
-          "kind": "text",
-          "offset": 0,
-          "section": "respelling",
-          "text": "crate::origin::Engine",
-          "total_bytes": 21
-        },
-        {
-          "complete": true,
-          "field": "/to",
-          "index": 1,
-          "kind": "text",
-          "offset": 0,
-          "section": "respelling",
-          "text": "crate::relocated::Engine",
-          "total_bytes": 24
-        }
+        {"complete":true,"field":"/from","index":1,"kind":"text","offset":0,"section":"respelling","text":"crate::origin::Engine","total_bytes":21},
+        {"complete":true,"field":"/to","index":1,"kind":"text","offset":0,"section":"respelling","text":"crate::relocated::Engine","total_bytes":24}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -177,13 +68,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-4",
       "plan_id": "cursor-2",
       "review_id": "acddb8bfc0c63dea1a7f1179846fe8ed87ade5d8b6b69db2b3a5c9d7b18cd527",
-      "totals": {
-        "declarations": 0,
-        "edits": 7,
-        "files": 8,
-        "occurrences": 0,
-        "respellings": 6
-      }
+      "totals": {"declarations":0,"edits":7,"files":8,"occurrences":0,"respellings":6}
     },
     "schema": 1,
     "status": "ok"
@@ -195,40 +80,10 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "index": 2,
           "kind": "metadata",
           "section": "respelling",
-          "value": {
-            "from": "",
-            "path": "src/bridge.rs",
-            "span": {
-              "end": 29,
-              "start": 8
-            },
-            "start": {
-              "column": 8,
-              "line": 0
-            },
-            "to": ""
-          }
+          "value": {"from":"","path":"src/bridge.rs","span":{"end":29,"start":8},"start":{"column":8,"line":0},"to":""}
         },
-        {
-          "complete": true,
-          "field": "/from",
-          "index": 2,
-          "kind": "text",
-          "offset": 0,
-          "section": "respelling",
-          "text": "crate::origin::Engine",
-          "total_bytes": 21
-        },
-        {
-          "complete": true,
-          "field": "/to",
-          "index": 2,
-          "kind": "text",
-          "offset": 0,
-          "section": "respelling",
-          "text": "crate::relocated::Engine",
-          "total_bytes": 24
-        }
+        {"complete":true,"field":"/from","index":2,"kind":"text","offset":0,"section":"respelling","text":"crate::origin::Engine","total_bytes":21},
+        {"complete":true,"field":"/to","index":2,"kind":"text","offset":0,"section":"respelling","text":"crate::relocated::Engine","total_bytes":24}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -236,13 +91,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-5",
       "plan_id": "cursor-2",
       "review_id": "acddb8bfc0c63dea1a7f1179846fe8ed87ade5d8b6b69db2b3a5c9d7b18cd527",
-      "totals": {
-        "declarations": 0,
-        "edits": 7,
-        "files": 8,
-        "occurrences": 0,
-        "respellings": 6
-      }
+      "totals": {"declarations":0,"edits":7,"files":8,"occurrences":0,"respellings":6}
     },
     "schema": 1,
     "status": "ok"
@@ -254,40 +103,10 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "index": 3,
           "kind": "metadata",
           "section": "respelling",
-          "value": {
-            "from": "",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 53,
-              "start": 32
-            },
-            "start": {
-              "column": 4,
-              "line": 1
-            },
-            "to": ""
-          }
+          "value": {"from":"","path":"src/consumer.rs","span":{"end":53,"start":32},"start":{"column":4,"line":1},"to":""}
         },
-        {
-          "complete": true,
-          "field": "/from",
-          "index": 3,
-          "kind": "text",
-          "offset": 0,
-          "section": "respelling",
-          "text": "crate::origin::Engine",
-          "total_bytes": 21
-        },
-        {
-          "complete": true,
-          "field": "/to",
-          "index": 3,
-          "kind": "text",
-          "offset": 0,
-          "section": "respelling",
-          "text": "crate::relocated::Engine",
-          "total_bytes": 24
-        }
+        {"complete":true,"field":"/from","index":3,"kind":"text","offset":0,"section":"respelling","text":"crate::origin::Engine","total_bytes":21},
+        {"complete":true,"field":"/to","index":3,"kind":"text","offset":0,"section":"respelling","text":"crate::relocated::Engine","total_bytes":24}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -295,13 +114,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-6",
       "plan_id": "cursor-2",
       "review_id": "acddb8bfc0c63dea1a7f1179846fe8ed87ade5d8b6b69db2b3a5c9d7b18cd527",
-      "totals": {
-        "declarations": 0,
-        "edits": 7,
-        "files": 8,
-        "occurrences": 0,
-        "respellings": 6
-      }
+      "totals": {"declarations":0,"edits":7,"files":8,"occurrences":0,"respellings":6}
     },
     "schema": 1,
     "status": "ok"
@@ -313,40 +126,10 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "index": 4,
           "kind": "metadata",
           "section": "respelling",
-          "value": {
-            "from": "",
-            "path": "src/lexical.rs",
-            "span": {
-              "end": 25,
-              "start": 4
-            },
-            "start": {
-              "column": 4,
-              "line": 0
-            },
-            "to": ""
-          }
+          "value": {"from":"","path":"src/lexical.rs","span":{"end":25,"start":4},"start":{"column":4,"line":0},"to":""}
         },
-        {
-          "complete": true,
-          "field": "/from",
-          "index": 4,
-          "kind": "text",
-          "offset": 0,
-          "section": "respelling",
-          "text": "crate::origin::Engine",
-          "total_bytes": 21
-        },
-        {
-          "complete": true,
-          "field": "/to",
-          "index": 4,
-          "kind": "text",
-          "offset": 0,
-          "section": "respelling",
-          "text": "crate::relocated::Engine",
-          "total_bytes": 24
-        }
+        {"complete":true,"field":"/from","index":4,"kind":"text","offset":0,"section":"respelling","text":"crate::origin::Engine","total_bytes":21},
+        {"complete":true,"field":"/to","index":4,"kind":"text","offset":0,"section":"respelling","text":"crate::relocated::Engine","total_bytes":24}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -354,13 +137,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-7",
       "plan_id": "cursor-2",
       "review_id": "acddb8bfc0c63dea1a7f1179846fe8ed87ade5d8b6b69db2b3a5c9d7b18cd527",
-      "totals": {
-        "declarations": 0,
-        "edits": 7,
-        "files": 8,
-        "occurrences": 0,
-        "respellings": 6
-      }
+      "totals": {"declarations":0,"edits":7,"files":8,"occurrences":0,"respellings":6}
     },
     "schema": 1,
     "status": "ok"
@@ -372,40 +149,10 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "index": 5,
           "kind": "metadata",
           "section": "respelling",
-          "value": {
-            "from": "",
-            "path": "src/test/check.rs",
-            "span": {
-              "end": 25,
-              "start": 4
-            },
-            "start": {
-              "column": 4,
-              "line": 0
-            },
-            "to": ""
-          }
+          "value": {"from":"","path":"src/test/check.rs","span":{"end":25,"start":4},"start":{"column":4,"line":0},"to":""}
         },
-        {
-          "complete": true,
-          "field": "/from",
-          "index": 5,
-          "kind": "text",
-          "offset": 0,
-          "section": "respelling",
-          "text": "crate::origin::Engine",
-          "total_bytes": 21
-        },
-        {
-          "complete": true,
-          "field": "/to",
-          "index": 5,
-          "kind": "text",
-          "offset": 0,
-          "section": "respelling",
-          "text": "crate::relocated::Engine",
-          "total_bytes": 24
-        }
+        {"complete":true,"field":"/from","index":5,"kind":"text","offset":0,"section":"respelling","text":"crate::origin::Engine","total_bytes":21},
+        {"complete":true,"field":"/to","index":5,"kind":"text","offset":0,"section":"respelling","text":"crate::relocated::Engine","total_bytes":24}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -413,13 +160,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-8",
       "plan_id": "cursor-2",
       "review_id": "acddb8bfc0c63dea1a7f1179846fe8ed87ade5d8b6b69db2b3a5c9d7b18cd527",
-      "totals": {
-        "declarations": 0,
-        "edits": 7,
-        "files": 8,
-        "occurrences": 0,
-        "respellings": 6
-      }
+      "totals": {"declarations":0,"edits":7,"files":8,"occurrences":0,"respellings":6}
     },
     "schema": 1,
     "status": "ok"
@@ -427,38 +168,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "index": 0,
-          "kind": "metadata",
-          "section": "file",
-          "value": {
-            "path": "src/ambiguous.rs"
-          }
-        },
-        {
-          "file_index": 0,
-          "index": 0,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 17,
-              "start": 4
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 0,
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "crate::relocated",
-          "total_bytes": 16
-        }
+        {"index":0,"kind":"metadata","section":"file","value":{"path":"src/ambiguous.rs"}},
+        {"file_index":0,"index":0,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":17,"start":4}}},
+        {"complete":true,"field":"/replacement","file_index":0,"index":0,"kind":"text","offset":0,"section":"edit","text":"crate::relocated","total_bytes":16}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -466,13 +178,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-9",
       "plan_id": "cursor-2",
       "review_id": "acddb8bfc0c63dea1a7f1179846fe8ed87ade5d8b6b69db2b3a5c9d7b18cd527",
-      "totals": {
-        "declarations": 0,
-        "edits": 7,
-        "files": 8,
-        "occurrences": 0,
-        "respellings": 6
-      }
+      "totals": {"declarations":0,"edits":7,"files":8,"occurrences":0,"respellings":6}
     },
     "schema": 1,
     "status": "ok"
@@ -490,27 +196,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "text": "--- a/src/ambiguous.rs\n+++ b/src/ambiguous.rs\n@@ -1,3 +1,3 @@\n-use crate::origin::*;\n+use crate::relocated::*;\n use crate::other::*;\n pub struct App { engine: Engine }\n",
           "total_bytes": 168
         },
-        {
-          "index": 1,
-          "kind": "metadata",
-          "section": "file",
-          "value": {
-            "path": "src/bindings.rs"
-          }
-        },
-        {
-          "file_index": 1,
-          "index": 0,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 236,
-              "start": 215
-            }
-          }
-        }
+        {"index":1,"kind":"metadata","section":"file","value":{"path":"src/bindings.rs"}},
+        {"file_index":1,"index":0,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":236,"start":215}}}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -518,13 +205,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-10",
       "plan_id": "cursor-2",
       "review_id": "acddb8bfc0c63dea1a7f1179846fe8ed87ade5d8b6b69db2b3a5c9d7b18cd527",
-      "totals": {
-        "declarations": 0,
-        "edits": 7,
-        "files": 8,
-        "occurrences": 0,
-        "respellings": 6
-      }
+      "totals": {"declarations":0,"edits":7,"files":8,"occurrences":0,"respellings":6}
     },
     "schema": 1,
     "status": "ok"
@@ -532,17 +213,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 1,
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "crate::relocated::Engine",
-          "total_bytes": 24
-        },
+        {"complete":true,"field":"/replacement","file_index":1,"index":0,"kind":"text","offset":0,"section":"edit","text":"crate::relocated::Engine","total_bytes":24},
         {
           "complete": false,
           "field": "/diff",
@@ -560,13 +231,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-11",
       "plan_id": "cursor-2",
       "review_id": "acddb8bfc0c63dea1a7f1179846fe8ed87ade5d8b6b69db2b3a5c9d7b18cd527",
-      "totals": {
-        "declarations": 0,
-        "edits": 7,
-        "files": 8,
-        "occurrences": 0,
-        "respellings": 6
-      }
+      "totals": {"declarations":0,"edits":7,"files":8,"occurrences":0,"respellings":6}
     },
     "schema": 1,
     "status": "ok"
@@ -574,37 +239,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "complete": true,
-          "field": "/diff",
-          "index": 1,
-          "kind": "text",
-          "offset": 371,
-          "section": "diff",
-          "text": "}\n",
-          "total_bytes": 373
-        },
-        {
-          "index": 2,
-          "kind": "metadata",
-          "section": "file",
-          "value": {
-            "path": "src/bridge.rs"
-          }
-        },
-        {
-          "file_index": 2,
-          "index": 0,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 29,
-              "start": 8
-            }
-          }
-        }
+        {"complete":true,"field":"/diff","index":1,"kind":"text","offset":371,"section":"diff","text":"}\n","total_bytes":373},
+        {"index":2,"kind":"metadata","section":"file","value":{"path":"src/bridge.rs"}},
+        {"file_index":2,"index":0,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":29,"start":8}}}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -612,13 +249,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-12",
       "plan_id": "cursor-2",
       "review_id": "acddb8bfc0c63dea1a7f1179846fe8ed87ade5d8b6b69db2b3a5c9d7b18cd527",
-      "totals": {
-        "declarations": 0,
-        "edits": 7,
-        "files": 8,
-        "occurrences": 0,
-        "respellings": 6
-      }
+      "totals": {"declarations":0,"edits":7,"files":8,"occurrences":0,"respellings":6}
     },
     "schema": 1,
     "status": "ok"
@@ -626,17 +257,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 2,
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "crate::relocated::Engine",
-          "total_bytes": 24
-        },
+        {"complete":true,"field":"/replacement","file_index":2,"index":0,"kind":"text","offset":0,"section":"edit","text":"crate::relocated::Engine","total_bytes":24},
         {
           "complete": true,
           "field": "/diff",
@@ -647,14 +268,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "text": "--- a/src/bridge.rs\n+++ b/src/bridge.rs\n@@ -1 +1 @@\n-pub use crate::origin::Engine as Runtime;\n+pub use crate::relocated::Engine as Runtime;\n",
           "total_bytes": 141
         },
-        {
-          "index": 3,
-          "kind": "metadata",
-          "section": "file",
-          "value": {
-            "path": "src/consumer.rs"
-          }
-        }
+        {"index":3,"kind":"metadata","section":"file","value":{"path":"src/consumer.rs"}}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -662,13 +276,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-13",
       "plan_id": "cursor-2",
       "review_id": "acddb8bfc0c63dea1a7f1179846fe8ed87ade5d8b6b69db2b3a5c9d7b18cd527",
-      "totals": {
-        "declarations": 0,
-        "edits": 7,
-        "files": 8,
-        "occurrences": 0,
-        "respellings": 6
-      }
+      "totals": {"declarations":0,"edits":7,"files":8,"occurrences":0,"respellings":6}
     },
     "schema": 1,
     "status": "ok"
@@ -676,30 +284,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "file_index": 3,
-          "index": 0,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 53,
-              "start": 32
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 3,
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "crate::relocated::Engine",
-          "total_bytes": 24
-        },
+        {"file_index":3,"index":0,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":53,"start":32}}},
+        {"complete":true,"field":"/replacement","file_index":3,"index":0,"kind":"text","offset":0,"section":"edit","text":"crate::relocated::Engine","total_bytes":24},
         {
           "complete": true,
           "field": "/diff",
@@ -717,13 +303,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-14",
       "plan_id": "cursor-2",
       "review_id": "acddb8bfc0c63dea1a7f1179846fe8ed87ade5d8b6b69db2b3a5c9d7b18cd527",
-      "totals": {
-        "declarations": 0,
-        "edits": 7,
-        "files": 8,
-        "occurrences": 0,
-        "respellings": 6
-      }
+      "totals": {"declarations":0,"edits":7,"files":8,"occurrences":0,"respellings":6}
     },
     "schema": 1,
     "status": "ok"
@@ -731,38 +311,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "index": 4,
-          "kind": "metadata",
-          "section": "file",
-          "value": {
-            "path": "src/lexical.rs"
-          }
-        },
-        {
-          "file_index": 4,
-          "index": 0,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 25,
-              "start": 4
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 4,
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "crate::relocated::Engine",
-          "total_bytes": 24
-        }
+        {"index":4,"kind":"metadata","section":"file","value":{"path":"src/lexical.rs"}},
+        {"file_index":4,"index":0,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":25,"start":4}}},
+        {"complete":true,"field":"/replacement","file_index":4,"index":0,"kind":"text","offset":0,"section":"edit","text":"crate::relocated::Engine","total_bytes":24}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -770,13 +321,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-15",
       "plan_id": "cursor-2",
       "review_id": "acddb8bfc0c63dea1a7f1179846fe8ed87ade5d8b6b69db2b3a5c9d7b18cd527",
-      "totals": {
-        "declarations": 0,
-        "edits": 7,
-        "files": 8,
-        "occurrences": 0,
-        "respellings": 6
-      }
+      "totals": {"declarations":0,"edits":7,"files":8,"occurrences":0,"respellings":6}
     },
     "schema": 1,
     "status": "ok"
@@ -794,27 +339,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "text": "--- a/src/lexical.rs\n+++ b/src/lexical.rs\n@@ -1,4 +1,4 @@\n-use crate::origin::Engine;\n+use crate::relocated::Engine;\n fn generic<Engine>(value: Engine) -> Engine { value }\n fn shadow(value: Engine) {\n     let value = value;\n",
           "total_bytes": 224
         },
-        {
-          "index": 5,
-          "kind": "metadata",
-          "section": "file",
-          "value": {
-            "path": "src/lib.rs"
-          }
-        },
-        {
-          "file_index": 5,
-          "index": 0,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 14,
-              "start": 8
-            }
-          }
-        }
+        {"index":5,"kind":"metadata","section":"file","value":{"path":"src/lib.rs"}},
+        {"file_index":5,"index":0,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":14,"start":8}}}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -822,13 +348,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-16",
       "plan_id": "cursor-2",
       "review_id": "acddb8bfc0c63dea1a7f1179846fe8ed87ade5d8b6b69db2b3a5c9d7b18cd527",
-      "totals": {
-        "declarations": 0,
-        "edits": 7,
-        "files": 8,
-        "occurrences": 0,
-        "respellings": 6
-      }
+      "totals": {"declarations":0,"edits":7,"files":8,"occurrences":0,"respellings":6}
     },
     "schema": 1,
     "status": "ok"
@@ -836,17 +356,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 5,
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "relocated",
-          "total_bytes": 9
-        },
+        {"complete":true,"field":"/replacement","file_index":5,"index":0,"kind":"text","offset":0,"section":"edit","text":"relocated","total_bytes":9},
         {
           "complete": true,
           "field": "/diff",
@@ -857,15 +367,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "text": "--- a/src/lib.rs\n+++ b/src/lib.rs\n@@ -1,4 +1,4 @@\n-pub mod origin;\n+pub mod relocated;\n pub mod other;\n pub mod bridge;\n pub mod consumer;\n",
           "total_bytes": 139
         },
-        {
-          "index": 6,
-          "kind": "metadata",
-          "section": "file",
-          "value": {
-            "moved_to": "src/relocated.rs",
-            "path": "src/origin.rs"
-          }
-        }
+        {"index":6,"kind":"metadata","section":"file","value":{"moved_to":"src/relocated.rs","path":"src/origin.rs"}}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -873,13 +375,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-17",
       "plan_id": "cursor-2",
       "review_id": "acddb8bfc0c63dea1a7f1179846fe8ed87ade5d8b6b69db2b3a5c9d7b18cd527",
-      "totals": {
-        "declarations": 0,
-        "edits": 7,
-        "files": 8,
-        "occurrences": 0,
-        "respellings": 6
-      }
+      "totals": {"declarations":0,"edits":7,"files":8,"occurrences":0,"respellings":6}
     },
     "schema": 1,
     "status": "ok"
@@ -887,37 +383,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "complete": true,
-          "field": "/diff",
-          "index": 6,
-          "kind": "text",
-          "offset": 0,
-          "section": "diff",
-          "text": "--- a/src/origin.rs\n+++ b/src/relocated.rs\n",
-          "total_bytes": 43
-        },
-        {
-          "index": 7,
-          "kind": "metadata",
-          "section": "file",
-          "value": {
-            "path": "src/test/check.rs"
-          }
-        },
-        {
-          "file_index": 7,
-          "index": 0,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 25,
-              "start": 4
-            }
-          }
-        }
+        {"complete":true,"field":"/diff","index":6,"kind":"text","offset":0,"section":"diff","text":"--- a/src/origin.rs\n+++ b/src/relocated.rs\n","total_bytes":43},
+        {"index":7,"kind":"metadata","section":"file","value":{"path":"src/test/check.rs"}},
+        {"file_index":7,"index":0,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":25,"start":4}}}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -925,13 +393,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-18",
       "plan_id": "cursor-2",
       "review_id": "acddb8bfc0c63dea1a7f1179846fe8ed87ade5d8b6b69db2b3a5c9d7b18cd527",
-      "totals": {
-        "declarations": 0,
-        "edits": 7,
-        "files": 8,
-        "occurrences": 0,
-        "respellings": 6
-      }
+      "totals": {"declarations":0,"edits":7,"files":8,"occurrences":0,"respellings":6}
     },
     "schema": 1,
     "status": "ok"
@@ -939,17 +401,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 7,
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "crate::relocated::Engine",
-          "total_bytes": 24
-        },
+        {"complete":true,"field":"/replacement","file_index":7,"index":0,"kind":"text","offset":0,"section":"edit","text":"crate::relocated::Engine","total_bytes":24},
         {
           "complete": true,
           "field": "/diff",
@@ -967,13 +419,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": null,
       "plan_id": "cursor-2",
       "review_id": "acddb8bfc0c63dea1a7f1179846fe8ed87ade5d8b6b69db2b3a5c9d7b18cd527",
-      "totals": {
-        "declarations": 0,
-        "edits": 7,
-        "files": 8,
-        "occurrences": 0,
-        "respellings": 6
-      }
+      "totals": {"declarations":0,"edits":7,"files":8,"occurrences":0,"respellings":6}
     },
     "schema": 1,
     "status": "ok"
@@ -987,200 +433,54 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         "files": [
           {
             "diff": "--- a/src/ambiguous.rs\n+++ b/src/ambiguous.rs\n@@ -1,3 +1,3 @@\n-use crate::origin::*;\n+use crate::relocated::*;\n use crate::other::*;\n pub struct App { engine: Engine }\n",
-            "edits": [
-              {
-                "replacement": "crate::relocated",
-                "span": {
-                  "end": 17,
-                  "start": 4
-                }
-              }
-            ],
+            "edits": [{"replacement":"crate::relocated","span":{"end":17,"start":4}}],
             "path": "src/ambiguous.rs"
           },
           {
             "diff": "--- a/src/bindings.rs\n+++ b/src/bindings.rs\n@@ -1,5 +1,5 @@\n fn pairs((left, right): (u8, u8)) { consume(left); consume(right); }\n fn closure(value: u8) { let f = |value| value; consume(value); }\n fn destructure(pair: (u8, u8)) { let (left, right) = pair; consume(right); }\n-use crate::origin::Engine;\n+use crate::relocated::Engine;\n fn annotated() { let engine: Engine; }\n",
-            "edits": [
-              {
-                "replacement": "crate::relocated::Engine",
-                "span": {
-                  "end": 236,
-                  "start": 215
-                }
-              }
-            ],
+            "edits": [{"replacement":"crate::relocated::Engine","span":{"end":236,"start":215}}],
             "path": "src/bindings.rs"
           },
           {
             "diff": "--- a/src/bridge.rs\n+++ b/src/bridge.rs\n@@ -1 +1 @@\n-pub use crate::origin::Engine as Runtime;\n+pub use crate::relocated::Engine as Runtime;\n",
-            "edits": [
-              {
-                "replacement": "crate::relocated::Engine",
-                "span": {
-                  "end": 29,
-                  "start": 8
-                }
-              }
-            ],
+            "edits": [{"replacement":"crate::relocated::Engine","span":{"end":29,"start":8}}],
             "path": "src/bridge.rs"
           },
           {
             "diff": "--- a/src/consumer.rs\n+++ b/src/consumer.rs\n@@ -1,5 +1,5 @@\n use crate::bridge::Runtime;\n-use crate::origin::Engine;\n+use crate::relocated::Engine;\n \n pub struct App {\n     engine: Engine,\n",
-            "edits": [
-              {
-                "replacement": "crate::relocated::Engine",
-                "span": {
-                  "end": 53,
-                  "start": 32
-                }
-              }
-            ],
+            "edits": [{"replacement":"crate::relocated::Engine","span":{"end":53,"start":32}}],
             "path": "src/consumer.rs"
           },
           {
             "diff": "--- a/src/lexical.rs\n+++ b/src/lexical.rs\n@@ -1,4 +1,4 @@\n-use crate::origin::Engine;\n+use crate::relocated::Engine;\n fn generic<Engine>(value: Engine) -> Engine { value }\n fn shadow(value: Engine) {\n     let value = value;\n",
-            "edits": [
-              {
-                "replacement": "crate::relocated::Engine",
-                "span": {
-                  "end": 25,
-                  "start": 4
-                }
-              }
-            ],
+            "edits": [{"replacement":"crate::relocated::Engine","span":{"end":25,"start":4}}],
             "path": "src/lexical.rs"
           },
           {
             "diff": "--- a/src/lib.rs\n+++ b/src/lib.rs\n@@ -1,4 +1,4 @@\n-pub mod origin;\n+pub mod relocated;\n pub mod other;\n pub mod bridge;\n pub mod consumer;\n",
-            "edits": [
-              {
-                "replacement": "relocated",
-                "span": {
-                  "end": 14,
-                  "start": 8
-                }
-              }
-            ],
+            "edits": [{"replacement":"relocated","span":{"end":14,"start":8}}],
             "path": "src/lib.rs"
           },
-          {
-            "diff": "--- a/src/origin.rs\n+++ b/src/relocated.rs\n",
-            "edits": [],
-            "moved_to": "src/relocated.rs",
-            "path": "src/origin.rs"
-          },
+          {"diff":"--- a/src/origin.rs\n+++ b/src/relocated.rs\n","edits":[],"moved_to":"src/relocated.rs","path":"src/origin.rs"},
           {
             "diff": "--- a/src/test/check.rs\n+++ b/src/test/check.rs\n@@ -1,2 +1,2 @@\n-use crate::origin::Engine;\n+use crate::relocated::Engine;\n fn related(value: Engine) {}\n",
-            "edits": [
-              {
-                "replacement": "crate::relocated::Engine",
-                "span": {
-                  "end": 25,
-                  "start": 4
-                }
-              }
-            ],
+            "edits": [{"replacement":"crate::relocated::Engine","span":{"end":25,"start":4}}],
             "path": "src/test/check.rs"
           }
         ],
         "from": "src/origin.rs",
-        "from_address": {
-          "package": "navigation",
-          "path": [
-            "origin"
-          ]
-        },
-        "intent": {
-          "from": "src/origin.rs",
-          "to": "src/relocated.rs"
-        },
+        "from_address": {"package":"navigation","path":["origin"]},
+        "intent": {"from":"src/origin.rs","to":"src/relocated.rs"},
         "respellings": [
-          {
-            "from": "crate::origin",
-            "path": "src/ambiguous.rs",
-            "span": {
-              "end": 17,
-              "start": 4
-            },
-            "start": {
-              "column": 4,
-              "line": 0
-            },
-            "to": "crate::relocated"
-          },
-          {
-            "from": "crate::origin::Engine",
-            "path": "src/bindings.rs",
-            "span": {
-              "end": 236,
-              "start": 215
-            },
-            "start": {
-              "column": 4,
-              "line": 3
-            },
-            "to": "crate::relocated::Engine"
-          },
-          {
-            "from": "crate::origin::Engine",
-            "path": "src/bridge.rs",
-            "span": {
-              "end": 29,
-              "start": 8
-            },
-            "start": {
-              "column": 8,
-              "line": 0
-            },
-            "to": "crate::relocated::Engine"
-          },
-          {
-            "from": "crate::origin::Engine",
-            "path": "src/consumer.rs",
-            "span": {
-              "end": 53,
-              "start": 32
-            },
-            "start": {
-              "column": 4,
-              "line": 1
-            },
-            "to": "crate::relocated::Engine"
-          },
-          {
-            "from": "crate::origin::Engine",
-            "path": "src/lexical.rs",
-            "span": {
-              "end": 25,
-              "start": 4
-            },
-            "start": {
-              "column": 4,
-              "line": 0
-            },
-            "to": "crate::relocated::Engine"
-          },
-          {
-            "from": "crate::origin::Engine",
-            "path": "src/test/check.rs",
-            "span": {
-              "end": 25,
-              "start": 4
-            },
-            "start": {
-              "column": 4,
-              "line": 0
-            },
-            "to": "crate::relocated::Engine"
-          }
+          {"from":"crate::origin","path":"src/ambiguous.rs","span":{"end":17,"start":4},"start":{"column":4,"line":0},"to":"crate::relocated"},
+          {"from":"crate::origin::Engine","path":"src/bindings.rs","span":{"end":236,"start":215},"start":{"column":4,"line":3},"to":"crate::relocated::Engine"},
+          {"from":"crate::origin::Engine","path":"src/bridge.rs","span":{"end":29,"start":8},"start":{"column":8,"line":0},"to":"crate::relocated::Engine"},
+          {"from":"crate::origin::Engine","path":"src/consumer.rs","span":{"end":53,"start":32},"start":{"column":4,"line":1},"to":"crate::relocated::Engine"},
+          {"from":"crate::origin::Engine","path":"src/lexical.rs","span":{"end":25,"start":4},"start":{"column":4,"line":0},"to":"crate::relocated::Engine"},
+          {"from":"crate::origin::Engine","path":"src/test/check.rs","span":{"end":25,"start":4},"start":{"column":4,"line":0},"to":"crate::relocated::Engine"}
         ],
         "to": "src/relocated.rs",
-        "to_address": {
-          "package": "navigation",
-          "path": [
-            "relocated"
-          ]
-        }
+        "to_address": {"package":"navigation","path":["relocated"]}
       },
       "state": "prepared"
     },
@@ -1190,38 +490,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "files": [
-        {
-          "content": "203053517b7172e69b0dad308d09f5dee6002675aefc56a064f5313043018fc6",
-          "path": "src/ambiguous.rs"
-        },
-        {
-          "content": "e7b402167b6668d6f437ba3108d4272d306e50571cf5dd453d446bde059c9cfd",
-          "path": "src/bindings.rs"
-        },
-        {
-          "content": "36027cd8e2e252e7f7bd07b1818bd25de1c05a68cd46dd420c6c0489ddb76ad7",
-          "path": "src/bridge.rs"
-        },
-        {
-          "content": "c681c672a195b2f185529ad712246cd55df356c899ba4fbdd42ea3720cf69b15",
-          "path": "src/consumer.rs"
-        },
-        {
-          "content": "7c1a1c0bf05a685a98693191089697a102a704adf047526c280d7d4e60115a80",
-          "path": "src/lexical.rs"
-        },
-        {
-          "content": "d7972be0cb6cdda1000dcbcdd9a339eaefb8989b2e9d4b78f1a5c57628f0d78c",
-          "path": "src/lib.rs"
-        },
-        {
-          "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-          "path": "src/relocated.rs"
-        },
-        {
-          "content": "941acf6b989aebc0289417003bab9e8cc8e17acda31d32419516e7ae07f28371",
-          "path": "src/test/check.rs"
-        }
+        {"content":"203053517b7172e69b0dad308d09f5dee6002675aefc56a064f5313043018fc6","path":"src/ambiguous.rs"},
+        {"content":"e7b402167b6668d6f437ba3108d4272d306e50571cf5dd453d446bde059c9cfd","path":"src/bindings.rs"},
+        {"content":"36027cd8e2e252e7f7bd07b1818bd25de1c05a68cd46dd420c6c0489ddb76ad7","path":"src/bridge.rs"},
+        {"content":"c681c672a195b2f185529ad712246cd55df356c899ba4fbdd42ea3720cf69b15","path":"src/consumer.rs"},
+        {"content":"7c1a1c0bf05a685a98693191089697a102a704adf047526c280d7d4e60115a80","path":"src/lexical.rs"},
+        {"content":"d7972be0cb6cdda1000dcbcdd9a339eaefb8989b2e9d4b78f1a5c57628f0d78c","path":"src/lib.rs"},
+        {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/relocated.rs"},
+        {"content":"941acf6b989aebc0289417003bab9e8cc8e17acda31d32419516e7ae07f28371","path":"src/test/check.rs"}
       ],
       "history_id": 1,
       "plan_id": "cursor-2"
@@ -1232,38 +508,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "files": [
-        {
-          "content": "203053517b7172e69b0dad308d09f5dee6002675aefc56a064f5313043018fc6",
-          "path": "src/ambiguous.rs"
-        },
-        {
-          "content": "e7b402167b6668d6f437ba3108d4272d306e50571cf5dd453d446bde059c9cfd",
-          "path": "src/bindings.rs"
-        },
-        {
-          "content": "36027cd8e2e252e7f7bd07b1818bd25de1c05a68cd46dd420c6c0489ddb76ad7",
-          "path": "src/bridge.rs"
-        },
-        {
-          "content": "c681c672a195b2f185529ad712246cd55df356c899ba4fbdd42ea3720cf69b15",
-          "path": "src/consumer.rs"
-        },
-        {
-          "content": "7c1a1c0bf05a685a98693191089697a102a704adf047526c280d7d4e60115a80",
-          "path": "src/lexical.rs"
-        },
-        {
-          "content": "d7972be0cb6cdda1000dcbcdd9a339eaefb8989b2e9d4b78f1a5c57628f0d78c",
-          "path": "src/lib.rs"
-        },
-        {
-          "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-          "path": "src/relocated.rs"
-        },
-        {
-          "content": "941acf6b989aebc0289417003bab9e8cc8e17acda31d32419516e7ae07f28371",
-          "path": "src/test/check.rs"
-        }
+        {"content":"203053517b7172e69b0dad308d09f5dee6002675aefc56a064f5313043018fc6","path":"src/ambiguous.rs"},
+        {"content":"e7b402167b6668d6f437ba3108d4272d306e50571cf5dd453d446bde059c9cfd","path":"src/bindings.rs"},
+        {"content":"36027cd8e2e252e7f7bd07b1818bd25de1c05a68cd46dd420c6c0489ddb76ad7","path":"src/bridge.rs"},
+        {"content":"c681c672a195b2f185529ad712246cd55df356c899ba4fbdd42ea3720cf69b15","path":"src/consumer.rs"},
+        {"content":"7c1a1c0bf05a685a98693191089697a102a704adf047526c280d7d4e60115a80","path":"src/lexical.rs"},
+        {"content":"d7972be0cb6cdda1000dcbcdd9a339eaefb8989b2e9d4b78f1a5c57628f0d78c","path":"src/lib.rs"},
+        {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/relocated.rs"},
+        {"content":"941acf6b989aebc0289417003bab9e8cc8e17acda31d32419516e7ae07f28371","path":"src/test/check.rs"}
       ],
       "history_id": 1,
       "plan_id": "cursor-2"
@@ -1274,38 +526,14 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "files": [
-        {
-          "content": "203053517b7172e69b0dad308d09f5dee6002675aefc56a064f5313043018fc6",
-          "path": "src/ambiguous.rs"
-        },
-        {
-          "content": "e7b402167b6668d6f437ba3108d4272d306e50571cf5dd453d446bde059c9cfd",
-          "path": "src/bindings.rs"
-        },
-        {
-          "content": "36027cd8e2e252e7f7bd07b1818bd25de1c05a68cd46dd420c6c0489ddb76ad7",
-          "path": "src/bridge.rs"
-        },
-        {
-          "content": "c681c672a195b2f185529ad712246cd55df356c899ba4fbdd42ea3720cf69b15",
-          "path": "src/consumer.rs"
-        },
-        {
-          "content": "7c1a1c0bf05a685a98693191089697a102a704adf047526c280d7d4e60115a80",
-          "path": "src/lexical.rs"
-        },
-        {
-          "content": "d7972be0cb6cdda1000dcbcdd9a339eaefb8989b2e9d4b78f1a5c57628f0d78c",
-          "path": "src/lib.rs"
-        },
-        {
-          "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-          "path": "src/relocated.rs"
-        },
-        {
-          "content": "941acf6b989aebc0289417003bab9e8cc8e17acda31d32419516e7ae07f28371",
-          "path": "src/test/check.rs"
-        }
+        {"content":"203053517b7172e69b0dad308d09f5dee6002675aefc56a064f5313043018fc6","path":"src/ambiguous.rs"},
+        {"content":"e7b402167b6668d6f437ba3108d4272d306e50571cf5dd453d446bde059c9cfd","path":"src/bindings.rs"},
+        {"content":"36027cd8e2e252e7f7bd07b1818bd25de1c05a68cd46dd420c6c0489ddb76ad7","path":"src/bridge.rs"},
+        {"content":"c681c672a195b2f185529ad712246cd55df356c899ba4fbdd42ea3720cf69b15","path":"src/consumer.rs"},
+        {"content":"7c1a1c0bf05a685a98693191089697a102a704adf047526c280d7d4e60115a80","path":"src/lexical.rs"},
+        {"content":"d7972be0cb6cdda1000dcbcdd9a339eaefb8989b2e9d4b78f1a5c57628f0d78c","path":"src/lib.rs"},
+        {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/relocated.rs"},
+        {"content":"941acf6b989aebc0289417003bab9e8cc8e17acda31d32419516e7ae07f28371","path":"src/test/check.rs"}
       ],
       "history_id": 1,
       "plan_id": "cursor-2"

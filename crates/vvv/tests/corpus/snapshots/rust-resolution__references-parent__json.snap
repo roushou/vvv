@@ -1,286 +1,175 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "name": "Foo",
     "declarations": [
       {
+        "address": {"package":"resolution_probe","path":["a","Foo"]},
         "content": "e29ea56499f48fa86bfb98c1c9c13a583280a4c9bebf9a6f8561007325f30d97",
+        "end": {"column":15,"line":1},
         "id": "ccdd1f8b8d03",
-        "path": "src/a.rs",
-        "language": "rust",
-        "span": {
-          "start": 15,
-          "end": 30
-        },
-        "start": {
-          "line": 1,
-          "column": 0
-        },
-        "end": {
-          "line": 1,
-          "column": 15
-        },
         "kind": "struct_item",
-        "text": "pub struct Foo;",
+        "language": "rust",
         "line": "pub struct Foo;",
+        "path": "src/a.rs",
+        "role": "declaration",
+        "span": {"end":30,"start":15},
+        "start": {"column":0,"line":1},
         "symbol": {
+          "extent": {"end":30,"start":15},
           "kind": "struct",
           "name": "Foo",
-          "name_span": {
-            "start": 26,
-            "end": 29
-          },
-          "span": {
-            "start": 15,
-            "end": 30
-          },
-          "extent": {
-            "start": 15,
-            "end": 30
-          },
-          "visibility": {
-            "span": {
-              "start": 15,
-              "end": 18
-            },
-            "text": "pub"
-          }
+          "name_span": {"end":29,"start":26},
+          "span": {"end":30,"start":15},
+          "visibility": {"span":{"end":18,"start":15},"text":"pub"}
         },
-        "role": "declaration",
-        "address": {
-          "package": "resolution_probe",
-          "path": [
-            "a",
-            "Foo"
-          ]
-        }
+        "text": "pub struct Foo;"
       }
     ],
+    "name": "Foo",
     "occurrences": [
       {
+        "confidence": "resolved",
         "content": "e29ea56499f48fa86bfb98c1c9c13a583280a4c9bebf9a6f8561007325f30d97",
+        "end": {"column":14,"line":1},
         "id": "0e6c37e56e0a",
-        "path": "src/a.rs",
-        "language": "rust",
-        "span": {
-          "start": 26,
-          "end": 29
-        },
-        "start": {
-          "line": 1,
-          "column": 11
-        },
-        "end": {
-          "line": 1,
-          "column": 14
-        },
         "kind": "type_identifier",
-        "text": "Foo",
+        "language": "rust",
         "line": "pub struct Foo;",
+        "path": "src/a.rs",
+        "reason": "declaring",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "declaring"
+        "span": {"end":29,"start":26},
+        "start": {"column":11,"line":1},
+        "text": "Foo"
       },
       {
+        "confidence": "resolved",
         "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
+        "end": {"column":26,"line":6},
         "id": "83a3f39a8b28",
-        "path": "src/consumer.rs",
-        "language": "rust",
-        "span": {
-          "start": 220,
-          "end": 223
-        },
-        "start": {
-          "line": 6,
-          "column": 23
-        },
-        "end": {
-          "line": 6,
-          "column": 26
-        },
         "kind": "type_identifier",
-        "text": "Foo",
+        "language": "rust",
         "line": "pub fn grouped_path(_: Foo, _: Child) {}",
+        "path": "src/consumer.rs",
+        "reason": "imported",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "imported"
+        "span": {"end":223,"start":220},
+        "start": {"column":23,"line":6},
+        "text": "Foo"
       },
       {
+        "confidence": "resolved",
         "content": "a57b78d505893391ffaf83410b468409cfced592c3a57d761b1d1e1e8cd6ad0f",
+        "end": {"column":30,"line":3},
         "id": "122f4d8467ca",
-        "path": "src/nested.rs",
-        "language": "rust",
-        "span": {
-          "start": 109,
-          "end": 112
-        },
-        "start": {
-          "line": 3,
-          "column": 27
-        },
-        "end": {
-          "line": 3,
-          "column": 30
-        },
         "kind": "type_identifier",
-        "text": "Foo",
+        "language": "rust",
         "line": "pub fn nested(_: Child, _: Foo) { child_fn(); }",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "imported"
-      },
-      {
-        "content": "088949e453189839e0a8c137aedb9266d1a7f27a4138543c750097bb372e516f",
-        "id": "35b48ca2f7da",
-        "path": "src/chained.rs",
-        "language": "rust",
-        "span": {
-          "start": 99,
-          "end": 102
-        },
-        "start": {
-          "line": 4,
-          "column": 29
-        },
-        "end": {
-          "line": 4,
-          "column": 32
-        },
-        "kind": "type_identifier",
-        "text": "Foo",
-        "line": "pub fn via_parent(_: parent::Foo) {}",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "path"
-      },
-      {
-        "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
-        "id": "6391f7d4ee18",
-        "path": "src/consumer.rs",
-        "language": "rust",
-        "span": {
-          "start": 76,
-          "end": 79
-        },
-        "start": {
-          "line": 2,
-          "column": 19
-        },
-        "end": {
-          "line": 2,
-          "column": 22
-        },
-        "kind": "identifier",
-        "text": "Foo",
-        "line": "use module_alias::{Foo, child::Child};",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "path"
-      },
-      {
-        "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
-        "id": "523f413240d6",
-        "path": "src/consumer.rs",
-        "language": "rust",
-        "span": {
-          "start": 133,
-          "end": 136
-        },
-        "start": {
-          "line": 4,
-          "column": 36
-        },
-        "end": {
-          "line": 4,
-          "column": 39
-        },
-        "kind": "type_identifier",
-        "text": "Foo",
-        "line": "pub fn module_path(_: module_alias::Foo) {}",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "path"
-      },
-      {
-        "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
-        "id": "e38ba69b1d57",
-        "path": "src/consumer.rs",
-        "language": "rust",
-        "span": {
-          "start": 291,
-          "end": 294
-        },
-        "start": {
-          "line": 7,
-          "column": 53
-        },
-        "end": {
-          "line": 7,
-          "column": 56
-        },
-        "kind": "identifier",
-        "text": "Foo",
-        "line": "pub fn self_path() { self::module_path(module_alias::Foo); }",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "path"
-      },
-      {
-        "content": "a57b78d505893391ffaf83410b468409cfced592c3a57d761b1d1e1e8cd6ad0f",
-        "id": "2f984d5c0c89",
         "path": "src/nested.rs",
-        "language": "rust",
-        "span": {
-          "start": 75,
-          "end": 78
-        },
-        "start": {
-          "line": 1,
-          "column": 45
-        },
-        "end": {
-          "line": 1,
-          "column": 48
-        },
-        "kind": "identifier",
-        "text": "Foo",
-        "line": "use module_alias::{child::{Child, child_fn}, Foo};",
+        "reason": "imported",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "path"
+        "span": {"end":112,"start":109},
+        "start": {"column":27,"line":3},
+        "text": "Foo"
       },
       {
-        "content": "5fd1c11d769acfcf038916b0a16945d5f8dd60d78616d46c574c2638fb9d10bb",
-        "id": "9f8506b3ceb7",
-        "path": "src/parent_context/nested.rs",
-        "language": "rust",
-        "span": {
-          "start": 57,
-          "end": 60
-        },
-        "start": {
-          "line": 1,
-          "column": 29
-        },
-        "end": {
-          "line": 1,
-          "column": 32
-        },
-        "kind": "type_identifier",
-        "text": "Foo",
-        "line": "pub fn from_parent(_: local::Foo) {}",
-        "role": "use",
         "confidence": "resolved",
-        "reason": "path"
+        "content": "088949e453189839e0a8c137aedb9266d1a7f27a4138543c750097bb372e516f",
+        "end": {"column":32,"line":4},
+        "id": "35b48ca2f7da",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "pub fn via_parent(_: parent::Foo) {}",
+        "path": "src/chained.rs",
+        "reason": "path",
+        "role": "use",
+        "span": {"end":102,"start":99},
+        "start": {"column":29,"line":4},
+        "text": "Foo"
+      },
+      {
+        "confidence": "resolved",
+        "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
+        "end": {"column":22,"line":2},
+        "id": "6391f7d4ee18",
+        "kind": "identifier",
+        "language": "rust",
+        "line": "use module_alias::{Foo, child::Child};",
+        "path": "src/consumer.rs",
+        "reason": "path",
+        "role": "use",
+        "span": {"end":79,"start":76},
+        "start": {"column":19,"line":2},
+        "text": "Foo"
+      },
+      {
+        "confidence": "resolved",
+        "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
+        "end": {"column":39,"line":4},
+        "id": "523f413240d6",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "pub fn module_path(_: module_alias::Foo) {}",
+        "path": "src/consumer.rs",
+        "reason": "path",
+        "role": "use",
+        "span": {"end":136,"start":133},
+        "start": {"column":36,"line":4},
+        "text": "Foo"
+      },
+      {
+        "confidence": "resolved",
+        "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
+        "end": {"column":56,"line":7},
+        "id": "e38ba69b1d57",
+        "kind": "identifier",
+        "language": "rust",
+        "line": "pub fn self_path() { self::module_path(module_alias::Foo); }",
+        "path": "src/consumer.rs",
+        "reason": "path",
+        "role": "use",
+        "span": {"end":294,"start":291},
+        "start": {"column":53,"line":7},
+        "text": "Foo"
+      },
+      {
+        "confidence": "resolved",
+        "content": "a57b78d505893391ffaf83410b468409cfced592c3a57d761b1d1e1e8cd6ad0f",
+        "end": {"column":48,"line":1},
+        "id": "2f984d5c0c89",
+        "kind": "identifier",
+        "language": "rust",
+        "line": "use module_alias::{child::{Child, child_fn}, Foo};",
+        "path": "src/nested.rs",
+        "reason": "path",
+        "role": "use",
+        "span": {"end":78,"start":75},
+        "start": {"column":45,"line":1},
+        "text": "Foo"
+      },
+      {
+        "confidence": "resolved",
+        "content": "5fd1c11d769acfcf038916b0a16945d5f8dd60d78616d46c574c2638fb9d10bb",
+        "end": {"column":32,"line":1},
+        "id": "9f8506b3ceb7",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "pub fn from_parent(_: local::Foo) {}",
+        "path": "src/parent_context/nested.rs",
+        "reason": "path",
+        "role": "use",
+        "span": {"end":60,"start":57},
+        "start": {"column":29,"line":1},
+        "text": "Foo"
       }
     ]
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

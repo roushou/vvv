@@ -1,73 +1,37 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "5f895889c4c8cf9f73feec39e431822974d33e317f81ceb3c1cc702fb2f2cee6",
-    "outcome": "resolved",
     "items": [
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/locals.ts",
-            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
-            "span": {
-              "start": 1698,
-              "end": 1773
-            }
-          },
-          "name_span": {
-            "start": 1714,
-            "end": 1723
-          },
-          "kind": "function"
-        },
-        "relation": "definition",
-        "via": null,
-        "excerpt": {
-          "path": "src/locals.ts",
-          "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
-          "span": {
-            "start": 1698,
-            "end": 1730
-          }
-        },
-        "start": {
-          "line": 78,
-          "column": 0
-        },
-        "text": "export function signature(value)",
         "complete": true,
+        "excerpt": {"content":"d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f","path":"src/locals.ts","span":{"end":1730,"start":1698}},
+        "relation": "definition",
         "signature": {
           "outcome": "available",
-          "requested": {
-            "path": "src/locals.ts",
-            "content": "d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f",
-            "span": {
-              "start": 1698,
-              "end": 1730
-            }
-          }
-        }
+          "requested": {"content":"d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f","path":"src/locals.ts","span":{"end":1730,"start":1698}}
+        },
+        "start": {"column":0,"line":78},
+        "target": {
+          "declaration": {"content":"d935d06eb7feac6a213d773360aa06133d8d1b6ab84a96decb1f285ee1b37c5f","path":"src/locals.ts","span":{"end":1773,"start":1698}},
+          "kind": "function",
+          "language": "typescript",
+          "name_span": {"end":1723,"start":1714}
+        },
+        "text": "export function signature(value)",
+        "via": null
       }
     ],
-    "omissions": {
-      "item_limit": 0,
-      "byte_limit": 0,
-      "lookup_limit": 0,
-      "file_limit": 0,
-      "ambiguous": 0,
-      "unavailable": 0,
-      "no_container": 0,
-      "unresolved_imports": 0
-    },
-    "references_by_name": false
-  }
+    "omissions": {"ambiguous":0,"byte_limit":0,"file_limit":0,"item_limit":0,"lookup_limit":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+    "outcome": "resolved",
+    "references_by_name": false,
+    "snapshot": "5f895889c4c8cf9f73feec39e431822974d33e317f81ceb3c1cc702fb2f2cee6"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

@@ -694,12 +694,14 @@ how results look. Two renderers implement it, and they share only `Diagnose`:
 
 [`Document`]: ../vvv_engine/report/struct.Document.html
 
-`tests/corpus.rs` is the gate on meaning: two small workspaces under
-`tests/corpus/` — a Rust workspace of two crates with child modules, re-export chains,
-a glob re-export, an alias, an inline test module; a TypeScript project with relative
-imports and `export … from` — and every command run over them through the binary,
-JSON and human, each output an `insta` snapshot under `tests/corpus/snapshots/`. The
-same file exposes each command case as a native, filterable test. It loads each
+`tests/corpus.rs` is the gate on meaning: registered Rust and TypeScript workspaces
+under `tests/corpus/` exercise syntax, resolution, and edits through the binary.
+Human output is captured exactly; JSON expectations preserve all values and array
+ordering with sorted object keys and compact small records. Complete source previews
+are snapshotted once per fixture/path and referenced by navigation cases. Every
+response must agree on that full preview, including during snapshot acceptance.
+The expectations live under `tests/corpus/snapshots/`; references are test-only.
+The same file exposes each command case as a native, filterable test. It loads each
 corpus into a `MemoryVfs` and checks, for every mutation, that applying the captured
 plan produces the complete previewed tree, including removed source paths, and
 that undo restores the original tree. Named composition pairs must equal sequential

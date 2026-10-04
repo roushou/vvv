@@ -1,89 +1,43 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "57de7b9f8d0ad9fc0c59bf30e52e771981fae2352012e08cc173b6594d8996f2",
-    "outcome": "resolved",
+    "enclosing": {
+      "declaration": {"content":"1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a","path":"src/lib.rs","span":{"end":1273,"start":859}},
+      "kind": "module",
+      "language": "rust",
+      "name_span": {"end":881,"start":876}
+    },
     "items": [
       {
-        "target": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a",
-            "span": {
-              "start": 923,
-              "end": 949
-            }
-          },
-          "name_span": {
-            "start": 926,
-            "end": 932
-          },
-          "kind": "function"
-        },
-        "relation": "definition",
-        "via": null,
-        "excerpt": {
-          "path": "src/lib.rs",
-          "content": "1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a",
-          "span": {
-            "start": 923,
-            "end": 943
-          }
-        },
-        "start": {
-          "line": 29,
-          "column": 4
-        },
-        "text": "fn helper() -> usize",
         "complete": true,
+        "excerpt": {"content":"1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a","path":"src/lib.rs","span":{"end":943,"start":923}},
+        "relation": "definition",
         "signature": {
           "outcome": "available",
-          "requested": {
-            "path": "src/lib.rs",
-            "content": "1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a",
-            "span": {
-              "start": 923,
-              "end": 943
-            }
-          }
-        }
+          "requested": {"content":"1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a","path":"src/lib.rs","span":{"end":943,"start":923}}
+        },
+        "start": {"column":4,"line":29},
+        "target": {
+          "declaration": {"content":"1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a","path":"src/lib.rs","span":{"end":949,"start":923}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":932,"start":926}
+        },
+        "text": "fn helper() -> usize",
+        "via": null
       }
     ],
-    "enclosing": {
-      "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a",
-        "span": {
-          "start": 859,
-          "end": 1273
-        }
-      },
-      "name_span": {
-        "start": 876,
-        "end": 881
-      },
-      "kind": "module"
-    },
-    "omissions": {
-      "item_limit": 0,
-      "byte_limit": 0,
-      "lookup_limit": 0,
-      "file_limit": 0,
-      "ambiguous": 0,
-      "unavailable": 0,
-      "no_container": 0,
-      "unresolved_imports": 0
-    },
-    "references_by_name": false
-  }
+    "omissions": {"ambiguous":0,"byte_limit":0,"file_limit":0,"item_limit":0,"lookup_limit":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+    "outcome": "resolved",
+    "references_by_name": false,
+    "snapshot": "57de7b9f8d0ad9fc0c59bf30e52e771981fae2352012e08cc173b6594d8996f2"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

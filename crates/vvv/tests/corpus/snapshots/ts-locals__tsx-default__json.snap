@@ -1,403 +1,47 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "3fd0632e4f27bccab53024f5c17ae9182dcbd2f57989e4b2c0b3ba89dfbf8d32",
+    "evidence": {"addresses":[]},
     "outcome": "resolved",
-    "target": {
-      "language": "tsx",
-      "declaration": {
-        "path": "src/methods.tsx",
-        "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-        "span": {
-          "start": 29,
-          "end": 38
-        }
-      },
-      "name_span": {
-        "start": 31,
-        "end": 36
-      },
-      "kind": "parameter"
-    },
-    "evidence": {
-      "addresses": []
-    },
     "preview": {
       "container": {
+        "declaration": {"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":38,"start":29}},
+        "kind": "parameter",
         "language": "tsx",
-        "declaration": {
-          "path": "src/methods.tsx",
-          "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-          "span": {
-            "start": 29,
-            "end": 38
-          }
-        },
-        "name_span": {
-          "start": 31,
-          "end": 36
-        },
-        "kind": "parameter"
+        "name_span": {"end":36,"start":31}
       },
       "declaration": {
         "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
+        "end": {"column":18,"line":1},
         "id": "aac6770ebcf0",
-        "path": "src/methods.tsx",
-        "language": "tsx",
-        "span": {
-          "start": 29,
-          "end": 38
-        },
-        "start": {
-          "line": 1,
-          "column": 9
-        },
-        "end": {
-          "line": 1,
-          "column": 18
-        },
         "kind": "declaration",
-        "text": "{ title }",
+        "language": "tsx",
         "line": "  render({ title }) {",
-        "symbol": {
-          "kind": "parameter",
-          "name": "title",
-          "name_span": {
-            "start": 31,
-            "end": 36
-          },
-          "span": {
-            "start": 29,
-            "end": 38
-          },
-          "extent": {
-            "start": 29,
-            "end": 38
-          }
-        },
-        "role": "declaration"
-      },
-      "source": {
         "path": "src/methods.tsx",
-        "text": "export class View {\n  render({ title }) {\n    const { title: heading = title, entries: [first, ...rest] } = input;\n    return <section>{title}{heading}{first}{rest}</section>;\n  }\n}\n",
-        "highlights": [
-          {
-            "span": {
-              "start": 0,
-              "end": 6
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 7,
-              "end": 12
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 13,
-              "end": 17
-            },
-            "kind": "type"
-          },
-          {
-            "span": {
-              "start": 22,
-              "end": 28
-            },
-            "kind": "function"
-          },
-          {
-            "span": {
-              "start": 46,
-              "end": 51
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 119,
-              "end": 125
-            },
-            "kind": "keyword"
-          }
-        ],
-        "symbols": [
-          {
-            "kind": "class",
-            "name": "View",
-            "name_span": {
-              "start": 13,
-              "end": 17
-            },
-            "span": {
-              "start": 7,
-              "end": 181
-            },
-            "extent": {
-              "start": 0,
-              "end": 181
-            },
-            "visibility": {
-              "span": {
-                "start": 0,
-                "end": 6
-              },
-              "text": "export"
-            }
-          },
-          {
-            "kind": "method",
-            "name": "render",
-            "name_span": {
-              "start": 22,
-              "end": 28
-            },
-            "span": {
-              "start": 22,
-              "end": 179
-            },
-            "extent": {
-              "start": 22,
-              "end": 179
-            }
-          },
-          {
-            "kind": "variable",
-            "name": "{ title: heading = title, entries: [first, ...rest] }",
-            "name_span": {
-              "start": 52,
-              "end": 105
-            },
-            "span": {
-              "start": 52,
-              "end": 113
-            },
-            "extent": {
-              "start": 52,
-              "end": 113
-            }
-          },
-          {
-            "kind": "parameter",
-            "name": "title",
-            "name_span": {
-              "start": 31,
-              "end": 36
-            },
-            "span": {
-              "start": 29,
-              "end": 38
-            },
-            "extent": {
-              "start": 29,
-              "end": 38
-            }
-          },
-          {
-            "kind": "variable",
-            "name": "heading",
-            "name_span": {
-              "start": 61,
-              "end": 68
-            },
-            "span": {
-              "start": 52,
-              "end": 113
-            },
-            "extent": {
-              "start": 52,
-              "end": 113
-            }
-          },
-          {
-            "kind": "variable",
-            "name": "first",
-            "name_span": {
-              "start": 88,
-              "end": 93
-            },
-            "span": {
-              "start": 52,
-              "end": 113
-            },
-            "extent": {
-              "start": 52,
-              "end": 113
-            }
-          },
-          {
-            "kind": "variable",
-            "name": "rest",
-            "name_span": {
-              "start": 98,
-              "end": 102
-            },
-            "span": {
-              "start": 52,
-              "end": 113
-            },
-            "extent": {
-              "start": 52,
-              "end": 113
-            }
-          }
-        ],
-        "identifiers": [
-          {
-            "path": "src/methods.tsx",
-            "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-            "span": {
-              "start": 13,
-              "end": 17
-            }
-          },
-          {
-            "path": "src/methods.tsx",
-            "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-            "span": {
-              "start": 22,
-              "end": 28
-            }
-          },
-          {
-            "path": "src/methods.tsx",
-            "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-            "span": {
-              "start": 31,
-              "end": 36
-            }
-          },
-          {
-            "path": "src/methods.tsx",
-            "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-            "span": {
-              "start": 54,
-              "end": 59
-            }
-          },
-          {
-            "path": "src/methods.tsx",
-            "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-            "span": {
-              "start": 61,
-              "end": 68
-            }
-          },
-          {
-            "path": "src/methods.tsx",
-            "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-            "span": {
-              "start": 71,
-              "end": 76
-            }
-          },
-          {
-            "path": "src/methods.tsx",
-            "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-            "span": {
-              "start": 78,
-              "end": 85
-            }
-          },
-          {
-            "path": "src/methods.tsx",
-            "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-            "span": {
-              "start": 88,
-              "end": 93
-            }
-          },
-          {
-            "path": "src/methods.tsx",
-            "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-            "span": {
-              "start": 98,
-              "end": 102
-            }
-          },
-          {
-            "path": "src/methods.tsx",
-            "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-            "span": {
-              "start": 108,
-              "end": 113
-            }
-          },
-          {
-            "path": "src/methods.tsx",
-            "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-            "span": {
-              "start": 127,
-              "end": 134
-            }
-          },
-          {
-            "path": "src/methods.tsx",
-            "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-            "span": {
-              "start": 136,
-              "end": 141
-            }
-          },
-          {
-            "path": "src/methods.tsx",
-            "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-            "span": {
-              "start": 143,
-              "end": 150
-            }
-          },
-          {
-            "path": "src/methods.tsx",
-            "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-            "span": {
-              "start": 152,
-              "end": 157
-            }
-          },
-          {
-            "path": "src/methods.tsx",
-            "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-            "span": {
-              "start": 159,
-              "end": 163
-            }
-          },
-          {
-            "path": "src/methods.tsx",
-            "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-            "span": {
-              "start": 166,
-              "end": 173
-            }
-          }
-        ]
+        "role": "declaration",
+        "span": {"end":38,"start":29},
+        "start": {"column":9,"line":1},
+        "symbol": {"extent":{"end":38,"start":29},"kind":"parameter","name":"title","name_span":{"end":36,"start":31},"span":{"end":38,"start":29}},
+        "text": "{ title }"
       },
-      "selection": {
-        "start": 31,
-        "end": 36
-      },
-      "identifiers": [
-        {
-          "path": "src/methods.tsx",
-          "content": "63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0",
-          "span": {
-            "start": 31,
-            "end": 36
-          }
-        }
-      ]
+      "identifiers": [{"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":36,"start":31}}],
+      "selection": {"end":36,"start":31},
+      "source": {"$snapshot":"ts-locals__source__src%2Fmethods.tsx__json.snap"}
+    },
+    "snapshot": "3fd0632e4f27bccab53024f5c17ae9182dcbd2f57989e4b2c0b3ba89dfbf8d32",
+    "target": {
+      "declaration": {"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":38,"start":29}},
+      "kind": "parameter",
+      "language": "tsx",
+      "name_span": {"end":36,"start":31}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

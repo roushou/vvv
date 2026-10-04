@@ -1,116 +1,53 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "query": {
-      "name": "Engine"
-    },
-    "scope": {
-      "paths": [
-        "src/origin.rs"
-      ],
-      "packages": [
-        "navigation"
-      ]
-    },
     "matches": [
       {
+        "address": {"package":"navigation","path":["origin","Engine"]},
         "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
+        "end": {"column":1,"line":3},
         "id": "f2c97c3b389f",
-        "path": "src/origin.rs",
-        "language": "rust",
-        "span": {
-          "start": 19,
-          "end": 63
-        },
-        "start": {
-          "line": 1,
-          "column": 0
-        },
-        "end": {
-          "line": 3,
-          "column": 1
-        },
         "kind": "struct_item",
-        "text": "pub struct Engine {\n    pub running: bool,\n}",
+        "language": "rust",
         "line": "pub struct Engine {",
+        "path": "src/origin.rs",
+        "role": "declaration",
+        "span": {"end":63,"start":19},
+        "start": {"column":0,"line":1},
         "symbol": {
+          "extent": {"end":63,"start":0},
           "kind": "struct",
           "name": "Engine",
-          "name_span": {
-            "start": 30,
-            "end": 36
-          },
-          "span": {
-            "start": 19,
-            "end": 63
-          },
-          "extent": {
-            "start": 0,
-            "end": 63
-          },
-          "visibility": {
-            "span": {
-              "start": 19,
-              "end": 22
-            },
-            "text": "pub"
-          }
+          "name_span": {"end":36,"start":30},
+          "span": {"end":63,"start":19},
+          "visibility": {"span":{"end":22,"start":19},"text":"pub"}
         },
-        "role": "declaration",
-        "address": {
-          "package": "navigation",
-          "path": [
-            "origin",
-            "Engine"
-          ]
-        }
+        "text": "pub struct Engine {\n    pub running: bool,\n}"
       },
       {
         "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
+        "end": {"column":10,"line":5},
         "id": "c6ae3da429f0",
-        "path": "src/origin.rs",
-        "language": "rust",
-        "span": {
-          "start": 85,
-          "end": 91
-        },
-        "start": {
-          "line": 5,
-          "column": 4
-        },
-        "end": {
-          "line": 5,
-          "column": 10
-        },
         "kind": "enum_variant",
-        "text": "Engine",
+        "language": "rust",
         "line": "    Engine,",
-        "symbol": {
-          "kind": "variant",
-          "name": "Engine",
-          "name_span": {
-            "start": 85,
-            "end": 91
-          },
-          "span": {
-            "start": 85,
-            "end": 91
-          },
-          "extent": {
-            "start": 85,
-            "end": 91
-          }
-        },
-        "role": "declaration"
+        "path": "src/origin.rs",
+        "role": "declaration",
+        "span": {"end":91,"start":85},
+        "start": {"column":4,"line":5},
+        "symbol": {"extent":{"end":91,"start":85},"kind":"variant","name":"Engine","name_span":{"end":91,"start":85},"span":{"end":91,"start":85}},
+        "text": "Engine"
       }
-    ]
-  }
+    ],
+    "query": {"name":"Engine"},
+    "scope": {"packages":["navigation"],"paths":["src/origin.rs"]}
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

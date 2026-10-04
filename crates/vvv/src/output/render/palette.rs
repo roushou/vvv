@@ -171,21 +171,3 @@ impl<T: fmt::Display> fmt::Display for Painted<T> {
         )
     }
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn plain_palette_adds_no_escape_codes() {
-        let p = Palette::plain();
-        assert_eq!(p.paint(p.hit, "x").to_string(), "x");
-    }
-
-    #[test]
-    fn colored_palette_wraps_in_escapes() {
-        let p = Palette::colored();
-        let s = p.paint(p.hit, "x").to_string();
-        assert!(s.starts_with("\x1b[") && s.ends_with("\x1b[0m") && s.contains('x'));
-    }
-}

@@ -1,0 +1,20 @@
+---
+source: crates/vvv/tests/common/corpus_snapshot.rs
+expression: JsonSnapshot(&self.value).to_string()
+---
+{
+  "highlights": [{"kind":"keyword","span":{"end":6,"start":0}},{"kind":"keyword","span":{"end":12,"start":7}},{"kind":"number","span":{"end":23,"start":21}}],
+  "identifiers": [{"content":"2b56569956c938b4ec500c7bf0a8728eee907fadd0a2af61f92bd4bfcf5c0d10","path":"src/helpers.ts","span":{"end":18,"start":13}}],
+  "path": "src/helpers.ts",
+  "symbols": [
+    {
+      "extent": {"end":24,"start":0},
+      "kind": "variable",
+      "name": "outer",
+      "name_span": {"end":18,"start":13},
+      "span": {"end":23,"start":13},
+      "visibility": {"span":{"end":6,"start":0},"text":"export"}
+    }
+  ],
+  "text": "export const outer = 99;\n"
+}

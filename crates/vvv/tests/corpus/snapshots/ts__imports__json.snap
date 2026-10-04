@@ -1,17 +1,8 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
-{
-  "status": "ok",
-  "schema": 1,
-  "result": {
-    "unused": [],
-    "unresolved": [],
-    "redundant": [],
-    "unplaced": []
-  }
-}
+{"result":{"redundant":[],"unplaced":[],"unresolved":[],"unused":[]},"schema":1,"status":"ok"}
 --- stderr ---

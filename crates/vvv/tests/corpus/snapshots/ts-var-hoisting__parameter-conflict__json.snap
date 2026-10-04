@@ -1,135 +1,63 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "c329d031a0acdb9c49cdd2a1471d3e7e4379bb0f7c58836db0b4625545606699",
-    "outcome": "ambiguous",
     "candidates": [
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/scopes.ts",
-            "content": "b05ce73c9ede407e5b1f786ceebd097d43143f56dd084df554d647b63bdb84d9",
-            "span": {
-              "start": 797,
-              "end": 802
-            }
-          },
-          "name_span": {
-            "start": 797,
-            "end": 802
-          },
-          "kind": "parameter"
-        },
         "declaration": {
           "content": "b05ce73c9ede407e5b1f786ceebd097d43143f56dd084df554d647b63bdb84d9",
+          "end": {"column":30,"line":30},
           "id": "5528194bcbbb",
-          "path": "src/scopes.ts",
-          "language": "typescript",
-          "span": {
-            "start": 797,
-            "end": 802
-          },
-          "start": {
-            "line": 30,
-            "column": 25
-          },
-          "end": {
-            "line": 30,
-            "column": 30
-          },
           "kind": "declaration",
-          "text": "value",
+          "language": "typescript",
           "line": "export function conflict(value) {",
-          "symbol": {
-            "kind": "parameter",
-            "name": "value",
-            "name_span": {
-              "start": 797,
-              "end": 802
-            },
-            "span": {
-              "start": 797,
-              "end": 802
-            },
-            "extent": {
-              "start": 797,
-              "end": 802
-            }
-          },
-          "role": "declaration"
+          "path": "src/scopes.ts",
+          "role": "declaration",
+          "span": {"end":802,"start":797},
+          "start": {"column":25,"line":30},
+          "symbol": {"extent":{"end":802,"start":797},"kind":"parameter","name":"value","name_span":{"end":802,"start":797},"span":{"end":802,"start":797}},
+          "text": "value"
         },
-        "evidence": {
-          "addresses": []
+        "evidence": {"addresses":[]},
+        "target": {
+          "declaration": {"content":"b05ce73c9ede407e5b1f786ceebd097d43143f56dd084df554d647b63bdb84d9","path":"src/scopes.ts","span":{"end":802,"start":797}},
+          "kind": "parameter",
+          "language": "typescript",
+          "name_span": {"end":802,"start":797}
         }
       },
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/scopes.ts",
-            "content": "b05ce73c9ede407e5b1f786ceebd097d43143f56dd084df554d647b63bdb84d9",
-            "span": {
-              "start": 812,
-              "end": 817
-            }
-          },
-          "name_span": {
-            "start": 812,
-            "end": 817
-          },
-          "kind": "variable"
-        },
         "declaration": {
           "content": "b05ce73c9ede407e5b1f786ceebd097d43143f56dd084df554d647b63bdb84d9",
+          "end": {"column":11,"line":31},
           "id": "beedf78ae805",
-          "path": "src/scopes.ts",
-          "language": "typescript",
-          "span": {
-            "start": 812,
-            "end": 817
-          },
-          "start": {
-            "line": 31,
-            "column": 6
-          },
-          "end": {
-            "line": 31,
-            "column": 11
-          },
           "kind": "declaration",
-          "text": "value",
+          "language": "typescript",
           "line": "  var value;",
-          "symbol": {
-            "kind": "variable",
-            "name": "value",
-            "name_span": {
-              "start": 812,
-              "end": 817
-            },
-            "span": {
-              "start": 812,
-              "end": 817
-            },
-            "extent": {
-              "start": 812,
-              "end": 817
-            }
-          },
-          "role": "declaration"
+          "path": "src/scopes.ts",
+          "role": "declaration",
+          "span": {"end":817,"start":812},
+          "start": {"column":6,"line":31},
+          "symbol": {"extent":{"end":817,"start":812},"kind":"variable","name":"value","name_span":{"end":817,"start":812},"span":{"end":817,"start":812}},
+          "text": "value"
         },
-        "evidence": {
-          "addresses": []
+        "evidence": {"addresses":[]},
+        "target": {
+          "declaration": {"content":"b05ce73c9ede407e5b1f786ceebd097d43143f56dd084df554d647b63bdb84d9","path":"src/scopes.ts","span":{"end":817,"start":812}},
+          "kind": "variable",
+          "language": "typescript",
+          "name_span": {"end":817,"start":812}
         }
       }
-    ]
-  }
+    ],
+    "outcome": "ambiguous",
+    "snapshot": "c329d031a0acdb9c49cdd2a1471d3e7e4379bb0f7c58836db0b4625545606699"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

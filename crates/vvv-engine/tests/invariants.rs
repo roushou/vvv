@@ -2681,31 +2681,6 @@ fn undo_recovery_verifies_directory_recreation_that_returned_an_error() {
 }
 
 #[test]
-fn undo_reads_legacy_receipts_without_guessing_directory_ownership() {
-    let fixture = DiskHistoryFixture::new();
-    let (_, engine) = fixture.fault_engine();
-    let planned = MoveIntent::new("a.p", "nested/deep/b.p")
-        .plan(&engine)
-        .unwrap();
-    Apply(planned).apply(&engine).unwrap();
-    let history_file = fixture.root.join(".vvv/history.json");
-    let mut records: serde_json::Value =
-        serde_json::from_str(&std::fs::read_to_string(&history_file).unwrap()).unwrap();
-    assert!(
-        records[0]["receipt"]
-            .as_object_mut()
-            .unwrap()
-            .remove("directories")
-            .is_some()
-    );
-    std::fs::write(&history_file, serde_json::to_string(&records).unwrap()).unwrap();
-    vvv_engine::Ledger::new(&engine).undo().unwrap();
-    assert_eq!(fixture.source(), "def foo\nfoo");
-    assert!(fixture.root.join("nested/deep").is_dir());
-    assert!(!fixture.root.join("nested/deep/b.p").exists());
-}
-
-#[test]
 fn undo_recovery_preserves_a_file_created_at_a_removed_directory_path() {
     let fixture = DiskHistoryFixture::new();
     let (vfs, engine) = fixture.fault_engine();

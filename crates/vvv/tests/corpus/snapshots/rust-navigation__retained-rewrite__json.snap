@@ -1,50 +1,15 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
+expression: "JsonSnapshot(&serde_json::to_value(&transcript.replies).unwrap()).to_string()"
 ---
 [
   {
     "result": {
-      "intent": {
-        "command": "rewrite",
-        "query": {
-          "pattern": "Engine"
-        },
-        "template": "Runtime"
-      },
+      "intent": {"command":"rewrite","query":{"pattern":"Engine"},"template":"Runtime"},
       "items": [
-        {
-          "index": 0,
-          "kind": "metadata",
-          "section": "file",
-          "value": {
-            "path": "src/ambiguous.rs"
-          }
-        },
-        {
-          "file_index": 0,
-          "index": 0,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 74,
-              "start": 68
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 0,
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        }
+        {"index":0,"kind":"metadata","section":"file","value":{"path":"src/ambiguous.rs"}},
+        {"file_index":0,"index":0,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":74,"start":68}}},
+        {"complete":true,"field":"/replacement","file_index":0,"index":0,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -52,12 +17,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-1",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -75,27 +35,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "text": "--- a/src/ambiguous.rs\n+++ b/src/ambiguous.rs\n@@ -1,3 +1,3 @@\n use crate::origin::*;\n use crate::other::*;\n-pub struct App { engine: Engine }\n+pub struct App { engine: Runtime }\n",
           "total_bytes": 178
         },
-        {
-          "index": 1,
-          "kind": "metadata",
-          "section": "file",
-          "value": {
-            "path": "src/bindings.rs"
-          }
-        },
-        {
-          "file_index": 1,
-          "index": 0,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 236,
-              "start": 230
-            }
-          }
-        }
+        {"index":1,"kind":"metadata","section":"file","value":{"path":"src/bindings.rs"}},
+        {"file_index":1,"index":0,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":236,"start":230}}}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -103,12 +44,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-3",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -116,41 +52,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 1,
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        },
-        {
-          "file_index": 1,
-          "index": 1,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 273,
-              "start": 267
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 1,
-          "index": 1,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        }
+        {"complete":true,"field":"/replacement","file_index":1,"index":0,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7},
+        {"file_index":1,"index":1,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":273,"start":267}}},
+        {"complete":true,"field":"/replacement","file_index":1,"index":1,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -158,12 +62,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-4",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -181,14 +80,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "text": "--- a/src/bindings.rs\n+++ b/src/bindings.rs\n@@ -1,5 +1,5 @@\n fn pairs((left, right): (u8, u8)) { consume(left); consume(right); }\n fn closure(value: u8) { let f = |value| value; consume(value); }\n fn destructure(pair: (u8, u8)) { let (left, right) = pair; consume(right); }\n-use crate::origin::Engine;\n-fn annotated() { let engine: Engine; }\n+use crate::origin::Runtime;\n+fn annotated() { let engine: Runtime; }\n",
           "total_bytes": 412
         },
-        {
-          "index": 2,
-          "kind": "metadata",
-          "section": "file",
-          "value": {
-            "path": "src/bridge.rs"
-          }
-        }
+        {"index":2,"kind":"metadata","section":"file","value":{"path":"src/bridge.rs"}}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -196,12 +88,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-5",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -209,30 +96,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "file_index": 2,
-          "index": 0,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 29,
-              "start": 23
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 2,
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        },
+        {"file_index":2,"index":0,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":29,"start":23}}},
+        {"complete":true,"field":"/replacement","file_index":2,"index":0,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7},
         {
           "complete": true,
           "field": "/diff",
@@ -250,12 +115,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-6",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -263,38 +123,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "index": 3,
-          "kind": "metadata",
-          "section": "file",
-          "value": {
-            "path": "src/consumer.rs"
-          }
-        },
-        {
-          "file_index": 3,
-          "index": 0,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 53,
-              "start": 47
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 3,
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        }
+        {"index":3,"kind":"metadata","section":"file","value":{"path":"src/consumer.rs"}},
+        {"file_index":3,"index":0,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":53,"start":47}}},
+        {"complete":true,"field":"/replacement","file_index":3,"index":0,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -302,12 +133,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-7",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -315,43 +141,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "file_index": 3,
-          "index": 1,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 91,
-              "start": 85
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 3,
-          "index": 1,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        },
-        {
-          "file_index": 3,
-          "index": 2,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 149,
-              "start": 143
-            }
-          }
-        }
+        {"file_index":3,"index":1,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":91,"start":85}}},
+        {"complete":true,"field":"/replacement","file_index":3,"index":1,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7},
+        {"file_index":3,"index":2,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":149,"start":143}}}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -359,12 +151,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-8",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -372,41 +159,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 3,
-          "index": 2,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        },
-        {
-          "file_index": 3,
-          "index": 3,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 160,
-              "start": 154
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 3,
-          "index": 3,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        }
+        {"complete":true,"field":"/replacement","file_index":3,"index":2,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7},
+        {"file_index":3,"index":3,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":160,"start":154}}},
+        {"complete":true,"field":"/replacement","file_index":3,"index":3,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -414,12 +169,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-9",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -427,43 +177,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "file_index": 3,
-          "index": 4,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 193,
-              "start": 187
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 3,
-          "index": 4,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        },
-        {
-          "file_index": 3,
-          "index": 5,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 209,
-              "start": 203
-            }
-          }
-        }
+        {"file_index":3,"index":4,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":193,"start":187}}},
+        {"complete":true,"field":"/replacement","file_index":3,"index":4,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7},
+        {"file_index":3,"index":5,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":209,"start":203}}}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -471,12 +187,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-10",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -484,41 +195,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 3,
-          "index": 5,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        },
-        {
-          "file_index": 3,
-          "index": 6,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 242,
-              "start": 236
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 3,
-          "index": 6,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        }
+        {"complete":true,"field":"/replacement","file_index":3,"index":5,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7},
+        {"file_index":3,"index":6,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":242,"start":236}}},
+        {"complete":true,"field":"/replacement","file_index":3,"index":6,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -526,12 +205,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-11",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -539,43 +213,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "file_index": 3,
-          "index": 7,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 266,
-              "start": 260
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 3,
-          "index": 7,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        },
-        {
-          "file_index": 3,
-          "index": 8,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 311,
-              "start": 305
-            }
-          }
-        }
+        {"file_index":3,"index":7,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":266,"start":260}}},
+        {"complete":true,"field":"/replacement","file_index":3,"index":7,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7},
+        {"file_index":3,"index":8,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":311,"start":305}}}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -583,12 +223,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-12",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -596,41 +231,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 3,
-          "index": 8,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        },
-        {
-          "file_index": 3,
-          "index": 9,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 356,
-              "start": 350
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 3,
-          "index": 9,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        }
+        {"complete":true,"field":"/replacement","file_index":3,"index":8,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7},
+        {"file_index":3,"index":9,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":356,"start":350}}},
+        {"complete":true,"field":"/replacement","file_index":3,"index":9,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -638,12 +241,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-13",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -651,30 +249,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "file_index": 3,
-          "index": 10,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 367,
-              "start": 361
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 3,
-          "index": 10,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        },
+        {"file_index":3,"index":10,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":367,"start":361}}},
+        {"complete":true,"field":"/replacement","file_index":3,"index":10,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7},
         {
           "complete": false,
           "field": "/diff",
@@ -692,12 +268,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-14",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -722,12 +293,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-15",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -735,38 +301,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "index": 4,
-          "kind": "metadata",
-          "section": "file",
-          "value": {
-            "path": "src/lexical.rs"
-          }
-        },
-        {
-          "file_index": 4,
-          "index": 0,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 25,
-              "start": 19
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 4,
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        }
+        {"index":4,"kind":"metadata","section":"file","value":{"path":"src/lexical.rs"}},
+        {"file_index":4,"index":0,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":25,"start":19}}},
+        {"complete":true,"field":"/replacement","file_index":4,"index":0,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -774,12 +311,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-16",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -787,43 +319,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "file_index": 4,
-          "index": 1,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 44,
-              "start": 38
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 4,
-          "index": 1,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        },
-        {
-          "file_index": 4,
-          "index": 2,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 59,
-              "start": 53
-            }
-          }
-        }
+        {"file_index":4,"index":1,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":44,"start":38}}},
+        {"complete":true,"field":"/replacement","file_index":4,"index":1,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7},
+        {"file_index":4,"index":2,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":59,"start":53}}}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -831,12 +329,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-17",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -844,41 +337,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 4,
-          "index": 2,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        },
-        {
-          "file_index": 4,
-          "index": 3,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 70,
-              "start": 64
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 4,
-          "index": 3,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        }
+        {"complete":true,"field":"/replacement","file_index":4,"index":2,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7},
+        {"file_index":4,"index":3,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":70,"start":64}}},
+        {"complete":true,"field":"/replacement","file_index":4,"index":3,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -886,12 +347,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-18",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -899,43 +355,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "file_index": 4,
-          "index": 4,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 104,
-              "start": 98
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 4,
-          "index": 4,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        },
-        {
-          "file_index": 4,
-          "index": 5,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 273,
-              "start": 267
-            }
-          }
-        }
+        {"file_index":4,"index":4,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":104,"start":98}}},
+        {"complete":true,"field":"/replacement","file_index":4,"index":4,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7},
+        {"file_index":4,"index":5,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":273,"start":267}}}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -943,12 +365,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-19",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -956,17 +373,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 4,
-          "index": 5,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        },
+        {"complete":true,"field":"/replacement","file_index":4,"index":5,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7},
         {
           "complete": false,
           "field": "/diff",
@@ -984,12 +391,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-20",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -1007,27 +409,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "text": ") { fn inner() { let x: T; } }\n-fn destructured(value: Engine, (left, right): (u8, u8)) { consume(value); }\n+fn destructured(value: Runtime, (left, right): (u8, u8)) { consume(value); }\n",
           "total_bytes": 581
         },
-        {
-          "index": 5,
-          "kind": "metadata",
-          "section": "file",
-          "value": {
-            "path": "src/namespaces.rs"
-          }
-        },
-        {
-          "file_index": 5,
-          "index": 0,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 24,
-              "start": 18
-            }
-          }
-        }
+        {"index":5,"kind":"metadata","section":"file","value":{"path":"src/namespaces.rs"}},
+        {"file_index":5,"index":0,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":24,"start":18}}}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -1035,12 +418,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-21",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -1048,41 +426,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 5,
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        },
-        {
-          "file_index": 5,
-          "index": 1,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 43,
-              "start": 37
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 5,
-          "index": 1,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        }
+        {"complete":true,"field":"/replacement","file_index":5,"index":0,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7},
+        {"file_index":5,"index":1,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":43,"start":37}}},
+        {"complete":true,"field":"/replacement","file_index":5,"index":1,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -1090,12 +436,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-22",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -1103,30 +444,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "file_index": 5,
-          "index": 2,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 88,
-              "start": 82
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 5,
-          "index": 2,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        },
+        {"file_index":5,"index":2,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":88,"start":82}}},
+        {"complete":true,"field":"/replacement","file_index":5,"index":2,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7},
         {
           "complete": true,
           "field": "/diff",
@@ -1144,12 +463,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-23",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -1157,38 +471,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "index": 6,
-          "kind": "metadata",
-          "section": "file",
-          "value": {
-            "path": "src/origin.rs"
-          }
-        },
-        {
-          "file_index": 6,
-          "index": 0,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 36,
-              "start": 30
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 6,
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        }
+        {"index":6,"kind":"metadata","section":"file","value":{"path":"src/origin.rs"}},
+        {"file_index":6,"index":0,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":36,"start":30}}},
+        {"complete":true,"field":"/replacement","file_index":6,"index":0,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -1196,12 +481,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-24",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -1209,30 +489,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "file_index": 6,
-          "index": 1,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 91,
-              "start": 85
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 6,
-          "index": 1,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        },
+        {"file_index":6,"index":1,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":91,"start":85}}},
+        {"complete":true,"field":"/replacement","file_index":6,"index":1,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7},
         {
           "complete": true,
           "field": "/diff",
@@ -1250,12 +508,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-25",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -1263,38 +516,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "index": 7,
-          "kind": "metadata",
-          "section": "file",
-          "value": {
-            "path": "src/other.rs"
-          }
-        },
-        {
-          "file_index": 7,
-          "index": 0,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 17,
-              "start": 11
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 7,
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        }
+        {"index":7,"kind":"metadata","section":"file","value":{"path":"src/other.rs"}},
+        {"file_index":7,"index":0,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":17,"start":11}}},
+        {"complete":true,"field":"/replacement","file_index":7,"index":0,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -1302,12 +526,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-26",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -1325,27 +544,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "text": "--- a/src/other.rs\n+++ b/src/other.rs\n@@ -1 +1 @@\n-pub struct Engine;\n+pub struct Runtime;\n",
           "total_bytes": 91
         },
-        {
-          "index": 8,
-          "kind": "metadata",
-          "section": "file",
-          "value": {
-            "path": "src/test/check.rs"
-          }
-        },
-        {
-          "file_index": 8,
-          "index": 0,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 25,
-              "start": 19
-            }
-          }
-        }
+        {"index":8,"kind":"metadata","section":"file","value":{"path":"src/test/check.rs"}},
+        {"file_index":8,"index":0,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":25,"start":19}}}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -1353,12 +553,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-27",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -1366,41 +561,9 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 8,
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        },
-        {
-          "file_index": 8,
-          "index": 1,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 51,
-              "start": 45
-            }
-          }
-        },
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 8,
-          "index": 1,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        }
+        {"complete":true,"field":"/replacement","file_index":8,"index":0,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7},
+        {"file_index":8,"index":1,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":51,"start":45}}},
+        {"complete":true,"field":"/replacement","file_index":8,"index":1,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -1408,12 +571,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-28",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -1431,27 +589,8 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
           "text": "--- a/src/test/check.rs\n+++ b/src/test/check.rs\n@@ -1,2 +1,2 @@\n-use crate::origin::Engine;\n-fn related(value: Engine) {}\n+use crate::origin::Runtime;\n+fn related(value: Runtime) {}\n",
           "total_bytes": 182
         },
-        {
-          "index": 9,
-          "kind": "metadata",
-          "section": "file",
-          "value": {
-            "path": "src/value.rs"
-          }
-        },
-        {
-          "file_index": 9,
-          "index": 0,
-          "kind": "metadata",
-          "section": "edit",
-          "value": {
-            "replacement": "",
-            "span": {
-              "end": 13,
-              "start": 7
-            }
-          }
-        }
+        {"index":9,"kind":"metadata","section":"file","value":{"path":"src/value.rs"}},
+        {"file_index":9,"index":0,"kind":"metadata","section":"edit","value":{"replacement":"","span":{"end":13,"start":7}}}
       ],
       "kind": "plan_review",
       "lifetime_seconds": 600,
@@ -1459,12 +598,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": "cursor-29",
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -1472,17 +606,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "items": [
-        {
-          "complete": true,
-          "field": "/replacement",
-          "file_index": 9,
-          "index": 0,
-          "kind": "text",
-          "offset": 0,
-          "section": "edit",
-          "text": "Runtime",
-          "total_bytes": 7
-        },
+        {"complete":true,"field":"/replacement","file_index":9,"index":0,"kind":"text","offset":0,"section":"edit","text":"Runtime","total_bytes":7},
         {
           "complete": true,
           "field": "/diff",
@@ -1500,12 +624,7 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
       "next_cursor": null,
       "plan_id": "cursor-2",
       "review_id": "6a10456315461e57392d29b5d72e83674bdebaa86741d4efa342bcb4324b5507",
-      "totals": {
-        "declarations": 0,
-        "edits": 30,
-        "files": 10,
-        "occurrences": 0
-      }
+      "totals": {"declarations":0,"edits":30,"files":10,"occurrences":0}
     },
     "schema": 1,
     "status": "ok"
@@ -1519,281 +638,79 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
         "files": [
           {
             "diff": "--- a/src/ambiguous.rs\n+++ b/src/ambiguous.rs\n@@ -1,3 +1,3 @@\n use crate::origin::*;\n use crate::other::*;\n-pub struct App { engine: Engine }\n+pub struct App { engine: Runtime }\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 74,
-                  "start": 68
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":74,"start":68}}],
             "path": "src/ambiguous.rs"
           },
           {
             "diff": "--- a/src/bindings.rs\n+++ b/src/bindings.rs\n@@ -1,5 +1,5 @@\n fn pairs((left, right): (u8, u8)) { consume(left); consume(right); }\n fn closure(value: u8) { let f = |value| value; consume(value); }\n fn destructure(pair: (u8, u8)) { let (left, right) = pair; consume(right); }\n-use crate::origin::Engine;\n-fn annotated() { let engine: Engine; }\n+use crate::origin::Runtime;\n+fn annotated() { let engine: Runtime; }\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 236,
-                  "start": 230
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 273,
-                  "start": 267
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":236,"start":230}},{"replacement":"Runtime","span":{"end":273,"start":267}}],
             "path": "src/bindings.rs"
           },
           {
             "diff": "--- a/src/bridge.rs\n+++ b/src/bridge.rs\n@@ -1 +1 @@\n-pub use crate::origin::Engine as Runtime;\n+pub use crate::origin::Runtime as Runtime;\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 29,
-                  "start": 23
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":29,"start":23}}],
             "path": "src/bridge.rs"
           },
           {
             "diff": "--- a/src/consumer.rs\n+++ b/src/consumer.rs\n@@ -1,14 +1,14 @@\n use crate::bridge::Runtime;\n-use crate::origin::Engine;\n+use crate::origin::Runtime;\n \n pub struct App {\n-    engine: Engine,\n+    engine: Runtime,\n     runtime: Runtime,\n }\n \n-pub fn roundtrip(engine: Engine) -> Engine { engine }\n-pub fn generic<Engine>(engine: Engine) {}\n-pub fn local() { type Engine = u8; let value: Engine = 0; }\n-pub fn unicode(é: u8, engine: Engine) {}\n+pub fn roundtrip(engine: Runtime) -> Runtime { engine }\n+pub fn generic<Runtime>(engine: Runtime) {}\n+pub fn local() { type Runtime = u8; let value: Runtime = 0; }\n+pub fn unicode(é: u8, engine: Runtime) {}\n \n-impl App { pub fn method(engine: Engine) -> Engine { engine } }\n+impl App { pub fn method(engine: Runtime) -> Runtime { engine } }\n",
             "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 53,
-                  "start": 47
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 91,
-                  "start": 85
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 149,
-                  "start": 143
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 160,
-                  "start": 154
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 193,
-                  "start": 187
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 209,
-                  "start": 203
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 242,
-                  "start": 236
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 266,
-                  "start": 260
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 311,
-                  "start": 305
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 356,
-                  "start": 350
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 367,
-                  "start": 361
-                }
-              }
+              {"replacement":"Runtime","span":{"end":53,"start":47}},
+              {"replacement":"Runtime","span":{"end":91,"start":85}},
+              {"replacement":"Runtime","span":{"end":149,"start":143}},
+              {"replacement":"Runtime","span":{"end":160,"start":154}},
+              {"replacement":"Runtime","span":{"end":193,"start":187}},
+              {"replacement":"Runtime","span":{"end":209,"start":203}},
+              {"replacement":"Runtime","span":{"end":242,"start":236}},
+              {"replacement":"Runtime","span":{"end":266,"start":260}},
+              {"replacement":"Runtime","span":{"end":311,"start":305}},
+              {"replacement":"Runtime","span":{"end":356,"start":350}},
+              {"replacement":"Runtime","span":{"end":367,"start":361}}
             ],
             "path": "src/consumer.rs"
           },
           {
             "diff": "--- a/src/lexical.rs\n+++ b/src/lexical.rs\n@@ -1,9 +1,9 @@\n-use crate::origin::Engine;\n-fn generic<Engine>(value: Engine) -> Engine { value }\n-fn shadow(value: Engine) {\n+use crate::origin::Runtime;\n+fn generic<Runtime>(value: Runtime) -> Runtime { value }\n+fn shadow(value: Runtime) {\n     let value = value;\n     { let value = 1; consume(value); }\n     consume(value);\n }\n fn nested<T>(value: T) { fn inner() { let x: T; } }\n-fn destructured(value: Engine, (left, right): (u8, u8)) { consume(value); }\n+fn destructured(value: Runtime, (left, right): (u8, u8)) { consume(value); }\n",
             "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 25,
-                  "start": 19
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 44,
-                  "start": 38
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 59,
-                  "start": 53
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 70,
-                  "start": 64
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 104,
-                  "start": 98
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 273,
-                  "start": 267
-                }
-              }
+              {"replacement":"Runtime","span":{"end":25,"start":19}},
+              {"replacement":"Runtime","span":{"end":44,"start":38}},
+              {"replacement":"Runtime","span":{"end":59,"start":53}},
+              {"replacement":"Runtime","span":{"end":70,"start":64}},
+              {"replacement":"Runtime","span":{"end":104,"start":98}},
+              {"replacement":"Runtime","span":{"end":273,"start":267}}
             ],
             "path": "src/lexical.rs"
           },
           {
             "diff": "--- a/src/namespaces.rs\n+++ b/src/namespaces.rs\n@@ -1,3 +1,3 @@\n-use crate::value::Engine;\n-pub struct Engine { pub ready: bool }\n-pub fn run(value: Engine) {}\n+use crate::value::Runtime;\n+pub struct Runtime { pub ready: bool }\n+pub fn run(value: Runtime) {}\n",
             "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 24,
-                  "start": 18
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 43,
-                  "start": 37
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 88,
-                  "start": 82
-                }
-              }
+              {"replacement":"Runtime","span":{"end":24,"start":18}},
+              {"replacement":"Runtime","span":{"end":43,"start":37}},
+              {"replacement":"Runtime","span":{"end":88,"start":82}}
             ],
             "path": "src/namespaces.rs"
           },
           {
             "diff": "--- a/src/origin.rs\n+++ b/src/origin.rs\n@@ -1,8 +1,8 @@\n /// Runtime state.\n-pub struct Engine {\n+pub struct Runtime {\n     pub running: bool,\n }\n pub enum Error {\n-    Engine,\n+    Runtime,\n     Io,\n }\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 36,
-                  "start": 30
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 91,
-                  "start": 85
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":36,"start":30}},{"replacement":"Runtime","span":{"end":91,"start":85}}],
             "path": "src/origin.rs"
           },
           {
             "diff": "--- a/src/other.rs\n+++ b/src/other.rs\n@@ -1 +1 @@\n-pub struct Engine;\n+pub struct Runtime;\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 17,
-                  "start": 11
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":17,"start":11}}],
             "path": "src/other.rs"
           },
           {
             "diff": "--- a/src/test/check.rs\n+++ b/src/test/check.rs\n@@ -1,2 +1,2 @@\n-use crate::origin::Engine;\n-fn related(value: Engine) {}\n+use crate::origin::Runtime;\n+fn related(value: Runtime) {}\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 25,
-                  "start": 19
-                }
-              },
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 51,
-                  "start": 45
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":25,"start":19}},{"replacement":"Runtime","span":{"end":51,"start":45}}],
             "path": "src/test/check.rs"
           },
           {
             "diff": "--- a/src/value.rs\n+++ b/src/value.rs\n@@ -1 +1 @@\n-pub fn Engine() {}\n+pub fn Runtime() {}\n",
-            "edits": [
-              {
-                "replacement": "Runtime",
-                "span": {
-                  "end": 13,
-                  "start": 7
-                }
-              }
-            ],
+            "edits": [{"replacement":"Runtime","span":{"end":13,"start":7}}],
             "path": "src/value.rs"
           }
         ],
-        "intent": {
-          "query": {
-            "pattern": "Engine"
-          },
-          "template": "Runtime"
-        }
+        "intent": {"query":{"pattern":"Engine"},"template":"Runtime"}
       },
       "state": "prepared"
     },
@@ -1803,46 +720,16 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "files": [
-        {
-          "content": "52060753a9f5d068796c112590a9b2a0223b26c0eb359def5f9c8a19e7dbfc77",
-          "path": "src/ambiguous.rs"
-        },
-        {
-          "content": "fce9155dbb00bd055b7c0ecd48f0d3833f3d70b629cafa9216cc942e3511f124",
-          "path": "src/bindings.rs"
-        },
-        {
-          "content": "a69d3bd39dbc6e8fb29a02b99f944042350ec3a68f365323dc114b2dc4a3f6fb",
-          "path": "src/bridge.rs"
-        },
-        {
-          "content": "acec17f6946b8d8780b4f02141894615c222bb74ae7899d2ff51330ff8faf79a",
-          "path": "src/consumer.rs"
-        },
-        {
-          "content": "ea162d12329bef82f6edc569158973e1195c23d13922c1bf2134ad32f9e41401",
-          "path": "src/lexical.rs"
-        },
-        {
-          "content": "b4f108dea634e4c0e16885e208b5918831f8994a4a203b0934aeadc22a370196",
-          "path": "src/namespaces.rs"
-        },
-        {
-          "content": "1b3a9b272ed340fb37fc53bcb9d7770f9c8adf5c29b999d2e8aaa63dfce999c6",
-          "path": "src/origin.rs"
-        },
-        {
-          "content": "d774ec3ee0728a1cdee1b9807a808585300fb83c89eec5cddd2d2d380542ba18",
-          "path": "src/other.rs"
-        },
-        {
-          "content": "23d68d180273d53278ea9bdd42ea4131c1a450b961dcbd243a1d6c1f0d4e85ab",
-          "path": "src/test/check.rs"
-        },
-        {
-          "content": "87510870615362e2a574e529078bf10eb0fc65157b7fd390028d0d8a53083568",
-          "path": "src/value.rs"
-        }
+        {"content":"52060753a9f5d068796c112590a9b2a0223b26c0eb359def5f9c8a19e7dbfc77","path":"src/ambiguous.rs"},
+        {"content":"fce9155dbb00bd055b7c0ecd48f0d3833f3d70b629cafa9216cc942e3511f124","path":"src/bindings.rs"},
+        {"content":"a69d3bd39dbc6e8fb29a02b99f944042350ec3a68f365323dc114b2dc4a3f6fb","path":"src/bridge.rs"},
+        {"content":"acec17f6946b8d8780b4f02141894615c222bb74ae7899d2ff51330ff8faf79a","path":"src/consumer.rs"},
+        {"content":"ea162d12329bef82f6edc569158973e1195c23d13922c1bf2134ad32f9e41401","path":"src/lexical.rs"},
+        {"content":"b4f108dea634e4c0e16885e208b5918831f8994a4a203b0934aeadc22a370196","path":"src/namespaces.rs"},
+        {"content":"1b3a9b272ed340fb37fc53bcb9d7770f9c8adf5c29b999d2e8aaa63dfce999c6","path":"src/origin.rs"},
+        {"content":"d774ec3ee0728a1cdee1b9807a808585300fb83c89eec5cddd2d2d380542ba18","path":"src/other.rs"},
+        {"content":"23d68d180273d53278ea9bdd42ea4131c1a450b961dcbd243a1d6c1f0d4e85ab","path":"src/test/check.rs"},
+        {"content":"87510870615362e2a574e529078bf10eb0fc65157b7fd390028d0d8a53083568","path":"src/value.rs"}
       ],
       "history_id": 1,
       "plan_id": "cursor-2"
@@ -1853,46 +740,16 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "files": [
-        {
-          "content": "52060753a9f5d068796c112590a9b2a0223b26c0eb359def5f9c8a19e7dbfc77",
-          "path": "src/ambiguous.rs"
-        },
-        {
-          "content": "fce9155dbb00bd055b7c0ecd48f0d3833f3d70b629cafa9216cc942e3511f124",
-          "path": "src/bindings.rs"
-        },
-        {
-          "content": "a69d3bd39dbc6e8fb29a02b99f944042350ec3a68f365323dc114b2dc4a3f6fb",
-          "path": "src/bridge.rs"
-        },
-        {
-          "content": "acec17f6946b8d8780b4f02141894615c222bb74ae7899d2ff51330ff8faf79a",
-          "path": "src/consumer.rs"
-        },
-        {
-          "content": "ea162d12329bef82f6edc569158973e1195c23d13922c1bf2134ad32f9e41401",
-          "path": "src/lexical.rs"
-        },
-        {
-          "content": "b4f108dea634e4c0e16885e208b5918831f8994a4a203b0934aeadc22a370196",
-          "path": "src/namespaces.rs"
-        },
-        {
-          "content": "1b3a9b272ed340fb37fc53bcb9d7770f9c8adf5c29b999d2e8aaa63dfce999c6",
-          "path": "src/origin.rs"
-        },
-        {
-          "content": "d774ec3ee0728a1cdee1b9807a808585300fb83c89eec5cddd2d2d380542ba18",
-          "path": "src/other.rs"
-        },
-        {
-          "content": "23d68d180273d53278ea9bdd42ea4131c1a450b961dcbd243a1d6c1f0d4e85ab",
-          "path": "src/test/check.rs"
-        },
-        {
-          "content": "87510870615362e2a574e529078bf10eb0fc65157b7fd390028d0d8a53083568",
-          "path": "src/value.rs"
-        }
+        {"content":"52060753a9f5d068796c112590a9b2a0223b26c0eb359def5f9c8a19e7dbfc77","path":"src/ambiguous.rs"},
+        {"content":"fce9155dbb00bd055b7c0ecd48f0d3833f3d70b629cafa9216cc942e3511f124","path":"src/bindings.rs"},
+        {"content":"a69d3bd39dbc6e8fb29a02b99f944042350ec3a68f365323dc114b2dc4a3f6fb","path":"src/bridge.rs"},
+        {"content":"acec17f6946b8d8780b4f02141894615c222bb74ae7899d2ff51330ff8faf79a","path":"src/consumer.rs"},
+        {"content":"ea162d12329bef82f6edc569158973e1195c23d13922c1bf2134ad32f9e41401","path":"src/lexical.rs"},
+        {"content":"b4f108dea634e4c0e16885e208b5918831f8994a4a203b0934aeadc22a370196","path":"src/namespaces.rs"},
+        {"content":"1b3a9b272ed340fb37fc53bcb9d7770f9c8adf5c29b999d2e8aaa63dfce999c6","path":"src/origin.rs"},
+        {"content":"d774ec3ee0728a1cdee1b9807a808585300fb83c89eec5cddd2d2d380542ba18","path":"src/other.rs"},
+        {"content":"23d68d180273d53278ea9bdd42ea4131c1a450b961dcbd243a1d6c1f0d4e85ab","path":"src/test/check.rs"},
+        {"content":"87510870615362e2a574e529078bf10eb0fc65157b7fd390028d0d8a53083568","path":"src/value.rs"}
       ],
       "history_id": 1,
       "plan_id": "cursor-2"
@@ -1903,46 +760,16 @@ expression: "serde_json::to_string_pretty(&transcript.replies).unwrap()"
   {
     "result": {
       "files": [
-        {
-          "content": "52060753a9f5d068796c112590a9b2a0223b26c0eb359def5f9c8a19e7dbfc77",
-          "path": "src/ambiguous.rs"
-        },
-        {
-          "content": "fce9155dbb00bd055b7c0ecd48f0d3833f3d70b629cafa9216cc942e3511f124",
-          "path": "src/bindings.rs"
-        },
-        {
-          "content": "a69d3bd39dbc6e8fb29a02b99f944042350ec3a68f365323dc114b2dc4a3f6fb",
-          "path": "src/bridge.rs"
-        },
-        {
-          "content": "acec17f6946b8d8780b4f02141894615c222bb74ae7899d2ff51330ff8faf79a",
-          "path": "src/consumer.rs"
-        },
-        {
-          "content": "ea162d12329bef82f6edc569158973e1195c23d13922c1bf2134ad32f9e41401",
-          "path": "src/lexical.rs"
-        },
-        {
-          "content": "b4f108dea634e4c0e16885e208b5918831f8994a4a203b0934aeadc22a370196",
-          "path": "src/namespaces.rs"
-        },
-        {
-          "content": "1b3a9b272ed340fb37fc53bcb9d7770f9c8adf5c29b999d2e8aaa63dfce999c6",
-          "path": "src/origin.rs"
-        },
-        {
-          "content": "d774ec3ee0728a1cdee1b9807a808585300fb83c89eec5cddd2d2d380542ba18",
-          "path": "src/other.rs"
-        },
-        {
-          "content": "23d68d180273d53278ea9bdd42ea4131c1a450b961dcbd243a1d6c1f0d4e85ab",
-          "path": "src/test/check.rs"
-        },
-        {
-          "content": "87510870615362e2a574e529078bf10eb0fc65157b7fd390028d0d8a53083568",
-          "path": "src/value.rs"
-        }
+        {"content":"52060753a9f5d068796c112590a9b2a0223b26c0eb359def5f9c8a19e7dbfc77","path":"src/ambiguous.rs"},
+        {"content":"fce9155dbb00bd055b7c0ecd48f0d3833f3d70b629cafa9216cc942e3511f124","path":"src/bindings.rs"},
+        {"content":"a69d3bd39dbc6e8fb29a02b99f944042350ec3a68f365323dc114b2dc4a3f6fb","path":"src/bridge.rs"},
+        {"content":"acec17f6946b8d8780b4f02141894615c222bb74ae7899d2ff51330ff8faf79a","path":"src/consumer.rs"},
+        {"content":"ea162d12329bef82f6edc569158973e1195c23d13922c1bf2134ad32f9e41401","path":"src/lexical.rs"},
+        {"content":"b4f108dea634e4c0e16885e208b5918831f8994a4a203b0934aeadc22a370196","path":"src/namespaces.rs"},
+        {"content":"1b3a9b272ed340fb37fc53bcb9d7770f9c8adf5c29b999d2e8aaa63dfce999c6","path":"src/origin.rs"},
+        {"content":"d774ec3ee0728a1cdee1b9807a808585300fb83c89eec5cddd2d2d380542ba18","path":"src/other.rs"},
+        {"content":"23d68d180273d53278ea9bdd42ea4131c1a450b961dcbd243a1d6c1f0d4e85ab","path":"src/test/check.rs"},
+        {"content":"87510870615362e2a574e529078bf10eb0fc65157b7fd390028d0d8a53083568","path":"src/value.rs"}
       ],
       "history_id": 1,
       "plan_id": "cursor-2"

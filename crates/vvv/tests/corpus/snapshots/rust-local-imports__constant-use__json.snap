@@ -1,63 +1,31 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "5eed1c1782abdda81e7f7a0454e8cb305d80507a9a4da8281ac020eaf655508e",
-    "outcome": "resolved",
-    "target": {
+    "container": {
+      "declaration": {"content":"6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6","path":"src/lib.rs","span":{"end":1360,"start":1340}},
+      "kind": "const",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
-        "span": {
-          "start": 1340,
-          "end": 1360
-        }
-      },
-      "name_span": {
-        "start": 1346,
-        "end": 1350
-      },
-      "kind": "const"
+      "name_span": {"end":1350,"start":1346}
     },
+    "evidence": {"addresses":[{"package":"local_imports","path":["UNIT"]}]},
     "id": "b22ffaefce94",
     "name": "UNIT",
-    "start": {
-      "line": 82,
-      "column": 0
-    },
-    "evidence": {
-      "addresses": [
-        {
-          "package": "local_imports",
-          "path": [
-            "UNIT"
-          ]
-        }
-      ]
-    },
-    "container": {
+    "outcome": "resolved",
+    "snapshot": "5eed1c1782abdda81e7f7a0454e8cb305d80507a9a4da8281ac020eaf655508e",
+    "start": {"column":0,"line":82},
+    "target": {
+      "declaration": {"content":"6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6","path":"src/lib.rs","span":{"end":1360,"start":1340}},
+      "kind": "const",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "6c1c493ff96e2033eba52879a492348756824335b4c5aee21f2d5866cf58b3e6",
-        "span": {
-          "start": 1340,
-          "end": 1360
-        }
-      },
-      "name_span": {
-        "start": 1346,
-        "end": 1350
-      },
-      "kind": "const"
+      "name_span": {"end":1350,"start":1346}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

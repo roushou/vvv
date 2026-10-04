@@ -1,314 +1,165 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "query": {
-      "pattern": "Engine"
-    },
     "matches": [
       {
         "content": "5bc46d1266ed294d618c8c7b4ff05ae5e1acffdbb00e3b25be1d611a98b9bb5b",
+        "end": {"column":10,"line":7},
         "id": "94019e09fb52",
-        "path": "src/preview_consumer.rs",
-        "language": "rust",
-        "span": {
-          "start": 85,
-          "end": 91
-        },
-        "start": {
-          "line": 7,
-          "column": 4
-        },
-        "end": {
-          "line": 7,
-          "column": 10
-        },
         "kind": "identifier",
-        "text": "Engine",
+        "language": "rust",
         "line": "    Engine,",
-        "symbol": {
-          "kind": "variant",
-          "name": "Engine",
-          "name_span": {
-            "start": 85,
-            "end": 91
-          },
-          "span": {
-            "start": 85,
-            "end": 91
-          },
-          "extent": {
-            "start": 85,
-            "end": 91
-          }
-        },
-        "role": "declaration"
+        "path": "src/preview_consumer.rs",
+        "role": "declaration",
+        "span": {"end":91,"start":85},
+        "start": {"column":4,"line":7},
+        "symbol": {"extent":{"end":91,"start":85},"kind":"variant","name":"Engine","name_span":{"end":91,"start":85},"span":{"end":91,"start":85}},
+        "text": "Engine"
       },
       {
+        "address": {"package":"resolution_probe","path":["preview_origin","Engine"]},
         "content": "ee3834701664e3b2092376837e50c3405f99f7e7bc3500396296c901520a5588",
+        "end": {"column":17,"line":0},
         "id": "e123851462fd",
-        "path": "src/preview_origin.rs",
-        "language": "rust",
-        "span": {
-          "start": 11,
-          "end": 17
-        },
-        "start": {
-          "line": 0,
-          "column": 11
-        },
-        "end": {
-          "line": 0,
-          "column": 17
-        },
         "kind": "type_identifier",
-        "text": "Engine",
+        "language": "rust",
         "line": "pub struct Engine {",
+        "path": "src/preview_origin.rs",
+        "role": "declaration",
+        "span": {"end":17,"start":11},
+        "start": {"column":11,"line":0},
         "symbol": {
+          "extent": {"end":44,"start":0},
           "kind": "struct",
           "name": "Engine",
-          "name_span": {
-            "start": 11,
-            "end": 17
-          },
-          "span": {
-            "start": 0,
-            "end": 44
-          },
-          "extent": {
-            "start": 0,
-            "end": 44
-          },
-          "visibility": {
-            "span": {
-              "start": 0,
-              "end": 3
-            },
-            "text": "pub"
-          }
+          "name_span": {"end":17,"start":11},
+          "span": {"end":44,"start":0},
+          "visibility": {"span":{"end":3,"start":0},"text":"pub"}
         },
-        "role": "declaration",
-        "address": {
-          "package": "resolution_probe",
-          "path": [
-            "preview_origin",
-            "Engine"
-          ]
-        }
+        "text": "Engine"
       },
       {
+        "address": {"package":"resolution_probe","path":["preview_other","Engine"]},
         "content": "7d5511427a8ff89cdc470bad81d45a4c7ad1752e9216998f8a1419b469b23d48",
+        "end": {"column":17,"line":0},
         "id": "2dd9a5efc639",
-        "path": "src/preview_other.rs",
-        "language": "rust",
-        "span": {
-          "start": 11,
-          "end": 17
-        },
-        "start": {
-          "line": 0,
-          "column": 11
-        },
-        "end": {
-          "line": 0,
-          "column": 17
-        },
         "kind": "type_identifier",
-        "text": "Engine",
+        "language": "rust",
         "line": "pub struct Engine;",
+        "path": "src/preview_other.rs",
+        "role": "declaration",
+        "span": {"end":17,"start":11},
+        "start": {"column":11,"line":0},
         "symbol": {
+          "extent": {"end":18,"start":0},
           "kind": "struct",
           "name": "Engine",
-          "name_span": {
-            "start": 11,
-            "end": 17
-          },
-          "span": {
-            "start": 0,
-            "end": 18
-          },
-          "extent": {
-            "start": 0,
-            "end": 18
-          },
-          "visibility": {
-            "span": {
-              "start": 0,
-              "end": 3
-            },
-            "text": "pub"
-          }
+          "name_span": {"end":17,"start":11},
+          "span": {"end":18,"start":0},
+          "visibility": {"span":{"end":3,"start":0},"text":"pub"}
         },
-        "role": "declaration",
-        "address": {
-          "package": "resolution_probe",
-          "path": [
-            "preview_other",
-            "Engine"
-          ]
-        }
+        "text": "Engine"
       },
       {
         "content": "4e2c271361e965adb06eab9f1b0d193a2f5b42570998bb3a94a01cdaa6ab1c16",
+        "end": {"column":30,"line":8},
         "id": "56803170ea3c",
-        "path": "src/lib.rs",
-        "language": "rust",
-        "span": {
-          "start": 183,
-          "end": 189
-        },
-        "start": {
-          "line": 8,
-          "column": 24
-        },
-        "end": {
-          "line": 8,
-          "column": 30
-        },
         "kind": "identifier",
-        "text": "Engine",
+        "language": "rust",
         "line": "pub use preview_origin::Engine;",
-        "role": "import"
+        "path": "src/lib.rs",
+        "role": "import",
+        "span": {"end":189,"start":183},
+        "start": {"column":24,"line":8},
+        "text": "Engine"
       },
       {
         "content": "5bc46d1266ed294d618c8c7b4ff05ae5e1acffdbb00e3b25be1d611a98b9bb5b",
+        "end": {"column":17,"line":0},
         "id": "5c122b973b53",
-        "path": "src/preview_consumer.rs",
-        "language": "rust",
-        "span": {
-          "start": 11,
-          "end": 17
-        },
-        "start": {
-          "line": 0,
-          "column": 11
-        },
-        "end": {
-          "line": 0,
-          "column": 17
-        },
         "kind": "identifier",
-        "text": "Engine",
+        "language": "rust",
         "line": "use crate::Engine;",
-        "role": "import"
+        "path": "src/preview_consumer.rs",
+        "role": "import",
+        "span": {"end":17,"start":11},
+        "start": {"column":11,"line":0},
+        "text": "Engine"
       },
       {
         "content": "5bc46d1266ed294d618c8c7b4ff05ae5e1acffdbb00e3b25be1d611a98b9bb5b",
+        "end": {"column":22,"line":3},
         "id": "67f1df50198c",
-        "path": "src/preview_consumer.rs",
-        "language": "rust",
-        "span": {
-          "start": 53,
-          "end": 59
-        },
-        "start": {
-          "line": 3,
-          "column": 16
-        },
-        "end": {
-          "line": 3,
-          "column": 22
-        },
         "kind": "type_identifier",
-        "text": "Engine",
+        "language": "rust",
         "line": "    pub engine: Engine,",
-        "role": "use"
+        "path": "src/preview_consumer.rs",
+        "role": "use",
+        "span": {"end":59,"start":53},
+        "start": {"column":16,"line":3},
+        "text": "Engine"
       },
       {
         "content": "5bc46d1266ed294d618c8c7b4ff05ae5e1acffdbb00e3b25be1d611a98b9bb5b",
+        "end": {"column":17,"line":11},
         "id": "629e88b565a4",
-        "path": "src/preview_consumer.rs",
-        "language": "rust",
-        "span": {
-          "start": 133,
-          "end": 139
-        },
-        "start": {
-          "line": 11,
-          "column": 11
-        },
-        "end": {
-          "line": 11,
-          "column": 17
-        },
         "kind": "identifier",
-        "text": "Engine",
+        "language": "rust",
         "line": "    Error::Engine",
-        "role": "use"
+        "path": "src/preview_consumer.rs",
+        "role": "use",
+        "span": {"end":139,"start":133},
+        "start": {"column":11,"line":11},
+        "text": "Engine"
       },
       {
         "content": "5bc46d1266ed294d618c8c7b4ff05ae5e1acffdbb00e3b25be1d611a98b9bb5b",
+        "end": {"column":31,"line":14},
         "id": "0ded338013c8",
-        "path": "src/preview_consumer.rs",
-        "language": "rust",
-        "span": {
-          "start": 168,
-          "end": 174
-        },
-        "start": {
-          "line": 14,
-          "column": 25
-        },
-        "end": {
-          "line": 14,
-          "column": 31
-        },
         "kind": "type_identifier",
-        "text": "Engine",
+        "language": "rust",
         "line": "pub fn roundtrip(engine: Engine) -> Engine {",
-        "role": "use"
+        "path": "src/preview_consumer.rs",
+        "role": "use",
+        "span": {"end":174,"start":168},
+        "start": {"column":25,"line":14},
+        "text": "Engine"
       },
       {
         "content": "5bc46d1266ed294d618c8c7b4ff05ae5e1acffdbb00e3b25be1d611a98b9bb5b",
+        "end": {"column":42,"line":14},
         "id": "1a60b3d7de97",
-        "path": "src/preview_consumer.rs",
-        "language": "rust",
-        "span": {
-          "start": 179,
-          "end": 185
-        },
-        "start": {
-          "line": 14,
-          "column": 36
-        },
-        "end": {
-          "line": 14,
-          "column": 42
-        },
         "kind": "type_identifier",
-        "text": "Engine",
+        "language": "rust",
         "line": "pub fn roundtrip(engine: Engine) -> Engine {",
-        "role": "use"
+        "path": "src/preview_consumer.rs",
+        "role": "use",
+        "span": {"end":185,"start":179},
+        "start": {"column":36,"line":14},
+        "text": "Engine"
       },
       {
         "content": "ee3834701664e3b2092376837e50c3405f99f7e7bc3500396296c901520a5588",
+        "end": {"column":11,"line":4},
         "id": "9c58aeccb043",
-        "path": "src/preview_origin.rs",
-        "language": "rust",
-        "span": {
-          "start": 51,
-          "end": 57
-        },
-        "start": {
-          "line": 4,
-          "column": 5
-        },
-        "end": {
-          "line": 4,
-          "column": 11
-        },
         "kind": "type_identifier",
-        "text": "Engine",
+        "language": "rust",
         "line": "impl Engine {",
-        "role": "use"
+        "path": "src/preview_origin.rs",
+        "role": "use",
+        "span": {"end":57,"start":51},
+        "start": {"column":5,"line":4},
+        "text": "Engine"
       }
-    ]
-  }
+    ],
+    "query": {"pattern":"Engine"}
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

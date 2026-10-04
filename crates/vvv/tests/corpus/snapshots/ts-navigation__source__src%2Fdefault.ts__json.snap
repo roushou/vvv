@@ -1,0 +1,25 @@
+---
+source: crates/vvv/tests/common/corpus_snapshot.rs
+expression: JsonSnapshot(&self.value).to_string()
+---
+{
+  "highlights": [
+    {"kind":"keyword","span":{"end":6,"start":0}},
+    {"kind":"keyword","span":{"end":14,"start":7}},
+    {"kind":"keyword","span":{"end":20,"start":15}},
+    {"kind":"type","span":{"end":34,"start":21}}
+  ],
+  "identifiers": [{"content":"43b550a61a81b09d367686b6fbde10e80ad8fc8bf1177d30c2cc7418ec95ed80","path":"src/default.ts","span":{"end":34,"start":21}}],
+  "path": "src/default.ts",
+  "symbols": [
+    {
+      "extent": {"end":37,"start":0},
+      "kind": "class",
+      "name": "DefaultEngine",
+      "name_span": {"end":34,"start":21},
+      "span": {"end":37,"start":15},
+      "visibility": {"span":{"end":14,"start":0},"text":"export default"}
+    }
+  ],
+  "text": "export default class DefaultEngine {}\n"
+}

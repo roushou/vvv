@@ -1,73 +1,37 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "ecfd07190767d83ee80dae0aafe88a01ae299ccdc7cacf2c2a86294961621a79",
-    "outcome": "resolved",
     "items": [
       {
-        "target": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
-            "span": {
-              "start": 0,
-              "end": 30
-            }
-          },
-          "name_span": {
-            "start": 7,
-            "end": 13
-          },
-          "kind": "function"
-        },
-        "relation": "definition",
-        "via": null,
-        "excerpt": {
-          "path": "src/lib.rs",
-          "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
-          "span": {
-            "start": 0,
-            "end": 24
-          }
-        },
-        "start": {
-          "line": 0,
-          "column": 0
-        },
-        "text": "pub fn helper() -> usize",
         "complete": true,
+        "excerpt": {"content":"aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6","path":"src/lib.rs","span":{"end":24,"start":0}},
+        "relation": "definition",
         "signature": {
           "outcome": "available",
-          "requested": {
-            "path": "src/lib.rs",
-            "content": "aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6",
-            "span": {
-              "start": 0,
-              "end": 24
-            }
-          }
-        }
+          "requested": {"content":"aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6","path":"src/lib.rs","span":{"end":24,"start":0}}
+        },
+        "start": {"column":0,"line":0},
+        "target": {
+          "declaration": {"content":"aa5716465f34e40492f3b2680bf542884490559133050cb8ee7907e09f4a69f6","path":"src/lib.rs","span":{"end":30,"start":0}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":13,"start":7}
+        },
+        "text": "pub fn helper() -> usize",
+        "via": null
       }
     ],
-    "omissions": {
-      "item_limit": 0,
-      "byte_limit": 0,
-      "lookup_limit": 0,
-      "file_limit": 0,
-      "ambiguous": 0,
-      "unavailable": 0,
-      "no_container": 0,
-      "unresolved_imports": 0
-    },
-    "references_by_name": false
-  }
+    "omissions": {"ambiguous":0,"byte_limit":0,"file_limit":0,"item_limit":0,"lookup_limit":0,"no_container":0,"unavailable":0,"unresolved_imports":0},
+    "outcome": "resolved",
+    "references_by_name": false,
+    "snapshot": "ecfd07190767d83ee80dae0aafe88a01ae299ccdc7cacf2c2a86294961621a79"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

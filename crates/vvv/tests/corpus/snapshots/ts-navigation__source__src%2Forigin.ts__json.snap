@@ -1,0 +1,51 @@
+---
+source: crates/vvv/tests/common/corpus_snapshot.rs
+expression: JsonSnapshot(&self.value).to_string()
+---
+{
+  "highlights": [
+    {"kind":"keyword","span":{"end":6,"start":0}},
+    {"kind":"keyword","span":{"end":12,"start":7}},
+    {"kind":"type","span":{"end":19,"start":13}},
+    {"kind":"keyword","span":{"end":28,"start":22}},
+    {"kind":"function","span":{"end":32,"start":29}},
+    {"kind":"type","span":{"end":40,"start":36}},
+    {"kind":"keyword","span":{"end":52,"start":46}},
+    {"kind":"keyword","span":{"end":62,"start":53}},
+    {"kind":"type","span":{"end":68,"start":63}},
+    {"kind":"type","span":{"end":85,"start":79}},
+    {"kind":"keyword","span":{"end":93,"start":88}},
+    {"kind":"type","span":{"end":100,"start":94}}
+  ],
+  "identifiers": [
+    {"content":"396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c","path":"src/origin.ts","span":{"end":19,"start":13}},
+    {"content":"396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c","path":"src/origin.ts","span":{"end":32,"start":29}},
+    {"content":"396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c","path":"src/origin.ts","span":{"end":68,"start":63}},
+    {"content":"396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c","path":"src/origin.ts","span":{"end":77,"start":71}},
+    {"content":"396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c","path":"src/origin.ts","span":{"end":85,"start":79}},
+    {"content":"396a86c231e101ac12d17ba603f97fd4829f9fa13c843c4f54fade8733ced96c","path":"src/origin.ts","span":{"end":100,"start":94}}
+  ],
+  "path": "src/origin.ts",
+  "symbols": [
+    {
+      "extent": {"end":45,"start":0},
+      "kind": "class",
+      "name": "Engine",
+      "name_span": {"end":19,"start":13},
+      "span": {"end":45,"start":7},
+      "visibility": {"span":{"end":6,"start":0},"text":"export"}
+    },
+    {"extent":{"end":43,"start":22},"kind":"method","name":"run","name_span":{"end":32,"start":29},"span":{"end":43,"start":22}},
+    {
+      "extent": {"end":87,"start":46},
+      "kind": "interface",
+      "name": "Model",
+      "name_span": {"end":68,"start":63},
+      "span": {"end":87,"start":53},
+      "visibility": {"span":{"end":52,"start":46},"text":"export"}
+    },
+    {"extent":{"end":85,"start":71},"kind":"field","name":"engine","name_span":{"end":77,"start":71},"span":{"end":85,"start":71}},
+    {"extent":{"end":103,"start":88},"kind":"class","name":"Hidden","name_span":{"end":100,"start":94},"span":{"end":103,"start":88}}
+  ],
+  "text": "export class Engine { public run(): void {} }\nexport interface Model { engine: Engine }\nclass Hidden {}\n"
+}

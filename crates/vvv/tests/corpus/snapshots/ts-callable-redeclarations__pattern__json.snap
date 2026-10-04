@@ -1,135 +1,63 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "d2bf6d56752f77846d227d0f50e83dd5443e51cc3a43cf24da44269c0850d010",
-    "outcome": "ambiguous",
     "candidates": [
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/scopes.ts",
-            "content": "e64f3fdedd12329704df474998349fb9fa29bfd03ceb91284042105b850f3373",
-            "span": {
-              "start": 338,
-              "end": 347
-            }
-          },
-          "name_span": {
-            "start": 340,
-            "end": 345
-          },
-          "kind": "parameter"
-        },
         "declaration": {
           "content": "e64f3fdedd12329704df474998349fb9fa29bfd03ceb91284042105b850f3373",
+          "end": {"column":33,"line":19},
           "id": "2c2216831873",
-          "path": "src/scopes.ts",
-          "language": "typescript",
-          "span": {
-            "start": 338,
-            "end": 347
-          },
-          "start": {
-            "line": 19,
-            "column": 24
-          },
-          "end": {
-            "line": 19,
-            "column": 33
-          },
           "kind": "declaration",
-          "text": "{ value }",
+          "language": "typescript",
           "line": "export function pattern({ value }) {",
-          "symbol": {
-            "kind": "parameter",
-            "name": "value",
-            "name_span": {
-              "start": 340,
-              "end": 345
-            },
-            "span": {
-              "start": 338,
-              "end": 347
-            },
-            "extent": {
-              "start": 338,
-              "end": 347
-            }
-          },
-          "role": "declaration"
+          "path": "src/scopes.ts",
+          "role": "declaration",
+          "span": {"end":347,"start":338},
+          "start": {"column":24,"line":19},
+          "symbol": {"extent":{"end":347,"start":338},"kind":"parameter","name":"value","name_span":{"end":345,"start":340},"span":{"end":347,"start":338}},
+          "text": "{ value }"
         },
-        "evidence": {
-          "addresses": []
+        "evidence": {"addresses":[]},
+        "target": {
+          "declaration": {"content":"e64f3fdedd12329704df474998349fb9fa29bfd03ceb91284042105b850f3373","path":"src/scopes.ts","span":{"end":347,"start":338}},
+          "kind": "parameter",
+          "language": "typescript",
+          "name_span": {"end":345,"start":340}
         }
       },
       {
-        "target": {
-          "language": "typescript",
-          "declaration": {
-            "path": "src/scopes.ts",
-            "content": "e64f3fdedd12329704df474998349fb9fa29bfd03ceb91284042105b850f3373",
-            "span": {
-              "start": 357,
-              "end": 362
-            }
-          },
-          "name_span": {
-            "start": 357,
-            "end": 362
-          },
-          "kind": "variable"
-        },
         "declaration": {
           "content": "e64f3fdedd12329704df474998349fb9fa29bfd03ceb91284042105b850f3373",
+          "end": {"column":11,"line":20},
           "id": "7f06f0180046",
-          "path": "src/scopes.ts",
-          "language": "typescript",
-          "span": {
-            "start": 357,
-            "end": 362
-          },
-          "start": {
-            "line": 20,
-            "column": 6
-          },
-          "end": {
-            "line": 20,
-            "column": 11
-          },
           "kind": "declaration",
-          "text": "value",
+          "language": "typescript",
           "line": "  var value;",
-          "symbol": {
-            "kind": "variable",
-            "name": "value",
-            "name_span": {
-              "start": 357,
-              "end": 362
-            },
-            "span": {
-              "start": 357,
-              "end": 362
-            },
-            "extent": {
-              "start": 357,
-              "end": 362
-            }
-          },
-          "role": "declaration"
+          "path": "src/scopes.ts",
+          "role": "declaration",
+          "span": {"end":362,"start":357},
+          "start": {"column":6,"line":20},
+          "symbol": {"extent":{"end":362,"start":357},"kind":"variable","name":"value","name_span":{"end":362,"start":357},"span":{"end":362,"start":357}},
+          "text": "value"
         },
-        "evidence": {
-          "addresses": []
+        "evidence": {"addresses":[]},
+        "target": {
+          "declaration": {"content":"e64f3fdedd12329704df474998349fb9fa29bfd03ceb91284042105b850f3373","path":"src/scopes.ts","span":{"end":362,"start":357}},
+          "kind": "variable",
+          "language": "typescript",
+          "name_span": {"end":362,"start":357}
         }
       }
-    ]
-  }
+    ],
+    "outcome": "ambiguous",
+    "snapshot": "d2bf6d56752f77846d227d0f50e83dd5443e51cc3a43cf24da44269c0850d010"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

@@ -1,14 +1,14 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 1
 --- stdout ---
 {
-  "status": "error",
-  "schema": 1,
   "code": "ambiguous_symbol",
+  "hint": "for example: --in src/preview_origin.rs",
   "message": "`Engine` is declared in several places (src/preview_origin.rs:1:1, src/preview_other.rs:1:1); pick one with --in <file>",
-  "hint": "for example: --in src/preview_origin.rs"
+  "schema": 1,
+  "status": "error"
 }
 --- stderr ---

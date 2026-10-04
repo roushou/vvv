@@ -1,190 +1,115 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "name": "child",
     "declarations": [
       {
+        "address": {"package":"resolution_probe","path":["a","child"]},
         "content": "e29ea56499f48fa86bfb98c1c9c13a583280a4c9bebf9a6f8561007325f30d97",
+        "end": {"column":14,"line":0},
         "id": "ae9c33bce5d4",
-        "path": "src/a.rs",
-        "language": "rust",
-        "span": {
-          "start": 0,
-          "end": 14
-        },
-        "start": {
-          "line": 0,
-          "column": 0
-        },
-        "end": {
-          "line": 0,
-          "column": 14
-        },
         "kind": "mod_item",
-        "text": "pub mod child;",
+        "language": "rust",
         "line": "pub mod child;",
+        "path": "src/a.rs",
+        "role": "declaration",
+        "span": {"end":14,"start":0},
+        "start": {"column":0,"line":0},
         "symbol": {
+          "extent": {"end":14,"start":0},
           "kind": "module",
           "name": "child",
-          "name_span": {
-            "start": 8,
-            "end": 13
-          },
-          "span": {
-            "start": 0,
-            "end": 14
-          },
-          "extent": {
-            "start": 0,
-            "end": 14
-          },
-          "visibility": {
-            "span": {
-              "start": 0,
-              "end": 3
-            },
-            "text": "pub"
-          }
+          "name_span": {"end":13,"start":8},
+          "span": {"end":14,"start":0},
+          "visibility": {"span":{"end":3,"start":0},"text":"pub"}
         },
-        "role": "declaration",
-        "address": {
-          "package": "resolution_probe",
-          "path": [
-            "a",
-            "child"
-          ]
-        }
+        "text": "pub mod child;"
       }
     ],
+    "name": "child",
     "occurrences": [
       {
+        "confidence": "resolved",
         "content": "e29ea56499f48fa86bfb98c1c9c13a583280a4c9bebf9a6f8561007325f30d97",
+        "end": {"column":13,"line":0},
         "id": "0a8bde66ba9e",
-        "path": "src/a.rs",
-        "language": "rust",
-        "span": {
-          "start": 8,
-          "end": 13
-        },
-        "start": {
-          "line": 0,
-          "column": 8
-        },
-        "end": {
-          "line": 0,
-          "column": 13
-        },
         "kind": "identifier",
-        "text": "child",
+        "language": "rust",
         "line": "pub mod child;",
+        "path": "src/a.rs",
+        "reason": "declaring",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "declaring"
+        "span": {"end":13,"start":8},
+        "start": {"column":8,"line":0},
+        "text": "child"
       },
       {
+        "confidence": "resolved",
         "content": "088949e453189839e0a8c137aedb9266d1a7f27a4138543c750097bb372e516f",
+        "end": {"column":17,"line":2},
         "id": "301ba1b1c7d5",
-        "path": "src/chained.rs",
-        "language": "rust",
-        "span": {
-          "start": 54,
-          "end": 59
-        },
-        "start": {
-          "line": 2,
-          "column": 12
-        },
-        "end": {
-          "line": 2,
-          "column": 17
-        },
         "kind": "identifier",
-        "text": "child",
+        "language": "rust",
         "line": "use parent::child as leaf;",
+        "path": "src/chained.rs",
+        "reason": "path",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "path"
+        "span": {"end":59,"start":54},
+        "start": {"column":12,"line":2},
+        "text": "child"
       },
       {
+        "confidence": "resolved",
         "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
+        "end": {"column":29,"line":2},
         "id": "2b4537a7afe9",
-        "path": "src/consumer.rs",
-        "language": "rust",
-        "span": {
-          "start": 81,
-          "end": 86
-        },
-        "start": {
-          "line": 2,
-          "column": 24
-        },
-        "end": {
-          "line": 2,
-          "column": 29
-        },
         "kind": "identifier",
-        "text": "child",
+        "language": "rust",
         "line": "use module_alias::{Foo, child::Child};",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "path"
-      },
-      {
-        "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
-        "id": "69eff325e3a9",
         "path": "src/consumer.rs",
-        "language": "rust",
-        "span": {
-          "start": 180,
-          "end": 185
-        },
-        "start": {
-          "line": 5,
-          "column": 39
-        },
-        "end": {
-          "line": 5,
-          "column": 44
-        },
-        "kind": "identifier",
-        "text": "child",
-        "line": "pub fn parent_path(_: parent_alias::a::child::Child) {}",
+        "reason": "path",
         "role": "use",
-        "confidence": "resolved",
-        "reason": "path"
+        "span": {"end":86,"start":81},
+        "start": {"column":24,"line":2},
+        "text": "child"
       },
       {
-        "content": "a57b78d505893391ffaf83410b468409cfced592c3a57d761b1d1e1e8cd6ad0f",
-        "id": "2b379fdc9ac7",
-        "path": "src/nested.rs",
-        "language": "rust",
-        "span": {
-          "start": 49,
-          "end": 54
-        },
-        "start": {
-          "line": 1,
-          "column": 19
-        },
-        "end": {
-          "line": 1,
-          "column": 24
-        },
-        "kind": "identifier",
-        "text": "child",
-        "line": "use module_alias::{child::{Child, child_fn}, Foo};",
-        "role": "use",
         "confidence": "resolved",
-        "reason": "path"
+        "content": "198fce57641ca99057c628ea27db8bbbeed250983e5c159df964bd26a2bfe0c8",
+        "end": {"column":44,"line":5},
+        "id": "69eff325e3a9",
+        "kind": "identifier",
+        "language": "rust",
+        "line": "pub fn parent_path(_: parent_alias::a::child::Child) {}",
+        "path": "src/consumer.rs",
+        "reason": "path",
+        "role": "use",
+        "span": {"end":185,"start":180},
+        "start": {"column":39,"line":5},
+        "text": "child"
+      },
+      {
+        "confidence": "resolved",
+        "content": "a57b78d505893391ffaf83410b468409cfced592c3a57d761b1d1e1e8cd6ad0f",
+        "end": {"column":24,"line":1},
+        "id": "2b379fdc9ac7",
+        "kind": "identifier",
+        "language": "rust",
+        "line": "use module_alias::{child::{Child, child_fn}, Foo};",
+        "path": "src/nested.rs",
+        "reason": "path",
+        "role": "use",
+        "span": {"end":54,"start":49},
+        "start": {"column":19,"line":1},
+        "text": "child"
       }
     ]
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

@@ -1,165 +1,77 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "dbdd6e87fd8570ebfff1add7e38329f8570079dddfc10dcb69838fadc630a7d3",
-    "outcome": "ambiguous",
     "candidates": [
       {
-        "target": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/origin.rs",
-            "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
-            "span": {
-              "start": 0,
-              "end": 63
-            }
-          },
-          "name_span": {
-            "start": 30,
-            "end": 36
-          },
-          "kind": "struct"
-        },
         "declaration": {
           "content": "e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba",
+          "end": {"column":1,"line":3},
           "id": "f2c97c3b389f",
-          "path": "src/origin.rs",
-          "language": "rust",
-          "span": {
-            "start": 19,
-            "end": 63
-          },
-          "start": {
-            "line": 1,
-            "column": 0
-          },
-          "end": {
-            "line": 3,
-            "column": 1
-          },
           "kind": "declaration",
-          "text": "pub struct Engine {\n    pub running: bool,\n}",
+          "language": "rust",
           "line": "pub struct Engine {",
+          "path": "src/origin.rs",
+          "role": "declaration",
+          "span": {"end":63,"start":19},
+          "start": {"column":0,"line":1},
           "symbol": {
+            "extent": {"end":63,"start":0},
             "kind": "struct",
             "name": "Engine",
-            "name_span": {
-              "start": 30,
-              "end": 36
-            },
-            "span": {
-              "start": 19,
-              "end": 63
-            },
-            "extent": {
-              "start": 0,
-              "end": 63
-            },
-            "visibility": {
-              "span": {
-                "start": 19,
-                "end": 22
-              },
-              "text": "pub"
-            }
+            "name_span": {"end":36,"start":30},
+            "span": {"end":63,"start":19},
+            "visibility": {"span":{"end":22,"start":19},"text":"pub"}
           },
-          "role": "declaration"
+          "text": "pub struct Engine {\n    pub running: bool,\n}"
         },
-        "evidence": {
-          "addresses": [
-            {
-              "package": "navigation",
-              "path": [
-                "origin",
-                "Engine"
-              ]
-            }
-          ]
+        "evidence": {"addresses":[{"package":"navigation","path":["origin","Engine"]}]},
+        "target": {
+          "declaration": {"content":"e864a6284583a16505b27e452408cab742ba336d9a96cbbbf9f600311293e6ba","path":"src/origin.rs","span":{"end":63,"start":0}},
+          "kind": "struct",
+          "language": "rust",
+          "name_span": {"end":36,"start":30}
         }
       },
       {
-        "target": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/other.rs",
-            "content": "7d5511427a8ff89cdc470bad81d45a4c7ad1752e9216998f8a1419b469b23d48",
-            "span": {
-              "start": 0,
-              "end": 18
-            }
-          },
-          "name_span": {
-            "start": 11,
-            "end": 17
-          },
-          "kind": "struct"
-        },
         "declaration": {
           "content": "7d5511427a8ff89cdc470bad81d45a4c7ad1752e9216998f8a1419b469b23d48",
+          "end": {"column":18,"line":0},
           "id": "03656afe22d7",
-          "path": "src/other.rs",
-          "language": "rust",
-          "span": {
-            "start": 0,
-            "end": 18
-          },
-          "start": {
-            "line": 0,
-            "column": 0
-          },
-          "end": {
-            "line": 0,
-            "column": 18
-          },
           "kind": "declaration",
-          "text": "pub struct Engine;",
+          "language": "rust",
           "line": "pub struct Engine;",
+          "path": "src/other.rs",
+          "role": "declaration",
+          "span": {"end":18,"start":0},
+          "start": {"column":0,"line":0},
           "symbol": {
+            "extent": {"end":18,"start":0},
             "kind": "struct",
             "name": "Engine",
-            "name_span": {
-              "start": 11,
-              "end": 17
-            },
-            "span": {
-              "start": 0,
-              "end": 18
-            },
-            "extent": {
-              "start": 0,
-              "end": 18
-            },
-            "visibility": {
-              "span": {
-                "start": 0,
-                "end": 3
-              },
-              "text": "pub"
-            }
+            "name_span": {"end":17,"start":11},
+            "span": {"end":18,"start":0},
+            "visibility": {"span":{"end":3,"start":0},"text":"pub"}
           },
-          "role": "declaration"
+          "text": "pub struct Engine;"
         },
-        "evidence": {
-          "addresses": [
-            {
-              "package": "navigation",
-              "path": [
-                "other",
-                "Engine"
-              ]
-            }
-          ]
+        "evidence": {"addresses":[{"package":"navigation","path":["other","Engine"]}]},
+        "target": {
+          "declaration": {"content":"7d5511427a8ff89cdc470bad81d45a4c7ad1752e9216998f8a1419b469b23d48","path":"src/other.rs","span":{"end":18,"start":0}},
+          "kind": "struct",
+          "language": "rust",
+          "name_span": {"end":17,"start":11}
         }
       }
-    ]
-  }
+    ],
+    "outcome": "ambiguous",
+    "snapshot": "dbdd6e87fd8570ebfff1add7e38329f8570079dddfc10dcb69838fadc630a7d3"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

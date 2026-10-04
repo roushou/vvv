@@ -1,333 +1,133 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "94ad4fbcbaad98deba82c0fde6edd02e269e123ebfce521781b8f845dab5113d",
-    "subject": {
-      "outcome": "resolved",
-      "target": {
-        "language": "rust",
-        "declaration": {
-          "path": "src/consumer.rs",
-          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-          "span": {
-            "start": 62,
-            "end": 256
-          }
-        },
-        "name_span": {
-          "start": 69,
-          "end": 75
-        },
-        "kind": "function"
-      },
-      "id": "64f50ba21af4",
-      "name": "caller",
-      "start": {
-        "line": 2,
-        "column": 0
-      },
-      "evidence": {
-        "addresses": []
-      },
-      "container": {
-        "language": "rust",
-        "declaration": {
-          "path": "src/consumer.rs",
-          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-          "span": {
-            "start": 62,
-            "end": 256
-          }
-        },
-        "name_span": {
-          "start": 69,
-          "end": 75
-        },
-        "kind": "function"
-      }
-    },
-    "kind": "callees",
-    "scope": {
-      "paths": [],
-      "packages": []
+    "coverage": {
+      "files_remaining": 0,
+      "files_scanned": 1,
+      "limitations": ["receiver_types","indirect_targets","macro_expansion","anonymous_callers","unsupported_bindings","unenumerated_aliases"],
+      "lookups": 4,
+      "omitted_items": 0,
+      "scan_complete": true,
+      "stopped_by": null,
+      "unresolved_imports": 0,
+      "unsupported_files": 0
     },
     "items": [
       {
-        "site": {
-          "path": "src/consumer.rs",
-          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-          "span": {
-            "start": 84,
-            "end": 91
-          }
+        "call": "direct",
+        "caller": {
+          "declaration": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":256,"start":62}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":75,"start":69}
         },
-        "start": {
-          "line": 3,
-          "column": 4
+        "evidence": {
+          "addresses": [
+            {"package":"relationships","path":["consumer","execute"]},
+            {"package":"relationships","path":["bridge","task"]},
+            {"package":"relationships","path":["origin","work"]}
+          ]
         },
+        "outcome": "confirmed",
+        "site": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":91,"start":84}},
         "spelling": "execute",
-        "caller": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/consumer.rs",
-            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-            "span": {
-              "start": 62,
-              "end": 256
-            }
-          },
-          "name_span": {
-            "start": 69,
-            "end": 75
-          },
-          "kind": "function"
-        },
-        "call": "direct",
-        "outcome": "confirmed",
+        "start": {"column":4,"line":3},
         "target": {
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
+          "kind": "function",
           "language": "rust",
-          "declaration": {
-            "path": "src/origin.rs",
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "span": {
-              "start": 0,
-              "end": 16
-            }
-          },
-          "name_span": {
-            "start": 7,
-            "end": 11
-          },
-          "kind": "function"
-        },
-        "evidence": {
-          "addresses": [
-            {
-              "package": "relationships",
-              "path": [
-                "consumer",
-                "execute"
-              ]
-            },
-            {
-              "package": "relationships",
-              "path": [
-                "bridge",
-                "task"
-              ]
-            },
-            {
-              "package": "relationships",
-              "path": [
-                "origin",
-                "work"
-              ]
-            }
-          ]
+          "name_span": {"end":11,"start":7}
         }
       },
       {
-        "site": {
-          "path": "src/consumer.rs",
-          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-          "span": {
-            "start": 114,
-            "end": 118
-          }
+        "call": "direct",
+        "caller": {
+          "declaration": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":256,"start":62}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":75,"start":69}
         },
-        "start": {
-          "line": 4,
-          "column": 19
-        },
+        "evidence": {"addresses":[{"package":"relationships","path":["origin","work"]}]},
+        "outcome": "confirmed",
+        "site": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":118,"start":114}},
         "spelling": "work",
-        "caller": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/consumer.rs",
-            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-            "span": {
-              "start": 62,
-              "end": 256
-            }
-          },
-          "name_span": {
-            "start": 69,
-            "end": 75
-          },
-          "kind": "function"
-        },
-        "call": "direct",
-        "outcome": "confirmed",
+        "start": {"column":19,"line":4},
         "target": {
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":16,"start":0}},
+          "kind": "function",
           "language": "rust",
-          "declaration": {
-            "path": "src/origin.rs",
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "span": {
-              "start": 0,
-              "end": 16
-            }
-          },
-          "name_span": {
-            "start": 7,
-            "end": 11
-          },
-          "kind": "function"
-        },
-        "evidence": {
-          "addresses": [
-            {
-              "package": "relationships",
-              "path": [
-                "origin",
-                "work"
-              ]
-            }
-          ]
+          "name_span": {"end":11,"start":7}
         }
       },
       {
-        "site": {
-          "path": "src/consumer.rs",
-          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-          "span": {
-            "start": 154,
-            "end": 162
-          }
-        },
-        "start": {
-          "line": 6,
-          "column": 4
-        },
-        "spelling": "callback",
-        "caller": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/consumer.rs",
-            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-            "span": {
-              "start": 62,
-              "end": 256
-            }
-          },
-          "name_span": {
-            "start": 69,
-            "end": 75
-          },
-          "kind": "function"
-        },
-        "call": "direct",
-        "outcome": "indirect",
         "binding": {
+          "declaration": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":149,"start":126}},
+          "kind": "variable",
           "language": "rust",
-          "declaration": {
-            "path": "src/consumer.rs",
-            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-            "span": {
-              "start": 126,
-              "end": 149
-            }
-          },
-          "name_span": {
-            "start": 130,
-            "end": 138
-          },
-          "kind": "variable"
-        }
-      },
-      {
-        "site": {
-          "path": "src/consumer.rs",
-          "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-          "span": {
-            "start": 170,
-            "end": 175
-          }
-        },
-        "start": {
-          "line": 7,
-          "column": 4
-        },
-        "spelling": "other",
-        "caller": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/consumer.rs",
-            "content": "6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026",
-            "span": {
-              "start": 62,
-              "end": 256
-            }
-          },
-          "name_span": {
-            "start": 69,
-            "end": 75
-          },
-          "kind": "function"
+          "name_span": {"end":138,"start":130}
         },
         "call": "direct",
-        "outcome": "confirmed",
-        "target": {
+        "caller": {
+          "declaration": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":256,"start":62}},
+          "kind": "function",
           "language": "rust",
-          "declaration": {
-            "path": "src/origin.rs",
-            "content": "875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2",
-            "span": {
-              "start": 17,
-              "end": 34
-            }
-          },
-          "name_span": {
-            "start": 24,
-            "end": 29
-          },
-          "kind": "function"
+          "name_span": {"end":75,"start":69}
         },
-        "evidence": {
-          "addresses": [
-            {
-              "package": "relationships",
-              "path": [
-                "consumer",
-                "other"
-              ]
-            },
-            {
-              "package": "relationships",
-              "path": [
-                "origin",
-                "other"
-              ]
-            }
-          ]
+        "outcome": "indirect",
+        "site": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":162,"start":154}},
+        "spelling": "callback",
+        "start": {"column":4,"line":6}
+      },
+      {
+        "call": "direct",
+        "caller": {
+          "declaration": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":256,"start":62}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":75,"start":69}
+        },
+        "evidence": {"addresses":[{"package":"relationships","path":["consumer","other"]},{"package":"relationships","path":["origin","other"]}]},
+        "outcome": "confirmed",
+        "site": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":175,"start":170}},
+        "spelling": "other",
+        "start": {"column":4,"line":7},
+        "target": {
+          "declaration": {"content":"875241366610cacf49d6ba42782b0a5dc53a2765906dbe29598a8ea022f021a2","path":"src/origin.rs","span":{"end":34,"start":17}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":29,"start":24}
         }
       }
     ],
-    "coverage": {
-      "limitations": [
-        "receiver_types",
-        "indirect_targets",
-        "macro_expansion",
-        "anonymous_callers",
-        "unsupported_bindings",
-        "unenumerated_aliases"
-      ],
-      "files_scanned": 1,
-      "files_remaining": 0,
-      "lookups": 4,
-      "omitted_items": 0,
-      "stopped_by": null,
-      "unsupported_files": 0,
-      "unresolved_imports": 0,
-      "scan_complete": true
+    "kind": "callees",
+    "scope": {"packages":[],"paths":[]},
+    "snapshot": "94ad4fbcbaad98deba82c0fde6edd02e269e123ebfce521781b8f845dab5113d",
+    "subject": {
+      "container": {
+        "declaration": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":256,"start":62}},
+        "kind": "function",
+        "language": "rust",
+        "name_span": {"end":75,"start":69}
+      },
+      "evidence": {"addresses":[]},
+      "id": "64f50ba21af4",
+      "name": "caller",
+      "outcome": "resolved",
+      "start": {"column":0,"line":2},
+      "target": {
+        "declaration": {"content":"6a0ffb7ea94d92d55103a71b4179c1eff50e4bc3c8ff2ec19b70930f6b33b026","path":"src/consumer.rs","span":{"end":256,"start":62}},
+        "kind": "function",
+        "language": "rust",
+        "name_span": {"end":75,"start":69}
+      }
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

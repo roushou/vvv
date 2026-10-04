@@ -1,85 +1,41 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "a5d6caab8bd4ca8e2ba06d1dd3c6a2feda29fc484e39aef67e48193fb36d4a3f",
-    "outcome": "ambiguous",
     "candidates": [
       {
-        "target": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-            "span": {
-              "start": 14,
-              "end": 30
-            }
-          },
-          "name_span": {
-            "start": 21,
-            "end": 25
-          },
-          "kind": "function"
-        },
+        "evidence": {"addresses":[{"package":"rust_conditionals","path":["work"]},{"package":"rust_conditionals","path":["api","work"]}]},
         "id": "dfb8c5d735e7",
         "name": "work",
-        "start": {
-          "line": 1,
-          "column": 4
-        },
-        "evidence": {
-          "addresses": [
-            {
-              "package": "rust_conditionals",
-              "path": [
-                "work"
-              ]
-            },
-            {
-              "package": "rust_conditionals",
-              "path": [
-                "api",
-                "work"
-              ]
-            }
-          ]
+        "start": {"column":4,"line":1},
+        "target": {
+          "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":30,"start":14}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":25,"start":21}
         }
       },
       {
-        "target": {
-          "language": "rust",
-          "declaration": {
-            "path": "src/lib.rs",
-            "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-            "span": {
-              "start": 2250,
-              "end": 2262
-            }
-          },
-          "name_span": {
-            "start": 2253,
-            "end": 2257
-          },
-          "kind": "function"
-        },
+        "evidence": {"addresses":[]},
         "id": "11dc99c4a585",
         "name": "work",
-        "start": {
-          "line": 103,
-          "column": 8
-        },
-        "evidence": {
-          "addresses": []
+        "start": {"column":8,"line":103},
+        "target": {
+          "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":2262,"start":2250}},
+          "kind": "function",
+          "language": "rust",
+          "name_span": {"end":2257,"start":2253}
         }
       }
-    ]
-  }
+    ],
+    "outcome": "ambiguous",
+    "snapshot": "a5d6caab8bd4ca8e2ba06d1dd3c6a2feda29fc484e39aef67e48193fb36d4a3f"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

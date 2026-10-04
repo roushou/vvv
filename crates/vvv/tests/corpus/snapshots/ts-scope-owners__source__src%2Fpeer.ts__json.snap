@@ -1,0 +1,20 @@
+---
+source: crates/vvv/tests/common/corpus_snapshot.rs
+expression: JsonSnapshot(&self.value).to_string()
+---
+{
+  "highlights": [{"kind":"keyword","span":{"end":6,"start":0}},{"kind":"keyword","span":{"end":15,"start":7}},{"kind":"function","span":{"end":24,"start":16}}],
+  "identifiers": [{"content":"4e617271b23f128b4d59de236d1c6847c97620aa92370f6ad8ffc12619701c09","path":"src/peer.ts","span":{"end":24,"start":16}}],
+  "path": "src/peer.ts",
+  "symbols": [
+    {
+      "extent": {"end":29,"start":0},
+      "kind": "function",
+      "name": "imported",
+      "name_span": {"end":24,"start":16},
+      "span": {"end":29,"start":7},
+      "visibility": {"span":{"end":6,"start":0},"text":"export"}
+    }
+  ],
+  "text": "export function imported() {}\n"
+}

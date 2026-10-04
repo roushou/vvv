@@ -1,182 +1,54 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "8a45d97fe20fe86ebc73e46d84f3a6320eaef1714cea40a616b9a406e01857f2",
+    "evidence": {"addresses":[{"package":"","path":["src","peer.ts","imported"]}]},
     "outcome": "resolved",
-    "target": {
-      "language": "typescript",
-      "declaration": {
-        "path": "src/peer.ts",
-        "content": "4e617271b23f128b4d59de236d1c6847c97620aa92370f6ad8ffc12619701c09",
-        "span": {
-          "start": 0,
-          "end": 29
-        }
-      },
-      "name_span": {
-        "start": 16,
-        "end": 24
-      },
-      "kind": "function"
-    },
-    "evidence": {
-      "addresses": [
-        {
-          "package": "",
-          "path": [
-            "src",
-            "peer.ts",
-            "imported"
-          ]
-        }
-      ]
-    },
     "preview": {
       "container": {
+        "declaration": {"content":"4e617271b23f128b4d59de236d1c6847c97620aa92370f6ad8ffc12619701c09","path":"src/peer.ts","span":{"end":29,"start":0}},
+        "kind": "function",
         "language": "typescript",
-        "declaration": {
-          "path": "src/peer.ts",
-          "content": "4e617271b23f128b4d59de236d1c6847c97620aa92370f6ad8ffc12619701c09",
-          "span": {
-            "start": 0,
-            "end": 29
-          }
-        },
-        "name_span": {
-          "start": 16,
-          "end": 24
-        },
-        "kind": "function"
+        "name_span": {"end":24,"start":16}
       },
       "declaration": {
         "content": "4e617271b23f128b4d59de236d1c6847c97620aa92370f6ad8ffc12619701c09",
+        "end": {"column":29,"line":0},
         "id": "699473bed57f",
-        "path": "src/peer.ts",
-        "language": "typescript",
-        "span": {
-          "start": 7,
-          "end": 29
-        },
-        "start": {
-          "line": 0,
-          "column": 7
-        },
-        "end": {
-          "line": 0,
-          "column": 29
-        },
         "kind": "declaration",
-        "text": "function imported() {}",
+        "language": "typescript",
         "line": "export function imported() {}",
+        "path": "src/peer.ts",
+        "role": "declaration",
+        "span": {"end":29,"start":7},
+        "start": {"column":7,"line":0},
         "symbol": {
+          "extent": {"end":29,"start":0},
           "kind": "function",
           "name": "imported",
-          "name_span": {
-            "start": 16,
-            "end": 24
-          },
-          "span": {
-            "start": 7,
-            "end": 29
-          },
-          "extent": {
-            "start": 0,
-            "end": 29
-          },
-          "visibility": {
-            "span": {
-              "start": 0,
-              "end": 6
-            },
-            "text": "export"
-          }
+          "name_span": {"end":24,"start":16},
+          "span": {"end":29,"start":7},
+          "visibility": {"span":{"end":6,"start":0},"text":"export"}
         },
-        "role": "declaration"
+        "text": "function imported() {}"
       },
-      "source": {
-        "path": "src/peer.ts",
-        "text": "export function imported() {}\n",
-        "highlights": [
-          {
-            "span": {
-              "start": 0,
-              "end": 6
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 7,
-              "end": 15
-            },
-            "kind": "keyword"
-          },
-          {
-            "span": {
-              "start": 16,
-              "end": 24
-            },
-            "kind": "function"
-          }
-        ],
-        "symbols": [
-          {
-            "kind": "function",
-            "name": "imported",
-            "name_span": {
-              "start": 16,
-              "end": 24
-            },
-            "span": {
-              "start": 7,
-              "end": 29
-            },
-            "extent": {
-              "start": 0,
-              "end": 29
-            },
-            "visibility": {
-              "span": {
-                "start": 0,
-                "end": 6
-              },
-              "text": "export"
-            }
-          }
-        ],
-        "identifiers": [
-          {
-            "path": "src/peer.ts",
-            "content": "4e617271b23f128b4d59de236d1c6847c97620aa92370f6ad8ffc12619701c09",
-            "span": {
-              "start": 16,
-              "end": 24
-            }
-          }
-        ]
-      },
-      "selection": {
-        "start": 16,
-        "end": 24
-      },
-      "identifiers": [
-        {
-          "path": "src/peer.ts",
-          "content": "4e617271b23f128b4d59de236d1c6847c97620aa92370f6ad8ffc12619701c09",
-          "span": {
-            "start": 16,
-            "end": 24
-          }
-        }
-      ]
+      "identifiers": [{"content":"4e617271b23f128b4d59de236d1c6847c97620aa92370f6ad8ffc12619701c09","path":"src/peer.ts","span":{"end":24,"start":16}}],
+      "selection": {"end":24,"start":16},
+      "source": {"$snapshot":"ts-scope-owners__source__src%2Fpeer.ts__json.snap"}
+    },
+    "snapshot": "8a45d97fe20fe86ebc73e46d84f3a6320eaef1714cea40a616b9a406e01857f2",
+    "target": {
+      "declaration": {"content":"4e617271b23f128b4d59de236d1c6847c97620aa92370f6ad8ffc12619701c09","path":"src/peer.ts","span":{"end":29,"start":0}},
+      "kind": "function",
+      "language": "typescript",
+      "name_span": {"end":24,"start":16}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

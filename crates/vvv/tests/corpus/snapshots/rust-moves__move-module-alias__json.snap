@@ -1,133 +1,43 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "intent": {
-      "from": "src/a.rs",
-      "to": "src/d.rs"
-    },
     "applied": false,
-    "from": "src/a.rs",
-    "to": "src/d.rs",
-    "from_address": {
-      "package": "corpus_moves",
-      "path": [
-        "a"
-      ]
-    },
-    "to_address": {
-      "package": "corpus_moves",
-      "path": [
-        "d"
-      ]
-    },
-    "respellings": [
+    "files": [
+      {"diff":"--- a/src/a/sub.rs\n+++ b/src/d/sub.rs\n","edits":[],"moved_to":"src/d/sub.rs","path":"src/a/sub.rs"},
+      {"diff":"--- a/src/a.rs\n+++ b/src/d.rs\n","edits":[],"moved_to":"src/d.rs","path":"src/a.rs"},
       {
-        "path": "src/c.rs",
-        "span": {
-          "start": 4,
-          "end": 12
-        },
-        "start": {
-          "line": 0,
-          "column": 4
-        },
-        "from": "crate::a",
-        "to": "crate::d"
+        "diff": "--- a/src/c.rs\n+++ b/src/c.rs\n@@ -1,4 +1,4 @@\n-use crate::a as alias;\n+use crate::d as alias;\n \n fn consume(_: alias::Foo) {}\n \n",
+        "edits": [{"replacement":"crate::d","span":{"end":12,"start":4}}],
+        "path": "src/c.rs"
       },
       {
-        "path": "src/grouped.rs",
-        "span": {
-          "start": 30,
-          "end": 44
-        },
-        "start": {
-          "line": 1,
-          "column": 11
-        },
-        "from": "root::a::sub::Nested",
-        "to": "d::sub::Nested"
+        "diff": "--- a/src/grouped.rs\n+++ b/src/grouped.rs\n@@ -1,5 +1,5 @@\n use crate as root;\n-use root::{a::sub::Nested, a::Foo};\n+use root::{d::sub::Nested, d::Foo};\n \n fn nested(_: Nested) {}\n fn foo(_: Foo) {}\n",
+        "edits": [{"replacement":"d::sub::Nested","span":{"end":44,"start":30}},{"replacement":"d::Foo","span":{"end":52,"start":46}}],
+        "path": "src/grouped.rs"
       },
       {
-        "path": "src/grouped.rs",
-        "span": {
-          "start": 46,
-          "end": 52
-        },
-        "start": {
-          "line": 1,
-          "column": 27
-        },
-        "from": "root::a::Foo",
-        "to": "d::Foo"
+        "diff": "--- a/src/lib.rs\n+++ b/src/lib.rs\n@@ -1,4 +1,4 @@\n-pub mod a;\n+pub mod d;\n pub mod b;\n pub mod c;\n pub mod origin;\n",
+        "edits": [{"replacement":"d","span":{"end":9,"start":8}}],
+        "path": "src/lib.rs"
       }
     ],
-    "files": [
-      {
-        "path": "src/a/sub.rs",
-        "moved_to": "src/d/sub.rs",
-        "edits": [],
-        "diff": "--- a/src/a/sub.rs\n+++ b/src/d/sub.rs\n"
-      },
-      {
-        "path": "src/a.rs",
-        "moved_to": "src/d.rs",
-        "edits": [],
-        "diff": "--- a/src/a.rs\n+++ b/src/d.rs\n"
-      },
-      {
-        "path": "src/c.rs",
-        "edits": [
-          {
-            "span": {
-              "start": 4,
-              "end": 12
-            },
-            "replacement": "crate::d"
-          }
-        ],
-        "diff": "--- a/src/c.rs\n+++ b/src/c.rs\n@@ -1,4 +1,4 @@\n-use crate::a as alias;\n+use crate::d as alias;\n \n fn consume(_: alias::Foo) {}\n \n"
-      },
-      {
-        "path": "src/grouped.rs",
-        "edits": [
-          {
-            "span": {
-              "start": 30,
-              "end": 44
-            },
-            "replacement": "d::sub::Nested"
-          },
-          {
-            "span": {
-              "start": 46,
-              "end": 52
-            },
-            "replacement": "d::Foo"
-          }
-        ],
-        "diff": "--- a/src/grouped.rs\n+++ b/src/grouped.rs\n@@ -1,5 +1,5 @@\n use crate as root;\n-use root::{a::sub::Nested, a::Foo};\n+use root::{d::sub::Nested, d::Foo};\n \n fn nested(_: Nested) {}\n fn foo(_: Foo) {}\n"
-      },
-      {
-        "path": "src/lib.rs",
-        "edits": [
-          {
-            "span": {
-              "start": 8,
-              "end": 9
-            },
-            "replacement": "d"
-          }
-        ],
-        "diff": "--- a/src/lib.rs\n+++ b/src/lib.rs\n@@ -1,4 +1,4 @@\n-pub mod a;\n+pub mod d;\n pub mod b;\n pub mod c;\n pub mod origin;\n"
-      }
-    ]
-  }
+    "from": "src/a.rs",
+    "from_address": {"package":"corpus_moves","path":["a"]},
+    "intent": {"from":"src/a.rs","to":"src/d.rs"},
+    "respellings": [
+      {"from":"crate::a","path":"src/c.rs","span":{"end":12,"start":4},"start":{"column":4,"line":0},"to":"crate::d"},
+      {"from":"root::a::sub::Nested","path":"src/grouped.rs","span":{"end":44,"start":30},"start":{"column":11,"line":1},"to":"d::sub::Nested"},
+      {"from":"root::a::Foo","path":"src/grouped.rs","span":{"end":52,"start":46},"start":{"column":27,"line":1},"to":"d::Foo"}
+    ],
+    "to": "src/d.rs",
+    "to_address": {"package":"corpus_moves","path":["d"]}
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

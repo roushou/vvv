@@ -1,461 +1,263 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "intent": {
-      "name": "Foo",
-      "declared_in": "src/a.rs",
-      "to": "Renamed"
-    },
     "applied": false,
     "declarations": [
       {
+        "address": {"package":"parent_alias_probe","path":["a","Foo"]},
         "content": "8afc91ecb07af25d02a126189ed5ca40d51f2f32e3767542f154782596fe38d9",
+        "end": {"column":15,"line":0},
         "id": "64cfbb15d00c",
-        "path": "src/a.rs",
-        "language": "rust",
-        "span": {
-          "start": 0,
-          "end": 15
-        },
-        "start": {
-          "line": 0,
-          "column": 0
-        },
-        "end": {
-          "line": 0,
-          "column": 15
-        },
         "kind": "struct_item",
-        "text": "pub struct Foo;",
+        "language": "rust",
         "line": "pub struct Foo;",
+        "path": "src/a.rs",
+        "role": "declaration",
+        "span": {"end":15,"start":0},
+        "start": {"column":0,"line":0},
         "symbol": {
+          "extent": {"end":15,"start":0},
           "kind": "struct",
           "name": "Foo",
-          "name_span": {
-            "start": 11,
-            "end": 14
-          },
-          "span": {
-            "start": 0,
-            "end": 15
-          },
-          "extent": {
-            "start": 0,
-            "end": 15
-          },
-          "visibility": {
-            "span": {
-              "start": 0,
-              "end": 3
-            },
-            "text": "pub"
-          }
+          "name_span": {"end":14,"start":11},
+          "span": {"end":15,"start":0},
+          "visibility": {"span":{"end":3,"start":0},"text":"pub"}
         },
-        "role": "declaration",
-        "address": {
-          "package": "parent_alias_probe",
-          "path": [
-            "a",
-            "Foo"
-          ]
-        }
-      }
-    ],
-    "occurrences": [
-      {
-        "content": "8afc91ecb07af25d02a126189ed5ca40d51f2f32e3767542f154782596fe38d9",
-        "id": "95fcd1cddeff",
-        "path": "src/a.rs",
-        "language": "rust",
-        "span": {
-          "start": 11,
-          "end": 14
-        },
-        "start": {
-          "line": 0,
-          "column": 11
-        },
-        "end": {
-          "line": 0,
-          "column": 14
-        },
-        "kind": "type_identifier",
-        "text": "Foo",
-        "line": "pub struct Foo;",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "declaring"
-      },
-      {
-        "content": "e07616b625b4d562ae9850fdd10b197119687c556b80a537b6485cd2491a2009",
-        "id": "6e0c8d3c2c65",
-        "path": "src/parent/nested/deeper.rs",
-        "language": "rust",
-        "span": {
-          "start": 61,
-          "end": 64
-        },
-        "start": {
-          "line": 1,
-          "column": 34
-        },
-        "end": {
-          "line": 1,
-          "column": 37
-        },
-        "kind": "type_identifier",
-        "text": "Foo",
-        "line": "pub fn from_grandparent(_: chain::Foo) {}",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "path"
-      },
-      {
-        "content": "ca1e06831e9ccbba0667ce3580d71981c0d93a522237909b54fd22a14feffc06",
-        "id": "73399e6d35b1",
-        "path": "src/parent/nested.rs",
-        "language": "rust",
-        "span": {
-          "start": 73,
-          "end": 76
-        },
-        "start": {
-          "line": 2,
-          "column": 29
-        },
-        "end": {
-          "line": 2,
-          "column": 32
-        },
-        "kind": "type_identifier",
-        "text": "Foo",
-        "line": "pub fn from_parent(_: local::Foo) {}",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "path"
-      },
-      {
-        "content": "65a29584a66df514a76010494c0d06551339033c0675e72ea2cb70391c62a31f",
-        "id": "88391ff6c960",
-        "path": "src/outside.rs",
-        "language": "rust",
-        "span": {
-          "start": 349,
-          "end": 352
-        },
-        "start": {
-          "line": 7,
-          "column": 35
-        },
-        "end": {
-          "line": 7,
-          "column": 38
-        },
-        "kind": "type_identifier",
-        "text": "Foo",
-        "line": "pub fn package_visible(_: package::Foo) {}",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "re-export"
-      },
-      {
-        "content": "65a29584a66df514a76010494c0d06551339033c0675e72ea2cb70391c62a31f",
-        "id": "04ccbb44d6e4",
-        "path": "src/outside.rs",
-        "language": "rust",
-        "span": {
-          "start": 390,
-          "end": 393
-        },
-        "start": {
-          "line": 8,
-          "column": 33
-        },
-        "end": {
-          "line": 8,
-          "column": 36
-        },
-        "kind": "type_identifier",
-        "text": "Foo",
-        "line": "pub fn parent_visible(_: parent::Foo) {}",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "re-export"
-      },
-      {
-        "content": "4234645d4baccafe2141d3f88e7c581db962ae3a1122c755bf1db7a71fc990c2",
-        "id": "cbdbc6e36eb2",
-        "path": "src/restricted/nested.rs",
-        "language": "rust",
-        "span": {
-          "start": 65,
-          "end": 68
-        },
-        "start": {
-          "line": 1,
-          "column": 36
-        },
-        "end": {
-          "line": 1,
-          "column": 39
-        },
-        "kind": "type_identifier",
-        "text": "Foo",
-        "line": "pub fn within_restriction(_: local::Foo) {}",
-        "role": "use",
-        "confidence": "resolved",
-        "reason": "re-export"
-      },
-      {
-        "content": "bbada9eaaf1ed0ae10ad621948304066db5038339bb3ae3d956edd3bbfd4e550",
-        "id": "54544b730ffd",
-        "path": "src/competing/nested.rs",
-        "language": "rust",
-        "span": {
-          "start": 53,
-          "end": 56
-        },
-        "start": {
-          "line": 1,
-          "column": 27
-        },
-        "end": {
-          "line": 1,
-          "column": 30
-        },
-        "kind": "type_identifier",
-        "text": "Foo",
-        "line": "pub fn competing(_: local::Foo) {}",
-        "role": "use",
-        "confidence": "unresolved",
-        "reason": "unresolved"
-      },
-      {
-        "content": "1e869038b39211b6d29a4ea87830b137cedd28d6c50c8175e85c4794972c95f8",
-        "id": "f64e282cb4b3",
-        "path": "src/cycle_a.rs",
-        "language": "rust",
-        "span": {
-          "start": 68,
-          "end": 71
-        },
-        "start": {
-          "line": 1,
-          "column": 28
-        },
-        "end": {
-          "line": 1,
-          "column": 31
-        },
-        "kind": "type_identifier",
-        "text": "Foo",
-        "line": "pub fn unresolved(_: alias::Foo) {}",
-        "role": "use",
-        "confidence": "unresolved",
-        "reason": "unresolved"
-      },
-      {
-        "content": "65a29584a66df514a76010494c0d06551339033c0675e72ea2cb70391c62a31f",
-        "id": "a014601603d0",
-        "path": "src/outside.rs",
-        "language": "rust",
-        "span": {
-          "start": 306,
-          "end": 309
-        },
-        "start": {
-          "line": 6,
-          "column": 26
-        },
-        "end": {
-          "line": 6,
-          "column": 29
-        },
-        "kind": "type_identifier",
-        "text": "Foo",
-        "line": "pub fn private(_: denied::Foo) {}",
-        "role": "use",
-        "confidence": "unresolved",
-        "reason": "unresolved"
-      },
-      {
-        "content": "65a29584a66df514a76010494c0d06551339033c0675e72ea2cb70391c62a31f",
-        "id": "2517674b9e17",
-        "path": "src/outside.rs",
-        "language": "rust",
-        "span": {
-          "start": 430,
-          "end": 433
-        },
-        "start": {
-          "line": 9,
-          "column": 32
-        },
-        "end": {
-          "line": 9,
-          "column": 35
-        },
-        "kind": "type_identifier",
-        "text": "Foo",
-        "line": "pub fn restricted(_: forbidden::Foo) {}",
-        "role": "use",
-        "confidence": "unresolved",
-        "reason": "unresolved"
-      },
-      {
-        "content": "65a29584a66df514a76010494c0d06551339033c0675e72ea2cb70391c62a31f",
-        "id": "a5741a29255b",
-        "path": "src/outside.rs",
-        "language": "rust",
-        "span": {
-          "start": 476,
-          "end": 479
-        },
-        "start": {
-          "line": 10,
-          "column": 38
-        },
-        "end": {
-          "line": 10,
-          "column": 41
-        },
-        "kind": "type_identifier",
-        "text": "Foo",
-        "line": "pub fn function_local(_: false_scope::Foo) {}",
-        "role": "use",
-        "confidence": "unresolved",
-        "reason": "unresolved"
-      },
-      {
-        "content": "65a29584a66df514a76010494c0d06551339033c0675e72ea2cb70391c62a31f",
-        "id": "034606833311",
-        "path": "src/outside.rs",
-        "language": "rust",
-        "span": {
-          "start": 521,
-          "end": 524
-        },
-        "start": {
-          "line": 11,
-          "column": 37
-        },
-        "end": {
-          "line": 11,
-          "column": 40
-        },
-        "kind": "type_identifier",
-        "text": "Foo",
-        "line": "pub fn inline_local(_: false_inline::Foo) {}",
-        "role": "use",
-        "confidence": "unresolved",
-        "reason": "unresolved"
-      },
-      {
-        "content": "8afc91ecb07af25d02a126189ed5ca40d51f2f32e3767542f154782596fe38d9",
-        "id": "e68cfac801e6",
-        "path": "src/b.rs",
-        "language": "rust",
-        "span": {
-          "start": 11,
-          "end": 14
-        },
-        "start": {
-          "line": 0,
-          "column": 11
-        },
-        "end": {
-          "line": 0,
-          "column": 14
-        },
-        "kind": "type_identifier",
-        "text": "Foo",
-        "line": "pub struct Foo;",
-        "role": "use",
-        "confidence": "other",
-        "reason": "other-declaration"
+        "text": "pub struct Foo;"
       }
     ],
     "files": [
       {
+        "diff": "--- a/src/a.rs\n+++ b/src/a.rs\n@@ -1 +1 @@\n-pub struct Foo;\n+pub struct Renamed;\n",
+        "edits": [{"replacement":"Renamed","span":{"end":14,"start":11}}],
+        "path": "src/a.rs"
+      },
+      {
+        "diff": "--- a/src/outside.rs\n+++ b/src/outside.rs\n@@ -5,8 +5,8 @@\n use crate::restricted::local_only as false_scope;\n use crate::restricted::inline_only as false_inline;\n pub fn private(_: denied::Foo) {}\n-pub fn package_visible(_: package::Foo) {}\n-pub fn parent_visible(_: parent::Foo) {}\n+pub fn package_visible(_: package::Renamed) {}\n+pub fn parent_visible(_: parent::Renamed) {}\n pub fn restricted(_: forbidden::Foo) {}\n pub fn function_local(_: false_scope::Foo) {}\n pub fn inline_local(_: false_inline::Foo) {}\n",
+        "edits": [{"replacement":"Renamed","span":{"end":352,"start":349}},{"replacement":"Renamed","span":{"end":393,"start":390}}],
+        "path": "src/outside.rs"
+      },
+      {
+        "diff": "--- a/src/parent/nested/deeper.rs\n+++ b/src/parent/nested/deeper.rs\n@@ -1,2 +1,2 @@\n use super::local as chain;\n-pub fn from_grandparent(_: chain::Foo) {}\n+pub fn from_grandparent(_: chain::Renamed) {}\n",
+        "edits": [{"replacement":"Renamed","span":{"end":64,"start":61}}],
+        "path": "src/parent/nested/deeper.rs"
+      },
+      {
+        "diff": "--- a/src/parent/nested.rs\n+++ b/src/parent/nested.rs\n@@ -1,3 +1,3 @@\n use super::parent as local;\n pub mod deeper;\n-pub fn from_parent(_: local::Foo) {}\n+pub fn from_parent(_: local::Renamed) {}\n",
+        "edits": [{"replacement":"Renamed","span":{"end":76,"start":73}}],
+        "path": "src/parent/nested.rs"
+      },
+      {
+        "diff": "--- a/src/restricted/nested.rs\n+++ b/src/restricted/nested.rs\n@@ -1,2 +1,2 @@\n use super::limited as local;\n-pub fn within_restriction(_: local::Foo) {}\n+pub fn within_restriction(_: local::Renamed) {}\n",
+        "edits": [{"replacement":"Renamed","span":{"end":68,"start":65}}],
+        "path": "src/restricted/nested.rs"
+      }
+    ],
+    "intent": {"declared_in":"src/a.rs","name":"Foo","to":"Renamed"},
+    "occurrences": [
+      {
+        "confidence": "resolved",
+        "content": "8afc91ecb07af25d02a126189ed5ca40d51f2f32e3767542f154782596fe38d9",
+        "end": {"column":14,"line":0},
+        "id": "95fcd1cddeff",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "pub struct Foo;",
         "path": "src/a.rs",
-        "edits": [
-          {
-            "span": {
-              "start": 11,
-              "end": 14
-            },
-            "replacement": "Renamed"
-          }
-        ],
-        "diff": "--- a/src/a.rs\n+++ b/src/a.rs\n@@ -1 +1 @@\n-pub struct Foo;\n+pub struct Renamed;\n"
+        "reason": "declaring",
+        "role": "use",
+        "span": {"end":14,"start":11},
+        "start": {"column":11,"line":0},
+        "text": "Foo"
       },
       {
-        "path": "src/outside.rs",
-        "edits": [
-          {
-            "span": {
-              "start": 349,
-              "end": 352
-            },
-            "replacement": "Renamed"
-          },
-          {
-            "span": {
-              "start": 390,
-              "end": 393
-            },
-            "replacement": "Renamed"
-          }
-        ],
-        "diff": "--- a/src/outside.rs\n+++ b/src/outside.rs\n@@ -5,8 +5,8 @@\n use crate::restricted::local_only as false_scope;\n use crate::restricted::inline_only as false_inline;\n pub fn private(_: denied::Foo) {}\n-pub fn package_visible(_: package::Foo) {}\n-pub fn parent_visible(_: parent::Foo) {}\n+pub fn package_visible(_: package::Renamed) {}\n+pub fn parent_visible(_: parent::Renamed) {}\n pub fn restricted(_: forbidden::Foo) {}\n pub fn function_local(_: false_scope::Foo) {}\n pub fn inline_local(_: false_inline::Foo) {}\n"
-      },
-      {
+        "confidence": "resolved",
+        "content": "e07616b625b4d562ae9850fdd10b197119687c556b80a537b6485cd2491a2009",
+        "end": {"column":37,"line":1},
+        "id": "6e0c8d3c2c65",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "pub fn from_grandparent(_: chain::Foo) {}",
         "path": "src/parent/nested/deeper.rs",
-        "edits": [
-          {
-            "span": {
-              "start": 61,
-              "end": 64
-            },
-            "replacement": "Renamed"
-          }
-        ],
-        "diff": "--- a/src/parent/nested/deeper.rs\n+++ b/src/parent/nested/deeper.rs\n@@ -1,2 +1,2 @@\n use super::local as chain;\n-pub fn from_grandparent(_: chain::Foo) {}\n+pub fn from_grandparent(_: chain::Renamed) {}\n"
+        "reason": "path",
+        "role": "use",
+        "span": {"end":64,"start":61},
+        "start": {"column":34,"line":1},
+        "text": "Foo"
       },
       {
+        "confidence": "resolved",
+        "content": "ca1e06831e9ccbba0667ce3580d71981c0d93a522237909b54fd22a14feffc06",
+        "end": {"column":32,"line":2},
+        "id": "73399e6d35b1",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "pub fn from_parent(_: local::Foo) {}",
         "path": "src/parent/nested.rs",
-        "edits": [
-          {
-            "span": {
-              "start": 73,
-              "end": 76
-            },
-            "replacement": "Renamed"
-          }
-        ],
-        "diff": "--- a/src/parent/nested.rs\n+++ b/src/parent/nested.rs\n@@ -1,3 +1,3 @@\n use super::parent as local;\n pub mod deeper;\n-pub fn from_parent(_: local::Foo) {}\n+pub fn from_parent(_: local::Renamed) {}\n"
+        "reason": "path",
+        "role": "use",
+        "span": {"end":76,"start":73},
+        "start": {"column":29,"line":2},
+        "text": "Foo"
       },
       {
+        "confidence": "resolved",
+        "content": "65a29584a66df514a76010494c0d06551339033c0675e72ea2cb70391c62a31f",
+        "end": {"column":38,"line":7},
+        "id": "88391ff6c960",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "pub fn package_visible(_: package::Foo) {}",
+        "path": "src/outside.rs",
+        "reason": "re-export",
+        "role": "use",
+        "span": {"end":352,"start":349},
+        "start": {"column":35,"line":7},
+        "text": "Foo"
+      },
+      {
+        "confidence": "resolved",
+        "content": "65a29584a66df514a76010494c0d06551339033c0675e72ea2cb70391c62a31f",
+        "end": {"column":36,"line":8},
+        "id": "04ccbb44d6e4",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "pub fn parent_visible(_: parent::Foo) {}",
+        "path": "src/outside.rs",
+        "reason": "re-export",
+        "role": "use",
+        "span": {"end":393,"start":390},
+        "start": {"column":33,"line":8},
+        "text": "Foo"
+      },
+      {
+        "confidence": "resolved",
+        "content": "4234645d4baccafe2141d3f88e7c581db962ae3a1122c755bf1db7a71fc990c2",
+        "end": {"column":39,"line":1},
+        "id": "cbdbc6e36eb2",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "pub fn within_restriction(_: local::Foo) {}",
         "path": "src/restricted/nested.rs",
-        "edits": [
-          {
-            "span": {
-              "start": 65,
-              "end": 68
-            },
-            "replacement": "Renamed"
-          }
-        ],
-        "diff": "--- a/src/restricted/nested.rs\n+++ b/src/restricted/nested.rs\n@@ -1,2 +1,2 @@\n use super::limited as local;\n-pub fn within_restriction(_: local::Foo) {}\n+pub fn within_restriction(_: local::Renamed) {}\n"
+        "reason": "re-export",
+        "role": "use",
+        "span": {"end":68,"start":65},
+        "start": {"column":36,"line":1},
+        "text": "Foo"
+      },
+      {
+        "confidence": "unresolved",
+        "content": "bbada9eaaf1ed0ae10ad621948304066db5038339bb3ae3d956edd3bbfd4e550",
+        "end": {"column":30,"line":1},
+        "id": "54544b730ffd",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "pub fn competing(_: local::Foo) {}",
+        "path": "src/competing/nested.rs",
+        "reason": "unresolved",
+        "role": "use",
+        "span": {"end":56,"start":53},
+        "start": {"column":27,"line":1},
+        "text": "Foo"
+      },
+      {
+        "confidence": "unresolved",
+        "content": "1e869038b39211b6d29a4ea87830b137cedd28d6c50c8175e85c4794972c95f8",
+        "end": {"column":31,"line":1},
+        "id": "f64e282cb4b3",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "pub fn unresolved(_: alias::Foo) {}",
+        "path": "src/cycle_a.rs",
+        "reason": "unresolved",
+        "role": "use",
+        "span": {"end":71,"start":68},
+        "start": {"column":28,"line":1},
+        "text": "Foo"
+      },
+      {
+        "confidence": "unresolved",
+        "content": "65a29584a66df514a76010494c0d06551339033c0675e72ea2cb70391c62a31f",
+        "end": {"column":29,"line":6},
+        "id": "a014601603d0",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "pub fn private(_: denied::Foo) {}",
+        "path": "src/outside.rs",
+        "reason": "unresolved",
+        "role": "use",
+        "span": {"end":309,"start":306},
+        "start": {"column":26,"line":6},
+        "text": "Foo"
+      },
+      {
+        "confidence": "unresolved",
+        "content": "65a29584a66df514a76010494c0d06551339033c0675e72ea2cb70391c62a31f",
+        "end": {"column":35,"line":9},
+        "id": "2517674b9e17",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "pub fn restricted(_: forbidden::Foo) {}",
+        "path": "src/outside.rs",
+        "reason": "unresolved",
+        "role": "use",
+        "span": {"end":433,"start":430},
+        "start": {"column":32,"line":9},
+        "text": "Foo"
+      },
+      {
+        "confidence": "unresolved",
+        "content": "65a29584a66df514a76010494c0d06551339033c0675e72ea2cb70391c62a31f",
+        "end": {"column":41,"line":10},
+        "id": "a5741a29255b",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "pub fn function_local(_: false_scope::Foo) {}",
+        "path": "src/outside.rs",
+        "reason": "unresolved",
+        "role": "use",
+        "span": {"end":479,"start":476},
+        "start": {"column":38,"line":10},
+        "text": "Foo"
+      },
+      {
+        "confidence": "unresolved",
+        "content": "65a29584a66df514a76010494c0d06551339033c0675e72ea2cb70391c62a31f",
+        "end": {"column":40,"line":11},
+        "id": "034606833311",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "pub fn inline_local(_: false_inline::Foo) {}",
+        "path": "src/outside.rs",
+        "reason": "unresolved",
+        "role": "use",
+        "span": {"end":524,"start":521},
+        "start": {"column":37,"line":11},
+        "text": "Foo"
+      },
+      {
+        "confidence": "other",
+        "content": "8afc91ecb07af25d02a126189ed5ca40d51f2f32e3767542f154782596fe38d9",
+        "end": {"column":14,"line":0},
+        "id": "e68cfac801e6",
+        "kind": "type_identifier",
+        "language": "rust",
+        "line": "pub struct Foo;",
+        "path": "src/b.rs",
+        "reason": "other-declaration",
+        "role": "use",
+        "span": {"end":14,"start":11},
+        "start": {"column":11,"line":0},
+        "text": "Foo"
       }
     ]
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

@@ -1,51 +1,28 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "path": "src/restricted/nested.rs",
-    "module": {
-      "package": "parent_alias_probe",
-      "path": [
-        "restricted",
-        "nested"
-      ]
-    },
+    "importers": [],
     "imports": [
       {
-        "span": {
-          "start": 4,
-          "end": 18
-        },
-        "path": "super::limited",
-        "declares": true,
+        "address": {"package":"parent_alias_probe","path":["restricted","limited"]},
         "alias": "local",
-        "start": {
-          "line": 0,
-          "column": 4
-        },
-        "address": {
-          "package": "parent_alias_probe",
-          "path": [
-            "restricted",
-            "limited"
-          ]
-        },
-        "origin": {
-          "package": "parent_alias_probe",
-          "path": [
-            "a"
-          ]
-        },
-        "file": "src/a.rs"
+        "declares": true,
+        "file": "src/a.rs",
+        "origin": {"package":"parent_alias_probe","path":["a"]},
+        "path": "super::limited",
+        "span": {"end":18,"start":4},
+        "start": {"column":4,"line":0}
       }
     ],
-    "importers": []
-  }
+    "module": {"package":"parent_alias_probe","path":["restricted","nested"]},
+    "path": "src/restricted/nested.rs"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

@@ -1,0 +1,20 @@
+---
+source: crates/vvv/tests/common/corpus_snapshot.rs
+expression: JsonSnapshot(&self.value).to_string()
+---
+{
+  "highlights": [{"kind":"keyword","span":{"end":3,"start":0}},{"kind":"keyword","span":{"end":10,"start":4}},{"kind":"type","span":{"end":17,"start":11}}],
+  "identifiers": [{"content":"7d5511427a8ff89cdc470bad81d45a4c7ad1752e9216998f8a1419b469b23d48","path":"src/other.rs","span":{"end":17,"start":11}}],
+  "path": "src/other.rs",
+  "symbols": [
+    {
+      "extent": {"end":18,"start":0},
+      "kind": "struct",
+      "name": "Engine",
+      "name_span": {"end":17,"start":11},
+      "span": {"end":18,"start":0},
+      "visibility": {"span":{"end":3,"start":0},"text":"pub"}
+    }
+  ],
+  "text": "pub struct Engine;\n"
+}

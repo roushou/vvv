@@ -1,292 +1,101 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "path": "core/src/geometry/shape.rs",
-    "module": {
-      "package": "corpus_core",
-      "path": [
-        "geometry",
-        "shape"
-      ]
-    },
     "items": [
       {
+        "address": {"package":"corpus_core","path":["geometry","shape","Shape"]},
+        "end": {"column":1,"line":6},
+        "extent": {"end":117,"start":42},
         "kind": "enum",
         "name": "Shape",
-        "name_span": {
-          "start": 51,
-          "end": 56
-        },
-        "span": {
-          "start": 42,
-          "end": 117
-        },
-        "extent": {
-          "start": 42,
-          "end": 117
-        },
-        "visibility": {
-          "span": {
-            "start": 42,
-            "end": 45
-          },
-          "text": "pub"
-        },
-        "start": {
-          "line": 3,
-          "column": 0
-        },
-        "end": {
-          "line": 6,
-          "column": 1
-        },
-        "address": {
-          "package": "corpus_core",
-          "path": [
-            "geometry",
-            "shape",
-            "Shape"
-          ]
-        },
-        "reach": "everyone"
+        "name_span": {"end":56,"start":51},
+        "reach": "everyone",
+        "span": {"end":117,"start":42},
+        "start": {"column":0,"line":3},
+        "visibility": {"span":{"end":45,"start":42},"text":"pub"}
       },
       {
+        "end": {"column":14,"line":4},
+        "extent": {"end":73,"start":63},
         "kind": "variant",
         "name": "Dot",
-        "name_span": {
-          "start": 63,
-          "end": 66
-        },
-        "span": {
-          "start": 63,
-          "end": 73
-        },
-        "extent": {
-          "start": 63,
-          "end": 73
-        },
-        "start": {
-          "line": 4,
-          "column": 4
-        },
-        "end": {
-          "line": 4,
-          "column": 14
-        },
-        "reach": {
-          "within": {
-            "package": "corpus_core",
-            "path": [
-              "geometry",
-              "shape"
-            ]
-          }
-        }
+        "name_span": {"end":66,"start":63},
+        "reach": {"within":{"package":"corpus_core","path":["geometry","shape"]}},
+        "span": {"end":73,"start":63},
+        "start": {"column":4,"line":4}
       },
       {
+        "end": {"column":39,"line":5},
+        "extent": {"end":114,"start":79},
         "kind": "variant",
         "name": "Square",
-        "name_span": {
-          "start": 79,
-          "end": 85
-        },
-        "span": {
-          "start": 79,
-          "end": 114
-        },
-        "extent": {
-          "start": 79,
-          "end": 114
-        },
-        "start": {
-          "line": 5,
-          "column": 4
-        },
-        "end": {
-          "line": 5,
-          "column": 39
-        },
-        "reach": {
-          "within": {
-            "package": "corpus_core",
-            "path": [
-              "geometry",
-              "shape"
-            ]
-          }
-        }
+        "name_span": {"end":85,"start":79},
+        "reach": {"within":{"package":"corpus_core","path":["geometry","shape"]}},
+        "span": {"end":114,"start":79},
+        "start": {"column":4,"line":5}
       },
       {
+        "end": {"column":26,"line":5},
+        "extent": {"end":101,"start":88},
         "kind": "field",
         "name": "corner",
-        "name_span": {
-          "start": 88,
-          "end": 94
-        },
-        "span": {
-          "start": 88,
-          "end": 101
-        },
-        "extent": {
-          "start": 88,
-          "end": 101
-        },
-        "start": {
-          "line": 5,
-          "column": 13
-        },
-        "end": {
-          "line": 5,
-          "column": 26
-        },
-        "reach": {
-          "within": {
-            "package": "corpus_core",
-            "path": [
-              "geometry",
-              "shape"
-            ]
-          }
-        }
+        "name_span": {"end":94,"start":88},
+        "reach": {"within":{"package":"corpus_core","path":["geometry","shape"]}},
+        "span": {"end":101,"start":88},
+        "start": {"column":13,"line":5}
       },
       {
+        "end": {"column":37,"line":5},
+        "extent": {"end":112,"start":103},
         "kind": "field",
         "name": "side",
-        "name_span": {
-          "start": 103,
-          "end": 107
-        },
-        "span": {
-          "start": 103,
-          "end": 112
-        },
-        "extent": {
-          "start": 103,
-          "end": 112
-        },
-        "start": {
-          "line": 5,
-          "column": 28
-        },
-        "end": {
-          "line": 5,
-          "column": 37
-        },
-        "reach": {
-          "within": {
-            "package": "corpus_core",
-            "path": [
-              "geometry",
-              "shape"
-            ]
-          }
-        }
+        "name_span": {"end":107,"start":103},
+        "reach": {"within":{"package":"corpus_core","path":["geometry","shape"]}},
+        "span": {"end":112,"start":103},
+        "start": {"column":28,"line":5}
       },
       {
+        "end": {"column":1,"line":21},
+        "extent": {"end":430,"start":119},
         "kind": "impl",
         "name": "Shape",
-        "name_span": {
-          "start": 124,
-          "end": 129
-        },
-        "span": {
-          "start": 119,
-          "end": 430
-        },
-        "extent": {
-          "start": 119,
-          "end": 430
-        },
-        "start": {
-          "line": 8,
-          "column": 0
-        },
-        "end": {
-          "line": 21,
-          "column": 1
-        },
-        "reach": {
-          "within": {
-            "package": "corpus_core",
-            "path": [
-              "geometry",
-              "shape"
-            ]
-          }
-        }
+        "name_span": {"end":129,"start":124},
+        "reach": {"within":{"package":"corpus_core","path":["geometry","shape"]}},
+        "span": {"end":430,"start":119},
+        "start": {"column":0,"line":8}
       },
       {
+        "end": {"column":5,"line":14},
+        "extent": {"end":287,"start":136},
         "kind": "method",
         "name": "area",
-        "name_span": {
-          "start": 143,
-          "end": 147
-        },
-        "span": {
-          "start": 136,
-          "end": 287
-        },
-        "extent": {
-          "start": 136,
-          "end": 287
-        },
-        "visibility": {
-          "span": {
-            "start": 136,
-            "end": 139
-          },
-          "text": "pub"
-        },
-        "start": {
-          "line": 9,
-          "column": 4
-        },
-        "end": {
-          "line": 14,
-          "column": 5
-        },
-        "reach": "everyone"
+        "name_span": {"end":147,"start":143},
+        "reach": "everyone",
+        "span": {"end":287,"start":136},
+        "start": {"column":4,"line":9},
+        "visibility": {"span":{"end":139,"start":136},"text":"pub"}
       },
       {
+        "end": {"column":5,"line":20},
+        "extent": {"end":428,"start":293},
         "kind": "method",
         "name": "anchor",
-        "name_span": {
-          "start": 300,
-          "end": 306
-        },
-        "span": {
-          "start": 293,
-          "end": 428
-        },
-        "extent": {
-          "start": 293,
-          "end": 428
-        },
-        "visibility": {
-          "span": {
-            "start": 293,
-            "end": 296
-          },
-          "text": "pub"
-        },
-        "start": {
-          "line": 16,
-          "column": 4
-        },
-        "end": {
-          "line": 20,
-          "column": 5
-        },
-        "reach": "everyone"
+        "name_span": {"end":306,"start":300},
+        "reach": "everyone",
+        "span": {"end":428,"start":293},
+        "start": {"column":4,"line":16},
+        "visibility": {"span":{"end":296,"start":293},"text":"pub"}
       }
-    ]
-  }
+    ],
+    "module": {"package":"corpus_core","path":["geometry","shape"]},
+    "path": "core/src/geometry/shape.rs"
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

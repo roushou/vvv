@@ -1,70 +1,31 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "a5d6caab8bd4ca8e2ba06d1dd3c6a2feda29fc484e39aef67e48193fb36d4a3f",
-    "outcome": "resolved",
-    "target": {
+    "container": {
+      "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":80,"start":56}},
+      "kind": "const",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-        "span": {
-          "start": 56,
-          "end": 80
-        }
-      },
-      "name_span": {
-        "start": 66,
-        "end": 70
-      },
-      "kind": "const"
+      "name_span": {"end":70,"start":66}
     },
+    "evidence": {"addresses":[{"package":"rust_conditionals","path":["UNIT"]},{"package":"rust_conditionals","path":["api","UNIT"]}]},
     "id": "72849f4b1042",
     "name": "UNIT",
-    "start": {
-      "line": 3,
-      "column": 4
-    },
-    "evidence": {
-      "addresses": [
-        {
-          "package": "rust_conditionals",
-          "path": [
-            "UNIT"
-          ]
-        },
-        {
-          "package": "rust_conditionals",
-          "path": [
-            "api",
-            "UNIT"
-          ]
-        }
-      ]
-    },
-    "container": {
+    "outcome": "resolved",
+    "snapshot": "a5d6caab8bd4ca8e2ba06d1dd3c6a2feda29fc484e39aef67e48193fb36d4a3f",
+    "start": {"column":4,"line":3},
+    "target": {
+      "declaration": {"content":"ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c","path":"src/lib.rs","span":{"end":80,"start":56}},
+      "kind": "const",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "ffb81d848ce07ef454be9aba20dc00745c709a062dc40a3c49a0ab86c099df8c",
-        "span": {
-          "start": 56,
-          "end": 80
-        }
-      },
-      "name_span": {
-        "start": 66,
-        "end": 70
-      },
-      "kind": "const"
+      "name_span": {"end":70,"start":66}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

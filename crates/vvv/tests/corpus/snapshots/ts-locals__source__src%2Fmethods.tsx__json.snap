@@ -1,0 +1,56 @@
+---
+source: crates/vvv/tests/common/corpus_snapshot.rs
+expression: JsonSnapshot(&self.value).to_string()
+---
+{
+  "highlights": [
+    {"kind":"keyword","span":{"end":6,"start":0}},
+    {"kind":"keyword","span":{"end":12,"start":7}},
+    {"kind":"type","span":{"end":17,"start":13}},
+    {"kind":"function","span":{"end":28,"start":22}},
+    {"kind":"keyword","span":{"end":51,"start":46}},
+    {"kind":"keyword","span":{"end":125,"start":119}}
+  ],
+  "identifiers": [
+    {"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":17,"start":13}},
+    {"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":28,"start":22}},
+    {"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":36,"start":31}},
+    {"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":59,"start":54}},
+    {"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":68,"start":61}},
+    {"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":76,"start":71}},
+    {"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":85,"start":78}},
+    {"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":93,"start":88}},
+    {"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":102,"start":98}},
+    {"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":113,"start":108}},
+    {"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":134,"start":127}},
+    {"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":141,"start":136}},
+    {"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":150,"start":143}},
+    {"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":157,"start":152}},
+    {"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":163,"start":159}},
+    {"content":"63cc6900f4986d78c24b65a570df131fafbb236874cd2610f6634a76506923e0","path":"src/methods.tsx","span":{"end":173,"start":166}}
+  ],
+  "path": "src/methods.tsx",
+  "symbols": [
+    {
+      "extent": {"end":181,"start":0},
+      "kind": "class",
+      "name": "View",
+      "name_span": {"end":17,"start":13},
+      "span": {"end":181,"start":7},
+      "visibility": {"span":{"end":6,"start":0},"text":"export"}
+    },
+    {"extent":{"end":179,"start":22},"kind":"method","name":"render","name_span":{"end":28,"start":22},"span":{"end":179,"start":22}},
+    {
+      "extent": {"end":113,"start":52},
+      "kind": "variable",
+      "name": "{ title: heading = title, entries: [first, ...rest] }",
+      "name_span": {"end":105,"start":52},
+      "span": {"end":113,"start":52}
+    },
+    {"extent":{"end":38,"start":29},"kind":"parameter","name":"title","name_span":{"end":36,"start":31},"span":{"end":38,"start":29}},
+    {"extent":{"end":113,"start":52},"kind":"variable","name":"heading","name_span":{"end":68,"start":61},"span":{"end":113,"start":52}},
+    {"extent":{"end":113,"start":52},"kind":"variable","name":"first","name_span":{"end":93,"start":88},"span":{"end":113,"start":52}},
+    {"extent":{"end":113,"start":52},"kind":"variable","name":"rest","name_span":{"end":102,"start":98},"span":{"end":113,"start":52}}
+  ],
+  "text": "export class View {\n  render({ title }) {\n    const { title: heading = title, entries: [first, ...rest] } = input;\n    return <section>{title}{heading}{first}{rest}</section>;\n  }\n}\n"
+}

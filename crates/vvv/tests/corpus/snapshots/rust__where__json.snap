@@ -1,80 +1,42 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
     "name": "Point",
     "sites": [
       {
+        "address": {"package":"corpus_core","path":["geometry","point","Point"]},
         "declaration": {
+          "address": {"package":"corpus_core","path":["geometry","point","Point"]},
           "content": "e8dadb6bda7e721eaa565045578523bd9d2cdb5acc94f21157ddd7f2cc5f1709",
+          "end": {"column":1,"line":5},
           "id": "679da9ff7222",
-          "path": "core/src/geometry/point.rs",
-          "language": "rust",
-          "span": {
-            "start": 73,
-            "end": 125
-          },
-          "start": {
-            "line": 2,
-            "column": 0
-          },
-          "end": {
-            "line": 5,
-            "column": 1
-          },
           "kind": "struct_item",
-          "text": "pub struct Point {\n    pub x: i32,\n    pub y: i32,\n}",
+          "language": "rust",
           "line": "pub struct Point {",
+          "path": "core/src/geometry/point.rs",
+          "role": "declaration",
+          "span": {"end":125,"start":73},
+          "start": {"column":0,"line":2},
           "symbol": {
+            "extent": {"end":125,"start":0},
             "kind": "struct",
             "name": "Point",
-            "name_span": {
-              "start": 84,
-              "end": 89
-            },
-            "span": {
-              "start": 73,
-              "end": 125
-            },
-            "extent": {
-              "start": 0,
-              "end": 125
-            },
-            "visibility": {
-              "span": {
-                "start": 73,
-                "end": 76
-              },
-              "text": "pub"
-            }
+            "name_span": {"end":89,"start":84},
+            "span": {"end":125,"start":73},
+            "visibility": {"span":{"end":76,"start":73},"text":"pub"}
           },
-          "role": "declaration",
-          "address": {
-            "package": "corpus_core",
-            "path": [
-              "geometry",
-              "point",
-              "Point"
-            ]
-          }
-        },
-        "address": {
-          "package": "corpus_core",
-          "path": [
-            "geometry",
-            "point",
-            "Point"
-          ]
+          "text": "pub struct Point {\n    pub x: i32,\n    pub y: i32,\n}"
         },
         "import": "use corpus_core::geometry::point::Point;"
       }
     ]
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

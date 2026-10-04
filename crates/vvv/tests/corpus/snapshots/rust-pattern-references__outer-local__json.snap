@@ -1,70 +1,31 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "be4e04474fec158f1085f089b7767e4610a8076d1eec93fa65f179446a1a81f8",
-    "outcome": "resolved",
-    "target": {
+    "container": {
+      "declaration": {"content":"cc6411456df3e72af40fdbe3a55b4920b55b95450a6470a0eb00cac134d5feeb","path":"src/lib.rs","span":{"end":42,"start":17}},
+      "kind": "const",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "cc6411456df3e72af40fdbe3a55b4920b55b95450a6470a0eb00cac134d5feeb",
-        "span": {
-          "start": 17,
-          "end": 42
-        }
-      },
-      "name_span": {
-        "start": 27,
-        "end": 30
-      },
-      "kind": "const"
+      "name_span": {"end":30,"start":27}
     },
+    "evidence": {"addresses":[{"package":"rust_pattern_references","path":["MIN"]},{"package":"rust_pattern_references","path":["values","MIN"]}]},
     "id": "7aacc4bc773e",
     "name": "MIN",
-    "start": {
-      "line": 1,
-      "column": 4
-    },
-    "evidence": {
-      "addresses": [
-        {
-          "package": "rust_pattern_references",
-          "path": [
-            "MIN"
-          ]
-        },
-        {
-          "package": "rust_pattern_references",
-          "path": [
-            "values",
-            "MIN"
-          ]
-        }
-      ]
-    },
-    "container": {
+    "outcome": "resolved",
+    "snapshot": "be4e04474fec158f1085f089b7767e4610a8076d1eec93fa65f179446a1a81f8",
+    "start": {"column":4,"line":1},
+    "target": {
+      "declaration": {"content":"cc6411456df3e72af40fdbe3a55b4920b55b95450a6470a0eb00cac134d5feeb","path":"src/lib.rs","span":{"end":42,"start":17}},
+      "kind": "const",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "cc6411456df3e72af40fdbe3a55b4920b55b95450a6470a0eb00cac134d5feeb",
-        "span": {
-          "start": 17,
-          "end": 42
-        }
-      },
-      "name_span": {
-        "start": 27,
-        "end": 30
-      },
-      "kind": "const"
+      "name_span": {"end":30,"start":27}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---

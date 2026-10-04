@@ -1,71 +1,31 @@
 ---
 source: crates/vvv/tests/corpus.rs
-expression: "corpus.run(args, true)"
+expression: "self.run(args, true)"
 ---
 exit 0
 --- stdout ---
 {
-  "status": "ok",
-  "schema": 1,
   "result": {
-    "snapshot": "b8202140ae9a50c39c06b9f171ac4449ee337969e97cecf7d0215f55f7957795",
-    "outcome": "resolved",
-    "target": {
+    "container": {
+      "declaration": {"content":"1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a","path":"src/lib.rs","span":{"end":141,"start":124}},
+      "kind": "struct",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a",
-        "span": {
-          "start": 124,
-          "end": 141
-        }
-      },
-      "name_span": {
-        "start": 135,
-        "end": 140
-      },
-      "kind": "struct"
+      "name_span": {"end":140,"start":135}
     },
+    "evidence": {"addresses":[{"package":"inline_navigation","path":["disk","Via"]},{"package":"inline_navigation","path":["inline","Local"]}]},
     "id": "8317e690d028",
     "name": "Local",
-    "start": {
-      "line": 4,
-      "column": 4
-    },
-    "evidence": {
-      "addresses": [
-        {
-          "package": "inline_navigation",
-          "path": [
-            "disk",
-            "Via"
-          ]
-        },
-        {
-          "package": "inline_navigation",
-          "path": [
-            "inline",
-            "Local"
-          ]
-        }
-      ]
-    },
-    "container": {
+    "outcome": "resolved",
+    "snapshot": "b8202140ae9a50c39c06b9f171ac4449ee337969e97cecf7d0215f55f7957795",
+    "start": {"column":4,"line":4},
+    "target": {
+      "declaration": {"content":"1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a","path":"src/lib.rs","span":{"end":141,"start":124}},
+      "kind": "struct",
       "language": "rust",
-      "declaration": {
-        "path": "src/lib.rs",
-        "content": "1b7758664611e13cd12b8cf24d7db8605bbfbc039e48e729d22e9221c0a4526a",
-        "span": {
-          "start": 124,
-          "end": 141
-        }
-      },
-      "name_span": {
-        "start": 135,
-        "end": 140
-      },
-      "kind": "struct"
+      "name_span": {"end":140,"start":135}
     }
-  }
+  },
+  "schema": 1,
+  "status": "ok"
 }
 --- stderr ---
