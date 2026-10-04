@@ -1632,7 +1632,8 @@ vvv search Engine --path crates/vvv-engine/src --package vvv_engine
 
 `--path` accepts an exact workspace-relative file or a directory prefix, matching
 path components: `src/a` includes `src/a/mod.rs`, but not `src/ab.rs`. Use `/`
-separators; absolute paths and `..` components are rejected. `.` means the workspace.
+separators; Windows also accepts native `\` separators and normalizes them to `/`.
+Absolute paths and `..` components are rejected. `.` means the workspace.
 These are literal prefixes, not globs. Repeat either flag for alternatives; when
 both kinds of filter are present, a file must match both.
 

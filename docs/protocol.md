@@ -884,9 +884,10 @@ them under `query`:
 
 `paths` and `packages` default to empty lists (unrestricted). Path alternatives
 match whole components and represent exact files or directory prefixes, using
-workspace-relative `/` paths; absolute paths, `..`, backslashes, drive syntax, and
-NUL bytes are rejected with `bad_request`. `.` or an empty prefix matches the
-workspace. Package alternatives match either a manifest name or canonical package
+workspace-relative `/` paths. Host separators are normalized by `RelPath` first:
+Windows `src\a.rs` becomes `src/a.rs`. Absolute paths, `..`, remaining literal
+backslashes, drive syntax, and NUL bytes are rejected with `bad_request`. `.` or an
+empty prefix matches the workspace. Package alternatives match either a manifest name or canonical package
 ID exactly, using the deepest owning package root from the file's language layout.
 Unknown packages and files without package ownership do not match. Alternatives
 within each list are ORed; the lists are ANDed. There is no heuristic exclusion of

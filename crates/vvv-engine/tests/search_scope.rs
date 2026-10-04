@@ -59,6 +59,15 @@ fn paths_match_components_and_packages_use_the_deepest_owner() {
             .len(),
         2
     );
+    let native = Path::new("src").join("a.p");
+    let native_scope = SearchScope {
+        paths: vec![RelPath::new(&native)],
+        packages: vec!["root".into()],
+    };
+    assert_eq!(native_scope.paths[0].as_str(), "src/a.p");
+    let native_matches = f.search(native_scope);
+    assert_eq!(native_matches.matches.len(), 1);
+    assert_eq!(native_matches.matches[0].path.as_path(), native.as_path());
     assert_eq!(
         f.search(Fixture::scope(&["./src"], &["root", "nested"]))
             .matches
@@ -127,15 +136,30 @@ fn scoped_pages_keep_the_filter_ordinals_and_replay_after_budget_changes() {
 #[test]
 fn invalid_scopes_are_rejected_and_json_search_retains_existing_predicates() {
     let f = Fixture::new();
-    for path in ["../src", "/src", "a/../b", "a\\b", "C:/src"] {
-        assert!(matches!(
-            SearchQuery::from(Query::pattern("Engine"))
-                .scoped(Fixture::scope(&[path], &[]))
-                .execute(&f.engine),
-            Err(EngineError::InvalidSearchScope)
-        ));
+    for path in [
+        "../src",
+        "/src",
+        "a/../b",
+        "C:/src",
+        // Windows normalizes its native separator before scope validation.
+        #[cfg(not(windows))]
+        "a\\b",
+    ] {
+        assert!(
+            matches!(
+                SearchQuery::from(Query::pattern("Engine"))
+                    .scoped(Fixture::scope(&[path], &[]))
+                    .execute(&f.engine),
+                Err(EngineError::InvalidSearchScope)
+            ),
+            "scope {path:?} must be rejected"
+        );
     }
-    let call: Call = serde_json::from_value(serde_json::json!({"command":"search","name":"Engine","scope":{"paths":["src"],"packages":["root"]}})).unwrap();
+    let native = Path::new("src").join("a.p");
+    let call: Call = serde_json::from_value(serde_json::json!({"command":"search","name":"Engine","scope":{"paths":[native],"packages":["root"]}})).unwrap();
     let reply = serde_json::to_value(call.execute(&f.engine)).unwrap();
-    assert_eq!(reply["result"]["matches"].as_array().unwrap().len(), 2);
+    let result: Search = serde_json::from_value(reply["result"].clone()).unwrap();
+    assert_eq!(result.scope.paths[0].as_str(), "src/a.p");
+    assert_eq!(result.matches.len(), 1);
+    assert_eq!(result.matches[0].path.as_path(), native.as_path());
 }
