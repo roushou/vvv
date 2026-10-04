@@ -5,10 +5,10 @@ expression: "FrameFixture::new(&m).render()"
 ┌ Rename trait ────────────────────────────────────────────────── 3/4 selected · 3 files ┐
 │ Language → Lang▏                                                                       │
 └ src/lang/mod.rs:64 · name collides with an existing declaration ───────────────────────┘
-┌ ? Unverified ─────────────── 1/1 · 1 file ┐┌ Source · src/other.rs:10 ─────────────────┐
-│  src/other.rs                             ││ ∅ unresolved · a bare name nothing        │
-│> ▫ 10 Language::new()                     ││ imports, or a path vvv cannot place       │
-│                                           ││ Loading source                            │
+┌ ? Unverified ─────────────── 1/1 · 1 file ┐┌ Conflicting changes ──────────────────────┐
+│  src/other.rs                             ││name collides with an existing             │
+│> ▫ 10 Language::new()                     ││declaration                                │
+│                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
@@ -20,5 +20,5 @@ expression: "FrameFixture::new(&m).render()"
 │  src/lang/mod.rs                          ││                                           │
 │  ▪ 64 pub trait Language: Send + Sync {   ││                                           │
 └ 3/3 selected ─────────────────────────────┘│                                           │
- ✗ Other ───────────────────── 0/0 · 0 files └ excluded from apply ──────────────────────┘
- rename  name collides with an existing declaration  ↓/tab sites  ctrl+u clear    f1 help
+ ✗ Other ───────────────────── 0/0 · 0 files └───────────────────────────────────────────┘
+ rename ↓/tab sites  ctrl+u clear  typing the new name  ⏎ fix error  esc back     f1 help

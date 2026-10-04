@@ -5,11 +5,11 @@ expression: "FrameFixture::new(&m).render()"
 ┌ vvv ~/dev/nx ─────────────────────────────────────────────────────────── Query · stale ┐
 │> Alpha                                                                                 │
 └ 1/2 · workspace · all results ─────────────────────────────────────────────────────────┘
-┌ Files ─────────────────────── 1/1 · 1 hit ┐┌ definition · a.rs:1 ───────────────── 1–4 ┐
-│> a.rs                                   1 ││ struct Alpha {                            │
-│                                           ││     first: Beta,                          │
-├ Matches ───────────────────────────── 1/1 ┤│     second: Beta,                         │
-│> 1  struct Alpha {    first: Beta,    s…  ││ }                                         │
+┌ Files ─────────────────────── 1/1 · 1 hit ┐┌ Preview out of date ──────────────────────┐
+│> a.rs                                   1 ││a.rs changed                               │
+│                                           ││Refresh the source and review the new      │
+├ Matches ───────────────────────────── 1/1 ┤│preview before applying.                   │
+│> 1  struct Alpha {    first: Beta,    s…  ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
 │                                           ││                                           │
@@ -21,4 +21,4 @@ expression: "FrameFixture::new(&m).render()"
 │                                           ││                                           │
 │                                           ││                                           │
 └ [All 1] Decl 1 Imp 0 Uses 0 ──────────────┘└───────────────────────────────────────────┘
- search  Saved source needs validation or refresh (ctrl+r)  j/k scroll  / find    f1 help
+ search ctrl+r refresh  j/k scroll  d/u page  i edit input  ⏎ follow  / find      f1 help

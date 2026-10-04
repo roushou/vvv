@@ -29,6 +29,8 @@ use vvv_engine::{
 /// The hub: a query, its results, and context for the cursor row.
 #[derive(Debug, Default)]
 pub struct Search {
+    pub workspace: Option<crate::modes::workspace::WorkspaceBrowse>,
+    pub problem: Option<crate::problem::Problem>,
     pub recent: recall::RecentSearches,
     pub trail: NavigationTrail,
     pub page: BrowsePage,
@@ -50,6 +52,27 @@ pub struct Search {
 }
 
 impl Search {
+    pub fn workspace(&mut self, context: &mut ModeContext<'_>) -> Vec<Effect> {
+        if self.workspace.is_some() {
+            return self.travel(false, context);
+        }
+        self.trail.cancel();
+        self.trail.commit(browse::NavigationEntry::capture(self));
+        self.workspace = Some(crate::modes::workspace::WorkspaceBrowse::default());
+        self.page = BrowsePage::Workspace;
+        self.focus = SearchPanel::Query;
+        self.problem = None;
+        self.stale = false;
+        self.expanded = None;
+        self.body.clear();
+        context.status.clear();
+        context.status.busy = true;
+        self.workspace
+            .as_mut()
+            .unwrap()
+            .refresh(context.next_generation())
+    }
+
     pub fn remember_page(&mut self, busy: bool) {
         if busy || self.stale || self.query.is_empty() {
             return;
@@ -163,11 +186,17 @@ impl Search {
     }
 
     pub fn input_focused(&self) -> bool {
+        if self.workspace.is_some() {
+            return self.focus == SearchPanel::Query;
+        }
         self.focus == SearchPanel::Query
             || self.inspection_editing()
             || (self.focus == SearchPanel::Files && self.results.files.edit.is_some())
     }
     pub fn screen(&self) -> &'static crate::screen::Screen {
+        if self.workspace.is_some() {
+            return &crate::modes::workspace::screen::WORKSPACE;
+        }
         if self.inspection_editing() {
             if self.focus == SearchPanel::Body {
                 &screen::INSPECT_BODY
@@ -188,6 +217,29 @@ impl Search {
         Vec<Effect>,
     ) {
         use crate::overlays::navigation::NavigationPicker;
+        if let Some(workspace) = &self.workspace {
+            if workspace.loading {
+                return (None, context.fail("Wait for the source to finish loading"));
+            }
+            if self.focus == SearchPanel::Context {
+                if let Some(preview) = &workspace.preview {
+                    let picker = NavigationPicker::identifiers(
+                        preview,
+                        preview.identifiers.iter().cloned(),
+                        workspace.scroll,
+                    );
+                    if !picker.items.is_empty() {
+                        return (Some(picker), Vec::new());
+                    }
+                }
+                return (None, context.fail("No identifiers in this source"));
+            }
+            let Some(query) = workspace.query() else {
+                return (None, context.fail("Select a declaration in the outline"));
+            };
+            return (None, self.follow_query(query, context));
+        }
+
         if self.stale {
             context
                 .status
@@ -302,6 +354,8 @@ impl Search {
                     self.body.scroll = scroll;
                 } else {
                     self.trail.commit(browse::NavigationEntry::capture(self));
+                    self.workspace = None;
+                    self.problem = None;
                     self.page = BrowsePage::Definition(target.clone());
                     self.results.category = Category::Declarations;
                     self.results.location = None;
@@ -353,9 +407,14 @@ impl Search {
                 if failure.code == vvv_engine::ErrorCode::Stale {
                     self.stale = true;
                 }
-                context
-                    .status
-                    .error(format!("{} · refresh with ctrl+r", failure.message));
+                let retry = Effect::Follow {
+                    ticket,
+                    query: query.clone(),
+                };
+                self.problem = Some(crate::problem::Problem::new(failure, Some(retry)));
+                context.status.clear();
+                self.focus = SearchPanel::Context;
+                self.definition_tab = false;
             }
         }
         None
@@ -376,6 +435,12 @@ impl Search {
         };
         context.next_generation();
         entry.restore(self);
+        self.problem = None;
+        if let Some(workspace) = &mut self.workspace {
+            self.stale = false;
+            context.status.clear();
+            return workspace.refresh(*context.generation);
+        }
         context.status.busy = false;
         context.status.info("Checking saved source…");
         if let Some(query) = self.body.query() {
@@ -388,7 +453,10 @@ impl Search {
 
     pub fn search(&mut self, context: &mut ModeContext<'_>) -> Vec<Effect> {
         self.trail.cancel();
+        self.workspace = None;
+        self.problem = None;
         self.page = BrowsePage::Search;
+        self.body.problem = None;
         self.body.reticket(self.body.next_ticket());
         let generation = context.next_generation();
         match self.query.parse() {
@@ -599,6 +667,9 @@ impl Search {
         }
     }
     fn panel_available(&self, panel: SearchPanel) -> bool {
+        if self.workspace.is_some() {
+            return panel != SearchPanel::Body;
+        }
         match panel {
             SearchPanel::Files => self.results.has_file_list(),
             SearchPanel::Body => self.results.has_body(),
@@ -654,7 +725,21 @@ impl Search {
             self.selection_changed();
         }
     }
+    fn clear_preview_problem(&mut self) {
+        if let Some(Effect::Preview { path }) = self.problem.as_ref().and_then(|p| p.retry.as_ref())
+        {
+            let selected = if let Some(workspace) = &self.workspace {
+                workspace.file.clone()
+            } else {
+                self.results.current_site().map(|(path, _)| path)
+            };
+            if selected.as_ref() != Some(path) {
+                self.problem = None;
+            }
+        }
+    }
     pub fn selection_changed(&mut self) {
+        self.clear_preview_problem();
         self.results.remember_current();
         self.results.files.reveal();
         self.trail.cancel();
@@ -667,6 +752,13 @@ impl Search {
         }
     }
     pub fn site(&self) -> Option<(RelPath, u32)> {
+        if let Some(workspace) = &self.workspace {
+            return if self.focus == SearchPanel::Context {
+                workspace.displayed_site().or_else(|| workspace.site())
+            } else {
+                workspace.site()
+            };
+        }
         if self.focus == SearchPanel::Body {
             self.body.declaration().map(|d| {
                 (
@@ -735,6 +827,9 @@ impl Search {
             .map_or(0, |anchor| (anchor.line as usize).saturating_sub(5))
     }
     pub fn preview_effect(&self) -> Vec<Effect> {
+        if let Some(workspace) = &self.workspace {
+            return workspace.preview_effect();
+        }
         let mut effects = Vec::new();
         if let Some((ticket, query)) = self.body.pending() {
             effects.push(Effect::Definition { ticket, query });
@@ -746,6 +841,13 @@ impl Search {
             effects.push(Effect::Preview { path: path.clone() });
         }
         effects
+    }
+    pub fn preview_target(&self) -> Option<RelPath> {
+        if let Some(workspace) = &self.workspace {
+            workspace.file.clone()
+        } else {
+            self.results.current_site().map(|(path, _)| path)
+        }
     }
     pub fn scroll_focused(&self) -> bool {
         matches!(self.focus, SearchPanel::Context | SearchPanel::Body)
@@ -767,6 +869,9 @@ impl Search {
         }
     }
     pub fn back(&mut self, context: &mut ModeContext<'_>) -> Vec<Effect> {
+        if self.workspace.is_some() {
+            return self.travel(false, context);
+        }
         if self.inspection_editing() {
             self.inspection_action(Action::Back);
             return Vec::new();
@@ -900,7 +1005,125 @@ impl Search {
         self.preview_effect()
     }
 
+    pub fn edit_input(
+        &mut self,
+        edit: crate::input::Edit<'_>,
+        context: &mut ModeContext<'_>,
+    ) -> Vec<Effect> {
+        if let Some(workspace) = &mut self.workspace {
+            let effects = workspace.edit(edit);
+            self.clear_preview_problem();
+            return effects;
+        }
+        if self.inspection_editing() {
+            self.edit_inspection(edit);
+            return Vec::new();
+        }
+        if self.focus == SearchPanel::Files && self.results.files.edit.is_some() {
+            if edit.motion() {
+                crate::input::TextInput::new(
+                    &mut self.results.files.filter,
+                    &mut self.results.files.caret,
+                )
+                .apply(edit);
+                return Vec::new();
+            }
+            self.results.prefer_selection();
+            let selected = self.results.current().map(|m| m.id.clone()).or_else(|| {
+                self.results
+                    .files
+                    .edit
+                    .as_ref()
+                    .and_then(|e| e.selected.clone())
+            });
+            if !crate::input::TextInput::new(
+                &mut self.results.files.filter,
+                &mut self.results.files.caret,
+            )
+            .apply(edit)
+            {
+                return Vec::new();
+            }
+            self.results.restore_selection(selected);
+            self.selection_changed();
+            return self.preview_effect();
+        }
+        if self.focus != SearchPanel::Query {
+            return Vec::new();
+        }
+        let mut query = self.query.clone();
+        let changed = query.edit(edit);
+        if changed {
+            self.remember_page(context.status.busy);
+            self.results.files.preferred = None;
+        }
+        self.query = query;
+        if changed {
+            self.search(context)
+        } else {
+            Vec::new()
+        }
+    }
+    fn edit_inspection(&mut self, edit: crate::input::Edit<'_>) {
+        let definition = self.focus == SearchPanel::Body;
+        let source = if definition {
+            self.body
+                .declaration()
+                .and_then(|d| self.body.symbol(d))
+                .and_then(|s| self.body.preview.clone().map(|p| (p, s.span)))
+        } else {
+            self.displayed_source()
+                .and_then(|_| self.preview.clone())
+                .map(|p| {
+                    let end = p.text().len();
+                    (p, vvv_engine::Span::new(0, end))
+                })
+        };
+        let Some((preview, range)) = source else {
+            return;
+        };
+        let inspection = if definition {
+            &mut self.body.inspection
+        } else {
+            &mut self.inspection
+        };
+        if let Some(line) = inspection.edit_input(edit, &preview, range) {
+            if definition {
+                self.body.scroll =
+                    line.saturating_sub(preview.lines_in(range).map_or(0, |lines| lines.start));
+            } else {
+                self.preview_scroll = Some(line);
+            }
+        }
+    }
     pub fn update(&mut self, action: Action, context: &mut ModeContext<'_>) -> Vec<Effect> {
+        if self.workspace.is_some() {
+            match action {
+                Action::BrowseBack | Action::Back => return self.travel(false, context),
+                Action::BrowseForward => return self.travel(true, context),
+                Action::FocusNext => self.focus_by(1),
+                Action::FocusPrev => self.focus_by(-1),
+                Action::FocusNth(n) => self.focus_nth(n),
+                Action::Refresh => {
+                    self.problem = None;
+                    context.status.clear();
+                    context.status.busy = true;
+                    let generation = context.next_generation();
+                    return self.workspace.as_mut().unwrap().refresh(generation);
+                }
+                _ => {
+                    let effects = self.workspace.as_mut().unwrap().update(
+                        action,
+                        self.focus == SearchPanel::Query || self.focus == SearchPanel::Files,
+                        self.focus == SearchPanel::Context,
+                    );
+                    self.clear_preview_problem();
+                    return effects;
+                }
+            }
+            return Vec::new();
+        }
+
         if self.scroll_focused()
             && ((self.inspection_editing()
                 && matches!(
@@ -1036,6 +1259,15 @@ impl Search {
         self.preview_effect()
     }
     pub fn previewed(&mut self, preview: FilePreview) {
+        if self.problem.as_ref().is_some_and(
+            |p| matches!(&p.retry, Some(Effect::Preview { path }) if *path == preview.path),
+        ) {
+            self.problem = None;
+        }
+        if let Some(workspace) = &mut self.workspace {
+            workspace.previewed(preview);
+            return;
+        }
         if self
             .results
             .current_site()

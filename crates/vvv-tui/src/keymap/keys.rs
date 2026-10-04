@@ -132,6 +132,21 @@ impl Key {
         Self::code(Code::Down)
     }
 
+    pub const fn ctrl_left() -> Self {
+        Self::new(Code::Left, Modifiers::CTRL)
+    }
+    pub const fn ctrl_right() -> Self {
+        Self::new(Code::Right, Modifiers::CTRL)
+    }
+    pub const fn delete() -> Self {
+        Self::code(Code::Delete)
+    }
+    pub const fn ctrl_delete() -> Self {
+        Self::new(Code::Delete, Modifiers::CTRL)
+    }
+    pub const fn ctrl_backspace() -> Self {
+        Self::new(Code::Backspace, Modifiers::CTRL)
+    }
     pub const fn alt_left() -> Self {
         Self::new(Code::Left, Modifiers::ALT)
     }

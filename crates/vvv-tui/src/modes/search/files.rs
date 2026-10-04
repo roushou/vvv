@@ -7,6 +7,7 @@ use vvv_engine::{Match, MatchId, RelPath};
 #[derive(Debug, Clone, Default)]
 pub struct FileNavigator {
     pub filter: String,
+    pub caret: crate::input::Caret,
     pub edit: Option<FileEdit>,
     pub active: Option<RelPath>,
     /// Selection hidden by restrictions, until the user deliberately moves.
@@ -57,6 +58,7 @@ impl FileNavigator {
 
     pub fn begin(&mut self, selected: Option<MatchId>, return_focus: SearchPanel) {
         if self.edit.is_none() {
+            self.caret.reset();
             self.edit = Some(FileEdit {
                 filter: self.filter.clone(),
                 selected,

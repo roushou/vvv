@@ -203,7 +203,7 @@ pub static LIST: Layer<Action> = Layer {
         Keybinding {
             triggers: &[Trigger::Key(Key::char('v'))],
             dispatch: Run(A::View),
-            when: When::Always,
+            when: When::ReportViewAvailable,
             legend: Legend {
                 bar: bar("v", "view"),
                 help: "compact / detailed rows",
@@ -291,10 +291,176 @@ pub static TEXT: Layer<Action> = Layer {
         Keybinding {
             triggers: &[Trigger::Key(Key::char('v'))],
             dispatch: Run(A::View),
-            when: When::Always,
+            when: When::ReportViewAvailable,
             legend: Legend {
                 bar: bar("v", "view"),
                 help: "compact / detailed rows",
+            },
+        },
+    ],
+};
+
+/// Shared editing keys, active only for the focused input.
+pub static INPUT: Layer<Action> = Layer {
+    name: "Input editing",
+    bindings: &[
+        Keybinding {
+            triggers: &[Trigger::Key(Key::backspace())],
+            dispatch: Run(A::Backspace),
+            when: When::InputFocused,
+            legend: Legend {
+                bar: None,
+                help: "delete previous grapheme",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('u'))],
+            dispatch: Run(A::Clear),
+            when: When::InputFocused,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "ctrl+u",
+                    word: "clear",
+                }),
+                help: "clear input",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::left())],
+            dispatch: Run(A::InputEdit(crate::input::EditCommand::Left)),
+            when: When::InputFocused,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "←/→",
+                    word: "caret",
+                }),
+                help: "move caret",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::right())],
+            dispatch: Run(A::InputEdit(crate::input::EditCommand::Right)),
+            when: When::InputFocused,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "←/→",
+                    word: "caret",
+                }),
+                help: "move caret",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::home())],
+            dispatch: Run(A::InputEdit(crate::input::EditCommand::Home)),
+            when: When::InputFocused,
+            legend: Legend {
+                bar: None,
+                help: "start of input",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::end())],
+            dispatch: Run(A::InputEdit(crate::input::EditCommand::End)),
+            when: When::InputFocused,
+            legend: Legend {
+                bar: None,
+                help: "end of input",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl_left())],
+            dispatch: Run(A::InputEdit(crate::input::EditCommand::WordLeft)),
+            when: When::InputFocused,
+            legend: Legend {
+                bar: None,
+                help: "previous word",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl_right())],
+            dispatch: Run(A::InputEdit(crate::input::EditCommand::WordRight)),
+            when: When::InputFocused,
+            legend: Legend {
+                bar: None,
+                help: "next word",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::delete())],
+            dispatch: Run(A::InputEdit(crate::input::EditCommand::Delete)),
+            when: When::InputFocused,
+            legend: Legend {
+                bar: None,
+                help: "delete next character",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl_delete())],
+            dispatch: Run(A::InputEdit(crate::input::EditCommand::WordDelete)),
+            when: When::InputFocused,
+            legend: Legend {
+                bar: None,
+                help: "delete next word",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl_backspace())],
+            dispatch: Run(A::InputEdit(crate::input::EditCommand::WordBackspace)),
+            when: When::InputFocused,
+            legend: Legend {
+                bar: None,
+                help: "delete previous word",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('w'))],
+            dispatch: Run(A::InputEdit(crate::input::EditCommand::WordBackspace)),
+            when: When::InputFocused,
+            legend: Legend {
+                bar: None,
+                help: "delete previous word",
+            },
+        },
+    ],
+};
+
+pub static RECOVERY: Layer<Action> = Layer {
+    name: "Recovery",
+    bindings: &[
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('e'))],
+            dispatch: Run(A::Edit),
+            when: When::RecoveryFile,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "e",
+                    word: "inspect file",
+                }),
+                help: "open the first remaining or unverified recovery file in the editor",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('r'))],
+            dispatch: Run(A::Recover),
+            when: When::Recoverable,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "ctrl+r",
+                    word: "",
+                }),
+                help: "refresh or rebuild the preview; applying remains a separate action",
+            },
+        },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::char('i'))],
+            dispatch: Run(A::FocusNth(1)),
+            when: When::Problem,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "i",
+                    word: "edit input",
+                }),
+                help: "return to the retained input",
             },
         },
     ],

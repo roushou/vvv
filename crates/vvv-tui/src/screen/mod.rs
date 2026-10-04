@@ -63,6 +63,12 @@ impl Screen {
         if let Some(dispatch) = defaults::GLOBAL.resolve(key, &holds) {
             return Some(dispatch);
         }
+        if let Some(dispatch) = defaults::RECOVERY.resolve(key, &holds) {
+            return Some(dispatch);
+        }
+        if let Some(dispatch) = defaults::INPUT.resolve(key, &holds) {
+            return Some(dispatch);
+        }
         let Some(panel) = panel else {
             return self.layer.resolve(key, &holds);
         };
@@ -94,7 +100,7 @@ impl Screen {
         focus: usize,
         holds: impl Fn(When) -> bool,
     ) -> Vec<(&'static str, Vec<Row<'static, Action>>)> {
-        let mut layers = Vec::new();
+        let mut layers = vec![defaults::RECOVERY];
         if let Some(panel) = self.panel(focus) {
             layers.push(panel.layer);
             layers.push(self.layer);
@@ -108,6 +114,7 @@ impl Screen {
         } else {
             layers.push(self.layer);
         }
+        layers.push(defaults::INPUT);
         layers.push(defaults::GLOBAL);
         let mut sections = Sections::default();
         let mut seen = Vec::new();
@@ -239,6 +246,18 @@ impl Widget for App<'_> {
             crate::model::Mode::Rename(r) => rename::RenameView::new(r, t, m.split, m.view)
                 .screen()
                 .render(body, buf),
+            crate::model::Mode::Search if m.search.workspace.is_some() => {
+                crate::modes::workspace::screen::WorkspaceView::new(
+                    m.search.workspace.as_ref().unwrap(),
+                    m.search.focus,
+                    m.search.problem.as_ref(),
+                    &m.root,
+                    t,
+                    m.split,
+                )
+                .screen()
+                .render(body, buf);
+            }
             crate::model::Mode::Search => {
                 search::SearchView::new(&m.search, &m.root, m.status.busy, t, m.split, m.view)
                     .screen()
@@ -251,6 +270,7 @@ impl Widget for App<'_> {
                 .screen()
                 .render(body, buf),
             crate::model::Mode::History(h) => history::HistoryView::new(h, t, m.split, self.now)
+                .problem(m.status.problem.as_ref())
                 .screen()
                 .render(body, buf),
         }
@@ -272,12 +292,15 @@ mod tests {
         fn new() -> Self {
             let mut layers = vec![
                 &defaults::GLOBAL,
+                &defaults::INPUT,
+                &defaults::RECOVERY,
                 &defaults::NAVIGATE,
                 &defaults::DIGITS,
                 &defaults::LIST,
                 &defaults::TEXT,
             ];
             for screen in [
+                &crate::modes::workspace::screen::WORKSPACE,
                 &search::SEARCH,
                 &search::INSPECT_SOURCE,
                 &search::INSPECT_BODY,

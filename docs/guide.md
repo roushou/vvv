@@ -1153,6 +1153,49 @@ The status bar and that list are two views of one table, so they never disagree.
 it looks at the tree again at most once a second while you type, and always right
 after the editor returns or it writes something itself.
 
+Inputs share caret editing: Left/Right move by a grapheme, Home/End move to the
+start/end, and Ctrl+Left/Right move by a word. Backspace/Delete remove the previous/next
+grapheme; Ctrl+Backspace or Ctrl+W removes the previous word, Ctrl+Delete removes the
+next word, and Ctrl+U clears the input. Long inputs scroll horizontally around the
+caret. Moving the caret leaves the results, selection, and outstanding request alone.
+Terminal paste inserts the whole payload as one edit. Queries, destinations, and
+filters turn internal line breaks into spaces and discard trailing line breaks;
+rewrite templates retain their line breaks, shown as `↵` in the single-line input.
+The same editor works in query and file filters, pickers, preview find/line fields,
+and rename, move, and rewrite inputs.
+
+**Workspace browsing** opens with Ctrl+B from search. Its file filter searches all
+visible workspace paths locally, independently of the current search restrictions
+and registered languages. The compact Files and Outline lists occupy the left
+column; Source occupies the right. Counts show how many workspace files pass the
+filter. Full paths wrap in reading order, and the outline lists the opened file's
+symbol kinds, names, and line numbers from the same snapshot as its source.
+Files without a registered language still show their text and an empty outline.
+
+In the workspace filter, Ctrl+N/P cycles files; Enter focuses Files. In Files,
+movement opens a file, `/` returns to the filter, and Enter focuses Outline. Outline
+movement reveals the declaration in Source; Enter follows it through global
+navigation. In Source, Enter opens the identifier picker for global navigation.
+`p` focuses Source from either list; `e` opens the selected file in the editor.
+Tab cycles filter, Files, Outline, and Source; the non-input digits are 1–4.
+Ctrl+U in the filter clears it; Ctrl+R refreshes the inventory and source.
+Escape or Ctrl+B returns to the preceding page. Workspace pages participate in
+Alt+Left/Right and Places, preserving the file filter, selection, and scroll.
+Returning to search restores its query, caret, restrictions, selected match,
+and previews; saved source is validated under the usual browsing-trail rules.
+
+**Failures** keep the engine's error code, hints, and recovery details. The affected
+preview displays the problem while the input and selected rows remain available.
+For a retryable failure, the bottom bar offers Ctrl+R: search refreshes its source,
+and operations rebuild their preview with the current input and checkboxes.
+Rebuilding never applies; review the new preview and apply explicitly. Invalid
+inputs can be edited in place; `i` focuses the input from a failed preview. Unsupported
+capabilities offer source inspection or the editor rather than a retry.
+If rollback is incomplete, the pane shows remaining and unverified paths, blocks
+refresh/retry, and offers `e` to inspect the first affected file. Scroll the problem
+pane with the normal preview controls. Late errors from superseded requests do
+not replace the current screen.
+
 **Search** is the hub. The left column separates files from the selected file's
 matches. The lists share a border; the file list uses a bounded part of the column
 and shrinks when there are few files, leaving the remaining rows for matches.

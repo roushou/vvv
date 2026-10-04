@@ -32,11 +32,11 @@ impl<'a> StatusBar<'a> {
             .flat_map(|(_, rows)| rows)
             .collect();
         // Keep basic navigation visible before the focused pane's other actions.
-        rows.sort_by_key(|row| {
-            !matches!(
-                row.binding.dispatch,
-                Dispatch::Run(Action::Move(_) | Action::Scroll(_))
-            )
+        rows.sort_by_key(|row| match row.binding.dispatch {
+            Dispatch::Run(Action::Recover) => 0,
+            Dispatch::Run(Action::Edit) if self.model.holds(crate::keymap::When::RecoveryFile) => 0,
+            Dispatch::Run(Action::Move(_) | Action::Scroll(_)) => 1,
+            _ => 2,
         });
         rows.into_iter()
             .filter_map(|row| row.legend.bar.map(|bar| (row, bar)))
@@ -70,10 +70,21 @@ impl Widget for StatusBar<'_> {
         let t = self.painter;
         let mut spans: Vec<Span> = Vec::new();
         spans.push(Span::styled(
-            format!(" {} ", self.model.mode.name()),
+            format!(
+                " {} ",
+                if matches!(self.model.mode, crate::model::Mode::Search)
+                    && self.model.search.workspace.is_some()
+                {
+                    "workspace"
+                } else {
+                    self.model.mode.name()
+                }
+            ),
             t.title,
         ));
-        if let Some((level, message)) = &self.model.status.message {
+        if self.model.problem().is_none()
+            && let Some((level, message)) = &self.model.status.message
+        {
             let style = match level {
                 Level::Info => t.dim,
                 Level::Error => t.error,

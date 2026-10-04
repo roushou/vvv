@@ -17,8 +17,9 @@ pub struct MoveMode {
     /// `Some` when one declaration moves rather than the file.
     pub symbol: Option<String>,
     pub to: String,
+    pub caret: crate::input::Caret,
     pub plan: Option<MovePlan>,
-    pub error: Option<String>,
+    pub error: Option<crate::problem::Problem>,
     pub focus: MovePanel,
     /// Cursors of the `→`, `±` and `!` panels.
     pub cursors: [Cursor; 3],
@@ -154,7 +155,7 @@ impl MoveMode {
         } else if self.busy {
             ReviewState::Planning
         } else if let Some(error) = &self.error {
-            ReviewState::Failed(error)
+            ReviewState::Failed(error.message())
         } else if self.to.trim().is_empty() {
             ReviewState::Input("type a destination")
         } else if self.plan.as_ref().is_none_or(|plan| plan.files.is_empty()) {
@@ -173,6 +174,7 @@ impl MoveMode {
             from,
             symbol,
             to,
+            caret: Default::default(),
             plan: None,
             error: None,
             focus: MovePanel::To,
@@ -449,21 +451,31 @@ impl MoveMode {
         }
         self.preview = Some(preview);
     }
-    pub fn plan_failed(&mut self, message: String) {
+    pub fn plan_failed(&mut self, problem: crate::problem::Problem) {
         self.busy = false;
         self.applying = false;
-        self.plan = None;
-        self.error = Some(message);
-    }
-    pub fn failed(&mut self) {
-        self.busy = false;
-        self.applying = false;
+        self.error = Some(problem);
     }
     pub fn toggle_diff(&mut self) {
         self.diff = !self.diff;
         self.detail_scroll = 0;
     }
+    pub fn edit_input(
+        &mut self,
+        edit: crate::input::Edit<'_>,
+        context: &mut ModeContext<'_>,
+    ) -> Vec<Effect> {
+        if self.applying {
+            return Vec::new();
+        }
+        if !crate::input::TextInput::new(&mut self.to, &mut self.caret).apply(edit) {
+            return Vec::new();
+        }
+        context.status.clear();
+        let generation = context.next_generation();
+        self.plan(generation, true)
+    }
     pub fn input(&mut self, c: Option<char>) {
-        crate::input::TextInput::new(&mut self.to).edit(c);
+        crate::input::TextInput::new(&mut self.to, &mut self.caret).edit(c);
     }
 }

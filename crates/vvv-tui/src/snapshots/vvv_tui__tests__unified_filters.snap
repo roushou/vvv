@@ -25,4 +25,4 @@ expression: "FrameFixture::new(&m).render_size(120, 24)"
 │                                                          ││                                                          │
 │                                                          ││                                                          │
 └All 4  [Declaration 1] Imports 2 Use 1 ───────────────────┘└──────────────────────────────────────────────────────────┘
- search ↑/↓ move  ⏎ edit  esc cancel  ctrl+x clear  ctrl+u text                                                 f1 help
+ search ↑/↓ move  ⏎ edit  esc cancel  ctrl+x clear  ctrl+u text  ←/→ caret                                      f1 help

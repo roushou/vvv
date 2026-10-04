@@ -5,8 +5,6 @@
 use std::sync::mpsc::{self, Receiver, Sender};
 use std::thread;
 
-use std::error::Error as _;
-
 use vvv_engine::report::Document;
 use vvv_engine::{
     Answer, Engine, EngineError, FileQuery, Intent, Ledger, MutationAnswer, SearchQuery,
@@ -112,21 +110,15 @@ impl From<EngineError> for Failure {
     }
 }
 
-impl std::fmt::Display for Failure {
-    /// The whole chain, `cause: cause: cause`, the way the CLI prints it.
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Unsupported(what) => f.write_str(what),
-            Self::Engine(error) => {
-                write!(f, "{error}")?;
-                let mut source = error.source();
-                while let Some(cause) = source {
-                    write!(f, ": {cause}")?;
-                    source = cause.source();
-                }
-                Ok(())
+impl Failure {
+    fn problem(self, retry: Effect) -> crate::problem::Problem {
+        let failure = match self {
+            Self::Engine(error) => vvv_engine::Failure::from(&error),
+            Self::Unsupported(what) => {
+                vvv_engine::Failure::new(vvv_engine::ErrorCode::BadRequest, what)
             }
-        }
+        };
+        crate::problem::Problem::new(failure, Some(retry))
     }
 }
 
@@ -137,6 +129,13 @@ impl Runner {
             self.engine.touched();
             return;
         }
+        let retry = effect.clone();
+        let generation = match &effect {
+            Effect::WorkspaceFiles { generation }
+            | Effect::Search { generation, .. }
+            | Effect::Query { generation, .. } => Some(*generation),
+            _ => None,
+        };
         let event = match effect {
             Effect::Definition { ticket, query } => {
                 if self.last_definition.as_ref() == Some(&(ticket, query.clone())) {
@@ -174,12 +173,15 @@ impl Runner {
                 },
                 Err(error) => Event::PlanFailed {
                     generation,
-                    message: error.to_string(),
+                    problem: Box::new(error.problem(retry)),
                 },
             },
             other => match self.execute(other) {
                 Ok(event) => event,
-                Err(error) => Event::Failed(error.to_string()),
+                Err(error) => Event::Failed {
+                    generation,
+                    problem: Box::new(error.problem(retry)),
+                },
             },
         };
         let _ = self.outbox.send(event);
@@ -220,6 +222,12 @@ impl Runner {
 
     fn execute(&self, effect: Effect) -> Result<Event, Failure> {
         Ok(match effect {
+            Effect::WorkspaceFiles { generation } => Event::WorkspaceFiles {
+                generation,
+                paths: vvv_engine::WorkspaceFilesQuery::default()
+                    .execute(&self.engine)?
+                    .paths,
+            },
             Effect::Search {
                 generation,
                 query,
@@ -307,8 +315,8 @@ mod tests {
             debounce: false,
         });
         assert!(
-            matches!(inbox.recv().unwrap(), Event::PlanFailed { generation: 7, message }
-            if message == "the picker plans one command at a time; use `vvv batch`")
+            matches!(inbox.recv().unwrap(), Event::PlanFailed { generation: 7, problem }
+            if problem.message() == "the picker plans one command at a time; use `vvv batch`")
         );
     }
     #[test]

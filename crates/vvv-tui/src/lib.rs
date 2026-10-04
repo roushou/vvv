@@ -18,6 +18,7 @@ mod model;
 mod modes;
 mod overlays;
 mod preferences;
+mod problem;
 mod render;
 mod screen;
 mod tui;

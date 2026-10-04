@@ -8,6 +8,7 @@ use vvv_engine::{NavigationQuery, SymbolRef};
 pub enum BrowsePage {
     #[default]
     Search,
+    Workspace,
     Definition(SymbolRef),
     References,
 }
@@ -15,6 +16,7 @@ pub enum BrowsePage {
 /// Only browsing data is retained; executable mutation plans never enter the trail.
 #[derive(Debug, Clone)]
 pub struct NavigationEntry {
+    workspace: Option<crate::modes::workspace::WorkspaceBrowse>,
     page: BrowsePage,
     query: QueryBar,
     locations: Locations,
@@ -33,7 +35,22 @@ pub struct NavigationEntry {
 
 impl NavigationEntry {
     pub fn label(&self) -> String {
+        if let Some(workspace) = &self.workspace {
+            let path = workspace.file.as_ref().map_or("files", |p| p.as_str());
+            return if workspace.filter.is_empty() {
+                format!("Workspace: {path}")
+            } else {
+                format!("Workspace: {path} · files: {}", workspace.filter)
+            };
+        }
         let context = match self.page {
+            BrowsePage::Workspace => format!(
+                "Workspace: {}",
+                self.workspace
+                    .as_ref()
+                    .and_then(|w| w.file.as_ref())
+                    .map_or("files", |p| p.as_str())
+            ),
             BrowsePage::Search => format!("Search: {}", self.query.text().trim()),
             BrowsePage::Definition(_) => format!(
                 "Definition: {}",
@@ -86,7 +103,12 @@ impl NavigationEntry {
             .source_anchor
             .as_ref()
             .map_or(0, |a| a.path.as_str().len() + 128);
+        bytes += search
+            .workspace
+            .as_ref()
+            .map_or(0, crate::modes::workspace::WorkspaceBrowse::retained_bytes);
         Self {
+            workspace: search.workspace.clone(),
             page: search.page.clone(),
             query: search.query.clone(),
             locations: search.locations.clone(),
@@ -106,6 +128,7 @@ impl NavigationEntry {
     pub fn restore(self, search: &mut Search) {
         let ticket = search.body.next_ticket();
         let viewport = search.body.viewport;
+        search.workspace = self.workspace;
         search.page = self.page;
         search.query = self.query;
         search.locations = self.locations;

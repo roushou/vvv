@@ -26,6 +26,7 @@ pub enum InspectionKind {
 pub struct InspectionEdit {
     pub kind: InspectionKind,
     pub text: String,
+    pub caret: crate::input::Caret,
     pub error: Option<String>,
     term: String,
     cursor: Option<usize>,
@@ -103,6 +104,7 @@ impl Inspection {
             } else {
                 String::new()
             },
+            caret: Default::default(),
             error: None,
             term: self.term.clone(),
             cursor: self.cursor,
@@ -119,13 +121,25 @@ impl Inspection {
         preview: &FilePreview,
         range: Span,
     ) -> Option<usize> {
-        let edit = self.edit.as_mut()?;
-        if clear {
-            edit.text.clear();
-        } else if let Some(c) = character {
-            edit.text.push(c);
+        let text = character.map(|c| c.to_string());
+        let edit = if clear {
+            crate::input::Edit::Clear
+        } else if let Some(text) = &text {
+            crate::input::Edit::Insert(text)
         } else {
-            edit.text.pop();
+            crate::input::Edit::Command(crate::input::EditCommand::Backspace)
+        };
+        self.edit_input(edit, preview, range)
+    }
+    pub fn edit_input(
+        &mut self,
+        input: crate::input::Edit<'_>,
+        preview: &FilePreview,
+        range: Span,
+    ) -> Option<usize> {
+        let edit = self.edit.as_mut()?;
+        if !crate::input::TextInput::new(&mut edit.text, &mut edit.caret).apply(input) {
+            return None;
         }
         edit.error = None;
         if edit.kind != InspectionKind::Find {

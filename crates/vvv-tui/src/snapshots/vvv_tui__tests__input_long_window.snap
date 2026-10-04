@@ -1,0 +1,20 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: "FrameFixture::new(&m).render_size(50, 16)"
+---
+┌ vvv ~/dev/nx ─────────────── Query · searching ┐
+│> …crates/vvv/src/deeply/nested/destination.▏…  │
+└ 2/2 · symbol: trait · category: declarations ──┘
+┌ Files ── 0/0 · 0 hits ┐┌ source ───────────────┐
+│ no result files       ││                       │
+├ Matches ───────── 0/0 ┤│                       │
+│ searching…            ││                       │
+│                       ││                       │
+│                       ││                       │
+│                       ││                       │
+│                       ││                       │
+│                       ││                       │
+│                       ││                       │
+│                       ││                       │
+└ Declarations 0 ───────┘└───────────────────────┘
+ search … ⏎ results  ctrl+g filters       f1 help

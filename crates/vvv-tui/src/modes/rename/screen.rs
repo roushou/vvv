@@ -287,15 +287,12 @@ impl<'a> RenameView<'a> {
             ),
             t.key,
         )))
-        .line(Line::from(vec![
-            Span::styled(format!(" {} → ", r.target.name), t.symbol),
-            if r.name.is_empty() {
-                Span::styled("new name", t.dim)
-            } else {
-                Span::raw(r.name.clone())
-            },
-            t.caret(focused),
-        ]))
+        .input(
+            Line::from(Span::styled(format!(" {} → ", r.target.name), t.symbol)),
+            &r.name,
+            &r.caret,
+            "new name",
+        )
         .bottom(bottom)
     }
 
@@ -347,6 +344,10 @@ impl<'a> RenameView<'a> {
 
     fn detail(&self, area: Rect, buf: &mut Buffer) {
         let (r, t) = (self.mode, self.painter);
+        if let Some(problem) = &r.error {
+            problem.pane(t, r.focus == RenamePanel::Detail, area, buf);
+            return;
+        }
         let current = r.current();
         let diff = current
             .and_then(|o| r.file(o))

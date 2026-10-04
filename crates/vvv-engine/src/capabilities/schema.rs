@@ -278,6 +278,7 @@ impl SchemaDocument {
             Command::Impact => contract!(crate::Impact),
             Command::Dead => contract!(crate::Dead),
             Command::Imports => contract!(crate::ImportsReport),
+            Command::WorkspaceFiles => contract!(crate::WorkspaceFiles),
             Command::File => contract!(crate::File),
             Command::Rewrite => contract!(crate::Rewrite),
             Command::Rename => contract!(crate::Rename),

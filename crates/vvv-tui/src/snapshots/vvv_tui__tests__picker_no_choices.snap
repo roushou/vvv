@@ -21,4 +21,4 @@ expression: "FrameFixture::new(&m).render()"
 │                                           ││                                           │
 │                                           ││                                           │
 └All 0 Decl 0 Imp 0  [Uses 0] ──────────────┘└───────────────────────────────────────────┘
- search ↑/↓ move  ⏎ choose  esc cancel  ctrl+x clear  ctrl+u text                 f1 help
+ search ↑/↓ move  ⏎ choose  esc cancel  ctrl+x clear  ctrl+u text  ←/→ caret      f1 help

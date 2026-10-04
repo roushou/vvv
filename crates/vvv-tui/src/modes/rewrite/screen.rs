@@ -213,15 +213,12 @@ impl<'a> RewriteView<'a> {
                 ),
                 t.key,
             )))
-            .line(Line::from(vec![
-                Span::styled(" template: ", t.dim),
-                if rw.template.is_empty() {
-                    Span::styled("replacement", t.dim)
-                } else {
-                    Span::raw(rw.template.clone())
-                },
-                t.caret(focused),
-            ]))
+            .input(
+                Line::from(Span::styled(" template: ", t.dim)),
+                &rw.template,
+                &rw.caret,
+                "replacement",
+            )
             .bottom(bottom)
     }
 
@@ -266,6 +263,10 @@ impl<'a> RewriteView<'a> {
 
     fn detail(&self, area: Rect, buf: &mut Buffer) {
         let (rw, t) = (self.mode, self.painter);
+        if let Some(problem) = &rw.error {
+            problem.pane(t, rw.focus == RewritePanel::Detail, area, buf);
+            return;
+        }
         let current = rw.current();
         let mut pane = Pane::new(
             t,

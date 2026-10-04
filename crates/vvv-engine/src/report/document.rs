@@ -79,6 +79,7 @@ impl Document {
             Answer::Dead(r) => Self::dead(r),
             Answer::Imports(r) => Self::imports(r),
             // The file answer is the picker's; no CLI command asks for one.
+            Answer::WorkspaceFiles(files) => Self::workspace_files(files),
             Answer::File(_) => Self::new(),
             Answer::Rewrite(r) => Self::rewrite(r),
             Answer::Rename(r) => Self::rename(r),

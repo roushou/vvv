@@ -8,6 +8,53 @@ use vvv_engine::{
 };
 
 #[test]
+fn workspace_inventory_is_sorted_relative_and_includes_unclaimed_files() {
+    let engine = Engine::new(
+        Workspace::new(
+            "/ws",
+            Arc::new(
+                MemoryVfs::new()
+                    .with_file("/ws/z.p", "def Z")
+                    .with_file("/ws/docs/readme.md", "read me")
+                    .with_file("/ws/a.p", "def A"),
+            ),
+        ),
+        Languages::new().with(Fake::default()),
+    );
+    let Answer::WorkspaceFiles(files) = engine
+        .run(Request::WorkspaceFiles(
+            vvv_engine::WorkspaceFilesQuery::default(),
+        ))
+        .unwrap()
+        .into_answer()
+    else {
+        panic!()
+    };
+    assert_eq!(
+        files.paths,
+        vec![
+            vvv_engine::RelPath::from("a.p"),
+            "docs/readme.md".into(),
+            "z.p".into()
+        ]
+    );
+    for path in &files.paths {
+        assert!(!path.is_absolute());
+    }
+    assert_eq!(
+        serde_json::to_value(&files).unwrap(),
+        serde_json::json!({"paths": ["a.p", "docs/readme.md", "z.p"]})
+    );
+    assert_eq!(
+        vvv_engine::WorkspaceFilesQuery::default()
+            .execute(&engine)
+            .unwrap(),
+        files
+    );
+    assert!(Request::WorkspaceFiles(vvv_engine::WorkspaceFilesQuery::default()).is_read_only());
+}
+
+#[test]
 fn file_preview_includes_declarations_and_finds_the_nearest_enclosing_enum() {
     let text = "def outer\n    def inner\n        def variant\ndef unrelated";
     let inner_start = text.find("def inner").unwrap();

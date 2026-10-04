@@ -31,4 +31,4 @@ expression: pending
 │                                                          ││                                                          │
 │                                                          ││                                                          │
 └ [All 3] Declarations 0 Imports 0 Uses 3 ─────────────────┘└ updating ────────────────────────────────────────────────┘
- search ⏎ results  ctrl+n ctrl+p files  ctrl+g filters  ctrl+o places  ctrl+r refresh  tab panes                f1 help
+ search ⏎ results  ctrl+n ctrl+p files  ctrl+g filters  ctrl+o places  ctrl+r refresh  ctrl+b workspace         f1 help

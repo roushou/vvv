@@ -88,6 +88,11 @@ impl<A: Copy> Keybinding<A> {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum When {
     Always,
+    InputFocused,
+    ReportViewAvailable,
+    Recoverable,
+    RecoveryFile,
+    Problem,
     /// The search query holds nothing.
     QueryEmpty,
     /// The search query holds something.

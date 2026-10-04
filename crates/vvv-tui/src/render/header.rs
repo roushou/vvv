@@ -15,6 +15,7 @@ pub struct Header<'a> {
     right: Line<'a>,
     bottom: Line<'a>,
     lines: Vec<Line<'a>>,
+    input: Option<(Line<'a>, String, crate::input::Caret, String)>,
 }
 
 impl<'a> Header<'a> {
@@ -26,6 +27,7 @@ impl<'a> Header<'a> {
             right: Line::default(),
             bottom: Line::default(),
             lines: Vec::new(),
+            input: None,
         }
     }
 
@@ -34,11 +36,21 @@ impl<'a> Header<'a> {
         self
     }
 
-    pub fn line(mut self, line: Line<'a>) -> Self {
-        self.lines.push(line);
+    pub fn input(
+        mut self,
+        prefix: Line<'a>,
+        text: &str,
+        caret: &crate::input::Caret,
+        placeholder: &str,
+    ) -> Self {
+        self.input = Some((
+            prefix,
+            text.to_owned(),
+            caret.clone(),
+            placeholder.to_owned(),
+        ));
         self
     }
-
     pub fn bottom(mut self, bottom: Line<'a>) -> Self {
         self.bottom = bottom;
         self
@@ -46,7 +58,7 @@ impl<'a> Header<'a> {
 
     /// Rows the header takes: its lines plus the border.
     pub fn height(&self) -> u16 {
-        self.lines.len() as u16 + 2
+        self.lines.len() as u16 + 2 + u16::from(self.input.is_some())
     }
 
     /// Split `area` into the header's rows and the rest.
@@ -118,6 +130,32 @@ impl Widget for Header<'_> {
             right.spans.push(Span::raw(" "));
         }
         let mut lines = self.lines;
+        if let Some((mut prefix, text, caret, placeholder)) = self.input {
+            if prefix.width() > width / 3 {
+                prefix = Line::from(Span::styled(
+                    Fit(&prefix.to_string(), width / 3).to_string(),
+                    self.painter.dim,
+                ));
+            }
+            let available = width.saturating_sub(prefix.width());
+            prefix.spans.extend(
+                caret
+                    .line(&text, self.painter, self.focused, available)
+                    .spans,
+            );
+            if text.is_empty() {
+                prefix.spans.push(Span::styled(
+                    Fit(
+                        &placeholder,
+                        available.saturating_sub(usize::from(self.focused)),
+                    )
+                    .to_string(),
+                    self.painter.dim,
+                ));
+            }
+            lines.push(prefix);
+        }
+
         let bottom = if let Some(wrapped) = wrapped {
             lines.extend(wrapped);
             Line::default()

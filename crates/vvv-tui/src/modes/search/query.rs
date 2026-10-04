@@ -11,11 +11,15 @@ use vvv_engine::{LanguageId, Query, QueryError, SymbolKind};
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub struct QueryBar {
     text: String,
+    pub caret: crate::input::Caret,
 }
 
 impl From<String> for QueryBar {
     fn from(text: String) -> Self {
-        Self { text }
+        Self {
+            text,
+            caret: Default::default(),
+        }
     }
 }
 
@@ -48,20 +52,24 @@ impl Filter {
 }
 
 impl QueryBar {
+    pub fn edit(&mut self, edit: crate::input::Edit<'_>) -> bool {
+        crate::input::TextInput::new(&mut self.text, &mut self.caret).apply(edit)
+    }
     pub fn text(&self) -> &str {
         &self.text
     }
 
     pub fn push(&mut self, c: char) {
-        self.text.push(c);
+        crate::input::TextInput::new(&mut self.text, &mut self.caret).edit(Some(c));
     }
 
     pub fn pop(&mut self) {
-        self.text.pop();
+        crate::input::TextInput::new(&mut self.text, &mut self.caret).edit(None);
     }
 
     pub fn clear(&mut self) {
         self.text.clear();
+        self.caret.reset();
     }
 
     pub fn is_empty(&self) -> bool {
@@ -88,6 +96,7 @@ impl QueryBar {
         if let Some(value) = value {
             words.push(format!("{}:{value}", filter.keys()[0]));
         }
+        self.caret.reset();
         self.text = words.join(" ");
         if !self.text.is_empty() {
             self.text.push(' ');
@@ -149,6 +158,7 @@ mod tests {
     fn bar(text: &str) -> QueryBar {
         QueryBar {
             text: text.to_owned(),
+            caret: Default::default(),
         }
     }
 

@@ -55,6 +55,7 @@ pub enum Request {
     Impact(ImpactQuery),
     Dead(DeadQuery),
     Imports(ImportsQuery),
+    WorkspaceFiles(crate::WorkspaceFilesQuery),
     File(FileQuery),
     Rewrite {
         #[serde(flatten)]
@@ -134,6 +135,7 @@ impl Request {
             Self::Impact(_) => super::Command::Impact,
             Self::Dead(_) => super::Command::Dead,
             Self::Imports(_) => super::Command::Imports,
+            Self::WorkspaceFiles(_) => super::Command::WorkspaceFiles,
             Self::File(_) => super::Command::File,
             Self::Rewrite { .. } => super::Command::Rewrite,
             Self::Rename { .. } => super::Command::Rename,
@@ -187,6 +189,7 @@ pub enum Answer {
     Impact(Impact),
     Dead(Dead),
     Imports(ImportsReport),
+    WorkspaceFiles(crate::WorkspaceFiles),
     File(File),
     Rewrite(Rewrite),
     Rename(Rename),

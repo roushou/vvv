@@ -11,6 +11,7 @@ use crate::model::FilePreview;
 
 #[derive(Debug, Clone, Default)]
 pub struct Body {
+    pub problem: Option<crate::problem::Problem>,
     pub preview: Option<FilePreview>,
     pub scroll: usize,
     pub inspection: super::inspection::Inspection,
@@ -72,6 +73,7 @@ impl Body {
             return;
         }
         self.ticket = self.ticket.wrapping_add(1);
+        self.problem = None;
         self.selected = Some(selected);
         self.pending = true;
     }
@@ -126,6 +128,7 @@ impl Body {
                     },
                 ..
             }) => {
+                self.problem = None;
                 self.target = Some(target);
                 let same = self.container.as_ref() == Some(&preview.container);
                 let changed_selection = self.shown.as_ref().is_none_or(|d| {
@@ -164,6 +167,17 @@ impl Body {
                         self.scroll = row.saturating_sub(height.saturating_sub(1));
                     }
                 }
+            }
+            Err(failure) => {
+                self.message = Some(failure.message.clone());
+                self.problem = Some(crate::problem::Problem::new(
+                    failure,
+                    Some(crate::action::Effect::Definition {
+                        ticket,
+                        query: query.clone(),
+                    }),
+                ));
+                self.target = None;
             }
             other => {
                 self.target = None;

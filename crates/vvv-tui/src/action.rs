@@ -50,6 +50,7 @@ pub enum Action {
     ToggleAll,
     /// Edit the mode's input: the query, a new name, a destination, a template.
     Input(char),
+    InputEdit(crate::input::EditCommand),
     Backspace,
     Clear,
     /// The one thing the status bar names for `⏎`.
@@ -76,7 +77,9 @@ pub enum Action {
     Edit,
     /// Follow a result, or pick an identifier in the focused source pane.
     Follow,
+    Workspace,
     Refresh,
+    Recover,
     BrowseBack,
     BrowseForward,
     Places,
@@ -87,8 +90,11 @@ pub enum Action {
 
 /// Work for the engine, run off the UI thread — except `Edit`, which the
 /// event loop runs itself since it owns the terminal.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Effect {
+    WorkspaceFiles {
+        generation: u64,
+    },
     Search {
         generation: u64,
         query: Query,
@@ -141,6 +147,11 @@ pub enum Effect {
 /// The engine's answer to an [`Effect`].
 #[derive(Debug, Clone)]
 pub enum Event {
+    WorkspaceFiles {
+        generation: u64,
+        paths: Vec<RelPath>,
+    },
+    Paste(String),
     Pointer(crate::modes::search::files::Pointer),
     Viewport {
         width: u16,
@@ -183,7 +194,7 @@ pub enum Event {
     /// is, not as a failure of the session.
     PlanFailed {
         generation: u64,
-        message: String,
+        problem: Box<crate::problem::Problem>,
     },
     /// Written as history entry `id`.
     Applied {
@@ -194,7 +205,10 @@ pub enum Event {
     },
     History(Vec<HistoryEntry>),
     Undone(HistoryEntry),
-    Failed(String),
+    Failed {
+        generation: Option<u64>,
+        problem: Box<crate::problem::Problem>,
+    },
 }
 
 /// A planned intent with what its mode shows about it.

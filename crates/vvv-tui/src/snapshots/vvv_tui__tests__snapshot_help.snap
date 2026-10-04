@@ -4,21 +4,21 @@ expression: "FrameFixture::new(&m).render()"
 ---
 ┌ Help · Search · Query ─────────────────────────────────────────────────────────────────┐
 │ Search                                                                                 │
-│          ↓ ⏎  results                                                                  │
-│          esc  clear                                                                    │
-│         bksp  erase                                                                    │
-│ctrl+n ctrl+p  switch files without leaving the query                                   │
-│       typing  a name, an ast-grep pattern, or filters: symbol:trait name:Foo           │
-│               kind:impl_item lang:rust                                                 │
-│       ctrl+g  edit or clear filters; reset restrictions while keeping the query        │
-│       ctrl+o  open browsing trail and recent searches                                  │
-│       ctrl+f  choose result location                                                   │
-│       ctrl+s  choose declaration kind                                                  │
-│       ctrl+t  choose result category                                                   │
-│       ctrl+l  choose language                                                          │
-│       ctrl+r  refresh search after source changes                                      │
+│             ↓ ⏎  results                                                               │
+│             esc  clear                                                                 │
+│            bksp  erase                                                                 │
+│   ctrl+n ctrl+p  switch files without leaving the query                                │
+│          typing  a name, an ast-grep pattern, or filters: symbol:trait name:Foo        │
+│                  kind:impl_item lang:rust                                              │
+│          ctrl+g  edit or clear filters; reset restrictions while keeping the query     │
+│          ctrl+o  open browsing trail and recent searches                               │
+│          ctrl+f  choose result location                                                │
+│          ctrl+s  choose declaration kind                                               │
+│          ctrl+t  choose result category                                                │
+│          ctrl+l  choose language                                                       │
+│          ctrl+r  refresh search after source changes                                   │
+│          ctrl+b  browse workspace files and their outlines without changing the search │
 │ Everywhere                                                                             │
-│    tab s-tab  next / previous panel                                                    │
-│           f1  help for the focused pane; press again to return                         │
+│       tab s-tab  next / previous panel                                                 │
 └────────────────────────────────────────────────────────────────────────────────────────┘
  search j/k scroll  any key close                                               f1 return

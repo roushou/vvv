@@ -35,7 +35,7 @@
 //! | `batch` | `batch.rs` |
 //! | `history` | `history.rs` |
 //! | `undo` | `history.rs` |
-//! | `file` (picker request) | `capabilities/file.rs` |
+//! | `file`, `workspace_files` | `capabilities/file.rs` |
 
 pub(crate) mod declarations;
 pub(crate) mod file;

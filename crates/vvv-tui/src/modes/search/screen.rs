@@ -319,6 +319,18 @@ const MODE: Layer<Action> = Layer {
                 help: "quit",
             },
         },
+        Keybinding {
+            triggers: &[Trigger::Key(Key::ctrl('b'))],
+            dispatch: Run(A::Workspace),
+            when: When::Always,
+            legend: Legend {
+                bar: Some(Bar {
+                    keys: "ctrl+b",
+                    word: "workspace",
+                }),
+                help: "browse workspace files and their outlines without changing the search",
+            },
+        },
     ],
 };
 
@@ -1192,6 +1204,15 @@ impl<'a> SearchView<'a> {
         self.context(area, buf);
     }
     fn draw_body(&self, area: Rect, buf: &mut Buffer) {
+        if let Some(problem) = &self.search.body.problem {
+            problem.pane(
+                self.painter,
+                self.search.focus == SearchPanel::Body,
+                area,
+                buf,
+            );
+            return;
+        }
         if area.is_empty() {
             return;
         }
@@ -1266,11 +1287,6 @@ impl<'a> SearchView<'a> {
         } else {
             "search"
         };
-        let placeholder = if s.query.is_empty() && !focused {
-            Span::styled("type to search", t.dim)
-        } else {
-            Span::raw("")
-        };
         let right = format!("Query · {right}");
         let available =
             width.saturating_sub(Line::from(right.as_str()).width() as u16 + 12) as usize;
@@ -1286,12 +1302,12 @@ impl<'a> SearchView<'a> {
         Header::new(t, focused, Line::from(title))
             .right(Line::from(Span::styled(right, t.dim)))
             .bottom(self.restrictions())
-            .line(Line::from(vec![
-                Span::styled("> ", t.key),
-                Span::raw(s.query.text().to_owned()),
-                t.caret(focused),
-                placeholder,
-            ]))
+            .input(
+                Line::from(Span::styled("> ", t.key)),
+                s.query.text(),
+                &s.query.caret,
+                "type to search",
+            )
     }
 
     fn restrictions(&self) -> Line<'static> {
@@ -1623,11 +1639,17 @@ impl<'a> SearchView<'a> {
             )
         };
         let prefix = if filtering {
-            vec![Line::from(vec![
-                Span::styled(" files: ", t.dim),
-                Span::raw(Fit(&s.results.files.filter, width.saturating_sub(9)).to_string()),
-                t.caret(editing),
-            ])]
+            vec![{
+                let mut line = Line::from(Span::styled(" files: ", t.dim));
+                line.spans.extend(
+                    s.results
+                        .files
+                        .caret
+                        .line(&s.results.files.filter, t, editing, width.saturating_sub(8))
+                        .spans,
+                );
+                line
+            }]
         } else {
             Vec::new()
         };
@@ -1784,27 +1806,14 @@ impl<'a> SearchView<'a> {
             };
             let budget =
                 width.saturating_sub(Span::raw(prefix).width() + Span::raw(&suffix).width() + 3);
-            let mut used = 0;
-            let text: String = edit
-                .text
-                .chars()
-                .rev()
-                .take_while(|c| {
-                    used += Span::raw(c.to_string()).width();
-                    used <= budget
-                })
-                .collect::<String>()
-                .chars()
-                .rev()
-                .collect();
-            return Line::from(vec![
-                Span::raw(" "),
-                Span::styled(prefix, t.key),
-                Span::raw(text),
-                t.caret(true),
-                Span::styled(suffix, if edit.error.is_some() { t.error } else { t.dim }),
-                Span::raw(" "),
-            ]);
+            let mut spans = vec![Span::raw(" "), Span::styled(prefix, t.key)];
+            spans.extend(edit.caret.line(&edit.text, t, true, budget + 1).spans);
+            spans.push(Span::styled(
+                suffix,
+                if edit.error.is_some() { t.error } else { t.dim },
+            ));
+            spans.push(Span::raw(" "));
+            return Line::from(spans);
         }
         let mut parts = Vec::new();
         if !inspection.term.is_empty() {
@@ -1889,6 +1898,15 @@ impl<'a> SearchView<'a> {
     /// What the cursor row is, then the file around it.
     fn context(&self, area: Rect, buf: &mut Buffer) {
         let (s, t) = (self.search, self.painter);
+        if let Some(problem) = &self.search.problem {
+            problem.pane(
+                self.painter,
+                self.search.focus == SearchPanel::Context,
+                area,
+                buf,
+            );
+            return;
+        }
         if area.is_empty() {
             return;
         }

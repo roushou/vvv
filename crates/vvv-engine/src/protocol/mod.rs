@@ -28,7 +28,7 @@ pub use crate::batch::Batch;
 pub use crate::capabilities::declarations::{
     Locations, Outline, OutlineItem, OutlineQuery, Site, WhereQuery,
 };
-pub use crate::capabilities::file::{File, FileQuery};
+pub use crate::capabilities::file::{File, FileQuery, WorkspaceFiles, WorkspaceFilesQuery};
 pub use crate::capabilities::imports::{
     Deps, DepsQuery, ExplainQuery, Explanation, ImportSite, ImportsQuery, ImportsReport,
 };

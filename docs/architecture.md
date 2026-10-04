@@ -145,6 +145,12 @@ execution bodies. It acquires the graph only for source-tree questions and
 planning. History, undo, retained-plan apply, and file preview do not refresh the
 tree. The engine owns orchestration, not capability behavior.
 
+`WorkspaceFilesQuery` returns the fresh visible workspace inventory as sorted,
+deduplicated `RelPath` values. It shares the file capability, uses the workspace
+walk without a language restriction, and needs no graph or parser. Workspace
+browsing in the TUI filters this data locally and uses `FileQuery` for text and
+outline declarations from one source snapshot.
+
 The file capability retains up to 32 parsed previews within a conservative 64 MiB
 payload budget, shared by engine clones. Every file request first reads current
 contents and checks their complete digest; graph trust, timestamps, and explicit
@@ -711,14 +717,16 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
   Common cursor, panel-focus, and file-preview types keep their methods here.
   `Model::mode_screen()`/`overlay_screen()` select screen metadata;
   `Model::focus()` returns the focused panel's index.
-  `Model::action_for(event)` resolves through the global, focused-panel, screen,
+  `Model::action_for(event)` resolves through the global, recovery, input-editing, focused-panel, screen,
   panel-default, and navigation key layers. `Model::update` routes application
   actions to the selected mode; `Model::on_event` checks generations before
   delivering answers. Both are pure and return effects. Entering a mode sends its
   first plan without debounce and sets `arriving`; `Model::shown` retains the
   search screen until that plan answers.
 - `modes/<name>/mod.rs` — each mode's state and methods, including action and event
-  transitions (`rename`, `moves`, `rewrite`, `history`, `search`). Its `screen.rs`
+  transitions (`rename`, `moves`, `rewrite`, `history`, `search`). Workspace browsing
+  owns its state and typed screen in `modes/workspace/`, retained as a search browsing
+  page so the existing trail restores both workspace and search contexts. Its `screen.rs`
   defines a separate view type with its rendering methods. Search's `query.rs`
   owns the query bar; `files.rs` owns fuzzy file ranking, filter edits, file and match viewports, remembered
   occurrence selections, and stable pointer targets; `locations.rs` keeps result scope and directory suggestions
@@ -754,7 +762,13 @@ builds the `Document` (`vvv_engine::report`) from the applied `Answer`, and
   recent-recipe picker.
 - `modes/context.rs` — shared status and generation borrowed by a mode transition,
   without access to `Model` or another mode. `input.rs` holds `TextInput`, which
-  edits a borrowed string buffer for name, destination, and template inputs.
+  edits a borrowed string buffer and its owning input’s `Caret` across queries,
+  filters, pickers, inspection, and mutation inputs. Grapheme and word motion are
+  pure and do not trigger effects; a paste is one edit.
+- `problem.rs` — structured engine failures, retained retry effects, recovery paths,
+  and problem-pane scrolling. Mode transitions rebuild previews rather than
+  repeating failed writes. The footer derives available recovery actions from
+  these facts.
 - `render/` — the drawing primitives the screens compose. `Painter` owns the
   palette `Theme` and answers the drawing questions with one receiver (`caret`,
   `site`, `hit`, `line`, `source_window`); the colour policy is reachable through

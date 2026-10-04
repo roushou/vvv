@@ -3,6 +3,48 @@ use crate::EngineError;
 use serde::{Deserialize, Serialize};
 use vvv_core::{Highlight, RelPath, Span, Symbol, SymbolKind};
 
+/// The workspace's visible files, independent of registered languages.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct WorkspaceFilesQuery {}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]
+pub struct WorkspaceFiles {
+    pub paths: Vec<RelPath>,
+}
+
+impl WorkspaceFilesQuery {
+    pub fn execute(self, engine: &crate::Engine) -> Result<WorkspaceFiles, EngineError> {
+        let _operation = engine.operation();
+        self.execute_in(engine)
+    }
+    pub(crate) fn execute_in(self, engine: &crate::Engine) -> Result<WorkspaceFiles, EngineError> {
+        let workspace = engine.workspace();
+        let mut paths: Vec<RelPath> = workspace
+            .files()?
+            .into_iter()
+            .map(|path| RelPath::from(workspace.normalize(&path)))
+            .collect();
+        paths.sort();
+        paths.dedup();
+        Ok(WorkspaceFiles { paths })
+    }
+}
+
+impl crate::report::Document {
+    pub(crate) fn workspace_files(files: &WorkspaceFiles) -> Self {
+        let mut document = Self::new();
+        for path in &files.paths {
+            document.body([crate::protocol::display::Line::single(
+                crate::protocol::display::Role::Path,
+                path.to_string(),
+            )]);
+        }
+        document
+    }
+}
+
 /// One file as it is now, with its syntax colouring: what a picker shows.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "schema", derive(schemars::JsonSchema))]

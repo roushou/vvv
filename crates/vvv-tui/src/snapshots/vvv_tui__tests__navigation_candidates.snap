@@ -3,9 +3,9 @@ source: crates/vvv-tui/src/tests.rs
 expression: "FrameFixture::new(&m).render()"
 ---
 ┌ vvv ~/dev/nx ────────────────────────────────────────────────────────── Query · search ┐
-│> Al┌ Choose definition ────────────────────────────────────────────────────────────┐   │
-└ wor│Filter:   (1 choice)                                                           │───┘
-┌ Fil│struct Beta  one.rs:1:1                                                        │–4 ┐
+│> Al┌ Choose definition ──────────────────────────────────────────────── 1/1 choice ┐   │
+└ wor│Filter: ▏                                                                      │───┘
+┌ Fil│struct Beta  one.rs:1:1                                                        │───┐
 │> a.│                                                                               │   │
 │    │                                                                               │   │
 ├ Mat│                                                                               │   │
@@ -21,4 +21,4 @@ expression: "FrameFixture::new(&m).render()"
 │    │                                                                               │   │
 │    │                                                                               │   │
 └ [Al└───────────────────────────────────────────────────────────────────────────────┘───┘
- search ↑/↓ move  ⏎ follow  esc cancel                                            f1 help
+ search ↑/↓ move  ⏎ follow  esc cancel  ctrl+u clear  ←/→ caret                   f1 help

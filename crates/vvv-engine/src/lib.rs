@@ -64,7 +64,8 @@ pub use protocol::{
     Recovery, RecoveryEffect, RecoveryIssue, RecoveryOperation, RecoveryState, RecoveryUnverified,
     References, ReferencesQuery, Reply, Request, Respelling, Rewrite, RewriteIntent, RewriteOf,
     Search, SearchQuery, SearchScope, Selection, SelectionError, Site, Skipped, Surface,
-    SurfaceQuery, Template, TemplateError, Undo, Unreferenced, WhereQuery,
+    SurfaceQuery, Template, TemplateError, Undo, Unreferenced, WhereQuery, WorkspaceFiles,
+    WorkspaceFilesQuery,
 };
 pub use vfs::{
     DiskVfs, EntryKind, MemoryVfs, MoveError, MoveState, ParentCreation, Stamp, Vfs, VfsError,

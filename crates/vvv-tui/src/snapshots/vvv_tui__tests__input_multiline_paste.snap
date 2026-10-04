@@ -1,0 +1,20 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: "FrameFixture::new(&m).render_size(50, 16)"
+---
+┌ Rewrite ─────────────── 4/4 selected · 3 files ┐
+│ template: $BODY↵next↵▏                         │
+└ pattern: Language · updating preview ──────────┘
+┌ Matches ───────── 1/4 ┐┌ Diff ─────────────────┐
+│  src/lang/mod.rs      ││ src/lang/mod.rs:64    │
+│> ▪ 64 pub trait Langu…││ Updating preview      │
+│  src/lang/registry.rs ││                       │
+│  ▪  4 …::{Language, … ││                       │
+│  src/lib.rs           ││                       │
+│  ▪ 26 …::{Language, … ││                       │
+│  ▪ 41 Language::new() ││                       │
+│                       ││                       │
+│                       ││                       │
+│                       ││                       │
+└ 4/4 selected ─────────┘└ updating preview ─────┘
+ rewrite ↓/tab matches  ctrl+u clear      f1 help

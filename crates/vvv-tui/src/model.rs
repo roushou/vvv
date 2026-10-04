@@ -89,6 +89,29 @@ impl Model {
     pub fn holds(&self, when: When) -> bool {
         match when {
             When::Always => true,
+            When::Recoverable => {
+                self.overlay.is_none()
+                    && !self.status.busy
+                    && !self.mode.busy()
+                    && self
+                        .problem()
+                        .is_some_and(crate::problem::Problem::can_retry)
+            }
+            When::Problem => {
+                !matches!(self.mode, Mode::History(_))
+                    && self.overlay.is_none()
+                    && !self.input_focused()
+                    && self.problem().is_some_and(|p| p.failure.recovery.is_none())
+            }
+            When::RecoveryFile => {
+                self.overlay.is_none()
+                    && !self.input_focused()
+                    && self.problem().is_some_and(|p| p.site().is_some())
+            }
+            When::ReportViewAvailable => {
+                !matches!(self.mode, Mode::Search) || self.search.workspace.is_none()
+            }
+            When::InputFocused => self.input_focused(),
             When::PlacesRecent => matches!(&self.overlay, Some(Overlay::Places(p)) if p.recent),
             When::BrowseBack => self.search.trail.can_travel(false),
             When::BrowseForward => self.search.trail.can_travel(true),
@@ -152,6 +175,8 @@ impl Model {
             } else {
                 "choose"
             }.to_owned(),
+            (Action::Recover, Mode::Search) => "refresh".into(),
+            (Action::Recover, _) => "rebuild preview".into(),
             (Action::Enter, Mode::Rename(r)) => {
                 if r.state() == crate::modes::review::ReviewState::Ready {
                     format!("apply {} in {}", r.ticks.len(), files(r.files()))
@@ -182,6 +207,7 @@ impl Model {
                 "expand"
             }
             .to_owned(),
+            (Action::Back, Mode::Search) if self.search.workspace.is_some() => "search".into(),
             (Action::Back, Mode::Search) => if self.search.expanded.is_some() {
                 "restore"
             } else {
@@ -246,7 +272,150 @@ impl Model {
         }
     }
 
+    pub fn problem(&self) -> Option<&crate::problem::Problem> {
+        match &self.mode {
+            Mode::Search => self
+                .search
+                .problem
+                .as_ref()
+                .or(self.search.body.problem.as_ref()),
+            Mode::Rename(r) => r.error.as_ref(),
+            Mode::Move(m) => m.error.as_ref(),
+            Mode::Rewrite(r) => r.error.as_ref(),
+            Mode::History(_) => self.status.problem.as_ref(),
+        }
+    }
+    fn problem_mut(&mut self) -> Option<&mut crate::problem::Problem> {
+        match &mut self.mode {
+            Mode::Search => {
+                if self.search.problem.is_some() {
+                    self.search.problem.as_mut()
+                } else {
+                    self.search.body.problem.as_mut()
+                }
+            }
+            Mode::Rename(r) => r.error.as_mut(),
+            Mode::Move(m) => m.error.as_mut(),
+            Mode::Rewrite(r) => r.error.as_mut(),
+            Mode::History(_) => self.status.problem.as_mut(),
+        }
+    }
+    fn recover(&mut self) -> Vec<Effect> {
+        if self.status.busy || self.mode.busy() {
+            return Vec::new();
+        }
+        let Some(problem) = self.problem().filter(|p| p.can_retry()) else {
+            return Vec::new();
+        };
+        let retry = problem.retry.clone();
+        self.status.clear();
+        let generation = self.next_generation();
+        let mut context = ModeContext {
+            status: &mut self.status,
+            generation: &mut self.generation,
+        };
+        match &mut self.mode {
+            Mode::Search => {
+                self.search.problem = None;
+                if matches!(retry, Some(Effect::History | Effect::Undo)) {
+                    context.status.busy = true;
+                    return retry.into_iter().collect();
+                }
+                self.search.update(Action::Refresh, &mut context)
+            }
+            Mode::Rename(r) => r.plan(generation, false),
+            Mode::Move(m) => m.plan(generation, false),
+            Mode::Rewrite(r) => r.plan(generation),
+            Mode::History(_) => {
+                self.status.busy = true;
+                retry.into_iter().collect()
+            }
+        }
+    }
+    pub fn input_focused(&self) -> bool {
+        if let Some(overlay) = &self.overlay {
+            return matches!(
+                overlay,
+                Overlay::Menu(_) | Overlay::Places(_) | Overlay::Navigation(_)
+            );
+        }
+        match &self.mode {
+            Mode::Search => self.search.input_focused(),
+            Mode::Rename(r) => r.focus == crate::modes::rename::RenamePanel::Name,
+            Mode::Move(m) => m.focus == crate::modes::moves::MovePanel::To,
+            Mode::Rewrite(r) => r.focus == crate::modes::rewrite::RewritePanel::Template,
+            Mode::History(_) => false,
+        }
+    }
+    fn edit_input(&mut self, edit: crate::input::Edit<'_>) -> Vec<Effect> {
+        if let Some(overlay) = &mut self.overlay {
+            overlay.edit_input(edit);
+            return Vec::new();
+        }
+        let mut context = ModeContext {
+            status: &mut self.status,
+            generation: &mut self.generation,
+        };
+        let effects = match &mut self.mode {
+            Mode::Search => self.search.edit_input(edit, &mut context),
+            Mode::Rename(r) => r.edit_input(edit, &mut context),
+            Mode::Move(m) => m.edit_input(edit, &mut context),
+            Mode::Rewrite(r) => r.edit_input(edit, &mut context),
+            Mode::History(_) => Vec::new(),
+        };
+        self.sync_viewport();
+        effects
+    }
+    pub fn paste(&mut self, text: &str) -> Vec<Effect> {
+        if !self.input_focused() {
+            return Vec::new();
+        }
+        let normalized = text.replace("\r\n", "\n");
+        let text = if self.overlay.is_none() && matches!(self.mode, Mode::Rewrite(_)) {
+            normalized.replace('\r', "\n")
+        } else {
+            normalized
+                .trim_end_matches(['\r', '\n'])
+                .replace(['\r', '\n'], " ")
+        };
+        self.edit_input(crate::input::Edit::Insert(&text))
+    }
     pub fn update(&mut self, action: Action) -> Vec<Effect> {
+        if self.overlay.is_none()
+            && self.scroll_focused()
+            && matches!(
+                action,
+                Action::Scroll(_) | Action::Top | Action::Bottom | Action::Page(_)
+            )
+            && let Some(problem) = self.problem_mut()
+        {
+            problem.navigate(action);
+            return Vec::new();
+        }
+        if matches!(action, Action::Refresh | Action::Recover)
+            && self.problem().is_some_and(|p| p.failure.recovery.is_some())
+        {
+            return Vec::new();
+        }
+        if self.input_focused() {
+            let text;
+            let edit = match action {
+                Action::Input(c) => {
+                    text = c.to_string();
+                    Some(crate::input::Edit::Insert(&text))
+                }
+                Action::Backspace => Some(crate::input::Edit::Command(
+                    crate::input::EditCommand::Backspace,
+                )),
+                Action::Clear => Some(crate::input::Edit::Clear),
+                Action::InputEdit(command) => Some(crate::input::Edit::Command(command)),
+                _ => None,
+            };
+            if let Some(edit) = edit {
+                return self.edit_input(edit);
+            }
+        }
+
         if let Some(Overlay::Places(picker)) = &mut self.overlay {
             match action {
                 Action::Input(_) | Action::Backspace | Action::Clear => {
@@ -327,6 +496,13 @@ impl Model {
             self.search.trail.cancel();
         }
         match action {
+            Action::Workspace if self.overlay.is_none() && matches!(self.mode, Mode::Search) => {
+                self.search.workspace(&mut ModeContext {
+                    status: &mut self.status,
+                    generation: &mut self.generation,
+                })
+            }
+            Action::Recover => self.recover(),
             Action::Places => {
                 if !matches!(self.mode, Mode::Search) {
                     return Vec::new();
@@ -432,7 +608,10 @@ impl Model {
                     return self.back();
                 }
                 let screen = self.screen();
-                let title = if self.overlay.is_none() && matches!(self.shown(), Mode::Search) {
+                let title = if self.overlay.is_none()
+                    && matches!(self.shown(), Mode::Search)
+                    && self.search.workspace.is_none()
+                {
                     format!("Search · {}", self.search.focus.label())
                 } else {
                     screen
@@ -474,7 +653,10 @@ impl Model {
         let Some((width, height)) = self.viewport else {
             return Default::default();
         };
-        if !matches!(self.mode, Mode::Search) || self.overlay.is_some() {
+        if !matches!(self.mode, Mode::Search)
+            || self.overlay.is_some()
+            || self.search.workspace.is_some()
+        {
             return Default::default();
         }
         crate::modes::search::screen::SearchView::new(
@@ -521,6 +703,9 @@ impl Model {
     }
 
     fn sync_viewport(&mut self) {
+        if self.search.workspace.is_some() {
+            return;
+        }
         let Some((width, height)) = self.viewport else {
             return;
         };
@@ -583,6 +768,19 @@ impl Model {
 
     pub fn on_event(&mut self, event: Event) -> Vec<Effect> {
         match event {
+            Event::WorkspaceFiles { generation, paths } => {
+                if generation != self.generation || !matches!(self.mode, Mode::Search) {
+                    return Vec::new();
+                }
+                let Some(workspace) = &mut self.search.workspace else {
+                    return Vec::new();
+                };
+                self.status.busy = false;
+                self.search.problem = None;
+                workspace.install(paths)
+            }
+
+            Event::Paste(text) => self.paste(&text),
             Event::Pointer(pointer) => {
                 if self.overlay.is_some() || !matches!(self.mode, Mode::Search) {
                     return Vec::new();
@@ -596,6 +794,9 @@ impl Model {
                 effects
             }
             Event::SourcesChanged => {
+                if let Some(workspace) = &mut self.search.workspace {
+                    workspace.loading = true;
+                }
                 self.search.preview_dirty = true;
                 self.next_generation();
                 self.search.trail.cancel();
@@ -697,6 +898,7 @@ impl Model {
                 if generation != self.generation {
                     return Vec::new();
                 }
+                self.search.problem = None;
                 self.search.searched(
                     matches,
                     skipped,
@@ -712,6 +914,7 @@ impl Model {
                 if generation != self.generation {
                     return Vec::new();
                 }
+                self.search.problem = None;
                 if !self.search.answered(
                     *answer,
                     &mut ModeContext {
@@ -760,17 +963,24 @@ impl Model {
             }
             Event::PlanFailed {
                 generation,
-                message,
+                problem,
             } => {
                 if generation != self.generation {
                     return Vec::new();
                 }
                 self.arriving = false;
                 match &mut self.mode {
-                    Mode::Rename(r) => r.plan_failed(message),
-                    Mode::Move(mv) => mv.plan_failed(message),
-                    Mode::Rewrite(rw) => rw.plan_failed(message),
-                    Mode::Search | Mode::History(_) => self.status.error(message),
+                    Mode::Rename(r) => r.plan_failed(*problem),
+                    Mode::Move(mv) => mv.plan_failed(*problem),
+                    Mode::Rewrite(rw) => rw.plan_failed(*problem),
+                    Mode::Search => {
+                        self.search.problem = Some(*problem);
+                        if self.search.focus == SearchPanel::Body {
+                            self.search.focus = SearchPanel::Context;
+                        }
+                        self.search.definition_tab = false;
+                    }
+                    Mode::History(_) => self.status.problem = Some(*problem),
                 }
                 Vec::new()
             }
@@ -811,16 +1021,47 @@ impl Model {
                     .info(format!("↩ #{}  {}", entry.id, IntentLine(&entry.intent)));
                 effects
             }
-            Event::Failed(message) => {
+            Event::Failed {
+                generation,
+                problem,
+            } => {
+                if matches!(problem.retry, Some(Effect::Commit { .. }))
+                    && !matches!(&self.mode, Mode::Rename(r) if r.applying)
+                    && !matches!(&self.mode, Mode::Move(m) if m.applying)
+                    && !matches!(&self.mode, Mode::Rewrite(r) if r.applying)
+                {
+                    return Vec::new();
+                }
+                if generation.is_some_and(|g| g != self.generation) {
+                    return Vec::new();
+                }
+                if let Some(Effect::Preview { path }) = &problem.retry {
+                    let site = match &self.mode {
+                        Mode::Search => self.search.preview_target().map(|path| (path, 0)),
+                        Mode::Rename(r) => r.site(),
+                        Mode::Move(m) => m.site(),
+                        Mode::Rewrite(r) => r.site(),
+                        Mode::History(_) => None,
+                    };
+                    if site.as_ref().is_none_or(|(p, _)| p != path) {
+                        return Vec::new();
+                    }
+                }
                 self.status.busy = false;
                 self.arriving = false;
                 match &mut self.mode {
-                    Mode::Rename(r) => r.failed(),
-                    Mode::Move(mv) => mv.failed(),
-                    Mode::Rewrite(rw) => rw.failed(),
-                    Mode::Search | Mode::History(_) => {}
+                    Mode::Rename(r) => r.plan_failed(*problem),
+                    Mode::Move(m) => m.plan_failed(*problem),
+                    Mode::Rewrite(r) => r.plan_failed(*problem),
+                    Mode::Search => {
+                        self.search.problem = Some(*problem);
+                        if self.search.focus == SearchPanel::Body {
+                            self.search.focus = SearchPanel::Context;
+                        }
+                        self.search.definition_tab = false;
+                    }
+                    Mode::History(_) => self.status.problem = Some(*problem),
                 }
-                self.status.error(message);
                 Vec::new()
             }
         }
@@ -875,6 +1116,7 @@ impl Model {
         }
         if self.overlay.is_none()
             && matches!(self.mode, Mode::Search)
+            && self.search.workspace.is_none()
             && self.search.scroll_focused()
         {
             self.search.jump(top)
@@ -1143,6 +1385,9 @@ impl Model {
 
     /// `$EDITOR` at the focused row's line.
     fn edit(&mut self) -> Vec<Effect> {
+        if let Some(path) = self.problem().and_then(crate::problem::Problem::site) {
+            return vec![Effect::Edit { path, line: 0 }];
+        }
         if matches!(self.overlay, Some(Overlay::Report { .. })) {
             return match self.report_site() {
                 Some((path, line)) => vec![Effect::Edit { path, line }],
@@ -1151,8 +1396,11 @@ impl Model {
         }
         let site = match &self.mode {
             Mode::Search => self.search.site(),
-            Mode::Rename(r) => r.site(),
-            Mode::Move(mv) => mv.site(),
+            Mode::Rename(r) => r
+                .site()
+                .or_else(|| r.target.declared_in.clone().map(|path| (path, 0)))
+                .or_else(|| self.search.site()),
+            Mode::Move(mv) => mv.site().or_else(|| Some((mv.from.clone(), 0))),
             Mode::Rewrite(rw) => rw.site(),
             Mode::History(_) => None,
         };
@@ -1179,6 +1427,15 @@ pub enum Mode {
 }
 
 impl Mode {
+    pub fn busy(&self) -> bool {
+        match self {
+            Self::Rename(r) => r.busy || r.applying,
+            Self::Move(m) => m.busy || m.applying,
+            Self::Rewrite(r) => r.busy || r.applying,
+            _ => false,
+        }
+    }
+
     pub fn name(&self) -> &'static str {
         match self {
             Self::Search => "search",
@@ -1281,6 +1538,7 @@ pub trait Panels: Copy + PartialEq + Sized + 'static {
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
 pub struct Status {
     pub message: Option<(Level, String)>,
+    pub problem: Option<crate::problem::Problem>,
     pub busy: bool,
 }
 
@@ -1301,6 +1559,7 @@ impl Status {
 
     pub fn clear(&mut self) {
         self.message = None;
+        self.problem = None;
     }
 }
 

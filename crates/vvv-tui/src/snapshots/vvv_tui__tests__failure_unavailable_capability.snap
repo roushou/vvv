@@ -1,0 +1,24 @@
+---
+source: crates/vvv-tui/src/tests.rs
+expression: "FrameFixture::new(&m).render()"
+---
+┌ Rename trait ────────────────────────────────────────────────── 0/0 selected · 0 files ┐
+│ Language → new name                                                                    │
+└ by name · This language cannot follow module paths ────────────────────────────────────┘
+┌ ? Unverified ────────────── 0/0 · 0 files ┐┌ Unavailable capability ───────────────────┐
+│ No occurrences                            ││This language cannot follow module paths   │
+│                                           ││Inspect the declaration and its uses.      │
+│                                           ││Inspect the source or open it in your      │
+│                                           ││editor. This operation is unavailable      │
+│                                           ││here.                                      │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+│                                           ││                                           │
+└ 0/0 selected ─────────────────────────────┘│                                           │
+ ✓ Safe ────────────────────── 0/0 · 0 files │                                           │
+ ✗ Other ───────────────────── 0/0 · 0 files └───────────────────────────────────────────┘
+ rename j/k scroll  d/u page  i edit input  ⏎ fix error  esc back  e editor       f1 help

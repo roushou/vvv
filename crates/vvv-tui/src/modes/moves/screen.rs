@@ -257,11 +257,12 @@ impl<'a> MoveView<'a> {
                 t.title,
             )),
         )
-        .line(Line::from(vec![
-            Span::styled(" destination: ", t.dim),
-            Span::raw(mv.to.clone()),
-            t.caret(focused),
-        ]))
+        .input(
+            Line::from(Span::styled(" destination: ", t.dim)),
+            &mv.to,
+            &mv.caret,
+            "",
+        )
         .bottom(bottom);
         if let Some(plan) = &mv.plan {
             header = header.right(Line::from(vec![
@@ -360,6 +361,10 @@ impl<'a> MoveView<'a> {
 
     fn detail(&self, area: Rect, buf: &mut Buffer) {
         let (mv, t) = (self.mode, self.painter);
+        if let Some(problem) = &mv.error {
+            problem.pane(t, mv.focus == MovePanel::Detail, area, buf);
+            return;
+        }
         let current = mv.current();
         let label = match &current {
             Some(MoveRow::Notice(_)) => "Manual fix",

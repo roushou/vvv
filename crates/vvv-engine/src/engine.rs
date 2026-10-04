@@ -176,6 +176,9 @@ impl Engine {
                 crate::Request::Imports(query) => Execution::Completed(crate::Answer::Imports(
                     query.execute_in(&mut *self.graph()?, self.workspace())?,
                 )),
+                crate::Request::WorkspaceFiles(query) => {
+                    Execution::Completed(crate::Answer::WorkspaceFiles(query.execute_in(self)?))
+                }
                 crate::Request::File(query) => {
                     Execution::Completed(crate::Answer::File(query.execute_in(self)?))
                 }

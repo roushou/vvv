@@ -16,6 +16,7 @@ pub struct PlaceItem {
 pub struct Places {
     pub recent: bool,
     pub filter: String,
+    pub caret: crate::input::Caret,
     pub cursor: Cursor,
     pub trail: Vec<PlaceItem>,
     pub searches: Vec<PlaceItem>,
@@ -42,6 +43,7 @@ impl Places {
         Self {
             recent: false,
             filter: String::new(),
+            caret: Default::default(),
             cursor: Cursor { index },
             trail,
             searches: search
@@ -58,6 +60,7 @@ impl Places {
     pub fn tab(&mut self) {
         self.recent = !self.recent;
         self.filter.clear();
+        self.caret.reset();
         self.cursor.index = 0;
     }
     pub fn visible(&self) -> Vec<&PlaceItem> {

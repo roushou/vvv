@@ -485,6 +485,22 @@ Kinds: `unrewritable_import` (`import`, `replacement`); `redundant_import`
 take — `everyone` when the consumer is in another package, which vvv never grants on
 its own; the plan is still valid, the widening is yours to make).
 
+## `workspace_files`
+
+Request: `{"command":"workspace_files"}`. The read-only answer is the workspace's
+current visible file inventory, sorted and deduplicated, with workspace-relative
+`RelPath` values:
+
+```json
+{ "paths": ["README.md", "crates/vvv/src/main.rs"] }
+```
+
+The inventory uses the same workspace walk and ignore rules as other commands.
+It includes files without registered languages, performs no parsing, and accepts
+no search restrictions. Pickers can fuzzy-filter the paths locally, then request
+`file` for source and outline data from one snapshot. Discovery and schema expose
+this command; it does not refresh the graph or alter query/plan retention.
+
 ## `file` (preview)
 
 ```json

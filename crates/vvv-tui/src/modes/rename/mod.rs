@@ -28,6 +28,7 @@ pub struct RenameMode {
     pub language: Option<vvv_engine::LanguageId>,
     /// The new name, edited live; the plan is re-made as it grows.
     pub name: String,
+    pub caret: crate::input::Caret,
     pub declarations: Vec<Match>,
     pub occurrences: Vec<Occurrence>,
     /// The last plan's files, each holding its diff: the preview the detail
@@ -47,7 +48,7 @@ pub struct RenameMode {
     /// Waiting for the judge, or for the commit.
     pub busy: bool,
     pub applying: bool,
-    pub error: Option<String>,
+    pub error: Option<crate::problem::Problem>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -96,7 +97,7 @@ impl RenameMode {
         } else if self.busy {
             ReviewState::Planning
         } else if let Some(error) = &self.error {
-            ReviewState::Failed(error)
+            ReviewState::Failed(error.message())
         } else if self.name.trim().is_empty() || self.name.trim() == self.target.name {
             ReviewState::Input("type a new name")
         } else if self.ticks.is_empty() {
@@ -111,6 +112,7 @@ impl RenameMode {
     pub fn new(target: RenameTarget, language: Option<vvv_engine::LanguageId>) -> Self {
         Self {
             name: String::new(),
+            caret: Default::default(),
             target,
             language,
             declarations: Vec::new(),
@@ -276,8 +278,23 @@ impl RenameMode {
         }
         self.preview_effect()
     }
+    pub fn edit_input(
+        &mut self,
+        edit: crate::input::Edit<'_>,
+        context: &mut ModeContext<'_>,
+    ) -> Vec<Effect> {
+        if self.applying {
+            return Vec::new();
+        }
+        if !crate::input::TextInput::new(&mut self.name, &mut self.caret).apply(edit) {
+            return Vec::new();
+        }
+        context.status.clear();
+        let generation = context.next_generation();
+        self.plan(generation, true)
+    }
     pub fn input(&mut self, c: Option<char>) {
-        crate::input::TextInput::new(&mut self.name).edit(c);
+        crate::input::TextInput::new(&mut self.name, &mut self.caret).edit(c);
     }
     pub fn focus_by(&mut self, by: i32) {
         self.focus = self.focus.step(by);
@@ -347,7 +364,7 @@ impl RenameMode {
             return Vec::new();
         }
         if let Some(error) = &self.error {
-            return context.fail(error);
+            return context.fail(error.message());
         }
         let to = self.name.trim().to_owned();
         if to.is_empty() || to == self.target.name {
@@ -466,15 +483,10 @@ impl RenameMode {
         }
         self.preview = Some(preview);
     }
-    pub fn plan_failed(&mut self, message: String) {
+    pub fn plan_failed(&mut self, problem: crate::problem::Problem) {
         self.busy = false;
         self.applying = false;
-        self.changes.clear();
-        self.error = Some(message);
-    }
-    pub fn failed(&mut self) {
-        self.busy = false;
-        self.applying = false;
+        self.error = Some(problem);
     }
     pub fn judgment(&self) -> RenameIntent {
         let mut intent = RenameIntent::new(&self.target.name, &self.target.name);

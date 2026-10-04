@@ -6,3 +6,5 @@ pub(crate) mod rename;
 pub(crate) mod review;
 pub(crate) mod rewrite;
 pub(crate) mod search;
+
+pub(crate) mod workspace;

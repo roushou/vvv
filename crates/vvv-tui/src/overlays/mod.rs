@@ -68,6 +68,26 @@ impl Overlay {
             .get(*cursor)
             .map(|site| (site.path.clone(), site.line))
     }
+    pub fn edit_input(&mut self, edit: crate::input::Edit<'_>) {
+        match self {
+            Self::Menu(m) => {
+                if crate::input::TextInput::new(&mut m.filter, &mut m.caret).apply(edit) {
+                    m.cursor = 0;
+                }
+            }
+            Self::Places(p) => {
+                if crate::input::TextInput::new(&mut p.filter, &mut p.caret).apply(edit) {
+                    p.cursor.index = 0;
+                }
+            }
+            Self::Navigation(p) => {
+                if crate::input::TextInput::new(&mut p.filter, &mut p.caret).apply(edit) {
+                    p.cursor.index = 0;
+                }
+            }
+            _ => {}
+        }
+    }
     pub fn help_scrolled(&mut self, by: i32, viewport: (u16, u16)) -> bool {
         if let Self::Help {
             title,
@@ -132,6 +152,7 @@ pub struct Menu {
     pub items: Vec<MenuItem>,
     pub cursor: usize,
     pub filter: String,
+    pub caret: crate::input::Caret,
     pub selected: Option<String>,
     pub counted: bool,
 }
@@ -176,6 +197,7 @@ impl Menu {
             items,
             cursor,
             filter: String::new(),
+            caret: Default::default(),
             selected: current.map(str::to_owned),
             counted: false,
         }
@@ -200,6 +222,7 @@ impl Menu {
             items,
             cursor,
             filter: String::new(),
+            caret: Default::default(),
             selected: Some(current.key().to_owned()),
             counted: false,
         }
@@ -240,7 +263,7 @@ impl Menu {
     }
 
     pub fn input(&mut self, c: Option<char>) {
-        crate::input::TextInput::new(&mut self.filter).edit(c);
+        crate::input::TextInput::new(&mut self.filter, &mut self.caret).edit(c);
         self.cursor = 0;
     }
 
@@ -286,6 +309,7 @@ impl Menu {
                     items,
                     cursor: 0,
                     filter: String::new(),
+                    caret: Default::default(),
                     selected: None,
                     counted: false,
                 }
@@ -320,6 +344,7 @@ impl Menu {
                         .position(|c| *c == search.results.category)
                         .unwrap_or(0),
                     filter: String::new(),
+                    caret: Default::default(),
                     selected: Some(search.results.category.key().to_owned()),
                     counted: false,
                 }

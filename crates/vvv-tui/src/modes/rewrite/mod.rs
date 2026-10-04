@@ -17,6 +17,7 @@ use vvv_engine::{Match, MatchId, Query};
 pub struct RewriteMode {
     pub query: Query,
     pub template: String,
+    pub caret: crate::input::Caret,
     pub matches: Vec<Match>,
     /// The last plan's files, each holding its diff: the preview the detail
     /// pane draws.
@@ -25,7 +26,7 @@ pub struct RewriteMode {
     pub focus: RewritePanel,
     pub cursor: Cursor,
     pub detail_scroll: usize,
-    pub error: Option<String>,
+    pub error: Option<crate::problem::Problem>,
     pub busy: bool,
     pub applying: bool,
 }
@@ -48,7 +49,7 @@ impl RewriteMode {
         } else if self.busy {
             ReviewState::Planning
         } else if let Some(error) = &self.error {
-            ReviewState::Failed(error)
+            ReviewState::Failed(error.message())
         } else if self.template.trim().is_empty() {
             ReviewState::Input("type a template")
         } else if self.ticks.is_empty() {
@@ -65,6 +66,7 @@ impl RewriteMode {
         Self {
             query,
             template: String::new(),
+            caret: Default::default(),
             matches,
             changes: Vec::new(),
             ticks,
@@ -219,7 +221,7 @@ impl RewriteMode {
             return Vec::new();
         }
         if let Some(error) = &self.error {
-            return context.fail(error);
+            return context.fail(error.message());
         }
         if self.changes.is_empty() {
             return context.fail("type a template first");
@@ -277,17 +279,27 @@ impl RewriteMode {
     pub fn site(&self) -> Option<(RelPath, u32)> {
         self.current().map(|m| (m.path.clone(), m.start.line))
     }
-    pub fn plan_failed(&mut self, message: String) {
+    pub fn plan_failed(&mut self, problem: crate::problem::Problem) {
         self.busy = false;
         self.applying = false;
-        self.changes.clear();
-        self.error = Some(message);
+        self.error = Some(problem);
     }
-    pub fn failed(&mut self) {
-        self.busy = false;
-        self.applying = false;
+    pub fn edit_input(
+        &mut self,
+        edit: crate::input::Edit<'_>,
+        context: &mut ModeContext<'_>,
+    ) -> Vec<Effect> {
+        if self.applying {
+            return Vec::new();
+        }
+        if !crate::input::TextInput::new(&mut self.template, &mut self.caret).apply(edit) {
+            return Vec::new();
+        }
+        context.status.clear();
+        let generation = context.next_generation();
+        self.plan(generation)
     }
     pub fn input(&mut self, c: Option<char>) {
-        crate::input::TextInput::new(&mut self.template).edit(c);
+        crate::input::TextInput::new(&mut self.template, &mut self.caret).edit(c);
     }
 }

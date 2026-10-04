@@ -6,6 +6,7 @@ use vvv_engine::{DefinitionCandidate, NavigationQuery, Selection, SourceAnchor};
 pub struct NavigationPicker {
     pub title: &'static str,
     pub filter: String,
+    pub caret: crate::input::Caret,
     pub cursor: Cursor,
     pub items: Vec<NavigationItem>,
 }
@@ -52,6 +53,7 @@ impl NavigationPicker {
         Self {
             title: "Follow identifier",
             filter: String::new(),
+            caret: Default::default(),
             cursor,
             items,
         }
@@ -80,6 +82,7 @@ impl NavigationPicker {
         Self {
             title: "Choose definition",
             filter: String::new(),
+            caret: Default::default(),
             cursor: Cursor::default(),
             items,
         }

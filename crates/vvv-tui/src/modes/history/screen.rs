@@ -81,6 +81,7 @@ pub(crate) static HISTORY: Screen = Screen {
 
 pub(crate) struct HistoryView<'a> {
     mode: &'a HistoryMode,
+    problem: Option<&'a crate::problem::Problem>,
     painter: Painter,
     split: u16,
     now: u64,
@@ -89,10 +90,15 @@ impl<'a> HistoryView<'a> {
     pub fn new(mode: &'a HistoryMode, painter: Painter, split: u16, now: u64) -> Self {
         Self {
             mode,
+            problem: None,
             painter,
             split,
             now,
         }
+    }
+    pub fn problem(mut self, problem: Option<&'a crate::problem::Problem>) -> Self {
+        self.problem = problem;
+        self
     }
     pub fn screen(self) -> BoundScreen<Self, 3> {
         BoundScreen::new(
@@ -115,6 +121,15 @@ impl<'a> HistoryView<'a> {
             .render(area, buf);
     }
     fn draw_files(&self, area: Rect, buf: &mut Buffer) {
+        if let Some(problem) = self.problem {
+            problem.pane(
+                self.painter,
+                self.mode.focus == HistoryPanel::Files,
+                area,
+                buf,
+            );
+            return;
+        }
         self.files(area).render(area, buf);
     }
     fn header(&self) -> Header<'a> {

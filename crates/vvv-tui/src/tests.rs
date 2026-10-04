@@ -22,6 +22,503 @@ fn model() -> Model {
     Model::new("~/dev/nx".into(), vec!["rust".into(), "typescript".into()])
 }
 
+#[test]
+fn caret_motion_never_requests_work_and_paste_is_one_edit() {
+    use crate::input::EditCommand;
+    let mut m = searched();
+    m.search.focus = SearchPanel::Query;
+    let generation = m.generation;
+    let selected = m.search.results.current().unwrap().id.clone();
+    let preview = m.search.preview.clone();
+    for command in [
+        EditCommand::Home,
+        EditCommand::Right,
+        EditCommand::WordRight,
+        EditCommand::WordLeft,
+        EditCommand::End,
+        EditCommand::Left,
+    ] {
+        assert!(m.update(Action::InputEdit(command)).is_empty());
+        assert_eq!(m.generation, generation);
+        assert_eq!(m.search.results.current().unwrap().id, selected);
+        assert_eq!(m.search.preview, preview);
+    }
+    m.update(Action::InputEdit(EditCommand::Home));
+    let effects = m.on_event(Event::Paste("Wide\r\nQuery\n".into()));
+    assert_eq!(m.search.query.text(), "Wide QueryLanguage");
+    assert_eq!(effects.len(), 1);
+    assert!(matches!(effects[0], Effect::Search { .. }));
+    for mut m in [renaming(), moving(), rewriting()] {
+        let generation = m.generation;
+        for command in [EditCommand::Home, EditCommand::WordRight, EditCommand::End] {
+            assert!(m.update(Action::InputEdit(command)).is_empty());
+            assert_eq!(m.generation, generation);
+        }
+        let effects = m.on_event(Event::Paste("LongDestination".into()));
+        assert_eq!(
+            effects
+                .iter()
+                .filter(|e| matches!(e, Effect::Plan { .. }))
+                .count(),
+            1
+        );
+    }
+    let mut m = rewriting();
+    m.on_key(ctrl('u'));
+    let effects = m.on_event(Event::Paste("$BODY\r\nnext\n".into()));
+    let Mode::Rewrite(rw) = &m.mode else { panic!() };
+    assert_eq!(rw.template, "$BODY\nnext\n");
+    assert_eq!(effects.len(), 1);
+    insta::assert_snapshot!(
+        "input_multiline_paste",
+        FrameFixture::new(&m).render_size(50, 16)
+    );
+    let mut m = searched();
+    m.search.focus = SearchPanel::Query;
+    m.on_key(ctrl('u'));
+    m.paste("symbol:trait name:ExtremelyLongSymbolInTheWorkspace crates/vvv/src/deeply/nested/destination.rs");
+    m.update(Action::InputEdit(EditCommand::WordLeft));
+    insta::assert_snapshot!(
+        "input_long_window",
+        FrameFixture::new(&m).render_size(50, 16)
+    );
+}
+
+#[test]
+fn local_filter_caret_motion_preserves_selection_and_never_queries_the_engine() {
+    use crate::input::EditCommand;
+    let mut m = searched();
+    m.update(Action::FocusNth(2));
+    m.update(Action::FilterFiles);
+    m.on_event(Event::Paste("lang".into()));
+    let generation = m.generation;
+    let id = m.search.results.current().unwrap().id.clone();
+    assert!(m.update(Action::InputEdit(EditCommand::Home)).is_empty());
+    assert_eq!(m.search.results.current().unwrap().id, id);
+    assert_eq!(m.generation, generation);
+    m.update(Action::Back);
+    m.on_key(ctrl('g'));
+    assert!(m.on_event(Event::Paste("lang".into())).is_empty());
+    let Overlay::Menu(menu) = m.overlay.as_mut().unwrap() else {
+        panic!()
+    };
+    menu.cursor = 1;
+    assert!(m.update(Action::InputEdit(EditCommand::Home)).is_empty());
+    let Overlay::Menu(menu) = m.overlay.as_ref().unwrap() else {
+        panic!()
+    };
+    assert_eq!(menu.cursor, 1);
+}
+
+#[test]
+fn structured_stale_failure_retains_review_and_rebuilds_without_applying() {
+    use crate::problem::Problem;
+    let mut m = renaming();
+    typed(&mut m, "Lang");
+    m.on_event(Event::Planned {
+        generation: m.generation,
+        planned: rename_plan(),
+    });
+    let Mode::Rename(r) = &m.mode else { panic!() };
+    let ticks = r.ticks.clone();
+    let changes = r.changes.clone();
+    let intent = match m.update(Action::Enter).pop().unwrap() {
+        Effect::Commit { intent } => intent,
+        _ => panic!(),
+    };
+    let failure = vvv_engine::Failure::new(
+        vvv_engine::ErrorCode::Stale,
+        "src/lang/mod.rs changed after review",
+    )
+    .with_hint("Read the current source before applying.");
+    m.on_event(Event::Failed {
+        generation: None,
+        problem: Box::new(Problem::new(
+            failure.clone(),
+            Some(Effect::Commit { intent }),
+        )),
+    });
+    assert_eq!(m.problem().unwrap().failure, failure);
+    let Mode::Rename(r) = &m.mode else { panic!() };
+    assert_eq!(r.name, "Lang");
+    assert_eq!(r.ticks, ticks);
+    assert_eq!(
+        serde_json::to_value(&r.changes).unwrap(),
+        serde_json::to_value(&changes).unwrap()
+    );
+    assert!(m.update(Action::Enter).is_empty());
+    insta::assert_snapshot!(
+        "failure_stale_review",
+        FrameFixture::new(&m).render_size(110, 24)
+    );
+    assert!(
+        FrameFixture::new(&m)
+            .render_size(50, 20)
+            .lines()
+            .last()
+            .unwrap()
+            .contains("ctrl+r")
+    );
+    let effects = m.on_key(ctrl('r'));
+    assert_eq!(effects.len(), 1);
+    assert!(matches!(
+        effects[0],
+        Effect::Plan {
+            debounce: false,
+            ..
+        }
+    ));
+    assert!(m.on_key(ctrl('r')).is_empty());
+    assert!(m.update(Action::Enter).is_empty());
+    m.on_event(Event::Planned {
+        generation: m.generation,
+        planned: rename_plan(),
+    });
+    assert!(m.problem().is_none());
+    assert!(matches!(
+        m.update(Action::Enter).as_slice(),
+        [Effect::Commit { .. }]
+    ));
+}
+
+#[test]
+fn obsolete_errors_are_ignored_and_partial_recovery_cannot_be_retried() {
+    use crate::problem::Problem;
+    use vvv_engine::{ErrorCode, Failure};
+    let mut m = searched();
+    let old = m.generation;
+    m.search.focus = SearchPanel::Query;
+    typed(&mut m, "Next");
+    m.on_event(Event::Failed {
+        generation: Some(old),
+        problem: Box::new(Problem::new(
+            Failure::new(ErrorCode::Io, "old failure"),
+            Some(Effect::History),
+        )),
+    });
+    assert!(m.problem().is_none());
+    m.on_event(Event::Failed {
+        generation: None,
+        problem: Box::new(Problem::new(
+            Failure::new(ErrorCode::Io, "wrong file"),
+            Some(Effect::Preview {
+                path: "unselected.rs".into(),
+            }),
+        )),
+    });
+    assert!(m.problem().is_none());
+    let mut failure = Failure::new(ErrorCode::RecoveryFailed, "Rollback could not finish");
+    failure.recovery = Some(vvv_engine::Recovery {
+        cause: Box::new(Failure::new(
+            ErrorCode::Io,
+            "destination became unavailable",
+        )),
+        failures: vec![],
+        remaining: vec![vvv_engine::RecoveryEffect {
+            path: "src/remaining.rs".into(),
+            expected: vvv_engine::RecoveryState::Absent,
+            observed: vvv_engine::RecoveryState::Other,
+        }],
+        unverified: vec![vvv_engine::RecoveryUnverified {
+            path: "src/unknown.rs".into(),
+            expected: vvv_engine::RecoveryState::Absent,
+            code: ErrorCode::Io,
+            message: "read failed".into(),
+        }],
+    });
+    m.on_event(Event::Failed {
+        generation: None,
+        problem: Box::new(Problem::new(failure.clone(), Some(Effect::Undo))),
+    });
+    assert_eq!(m.problem().unwrap().failure, failure);
+    m.update(Action::FocusNth(4));
+    assert!(m.on_key(ctrl('r')).is_empty());
+    assert!(
+        matches!(m.on_key(key(KeyCode::Char('e'))).as_slice(), [Effect::Edit { path, line: 0 }] if path.as_path() == std::path::Path::new("src/remaining.rs"))
+    );
+    insta::assert_snapshot!(
+        "failure_partial_recovery",
+        FrameFixture::new(&m).render_size(120, 26)
+    );
+}
+
+#[test]
+fn workspace_browsing_filters_files_and_returns_to_the_exact_search() {
+    use crate::input::EditCommand;
+    let mut m = searched();
+    m.search.focus = SearchPanel::Query;
+    m.update(Action::InputEdit(EditCommand::Home));
+    let before = crate::modes::search::browse::NavigationEntry::capture(&m.search).label();
+    let query = m.search.query.clone();
+    let results = m.search.results.clone();
+    let preview_before = m.search.preview.clone();
+    let effects = m.on_key(ctrl('b'));
+    assert!(matches!(
+        effects.as_slice(),
+        [Effect::WorkspaceFiles { .. }]
+    ));
+    let generation = m.generation;
+    let effects = m.on_event(Event::WorkspaceFiles {
+        generation,
+        paths: vec!["src/a.rs".into(), "src/b.rs".into(), "README.md".into()],
+    });
+    assert!(
+        matches!(effects.as_slice(), [Effect::Preview { path }] if path.as_path() == std::path::Path::new("README.md"))
+    );
+    m.on_event(preview("README.md", &["# Workspace"]));
+    assert!(m.search.workspace.as_ref().unwrap().symbols().is_empty());
+    let effects = m.on_event(Event::Paste("sra".into()));
+    assert!(
+        matches!(effects.as_slice(), [Effect::Preview { path }] if path.as_path() == std::path::Path::new("src/a.rs"))
+    );
+    assert_eq!(m.generation, generation);
+    assert!(m.update(Action::InputEdit(EditCommand::Home)).is_empty());
+    m.on_event(preview("src/b.rs", &["wrong file"]));
+    assert_eq!(
+        m.search
+            .workspace
+            .as_ref()
+            .unwrap()
+            .preview
+            .as_ref()
+            .unwrap()
+            .path
+            .as_path(),
+        std::path::Path::new("README.md")
+    );
+    let text = "struct Alpha {\n    value: i32,\n}\nfn next() {}";
+    let symbol = vvv_engine::Symbol::plain(
+        SymbolKind::Struct,
+        "Alpha",
+        vvv_engine::Span::new(7, 12),
+        vvv_engine::Span::new(0, 31),
+    );
+    m.on_event(Event::Previewed {
+        path: "src/a.rs".into(),
+        text: text.into(),
+        symbols: vec![symbol],
+        highlights: vec![],
+        identifiers: vec![],
+    });
+    m.on_key(key(KeyCode::Enter));
+    assert_eq!(m.search.focus, SearchPanel::Files);
+    m.on_key(key(KeyCode::Enter));
+    assert_eq!(m.search.focus, SearchPanel::Results);
+    insta::assert_snapshot!(
+        "workspace_outline",
+        FrameFixture::new(&m).render_size(110, 25)
+    );
+    let follow = m.on_key(key(KeyCode::Enter));
+    assert!(
+        matches!(follow.as_slice(), [Effect::Follow { query, .. }] if matches!(&query.origin, vvv_engine::NavigationOrigin::Occurrence { anchor } if anchor.path.as_path() == std::path::Path::new("src/a.rs") && anchor.span == vvv_engine::Span::new(7, 12)))
+    );
+    let reply = DefinitionFixture::new("Alpha", "src/a.rs", text).reply();
+    m.on_event(FollowFixture { effects: follow }.reply(Ok(reply)));
+    assert!(m.search.workspace.is_none());
+    m.update(Action::BrowseBack);
+    assert_eq!(m.search.workspace.as_ref().unwrap().filter, "sra");
+    assert_eq!(m.search.focus, SearchPanel::Results);
+    m.on_key(ctrl('b'));
+    assert!(m.search.workspace.is_none());
+    assert_eq!(m.search.query, query);
+    assert_eq!(
+        m.search.results.current().unwrap().id,
+        results.current().unwrap().id
+    );
+    assert_eq!(m.search.preview, preview_before);
+    assert_eq!(
+        crate::modes::search::browse::NavigationEntry::capture(&m.search).label(),
+        before
+    );
+    assert_eq!(m.search.focus, SearchPanel::Query);
+    assert!(
+        m.on_event(Event::WorkspaceFiles {
+            generation,
+            paths: vec![]
+        })
+        .is_empty()
+    );
+}
+
+#[test]
+fn workspace_preview_errors_keep_the_filter_focused_and_clear_for_another_file() {
+    use crate::problem::Problem;
+    let mut m = searched();
+    m.on_key(ctrl('b'));
+    m.on_event(Event::WorkspaceFiles {
+        generation: m.generation,
+        paths: vec!["a.rs".into(), "b.rs".into()],
+    });
+    m.on_event(Event::Failed {
+        generation: None,
+        problem: Box::new(Problem::new(
+            vvv_engine::Failure::new(vvv_engine::ErrorCode::Io, "a.rs cannot be read"),
+            Some(Effect::Preview {
+                path: "a.rs".into(),
+            }),
+        )),
+    });
+    assert_eq!(m.search.focus, SearchPanel::Query);
+    assert!(m.problem().is_some());
+    let effects = m.on_event(Event::Paste("b".into()));
+    assert!(
+        matches!(effects.as_slice(), [Effect::Preview { path }] if path.as_path() == std::path::Path::new("b.rs"))
+    );
+    assert!(m.problem().is_none());
+    m.on_event(preview("b.rs", &["valid source"]));
+    assert!(
+        m.search
+            .workspace
+            .as_ref()
+            .unwrap()
+            .preview
+            .as_ref()
+            .unwrap()
+            .text()
+            .contains("valid source")
+    );
+}
+
+#[test]
+fn workspace_filter_editing_and_escape_are_bound_at_every_focus() {
+    use crate::input::EditCommand;
+    let mut m = searched();
+    m.on_key(ctrl('b'));
+    m.on_event(Event::WorkspaceFiles {
+        generation: m.generation,
+        paths: vec!["a.rs".into(), "b.rs".into()],
+    });
+    m.paste("b");
+    assert_eq!(
+        m.action_for(key(KeyCode::Backspace)),
+        Some(Action::Backspace)
+    );
+    assert_eq!(
+        m.action_for(key(KeyCode::Home)),
+        Some(Action::InputEdit(EditCommand::Home))
+    );
+    m.on_key(key(KeyCode::Backspace));
+    assert!(m.search.workspace.as_ref().unwrap().filter.is_empty());
+    m.paste("b");
+    m.on_key(ctrl('u'));
+    assert!(m.search.workspace.as_ref().unwrap().filter.is_empty());
+    for focus in 1..=4 {
+        m.update(Action::FocusNth(focus));
+        assert_eq!(m.action_for(key(KeyCode::Esc)), Some(Action::Back));
+        if focus > 1 {
+            assert_eq!(m.action_for(key(KeyCode::Char('v'))), None);
+        }
+    }
+    m.on_key(key(KeyCode::Esc));
+    assert!(m.search.workspace.is_none());
+}
+
+#[test]
+fn workspace_loading_keeps_the_shown_source_scroll_highlight_and_editor_site() {
+    let mut m = searched();
+    m.on_key(ctrl('b'));
+    m.on_event(Event::WorkspaceFiles {
+        generation: m.generation,
+        paths: vec!["a.rs".into(), "b.rs".into()],
+    });
+    let text = numbered(50, &[(1, "struct Alpha {}")]).join("\n");
+    m.on_event(Event::Previewed {
+        path: "a.rs".into(),
+        text,
+        highlights: vec![],
+        identifiers: vec![],
+        symbols: vec![vvv_engine::Symbol::plain(
+            SymbolKind::Struct,
+            "Alpha",
+            vvv_engine::Span::new(7, 12),
+            vvv_engine::Span::new(0, 15),
+        )],
+    });
+    m.update(Action::FocusNth(4));
+    m.update(Action::Scroll(20));
+    let before = m.search.workspace.as_ref().unwrap().scroll;
+    let marked = m.search.workspace.as_ref().unwrap().marked();
+    m.update(Action::FocusNth(2));
+    m.update(Action::Move(1));
+    let workspace = m.search.workspace.as_ref().unwrap();
+    assert!(workspace.loading);
+    assert_eq!(workspace.scroll, before);
+    assert_eq!(workspace.marked(), marked);
+    m.update(Action::FocusNth(4));
+    assert!(
+        matches!(m.on_key(key(KeyCode::Char('e'))).as_slice(), [Effect::Edit { path, .. }] if path.as_path() == std::path::Path::new("a.rs"))
+    );
+    m.on_event(preview("b.rs", &["new source"]));
+    assert_eq!(m.search.workspace.as_ref().unwrap().scroll, 0);
+    assert!(
+        matches!(m.on_key(key(KeyCode::Char('e'))).as_slice(), [Effect::Edit { path, .. }] if path.as_path() == std::path::Path::new("b.rs"))
+    );
+    m.update(Action::FocusNth(2));
+    m.update(Action::Move(-1));
+    assert_eq!(m.search.workspace.as_ref().unwrap().scroll, 0);
+    let lines = numbered(50, &[]);
+    m.on_event(preview(
+        "a.rs",
+        &lines.iter().map(String::as_str).collect::<Vec<_>>(),
+    ));
+    assert_eq!(m.search.workspace.as_ref().unwrap().scroll, before);
+}
+
+#[test]
+fn problem_bottom_and_scroll_up_show_the_previous_rows_immediately() {
+    let mut m = searched();
+    let hint = (1..=80)
+        .map(|n| format!("Issue{n:02}"))
+        .collect::<Vec<_>>()
+        .join(" ");
+    m.on_event(Event::Failed {
+        generation: None,
+        problem: Box::new(crate::problem::Problem::new(
+            vvv_engine::Failure::new(vvv_engine::ErrorCode::Io, "File read failed").with_hint(hint),
+            None,
+        )),
+    });
+    m.update(Action::FocusNth(4));
+    m.update(Action::Bottom);
+    let bottom = FrameFixture::new(&m).render_size(50, 16);
+    assert!(bottom.contains("Issue80"));
+    m.update(Action::Scroll(-1));
+    assert_ne!(bottom, FrameFixture::new(&m).render_size(50, 16));
+    m.update(Action::Top);
+    assert!(
+        FrameFixture::new(&m)
+            .render_size(50, 16)
+            .contains("File read failed")
+    );
+}
+
+#[test]
+fn an_unavailable_initial_plan_offers_source_inspection_without_retrying() {
+    use crate::problem::Problem;
+    let mut m = searched();
+    m.update(Action::Rename);
+    let failure = vvv_engine::Failure::new(
+        vvv_engine::ErrorCode::NoLayout,
+        "This language cannot follow module paths",
+    )
+    .with_hint("Inspect the declaration and its uses.");
+    m.on_event(Event::PlanFailed {
+        generation: m.generation,
+        problem: Box::new(Problem::new(failure.clone(), Some(Effect::History))),
+    });
+    assert_eq!(m.problem().unwrap().failure, failure);
+    assert!(!m.problem().unwrap().can_retry());
+    assert!(m.on_key(ctrl('r')).is_empty());
+    m.update(Action::FocusNth(5));
+    assert!(
+        matches!(m.on_key(key(KeyCode::Char('e'))).as_slice(), [Effect::Edit { path, .. }] if path.as_path() == std::path::Path::new("src/lang/mod.rs"))
+    );
+    insta::assert_snapshot!(
+        "failure_unavailable_capability",
+        FrameFixture::new(&m).render()
+    );
+}
+
 fn preview(path: &str, lines: &[&str]) -> Event {
     let text = lines.join("\n");
     // Colour every `Language` token and the word `pub` like the real thing would.
@@ -932,11 +1429,23 @@ fn move_plans_as_the_destination_changes_and_commits_the_plan() {
     );
     m.on_event(Event::PlanFailed {
         generation: first + 1,
-        message: "src/lang/mod.rsx: not addressable".into(),
+        problem: Box::new(crate::problem::Problem::new(
+            vvv_engine::Failure::new(
+                vvv_engine::ErrorCode::Unmovable,
+                "src/lang/mod.rsx: not addressable",
+            ),
+            None,
+        )),
     });
     let Mode::Move(mv) = &m.mode else { panic!() };
     assert!(mv.plan.is_none());
-    assert!(mv.error.as_deref().unwrap().contains("not addressable"));
+    assert!(
+        mv.error
+            .as_ref()
+            .unwrap()
+            .message()
+            .contains("not addressable")
+    );
     assert!(m.update(Action::Enter).is_empty(), "nothing to commit");
 
     let mut m = moving();
@@ -2476,7 +2985,10 @@ fn definition_replies_are_ticketed_and_keep_the_previous_frame_while_pending() {
     insta::assert_snapshot!("definition_pending", FrameFixture::new(&m).render());
     m.on_event(failed(ticket, query));
     assert!(m.search.body.pending().is_none());
-    assert!(m.search.body.declaration().is_none());
+    assert!(
+        m.search.body.declaration().is_some(),
+        "keep the last definition while showing the failure"
+    );
     assert!(
         m.search
             .body
@@ -4593,10 +5105,19 @@ fn failed_review_never_applies_the_previous_preview_and_clear_recovers_the_input
     });
     m.on_event(Event::PlanFailed {
         generation: m.generation,
-        message: "name collides with an existing declaration".into(),
+        problem: Box::new(crate::problem::Problem::new(
+            vvv_engine::Failure::new(
+                vvv_engine::ErrorCode::Conflict,
+                "name collides with an existing declaration",
+            ),
+            None,
+        )),
     });
     let Mode::Rename(r) = &m.mode else { panic!() };
-    assert!(r.changes.is_empty());
+    assert!(
+        !r.changes.is_empty(),
+        "retain the last preview for inspection"
+    );
     assert!(matches!(r.state(), ReviewState::Failed(_)));
     assert!(m.update(Action::Enter).is_empty());
     insta::assert_snapshot!("review_invalid_rename", FrameFixture::new(&m).render());

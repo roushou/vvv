@@ -12,11 +12,11 @@ expression: "FrameFixture::new(&m).render_size(50, 18)"
 │                  searches                      │
 │      ↓ ctrl+n ↑  select a place                │
 │          ctrl+p                                │
-│            home  first place                   │
-│             end  last place                    │
 │            pgdn  next page                     │
 │            pgup  previous page                 │
 │          ctrl+u  clear place filter            │
 │          ctrl+d  forget selected recent search │
+│          ctrl+l  reset split, report view and  │
+│                  preview choice                │
 └────────────────────────────────────────────────┘
  search j/k scroll  any key close       f1 return

@@ -31,4 +31,4 @@ expression: "FrameFixture::new(&m).render_size(120, 30)"
 │                                                          ││                                                          │
 │                                                          ││                                                          │
 └ [All 2] Declarations 0 Imports 0 Uses 2 ─────────────────┘└ outside location ────────────────────────────────────────┘
- search ↑/↓ move  ⏎ choose  esc cancel  ctrl+x clear  ctrl+u text                                               f1 help
+ search ↑/↓ move  ⏎ choose  esc cancel  ctrl+x clear  ctrl+u text  ←/→ caret                                    f1 help

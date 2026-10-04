@@ -449,11 +449,21 @@ impl MenuBox<'_> {
         let inner = block.inner(boxed);
         block.render(boxed, buf);
         let mut rows = vec![
-            Line::from(vec![
-                Span::styled("> ", self.painter.key),
-                Span::raw(Fit(&self.menu.filter, content_width.saturating_sub(4)).to_string()),
-                self.painter.caret(true),
-            ]),
+            {
+                let mut line = Line::from(Span::styled("> ", self.painter.key));
+                line.spans.extend(
+                    self.menu
+                        .caret
+                        .line(
+                            &self.menu.filter,
+                            self.painter,
+                            true,
+                            content_width.saturating_sub(2),
+                        )
+                        .spans,
+                );
+                line
+            },
             Line::default(),
         ];
         let visible = inner.height.saturating_sub(2) as usize;
@@ -811,28 +821,37 @@ impl<'a> NavigationBox<'a> {
             Constraint::Length(18.min(area.height)),
         );
         Clear.render(boxed, buf);
+        let visible = self.picker.visible();
+        let count = format!(
+            " {}/{} ",
+            visible.len(),
+            Plural(self.picker.items.len(), "choice")
+        );
         let block = Block::bordered()
             .border_style(self.painter.focused)
-            .title(format!(" {} ", self.picker.title));
+            .title(format!(" {} ", self.picker.title))
+            .title_top(Line::from(Span::styled(count, self.painter.dim)).right_aligned());
         let inner = block.inner(boxed);
         block.render(boxed, buf);
-        let visible = self.picker.visible();
         let height = inner.height.saturating_sub(1) as usize;
         let start = self
             .picker
             .cursor
             .index
             .saturating_sub(height.saturating_sub(1));
-        let mut lines = vec![Line::from(format!(
-            "Filter: {}  ({} {})",
-            self.picker.filter,
-            visible.len(),
-            if visible.len() == 1 {
-                "choice"
-            } else {
-                "choices"
-            }
-        ))];
+        let mut filter = Line::from(Span::styled("Filter: ", self.painter.key));
+        filter.spans.extend(
+            self.picker
+                .caret
+                .line(
+                    &self.picker.filter,
+                    self.painter,
+                    true,
+                    inner.width.saturating_sub(8) as usize,
+                )
+                .spans,
+        );
+        let mut lines = vec![filter];
         lines.extend(
             visible
                 .iter()
@@ -1085,11 +1104,15 @@ impl<'a> PlacesBox<'a> {
         ));
         crate::render::Pane::new(self.painter, Line::from(title), true)
             .right(Line::from(format!("{} shown", visible.len())))
-            .prefix(vec![Line::from(vec![
-                Span::styled("Find: ", self.painter.key),
-                Span::raw(p.filter.clone()),
-                self.painter.caret(true),
-            ])])
+            .prefix(vec![{
+                let mut line = Line::from(Span::styled("Find: ", self.painter.key));
+                line.spans.extend(
+                    p.caret
+                        .line(&p.filter, self.painter, true, width.saturating_sub(10))
+                        .spans,
+                );
+                line
+            }])
             .rows(rows)
             .cursor(cursor)
             .empty(if p.recent {

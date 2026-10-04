@@ -6,7 +6,8 @@ use std::time::{Duration, Instant};
 
 use ratatui::crossterm::SynchronizedUpdate;
 use ratatui::crossterm::event::{
-    self, DisableMouseCapture, EnableMouseCapture, Event as TermEvent, KeyEventKind,
+    self, DisableBracketedPaste, DisableMouseCapture, EnableBracketedPaste, EnableMouseCapture,
+    Event as TermEvent, KeyEventKind,
 };
 use vvv_engine::{Engine, Retention};
 
@@ -80,7 +81,7 @@ impl Tui {
             file.load(&mut model);
         }
         let mut terminal = ratatui::init();
-        let capture = MouseCapture::new()?;
+        let capture = TerminalInputCapture::new()?;
         let outcome = Self::event_loop(
             &mut terminal,
             &mut model,
@@ -160,6 +161,9 @@ impl Tui {
                     TermEvent::Key(key) if key.kind == KeyEventKind::Press => {
                         effects.extend(model.on_key(key));
                     }
+                    TermEvent::Paste(text) => {
+                        effects.extend(model.on_event(crate::action::Event::Paste(text)));
+                    }
                     TermEvent::Mouse(mouse) => {
                         if let Some(pointer) = frame.pointer(mouse) {
                             effects.extend(model.on_event(crate::action::Event::Pointer(pointer)));
@@ -192,7 +196,11 @@ impl Tui {
         let Some(program) = words.next() else {
             return Ok(());
         };
-        ratatui::crossterm::execute!(std::io::stdout(), DisableMouseCapture)?;
+        ratatui::crossterm::execute!(
+            std::io::stdout(),
+            DisableMouseCapture,
+            DisableBracketedPaste
+        )?;
         ratatui::restore();
         let status = Command::new(program)
             .args(words)
@@ -200,7 +208,7 @@ impl Tui {
             .arg(root.join(path))
             .status();
         *terminal = ratatui::init();
-        ratatui::crossterm::execute!(std::io::stdout(), EnableMouseCapture)?;
+        ratatui::crossterm::execute!(std::io::stdout(), EnableMouseCapture, EnableBracketedPaste)?;
         terminal.clear()?;
         status.map_err(|source| Error::Editor {
             command: editor.to_owned(),
@@ -211,24 +219,32 @@ impl Tui {
 }
 
 /// Mouse reporting follows the terminal session, including error unwinding.
-struct MouseCapture {
+struct TerminalInputCapture {
     enabled: bool,
 }
-impl MouseCapture {
+impl TerminalInputCapture {
     fn new() -> Result<Self, Error> {
-        let mut capture = Self { enabled: true };
-        if let Err(error) = ratatui::crossterm::execute!(std::io::stdout(), EnableMouseCapture) {
-            capture.enabled = false;
+        let capture = Self { enabled: true };
+        if let Err(error) = ratatui::crossterm::execute!(
+            std::io::stdout(),
+            EnableMouseCapture,
+            EnableBracketedPaste
+        ) {
+            drop(capture);
             ratatui::restore();
             return Err(error.into());
         }
         Ok(capture)
     }
 }
-impl Drop for MouseCapture {
+impl Drop for TerminalInputCapture {
     fn drop(&mut self) {
         if self.enabled {
-            let _ = ratatui::crossterm::execute!(std::io::stdout(), DisableMouseCapture);
+            let _ = ratatui::crossterm::execute!(
+                std::io::stdout(),
+                DisableMouseCapture,
+                DisableBracketedPaste
+            );
         }
     }
 }
